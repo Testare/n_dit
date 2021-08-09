@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::{iter::Rev, vec::IntoIter};
 
-
 // Potential future developments:
 // * removing squares from the middle of an Item
 // ^ Forcibly adding a square to an item, removing squares from other items and opening closed
@@ -14,8 +13,6 @@ use std::{iter::Rev, vec::IntoIter};
 // * ability to adjust GridMap size.
 // * moves direction from head (move/grow)
 // * Reorder squares (bring square to front) [Such as when a program moves over itself, the square becomes the new head]
-
-
 
 /// Represents a point of space that may contain a square.
 pub type Point = (usize, usize);
@@ -60,7 +57,6 @@ struct SquareIterMut<'a, T> {
 }
 
 impl Square {
-
     /// Creates an empty square. Should not be used outside of GridMap
     fn new(location: Point) -> Self {
         Square {
@@ -101,7 +97,6 @@ impl Square {
     fn set_next<P: Into<Option<Point>>>(&mut self, point: P) {
         self.next = point.into()
     }
-
 }
 
 /// Convenience trait to allow Square to passed to [`GridMap::item()`]
@@ -113,7 +108,6 @@ impl From<Square> for Option<usize> {
 }
 
 impl<T> GridMap<T> {
-
     /// Closes a square. Returns false if it is already closed, is occupied, or it is out of bounds.
     pub fn close_square(&mut self, pt: Point) -> bool {
         if self.square_is_free(pt) {
@@ -129,10 +123,14 @@ impl<T> GridMap<T> {
         x < self.width && y < self.height
     }
 
-
     /// Returns the front point where the given item is in the grid
     pub fn head(&self, item_key: usize) -> Option<Point> {
         self.items.get(&item_key).map(|(_, head)| *head)
+    }
+
+    /// Returns the height of the map
+    pub fn height(&self) -> usize {
+        self.height
     }
 
     /// Returns a reference to the item in the GridMap with the given key
@@ -180,7 +178,7 @@ impl<T> GridMap<T> {
     /// Returns a visualization of the grid using 0's for blocked squares, 1's for open but empty
     /// squares, and item_keys for their respective squares.
     ///
-    /// This map does not indicate what order the squares are in, and so could 
+    /// This map does not indicate what order the squares are in, and so could
     /// not be used to reconstruct a GridMap even if a list of items is provided.
     ///
     /// Each internal [`Vec<usize>`] represents a column so that the returned result can be
@@ -208,8 +206,8 @@ impl<T> GridMap<T> {
 
     /// Removes an item from the last grid square this item was added to.
     ///
-    /// "last" means sequentially (as in closest to the back), not chronologically. 
-    /// If a square was added with [`push_back`](Self::push_back), this method will remove that one 
+    /// "last" means sequentially (as in closest to the back), not chronologically.
+    /// If a square was added with [`push_back`](Self::push_back), this method will remove that one
     /// before the others.
     ///
     /// If the item is completely removed from the grid, this method returns the item, else returns
@@ -239,8 +237,8 @@ impl<T> GridMap<T> {
 
     /// Removes an item from the last `n` grid square this item was added to.
     ///
-    /// "last" means sequentially (as in closest to the back), not chronologically. 
-    /// If a square was added with [`push_back`](Self::push_back), this method will remove that one 
+    /// "last" means sequentially (as in closest to the back), not chronologically.
+    /// If a square was added with [`push_back`](Self::push_back), this method will remove that one
     /// before the others.
     ///
     /// If the item is completely removed from the grid, this method returns the item, else returns
@@ -262,8 +260,8 @@ impl<T> GridMap<T> {
 
     /// Removes an item from the first grid square this item was added to.
     ///
-    /// "first" means sequentially (as in closest to the front), not chronologically. 
-    /// If a square was added with [`push_front`](Self::push_front), this method will remove that one 
+    /// "first" means sequentially (as in closest to the front), not chronologically.
+    /// If a square was added with [`push_front`](Self::push_front), this method will remove that one
     /// before the others.
     ///
     /// If the item is completely removed from the grid, this method returns the item, else returns
@@ -287,8 +285,8 @@ impl<T> GridMap<T> {
 
     /// Removes an item from the first `n` grid square this item was added to.
     ///
-    /// "first" means sequentially (as in closest to the front), not chronologically. 
-    /// If a square was added with [`push_front`](Self::push_front), this method will remove that one 
+    /// "first" means sequentially (as in closest to the front), not chronologically.
+    /// If a square was added with [`push_front`](Self::push_front), this method will remove that one
     /// before the others.
     ///
     /// If the item is completely removed from the grid, this method returns the item, else returns
@@ -322,7 +320,7 @@ impl<T> GridMap<T> {
     /// For adding new items to the GridMap, see [`put_item`](Self::put_item).
     ///
     /// Returns true if successful, returns false if the item_key doesn't
-    /// correspond to an item or the square isn't free (It is closed or already 
+    /// correspond to an item or the square isn't free (It is closed or already
     /// occupied)
     pub fn push_back(&mut self, pt: Point, item_key: usize) -> bool {
         if self.square_is_free(pt) {
@@ -344,7 +342,7 @@ impl<T> GridMap<T> {
     /// For adding new items to the GridMap, see [`put_item`](Self::put_item).
     ///
     /// Returns true if successful, returns false if the item_key doesn't
-    /// correspond to an item, or the square isn't free (It is closed or already 
+    /// correspond to an item, or the square isn't free (It is closed or already
     /// occupied)
     pub fn push_front(&mut self, pt: Point, item_key: usize) -> bool {
         if self.square_is_free(pt) {
@@ -366,7 +364,7 @@ impl<T> GridMap<T> {
     /// Adds a new items to the GridMap. Takes the point in the grid to add the item to, and the
     /// Item to be added.
     ///
-    /// Returns 
+    /// Returns
     pub fn put_item(&mut self, pt: Point, item: T) -> Option<usize> {
         let id = self.next_id;
         if let Some(square) = self.square_mut(pt) {
@@ -391,7 +389,7 @@ impl<T> GridMap<T> {
     ///
     /// If any square is, closed, occupied, or out of bounds, and we try and add an item to it, that item is not
     /// added to the GridMap on any of the squares. Other items will still be added though, as long
-    /// as they are themselves valid. 
+    /// as they are themselves valid.
     ///
     /// Return a Vec with the item_keys of successful additions. These should be in the same order
     /// as the iterator passed to `put_items`. If the item was not added successfully, there will
@@ -404,7 +402,7 @@ impl<T> GridMap<T> {
             .into_iter()
             .map(|(item, pts)| {
                 let pt_vec: Vec<_> = pts.into_iter().collect();
-                if pt_vec.iter().all(|pt|self.square_is_free(*pt)) {
+                if pt_vec.iter().all(|pt| self.square_is_free(*pt)) {
                     let mut pt_iter = pt_vec.into_iter();
                     if let Some(head) = pt_iter.next() {
                         let key_opt = self.put_item(head, item);
@@ -443,7 +441,7 @@ impl<T> GridMap<T> {
         self.square_check(pt, true, Some(true))
     }
 
-    /// Square is open and does not contain an item 
+    /// Square is open and does not contain an item
     pub fn square_is_free(&self, pt: Point) -> bool {
         self.square_check(pt, false, Some(true))
     }
@@ -466,7 +464,7 @@ impl<T> GridMap<T> {
         }
     }
 
-    /// Returns a reference to the square at a certain point. 
+    /// Returns a reference to the square at a certain point.
     ///
     /// Returns None if the point is out of bounds or closed.
     pub fn square_ref(&self, (x, y): Point) -> Option<&Square> {
@@ -517,11 +515,16 @@ impl<T> GridMap<T> {
     fn square_mut<'a>(&'a mut self, (x, y): Point) -> Option<&'a mut Square> {
         self.grid.get_mut(x)?.get_mut(y)?.as_mut()
     }
+
+    /// Returns the width of the map
+    pub fn width(&self) -> usize {
+        self.width
+    }
 }
 
 impl<T> From<Vec<Vec<bool>>> for GridMap<T> {
     /// Creates a [`GridMap`] from a collection of [`bool`], representing whether the square
-    /// is open or not. 
+    /// is open or not.
     ///
     /// Each internal [`Vec<bool>`] represents a column so that `bit_map` can be
     /// indexed like `bit_map[x][y]`.
@@ -968,7 +971,7 @@ mod test {
             (TEST_VALUE, vec![(0, 0), (0, 1), (0, 2)]),
             (test_value_1, vec![(0, 6)]),
             (test_value_2, vec![(0, 5), (0, 4)]),
-            ("This value is out of bounds", vec![(3,3)]),
+            ("This value is out of bounds", vec![(3, 3)]),
             ("One of these values is already taken", vec![(0, 3), (0, 0)]),
         ]);
         assert_ne!(keys[0], None);

@@ -3,156 +3,96 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     ExecutableCommand, Result,
 };
-use n_dit::grid_map::Point;
+use n_dit::grid_map::{GridMap, Point};
 use itertools::Itertools;
-use std::cmp::min;
-use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::io::{stdout, Write};
-use std::ops::AddAssign;
 
 const DRAW_TYPE: DrawType = DrawType::CrossLink2;
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
-// type Point = (usize, usize);
-type PieceRef = usize;
-
-struct Bounds {
-    height: usize,
-    width: usize,
-}
-
 #[derive(PartialEq, Eq)]
 struct Sprite {
     display: String,
+    max_size: usize,
     team: usize,
     moved: bool,
-    head: Point,
+    // actions 
+}
+
+struct Node {
+    grid: GridMap<Piece>
+
+}
+
+
+impl Node {
+
+    fn draw_node() -> Vec<String> {
+        unimplemented!()
+
+    }
+
+    fn padded_number_map(&self) -> Vec<Vec<usize>> {
+        let mut number_map = self.grid.number_map();
+        let empty_row = vec![0; self.grid.height()];
+        number_map.insert(0, empty_row.clone());
+        number_map.push(empty_row);
+        number_map.into_iter().map(|mut col| {
+            col.insert(0,0);
+            col.push(0);
+            col
+        }).collect()
+    }
+
 }
 
 // Represent things in the field
 // Perhaps we change from enum to struct
 enum Piece {
+    AccessPoint,
     Program(Sprite),
     Mon(u32),
 }
 
-// Represents a location in the node
-// PIECE
-enum Square {
-    AccessPoint,
-    Zero,
-    One,
-    Token {
-        piece_index: usize,
-        next: Option<Point>,
-    },
-}
-
-enum Direction {
-    North = 0,
-    East,
-    South,
-    West,
-}
-
-struct Node {
-    pieces: Vec<Piece>,
-    grid: Vec<Vec<Square>>,
-    bounds: Bounds,
-}
-
-struct SpriteIter<'a> {
-    node: &'a Node,
-    point: Option<Point>,
-}
-
-impl<'a> SpriteIter<'a> {
-    fn new(piece_id: PieceRef, node: &'a Node) -> Self {
-        SpriteIter {
-            node,
-            point: node.piece_from_id(piece_id).and_then(|piece| match piece {
-                Piece::Program(sprite) => Some(sprite.head),
-                _ => None,
-            }),
-        }
-    }
-}
-
-impl<'a> Iterator for SpriteIter<'a> {
-    type Item = Point;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let next_pt = self.point?;
-        let sqr = self.node.square(&next_pt);
-        if let Square::Token { next, .. } = sqr {
-            self.point = *next;
-        } else {
-            self.point = None;
-        }
-        Some(next_pt)
-    }
-}
-
-// Concern: If I do copies, that is a lot of data copying going on
-//
-// If I don't, "undo" becomes difficult to figure out.
-// Could I wrap everything in Rc?
-//
-// Rust doesn't have much as far as immutable collections
-//
-
-impl Node {
-    fn add_square(&self, piece_id: PieceRef, square: Point) {}
-
-    fn piece_from_id(&self, piece_id: PieceRef) -> Option<&Piece> {
-        self.pieces.get(piece_id)
-    }
-
-    fn piece_at_point(&self, point: &Point) -> Option<&Piece> {
-        match self.square(point) {
-            Square::Token { piece_index, .. } => self.pieces.get(*piece_index),
-            _ => None,
-        }
-    }
-
-    fn square(&self, (x, y): &Point) -> &Square {
-        &self.grid[*x][*y]
-    }
-
-    fn move_actor(&self, direction: Direction) -> bool {
-        false
-    }
-}
-
-impl Direction {
-    /// Moves point in direction within `bounds`. If the move is out of bounds, returns None.
-    pub fn bump(&self, (x, y): &Point, bounds: &Bounds) -> Option<Point> {
+impl Piece {
+    // Might want to change this to just accept a mutable Write reference to make more effecient.
+    fn render_square(&self, position: usize, configuration: DrawConfiguration) -> String {
         match self {
-            Direction::North => y.checked_sub(1).map(|y| (*x, y)),
-            Direction::East => {
-                if x + 1 == bounds.width {
-                    None
-                } else {
-                    Some((x + 1, *y))
+            Piece::AccessPoint => String::from("&&"),
+            Piece::Mon(_) => String::from("$$"),
+            Piece::Program(sprite) => if position == 0 { 
+                sprite.display.clone()
+            } else { 
+                match configuration.tail_type {
+                    TailType::Brackets => String::from("[]"),
+                    TailType::Sequence => {
+                        format!("{:02}", position)
+                    }
                 }
             }
-            Direction::South => {
-                if y + 1 == bounds.height {
-                    None
-                } else {
-                    Some((*x, y + 1))
-                }
-            }
-            West => x.checked_sub(1).map(|x| (x, *y)),
         }
     }
+
+}
+
+pub struct DrawConfiguration {
+    pub draw_type: DrawType,
+    pub fill_method: FillMethod,
+    pub tail_type: TailType
+}
+
+
+#[derive(PartialEq, Eq)]
+pub enum TailType {
+    Brackets = 0,
+    Sequence = 1,
 }
 
 #[derive(PartialEq, Eq)]
-enum DrawType {
+pub enum DrawType {
     BorderlessLink = 0,
     CrossLink1,
     CrossLink2,
@@ -161,7 +101,7 @@ enum DrawType {
 }
 
 #[derive(PartialEq, Eq)]
-enum FillMethod {
+pub enum FillMethod {
     Brackets = 0,
     NoFill = 1,
     HeadCopy = 2,
