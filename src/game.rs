@@ -46,6 +46,10 @@ impl Node {
         self.grid.put_item(pt, Piece::Program(spr))
     }
 
+    pub fn add_money(&mut self, pt: Point, amount: u32) -> Option<usize> {
+        self.grid.put_item(pt, Piece::Mon(amount))
+    }
+
     // Stubby
     pub fn move_sprite(&mut self, pt: Point, key: usize) -> bool {
         self.grid.push_front(pt, key)

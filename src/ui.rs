@@ -31,6 +31,11 @@ impl Piece {
             Piece::Program(sprite) => {
                 if position == 0 {
                     String::from(sprite.display())
+                } else if false {
+                    // Logic to format the last square differently if position + 1 == max_size and the
+                    // sprite is selected, so that you can tell that moving will not grow the sprite.
+                    String::from("[]")
+
                 } else {
                     match configuration.tail_appearance() {
                         FillMethod::NoFill => String::from("  "),
