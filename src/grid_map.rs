@@ -204,6 +204,27 @@ impl<T> GridMap<T> {
         }
     }
 
+    // Might be used in an optimization of the UI later, but for now we're using point_map
+    pub fn point_vec<F, R>(&self, func: F) -> Vec<(Point, R)>
+        where F: Fn(usize, &T) -> R
+     {
+        let mut vec: Vec<_> = self.items.iter().flat_map(|(key, (item, _))|{
+           let func_ref = &func;
+           self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
+        }).collect();
+        vec.sort_by_cached_key(|(pt, _)| *pt);
+        vec
+    }
+
+    pub fn point_map<F, R>(&self, func: F) -> HashMap<Point, R>
+        where F: Fn(usize, &T) -> R
+     {
+        self.items.iter().flat_map(|(key, (item, _))|{
+           let func_ref = &func;
+           self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
+        }).collect()
+    }
+
     /// Removes an item from the last grid square this item was added to.
     ///
     /// "last" means sequentially (as in closest to the back), not chronologically.
