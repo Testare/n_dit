@@ -1,16 +1,8 @@
 use n_dit::{configuration::DrawConfiguration, game::{Sprite, Node}, grid_map::GridMap, ui::Window};
+use crossterm::{execute, self, event::{Event, MouseEvent, MouseEventKind, KeyEvent, KeyModifiers, KeyCode} };
+use std::io::{stdout, Write};
 
-fn main() {
-    /*
-    let region_map = [
-        &[0, 0, 0, 0, 0, 0, 0, 0, 0][..],
-        &[0, 0, 0, 1, 1, 1, 0, 0, 0][..],
-        &[0, 0, 2, 1, 4, 4, 1, 0, 0][..],
-        &[0, 1, 2, 2, 2, 1, 1, 1, 0][..],
-        &[0, 0, 1, 2, 2, 1, 1, 0, 0][..],
-        &[0, 0, 0, 1, 2, 1, 0, 0, 0][..],
-        &[0, 0, 0, 0, 0, 0, 0, 0, 0][..],
-    ];*/
+fn main() -> crossterm::Result<()> {
     let mut node = Node::from(GridMap::from(vec![
         vec![
             false, false, false, false, false, true, false, false, false, false, false,
@@ -71,8 +63,6 @@ fn main() {
         ],
     ]));
 
-    let guy = Sprite::new("あ");
-
     let guy_key = node.add_sprite((1,6), Sprite::new("あ"));
     node.move_sprite((2,6), guy_key.unwrap());
     node.move_sprite((3,6), guy_key.unwrap());
@@ -85,14 +75,80 @@ fn main() {
     let guy_key = node.add_sprite((3,3), Sprite::new("8]"));
     node.move_sprite((3,4), guy_key.unwrap());
 
-    let guy_key = node.add_sprite((14,6), Sprite::new("<>"));
-
+    node.add_sprite((14,6), Sprite::new("<>"));
+    execute!(stdout(), crossterm::terminal::EnterAlternateScreen,
+    crossterm::terminal::SetTitle("n_dit"),
+    crossterm::event::EnableMouseCapture)?; 
+    crossterm::terminal::enable_raw_mode()?;
     draw('\\', &node, None);
-    draw('/', &node, None);
+    game_loop()?;
+    crossterm::terminal::disable_raw_mode()?;
+    execute!(stdout(),
+        crossterm::terminal::LeaveAlternateScreen,
+        crossterm::event::DisableMouseCapture)?;
+    // draw('/', &node, None);
+
+    Ok(())
+}
+
+fn game_loop() -> crossterm::Result<()> {
+    let mut x = 1;
+    let mut y = 1;
+    let mut action = ' ';
+
+    while action != 'q' {
+        execute!(stdout(), crossterm::cursor::MoveTo(3+3*x,1+2*y))?;
+        let event = crossterm::event::read()?;
+        match event {
+            Event::Key(KeyEvent {code, modifiers}) => {
+                let speed = if modifiers.contains(KeyModifiers::CONTROL) {
+                    2
+                } else { 1 };
+                match code { 
+                    KeyCode::Char('h') => if x >= speed {
+                        x -= speed;
+                    }
+                    KeyCode::Char('k') => if y >= speed {
+                        y -= speed;
+                    }
+                    KeyCode::Char('j') => if y < 15 {
+                        y += speed;
+                    }
+                    KeyCode::Char('l') => if x < 70 {
+                        x += speed;
+                    }
+                    KeyCode::Char('-') => {
+                        panic!("Last action was {:?}", action);
+                    }
+                    KeyCode::Char(char_) => {
+                        action = char_;
+                    }
+                    _ => {
+                    }
+                }
+            },
+            Event::Mouse(MouseEvent { kind, column, row, modifiers:_ }) => {
+                if let MouseEventKind::Down(_) = kind {
+                    if column > 2 {
+                        x = (column - 2) /3;
+                        y = row/2;
+                    }
+                }
+            }
+            Event::Resize(_w, _h) => {
+            }
+        }
+
+        // Draw
+
+    }
+    // println!("{:?}", k);
+    Ok(())
 }
 
 fn draw(border: char, node: &Node, window: Option<Window>) {
     for row in node.draw_node(window, &DrawConfiguration::default()) {
-        println!("{0} {1} {0}", border, row);
+        write!(stdout(), "{0} {1} {0}\n", border, row);
+        execute!(stdout(), crossterm::cursor::MoveToColumn(0));
     }
 }
