@@ -4,6 +4,9 @@ use itertools::Itertools;
 use std::cmp;
 use std::num::NonZeroUsize;
 
+pub mod layout;
+
+#[derive(Clone, Copy)]
 pub struct Window {
     scroll_x: usize,
     scroll_y: usize,

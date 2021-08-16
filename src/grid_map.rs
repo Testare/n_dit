@@ -3,11 +3,11 @@ use std::{iter::Rev, vec::IntoIter};
 
 // Potential future developments:
 // * removing squares from the middle of an Item
-// ^ Forcibly adding a square to an item, removing squares from other items and opening closed
+// ^ Forcibly adding a square to an item, removing squares from other entries and opening closed
 // squares if necessary
 // * modify put_item, push_front, and push_back to take a point OR iterator of points.
-// * take_items to remove multiple items.
-// * put_items variant that doesn't add anything if any items are invalid
+// * take_entries to remove multiple entries.
+// * put_entries variant that doesn't add anything if any entries are invalid
 // * size() -> occupied squares, capacity() -> free squares
 // * a visual map that indicates square order (Perhaps as a tuple of (item_key, order)?
 // * ability to adjust GridMap size.
@@ -37,7 +37,7 @@ pub struct GridMap<T> {
     width: usize,
     height: usize,
     next_id: usize,
-    items: HashMap<usize, (T, Point)>,
+    entries: HashMap<usize, (T, Point)>,
     grid: Vec<Vec<Option<Square>>>, // None = closed. No grid to be. At no point should a square be inserted here from outside
 }
 
@@ -125,7 +125,7 @@ impl<T> GridMap<T> {
 
     /// Returns the front point where the given item is in the grid
     pub fn head(&self, item_key: usize) -> Option<Point> {
-        self.items.get(&item_key).map(|(_, head)| *head)
+        self.entries.get(&item_key).map(|(_, head)| *head)
     }
 
     /// Returns the height of the map
@@ -138,7 +138,7 @@ impl<T> GridMap<T> {
     /// Input could be an item_key (usize), an optional item_key (Optional<usize>),
     /// a Square, or anything else that converts into Optional<usize>
     pub fn item<K: Into<Option<usize>>>(&self, item_key: K) -> Option<&T> {
-        self.items.get(&item_key.into()?).map(|(item, _)| item)
+        self.entries.get(&item_key.into()?).map(|(item, _)| item)
     }
 
     /// Returns a reference to the item at the given point
@@ -146,18 +146,18 @@ impl<T> GridMap<T> {
         self.item(self.square_ref(pt)?.item_key()?)
     }
 
-    /// Returns a [`Vec<&T>`] of all items contained in the grid.
+    /// Returns a [`Vec<&T>`] of all entries contained in the grid.
     ///
     /// There is no guarantee to order.
-    pub fn items<'a>(&'a self) -> Vec<&'a T> {
-        // self.items.values().map(|(item, _)|&item)
-        self.items.values().map(|(item, _)| item).collect()
+    pub fn entries<'a>(&'a self) -> Vec<&'a T> {
+        // self.entries.values().map(|(item, _)|&item)
+        self.entries.values().map(|(item, _)| item).collect()
     }
 
-    /// Returns the number of items currently stored in the grid. Unrelated to the dimensions of
+    /// Returns the number of entries currently stored in the grid. Unrelated to the dimensions of
     /// the grid or the amount of square each item takes.
     pub fn len(&self) -> usize {
-        self.items.len()
+        self.entries.len()
     }
 
     /// Creates a new grid map of certain dimensions. By default all squares will be closed,
@@ -168,7 +168,7 @@ impl<T> GridMap<T> {
 
         GridMap {
             height,
-            items: HashMap::new(),
+            entries: HashMap::new(),
             next_id: 2, // 0-1 have special meaning in region maps
             grid,
             width,
@@ -179,7 +179,7 @@ impl<T> GridMap<T> {
     /// squares, and item_keys for their respective squares.
     ///
     /// This map does not indicate what order the squares are in, and so could
-    /// not be used to reconstruct a GridMap even if a list of items is provided.
+    /// not be used to reconstruct a GridMap even if a list of entries is provided.
     ///
     /// Each internal [`Vec<usize>`] represents a column so that the returned result can be
     /// indexed like `number_map[x][y]`.
@@ -208,7 +208,7 @@ impl<T> GridMap<T> {
     pub fn point_vec<F, R>(&self, func: F) -> Vec<(Point, R)>
         where F: Fn(usize, &T) -> R
      {
-        let mut vec: Vec<_> = self.items.iter().flat_map(|(key, (item, _))|{
+        let mut vec: Vec<_> = self.entries.iter().flat_map(|(key, (item, _))|{
            let func_ref = &func;
            self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
         }).collect();
@@ -219,7 +219,7 @@ impl<T> GridMap<T> {
     pub fn point_map<F, R>(&self, func: F) -> HashMap<Point, R>
         where F: Fn(usize, &T) -> R
      {
-        self.items.iter().flat_map(|(key, (item, _))|{
+        self.entries.iter().flat_map(|(key, (item, _))|{
            let func_ref = &func;
            self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
         }).collect()
@@ -249,7 +249,7 @@ impl<T> GridMap<T> {
             }
             (None, Some(only_pt)) => {
                 self.square_mut(only_pt)?.set_item_key(None);
-                self.items.remove(&item_key).map(|(item, _)| item)
+                self.entries.remove(&item_key).map(|(item, _)| item)
             }
             (None, None) => None, // There are no points here, should we panic?
             _ => panic!("Programmer error, this should not be possible"),
@@ -276,7 +276,7 @@ impl<T> GridMap<T> {
                 sqr.clear();
             }
         }
-        self.items.remove(&item_key).map(|(item, _)| item)
+        self.entries.remove(&item_key).map(|(item, _)| item)
     }
 
     /// Removes an item from the first grid square this item was added to.
@@ -290,15 +290,15 @@ impl<T> GridMap<T> {
     ///
     /// If item_key is invalid, will return None as well.
     pub fn pop_front(&mut self, item_key: usize) -> Option<T> {
-        let front = self.items.get(&item_key)?.1;
+        let front = self.entries.get(&item_key)?.1;
         let square = self.square_mut(front)?;
         let next = square.next();
         square.clear();
 
         match next {
-            None => self.items.remove(&item_key).map(|(item, _)| item),
+            None => self.entries.remove(&item_key).map(|(item, _)| item),
             Some(next_front) => {
-                self.items.get_mut(&item_key).unwrap().1 = next_front;
+                self.entries.get_mut(&item_key).unwrap().1 = next_front;
                 None
             }
         }
@@ -329,16 +329,16 @@ impl<T> GridMap<T> {
                 });
         match head {
             Some(pt) => {
-                self.items.get_mut(&item_key).unwrap().1 = pt;
+                self.entries.get_mut(&item_key).unwrap().1 = pt;
                 None
             }
-            None => self.items.remove(&item_key).map(|(item, _)| item),
+            None => self.entries.remove(&item_key).map(|(item, _)| item),
         }
     }
 
     /// Adds a grid square for an item already in the [`GridMap`] at the back.
     ///
-    /// For adding new items to the GridMap, see [`put_item`](Self::put_item).
+    /// For adding new entries to the GridMap, see [`put_item`](Self::put_item).
     ///
     /// Returns true if successful, returns false if the item_key doesn't
     /// correspond to an item or the square isn't free (It is closed or already
@@ -360,7 +360,7 @@ impl<T> GridMap<T> {
 
     /// Adds a grid square for an item already in the [`GridMap`] at the front.
     ///
-    /// For adding new items to the GridMap, see [`put_item`](Self::put_item). 
+    /// For adding new entries to the GridMap, see [`put_item`](Self::put_item). 
     /// 
     /// If the square is already part of item in the grid map, it is moved to the front.
     ///
@@ -368,11 +368,11 @@ impl<T> GridMap<T> {
     /// correspond to an item, or the square isn't free (It is closed or already
     /// occupied by another item)
     pub fn push_front(&mut self, pt: Point, item_key: usize) -> bool {
-        if self.items.get(&item_key).map(|(_, head)|*head) == Some(pt) {
+        if self.entries.get(&item_key).map(|(_, head)|*head) == Some(pt) {
             // No operation necessary, this is already at the head
             true
         } else if self.square_is_free(pt) {
-            if let Some(item_tuple) = self.items.get_mut(&item_key) {
+            if let Some(item_tuple) = self.entries.get_mut(&item_key) {
                 let last_pt = item_tuple.1.clone();
                 item_tuple.1 = pt;
                 let dest = self
@@ -388,7 +388,7 @@ impl<T> GridMap<T> {
             // Logic in here can be replaced with a call to `remove` if we ever have a case to implement this function, then moving
             // the above logic block to a private function and calling it there and here.
 
-            let old_head = self.items.get(&item_key).unwrap().1;
+            let old_head = self.entries.get(&item_key).unwrap().1;
             // ^ Unwrapping: Must trust all item_keys in a square. In the future, we might try branding the item_keys.
             let mut sqr_iter = self.square_iter_mut(item_key);
             let prev_sqr = sqr_iter.find(|sqr| sqr.next() == Some(pt)).unwrap(); 
@@ -397,7 +397,7 @@ impl<T> GridMap<T> {
             // ^ Unwrapping because it must exist since the previous item had a next specified in order to return.
             prev_sqr.set_next(new_head.next());
             new_head.set_next(old_head);
-            self.items.get_mut(&item_key).unwrap().1 = pt;
+            self.entries.get_mut(&item_key).unwrap().1 = pt;
             // ^ Unwrapping: Must trust all item_keys in a square. In the future, we might try branding the item_keys.
             true
         } else {
@@ -405,7 +405,7 @@ impl<T> GridMap<T> {
         }
     }
 
-    /// Adds a new items to the GridMap. Takes the point in the grid to add the item to, and the
+    /// Adds a new entries to the GridMap. Takes the point in the grid to add the item to, and the
     /// Item to be added.
     ///
     /// Returns
@@ -415,7 +415,7 @@ impl<T> GridMap<T> {
             if square.item == None {
                 square.item = Some(id);
                 self.next_id += 1;
-                self.items.insert(id, (item, pt));
+                self.entries.insert(id, (item, pt));
                 Some(id)
             } else {
                 None
@@ -425,24 +425,24 @@ impl<T> GridMap<T> {
         }
     }
 
-    /// Adds many items to the GridMap. Takes an iterable of tuples of (T, Points) where Points
+    /// Adds many entries to the GridMap. Takes an iterable of tuples of (T, Points) where Points
     /// is an iterable of [`Point`].
     ///
     /// The first item in the iterable of points will be the head, with the rest following in
     /// order.
     ///
     /// If any square is, closed, occupied, or out of bounds, and we try and add an item to it, that item is not
-    /// added to the GridMap on any of the squares. Other items will still be added though, as long
+    /// added to the GridMap on any of the squares. Other entries will still be added though, as long
     /// as they are themselves valid.
     ///
     /// Return a Vec with the item_keys of successful additions. These should be in the same order
-    /// as the iterator passed to `put_items`. If the item was not added successfully, there will
+    /// as the iterator passed to `put_entries`. If the item was not added successfully, there will
     /// be a [`None`] in its spot.
-    pub fn put_items<P: IntoIterator<Item = Point>, I: IntoIterator<Item = (T, P)>>(
+    pub fn put_entries<P: IntoIterator<Item = Point>, I: IntoIterator<Item = (T, P)>>(
         &mut self,
-        items_with_points: I,
+        entries_with_points: I,
     ) -> Vec<Option<usize>> {
-        items_with_points
+        entries_with_points
             .into_iter()
             .map(|(item, pts)| {
                 let pt_vec: Vec<_> = pts.into_iter().collect();
@@ -504,7 +504,7 @@ impl<T> GridMap<T> {
     pub fn square_iter<'a>(&'a self, item_key: usize) -> SquareIter<'a, T> {
         SquareIter {
             map: self,
-            next: self.items.get(&item_key).map(|(_, pt)| *pt),
+            next: self.entries.get(&item_key).map(|(_, pt)| *pt),
         }
     }
 
@@ -522,7 +522,7 @@ impl<T> GridMap<T> {
         for sqr in self.square_iter_mut(item_key) {
             sqr.clear();
         }
-        self.items.remove(&item_key).map(|(item, _)| item)
+        self.entries.remove(&item_key).map(|(item, _)| item)
     }
     // HELPER FUNCTIONS
 
@@ -547,7 +547,7 @@ impl<T> GridMap<T> {
     /// Not made public since we don't want squares to mutably accessible outside of grid map
     /// to avoid invalid states.
     fn square_iter_mut<'a>(&'a mut self, item_key: usize) -> SquareIterMut<'a, T> {
-        let next = self.items.get(&item_key).map(|(_, pt)| *pt);
+        let next = self.entries.get(&item_key).map(|(_, pt)| *pt);
 
         SquareIterMut { map: self, next }
     }
@@ -599,7 +599,7 @@ impl<T> From<Vec<Vec<bool>>> for GridMap<T> {
 
         GridMap {
             height,
-            items: HashMap::new(),
+            entries: HashMap::new(),
             next_id: 2,
             grid,
             width,
@@ -1026,12 +1026,12 @@ mod test {
     }
 
     #[test]
-    fn put_items() {
+    fn put_entries() {
         let mut map = open_vertical_map(7);
         let test_value_1 = "Item 2";
         let test_value_2 = "Item 3";
 
-        let keys = map.put_items(vec![
+        let keys = map.put_entries(vec![
             (TEST_VALUE, vec![(0, 0), (0, 1), (0, 2)]),
             (test_value_1, vec![(0, 6)]),
             (test_value_2, vec![(0, 5), (0, 4)]),
