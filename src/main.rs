@@ -1,6 +1,7 @@
 use n_dit::{configuration::DrawConfiguration, game::{Sprite, Node}, grid_map::GridMap, ui::Window};
 use crossterm::{execute, self, event::{Event, MouseEvent, MouseEventKind, KeyEvent, KeyModifiers, KeyCode} };
 use std::io::{stdout, Write};
+use n_dit::ui::layout::NodeLayout;
 
 fn main() -> crossterm::Result<()> {
     let mut node = Node::from(GridMap::from(vec![
@@ -63,6 +64,8 @@ fn main() -> crossterm::Result<()> {
         ],
     ]));
 
+    let layout = NodeLayout::default();
+
     let guy_key = node.add_sprite((1,6), Sprite::new("あ"));
     node.move_sprite((2,6), guy_key.unwrap());
     node.move_sprite((3,6), guy_key.unwrap());
@@ -80,7 +83,8 @@ fn main() -> crossterm::Result<()> {
     crossterm::terminal::SetTitle("n_dit"),
     crossterm::event::EnableMouseCapture)?; 
     crossterm::terminal::enable_raw_mode()?;
-    draw('\\', &node, None);
+    // draw('\\', &node, None);
+    layout.draw_layout(&node, &DrawConfiguration::default());
     game_loop()?;
     crossterm::terminal::disable_raw_mode()?;
     execute!(stdout(),

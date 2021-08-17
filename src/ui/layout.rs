@@ -16,12 +16,12 @@ enum WorldLayout {
 }
 
 #[derive(Clone, Copy)]
-enum NodeLayout {
+pub enum NodeLayout {
     Standard(StandardNodeLayout)
 }
 
 #[derive(Clone, Copy)]
-struct StandardNodeLayout {
+pub struct StandardNodeLayout {
     master_width: NonZeroUsize,
     master_height: NonZeroUsize,
     window: Window,
@@ -46,17 +46,20 @@ impl NodeLayout {
         (13 + 3*x, 1 + 2*y)
     }
 
-    fn draw_layout(&self, node: &Node, draw_config: &DrawConfiguration) {
+    pub fn draw_layout(&self, node: &Node, draw_config: &DrawConfiguration) {
         let border = '\\';
         if let NodeLayout::Standard(StandardNodeLayout { window, .. }) = self {
-
+            // write!(stdout(), "{0}          {0} {1} {0}\n", border, row);
+            // execute!(stdout(), crossterm::cursor::MoveToColumn(0));
+            write!(stdout(), "/////////////////////////////////////////////////////\n");
+            execute!(stdout(), crossterm::cursor::MoveToColumn(0));
+            write!(stdout(), "/////////////////////////////////////////////////////\n");
+            execute!(stdout(), crossterm::cursor::MoveToColumn(0));
             for row in node.draw_node(Some(*window), draw_config) {
-                write!(stdout(), "{0}          {0} {1} {0}\n", border, row);
+                write!(stdout(), "{0}           {0} {1} {0}\n", border, row);
                 execute!(stdout(), crossterm::cursor::MoveToColumn(0));
             }
-        } else {
-
-        }
+        } 
     }
 
 }
