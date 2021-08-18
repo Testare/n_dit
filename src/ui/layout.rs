@@ -1,7 +1,7 @@
 use crossterm::{execute, terminal};
 use super::Window;
 use super::super::configuration::DrawConfiguration;
-use super::super::grid_map::Point;
+use super::super::Point;
 use super::super::game::Node;
 use std::num::NonZeroUsize;
 use std::io::{stdout, Write};
@@ -25,6 +25,12 @@ pub struct StandardNodeLayout {
     master_width: NonZeroUsize,
     master_height: NonZeroUsize,
     window: Window,
+}
+
+enum LayoutElem {
+    CloseButton,
+    ActionMenu(usize, usize),
+    NodeMap(usize, usize)
 }
 
 

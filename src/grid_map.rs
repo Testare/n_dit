@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::{iter::Rev, vec::IntoIter};
+use super::Point;
 
 // Potential future developments:
 // * removing squares from the middle of an Item
@@ -15,7 +16,6 @@ use std::{iter::Rev, vec::IntoIter};
 // * push_back logic to match push_front logic when the square is already occupied by the item.
 
 /// Represents a point of space that may contain a square.
-pub type Point = (usize, usize);
 
 /// Internal representation of available space. Contains:
 /// * A reference to its location on the map

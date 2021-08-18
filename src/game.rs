@@ -1,7 +1,24 @@
-use super::grid_map::{GridMap, Point};
+use super::{GridMap, Point, configuration::DrawConfiguration};
 
+
+pub struct SuperState {
+    terminal_size: (usize, usize),
+    game_state: GameState,
+    draw_config: DrawConfiguration
+}
+
+pub struct GameState {
+    world_map: WorldMap,
+    node: Option<Node>,
+}
+
+// UNIMPLEMENTED
+pub struct WorldMap {
+    nodes: usize 
+}
 pub struct Node {
     grid: GridMap<Piece>,
+    name: String,
 }
 
 // Represent things in the field
@@ -59,6 +76,12 @@ impl Node {
 
 impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
-        Node { grid }
+        Node { name: String::from("Node"), grid }
+    }
+}
+
+impl From<(String, GridMap<Piece>)> for Node {
+    fn from((name, grid): (String, GridMap<Piece>)) -> Self {
+        Node { name, grid }
     }
 }
