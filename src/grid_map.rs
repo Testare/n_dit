@@ -12,7 +12,7 @@ use std::{iter::Rev, vec::IntoIter};
 // * a visual map that indicates square order (Perhaps as a tuple of (item_key, order)?
 // * ability to adjust GridMap size.
 // * moves direction from head (move/grow)
-// * Reorder squares (bring square to front) [Such as when a program moves over itself, the square becomes the new head]
+// * push_back logic to match push_front logic when the square is already occupied by the item.
 
 /// Represents a point of space that may contain a square.
 pub type Point = (usize, usize);
@@ -360,13 +360,18 @@ impl<T> GridMap<T> {
 
     /// Adds a grid square for an item already in the [`GridMap`] at the front.
     ///
-    /// For adding new items to the GridMap, see [`put_item`](Self::put_item).
+    /// For adding new items to the GridMap, see [`put_item`](Self::put_item). 
+    /// 
+    /// If the square is already part of item in the grid map, it is moved to the front.
     ///
     /// Returns true if successful, returns false if the item_key doesn't
     /// correspond to an item, or the square isn't free (It is closed or already
-    /// occupied)
+    /// occupied by another item)
     pub fn push_front(&mut self, pt: Point, item_key: usize) -> bool {
-        if self.square_is_free(pt) {
+        if self.items.get(&item_key).map(|(_, head)|*head) == Some(pt) {
+            // No operation necessary, this is already at the head
+            true
+        } else if self.square_is_free(pt) {
             if let Some(item_tuple) = self.items.get_mut(&item_key) {
                 let last_pt = item_tuple.1.clone();
                 item_tuple.1 = pt;
@@ -375,7 +380,25 @@ impl<T> GridMap<T> {
                     .expect("self.square_is_free should mean that this square exists");
                 dest.item = Some(item_key);
                 dest.next = Some(last_pt);
+                true
+            } else {
+                false // TODO test case
             }
+        } else if self.square_ref(pt).and_then(Square::item_key) == Some(item_key) {
+            // Logic in here can be replaced with a call to `remove` if we ever have a case to implement this function, then moving
+            // the above logic block to a private function and calling it there and here.
+
+            let old_head = self.items.get(&item_key).unwrap().1;
+            // ^ Unwrapping: Must trust all item_keys in a square. In the future, we might try branding the item_keys.
+            let mut sqr_iter = self.square_iter_mut(item_key);
+            let prev_sqr = sqr_iter.find(|sqr| sqr.next() == Some(pt)).unwrap(); 
+            // ^ Unwrapping. If no square pointed to this square it would either be the head or would not be pointing to this item.
+            let new_head = sqr_iter.next().unwrap();
+            // ^ Unwrapping because it must exist since the previous item had a next specified in order to return.
+            prev_sqr.set_next(new_head.next());
+            new_head.set_next(old_head);
+            self.items.get_mut(&item_key).unwrap().1 = pt;
+            // ^ Unwrapping: Must trust all item_keys in a square. In the future, we might try branding the item_keys.
             true
         } else {
             false
@@ -792,7 +815,7 @@ mod test {
 
     #[test]
     fn push_front() {
-        let mut map = open_vertical_map(2);
+        let mut map = open_vertical_map(3);
 
         let key = map.put_item((0, 0), String::from("Point A"));
         assert_ne!(
@@ -805,6 +828,26 @@ mod test {
         assert_head(&map, key.unwrap(), (0, 1));
         assert_square_eq(&map, (0, 0), key, None);
         assert_square_eq(&map, (0, 1), key, Some((0, 0)));
+        assert_square_eq(&map, (0, 2), None, None);
+        assert_eq!(map.len(), 1);
+
+        // Pushing an item already in it moves it back
+        map.push_front((0, 2), key.unwrap());
+        map.push_front((0, 0), key.unwrap());
+
+        assert_head(&map, key.unwrap(), (0, 0));
+        assert_square_eq(&map, (0, 0), key, Some((0, 2)));
+        assert_square_eq(&map, (0, 1), key, None);
+        assert_square_eq(&map, (0, 2), key, Some((0, 1)));
+        assert_eq!(map.len(), 1);
+
+        // Pushing the head doesn't break it
+        map.push_front((0, 0), key.unwrap());
+
+        assert_head(&map, key.unwrap(), (0, 0));
+        assert_square_eq(&map, (0, 0), key, Some((0, 2)));
+        assert_square_eq(&map, (0, 1), key, None);
+        assert_square_eq(&map, (0, 2), key, Some((0, 1)));
         assert_eq!(map.len(), 1);
     }
 
