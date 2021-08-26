@@ -1,6 +1,6 @@
+use super::Point;
 use std::collections::HashMap;
 use std::{iter::Rev, vec::IntoIter};
-use super::Point;
 
 // Potential future developments:
 // * removing squares from the middle of an Item
@@ -206,23 +206,36 @@ impl<T> GridMap<T> {
 
     // Might be used in an optimization of the UI later, but for now we're using point_map
     pub fn point_vec<F, R>(&self, func: F) -> Vec<(Point, R)>
-        where F: Fn(usize, &T) -> R
-     {
-        let mut vec: Vec<_> = self.entries.iter().flat_map(|(key, (item, _))|{
-           let func_ref = &func;
-           self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
-        }).collect();
+    where
+        F: Fn(usize, &T) -> R,
+    {
+        let mut vec: Vec<_> = self
+            .entries
+            .iter()
+            .flat_map(|(key, (item, _))| {
+                let func_ref = &func;
+                self.square_iter(*key)
+                    .enumerate()
+                    .map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
+            })
+            .collect();
         vec.sort_by_cached_key(|(pt, _)| *pt);
         vec
     }
 
     pub fn point_map<F, R>(&self, func: F) -> HashMap<Point, R>
-        where F: Fn(usize, &T) -> R
-     {
-        self.entries.iter().flat_map(|(key, (item, _))|{
-           let func_ref = &func;
-           self.square_iter(*key).enumerate().map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
-        }).collect()
+    where
+        F: Fn(usize, &T) -> R,
+    {
+        self.entries
+            .iter()
+            .flat_map(|(key, (item, _))| {
+                let func_ref = &func;
+                self.square_iter(*key)
+                    .enumerate()
+                    .map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
+            })
+            .collect()
     }
 
     /// Removes an item from the last grid square this item was added to.
@@ -360,15 +373,15 @@ impl<T> GridMap<T> {
 
     /// Adds a grid square for an item already in the [`GridMap`] at the front.
     ///
-    /// For adding new entries to the GridMap, see [`put_item`](Self::put_item). 
-    /// 
+    /// For adding new entries to the GridMap, see [`put_item`](Self::put_item).
+    ///
     /// If the square is already part of item in the grid map, it is moved to the front.
     ///
     /// Returns true if successful, returns false if the item_key doesn't
     /// correspond to an item, or the square isn't free (It is closed or already
     /// occupied by another item)
     pub fn push_front(&mut self, pt: Point, item_key: usize) -> bool {
-        if self.entries.get(&item_key).map(|(_, head)|*head) == Some(pt) {
+        if self.entries.get(&item_key).map(|(_, head)| *head) == Some(pt) {
             // No operation necessary, this is already at the head
             true
         } else if self.square_is_free(pt) {
@@ -391,7 +404,7 @@ impl<T> GridMap<T> {
             let old_head = self.entries.get(&item_key).unwrap().1;
             // ^ Unwrapping: Must trust all item_keys in a square. In the future, we might try branding the item_keys.
             let mut sqr_iter = self.square_iter_mut(item_key);
-            let prev_sqr = sqr_iter.find(|sqr| sqr.next() == Some(pt)).unwrap(); 
+            let prev_sqr = sqr_iter.find(|sqr| sqr.next() == Some(pt)).unwrap();
             // ^ Unwrapping. If no square pointed to this square it would either be the head or would not be pointing to this item.
             let new_head = sqr_iter.next().unwrap();
             // ^ Unwrapping because it must exist since the previous item had a next specified in order to return.

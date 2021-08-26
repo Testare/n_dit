@@ -1,13 +1,13 @@
 pub type Point = (usize, usize);
 
-// TODO use this 
+// TODO use this
 pub struct Bounds(usize, usize);
 
 pub enum Direction {
     North,
     East,
     South,
-    West
+    West,
 }
 
 impl Direction {
@@ -42,7 +42,6 @@ impl Direction {
                 }
             }
         }
-
     }
 }
 
@@ -52,11 +51,10 @@ impl Bounds {
     }
 
     pub fn width(&self) -> usize {
-        self.0 
+        self.0
     }
 
-    pub fn height(&self) -> usize { 
+    pub fn height(&self) -> usize {
         self.1
     }
-
 }

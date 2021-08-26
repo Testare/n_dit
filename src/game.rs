@@ -1,6 +1,5 @@
-use super::{Bounds, GridMap, Point};
 use super::ui::UiState;
-
+use super::{Bounds, GridMap, Point};
 
 pub struct SuperState {
     pub ui: UiState,
@@ -14,7 +13,7 @@ pub struct GameState {
 
 // TODO implement
 pub struct WorldMap {
-    nodes: usize 
+    nodes: usize,
 }
 
 pub struct Node {
@@ -41,14 +40,13 @@ pub struct Sprite {
 }
 
 impl Sprite {
-
     pub fn new(display: &str) -> Sprite {
         Sprite {
             display: String::from(display),
             name: String::from("George"),
             max_size: 3,
             moved: false,
-            team: 0
+            team: 0,
         }
     }
     pub fn display(&self) -> &str {
@@ -102,23 +100,24 @@ impl Node {
     pub fn piece_at(&self, pt: Point) -> Option<&Piece> {
         self.grid.item_at(pt)
     }
-
 }
 
 impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
-        Node { name: String::from("Node"), grid}
+        Node {
+            name: String::from("Node"),
+            grid,
+        }
     }
 }
 
 impl From<(String, GridMap<Piece>)> for Node {
     fn from((name, grid): (String, GridMap<Piece>)) -> Self {
-        Node { name, grid}
+        Node { name, grid }
     }
 }
 
 impl GameState {
-
     pub fn node(&self) -> Option<&Node> {
         self.node.as_ref()
     }
@@ -126,20 +125,16 @@ impl GameState {
     pub fn from(node: Option<Node>) -> Self {
         GameState {
             node,
-            world_map: WorldMap {
-                nodes: 1
-            }
+            world_map: WorldMap { nodes: 1 },
         }
     }
-
 }
 
 impl SuperState {
-
     pub fn from(node: Option<Node>) -> Self {
         SuperState {
             game: GameState::from(node),
-            ui: UiState::default() 
+            ui: UiState::default(),
         }
     }
 }

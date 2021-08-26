@@ -1,10 +1,10 @@
 use super::configuration::{DrawConfiguration, DrawType, FillMethod};
 use super::game::{Node, Piece};
 use super::{Direction, Point};
+use crossterm::style::Stylize;
 use itertools::Itertools;
 use std::cmp;
 use std::num::NonZeroUsize;
-use crossterm::style::Stylize;
 
 pub mod layout;
 
@@ -12,11 +12,10 @@ pub struct UiState {
     draw_config: DrawConfiguration,
     terminal_size: (usize, usize),
     selected_square: Point,
-    selected_action_index: Option<usize>
+    selected_action_index: Option<usize>,
 }
 
 impl UiState {
-
     pub fn draw_config(&self) -> &DrawConfiguration {
         &self.draw_config
     }
@@ -30,8 +29,7 @@ impl UiState {
     }
 
     pub fn move_selected_square(&mut self, direction: Direction, node: &Node, speed: usize) {
-        self.selected_square = direction.add_to_point(self.selected_square, speed, node.bounds() )
-
+        self.selected_square = direction.add_to_point(self.selected_square, speed, node.bounds())
     }
 }
 
@@ -67,7 +65,6 @@ impl Piece {
                     // Logic to format the last square differently if position + 1 == max_size and the
                     // sprite is selected, so that you can tell that moving will not grow the sprite.
                     String::from("[]")
-
                 } else {
                     match configuration.tail_appearance() {
                         FillMethod::NoFill => String::from("  "),
@@ -149,7 +146,6 @@ impl Node {
         let skip_y = bounds.scroll_y % 2;
         let keep_last_space = skip_y + bounds.height.get() % 2 == 0;
 
-
         let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
             .map(|y| {
                 let mut border_line = String::with_capacity(str_width);
@@ -207,7 +203,8 @@ impl Node {
                                     );
                                 }
                                 if include_space {
-                                    let square = piece_map.get(&(x,y)).map(String::as_ref).unwrap_or("  ");
+                                    let square =
+                                        piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                                     if square.chars().count() == 1 {
                                         space_line.push(draw_config.half_char());
                                     } else {
@@ -227,7 +224,7 @@ impl Node {
                         );
                     }
                     if include_space {
-                        let square = piece_map.get(&(x,y)).map(String::as_ref).unwrap_or("  ");
+                        let square = piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                         space_line.push_str(square);
                         if x == x_start && skip_x == 2 && square.chars().count() == 1 {
                             // To keep the grid aligned in the event of a double-width character.
@@ -296,12 +293,13 @@ impl Window {
 impl Default for UiState {
     fn default() -> Self {
         // TODO This should be more safe, probably not an actual trait for UiState
-        let (t_width, t_height) = crossterm::terminal::size().expect("Problem getting terminal size");
+        let (t_width, t_height) =
+            crossterm::terminal::size().expect("Problem getting terminal size");
         UiState {
             selected_square: (0, 0),
             selected_action_index: None,
             draw_config: DrawConfiguration::default(),
-            terminal_size: (t_width.into(), t_height.into())
+            terminal_size: (t_width.into(), t_height.into()),
         }
     }
 }
