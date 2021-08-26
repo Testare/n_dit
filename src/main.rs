@@ -1,7 +1,8 @@
-use n_dit::{configuration::DrawConfiguration, game::{Sprite, Node}, grid_map::GridMap, ui::Window};
+use n_dit::{configuration::DrawConfiguration, Direction, game::{Sprite, Node}, grid_map::GridMap};
 use crossterm::{execute, self, event::{Event, MouseEvent, MouseEventKind, KeyEvent, KeyModifiers, KeyCode} };
-use std::io::{stdout, Write};
+use std::io::{stdout};
 use n_dit::ui::layout::NodeLayout;
+use n_dit::game::{SuperState, Piece};
 
 fn main() -> crossterm::Result<()> {
     let mut node = Node::from(GridMap::from(vec![
@@ -79,13 +80,17 @@ fn main() -> crossterm::Result<()> {
     node.move_sprite((3,4), guy_key.unwrap());
 
     node.add_sprite((14,6), Sprite::new("<>"));
+    node.add_piece((6, 1), Piece::Mon(500));
+    node.add_piece((6, 2), Piece::AccessPoint);
+    let state = SuperState::from(Some(node));
     execute!(stdout(), crossterm::terminal::EnterAlternateScreen,
     crossterm::terminal::SetTitle("n_dit"),
     crossterm::event::EnableMouseCapture)?; 
     crossterm::terminal::enable_raw_mode()?;
     // draw('\\', &node, None);
-    layout.draw_layout(&node, &DrawConfiguration::default());
-    game_loop()?;
+    // layout.draw_layout(&node, &DrawConfiguration::default())?;
+    layout.render(&state)?;
+    game_loop(state)?;
     crossterm::terminal::disable_raw_mode()?;
     execute!(stdout(),
         crossterm::terminal::LeaveAlternateScreen,
@@ -95,13 +100,12 @@ fn main() -> crossterm::Result<()> {
     Ok(())
 }
 
-fn game_loop() -> crossterm::Result<()> {
-    let mut x = 1;
-    let mut y = 1;
+fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut action = ' ';
+    let layout = NodeLayout::default();
 
     while action != 'q' {
-        execute!(stdout(), crossterm::cursor::MoveTo(3+3*x,1+2*y))?;
+        // execute!(stdout(), crossterm::cursor::MoveTo(11+3*x,4+2*y))?;
         let event = crossterm::event::read()?;
         match event {
             Event::Key(KeyEvent {code, modifiers}) => {
@@ -109,18 +113,10 @@ fn game_loop() -> crossterm::Result<()> {
                     2
                 } else { 1 };
                 match code { 
-                    KeyCode::Char('h') => if x >= speed {
-                        x -= speed;
-                    }
-                    KeyCode::Char('k') => if y >= speed {
-                        y -= speed;
-                    }
-                    KeyCode::Char('j') => if y < 15 {
-                        y += speed;
-                    }
-                    KeyCode::Char('l') => if x < 70 {
-                        x += speed;
-                    }
+                    KeyCode::Char('h') => state.ui.move_selected_square(Direction::West, state.game.node().expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"), speed),
+                    KeyCode::Char('k') => state.ui.move_selected_square(Direction::North, state.game.node().expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"), speed),
+                    KeyCode::Char('j') => state.ui.move_selected_square(Direction::South, state.game.node().expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"), speed),
+                    KeyCode::Char('l') => state.ui.move_selected_square(Direction::East, state.game.node().expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"), speed),
                     KeyCode::Char('-') => {
                         panic!("Last action was {:?}", action);
                     }
@@ -133,26 +129,21 @@ fn game_loop() -> crossterm::Result<()> {
             },
             Event::Mouse(MouseEvent { kind, column, row, modifiers:_ }) => {
                 if let MouseEventKind::Down(_) = kind {
-                    if column > 2 {
+                    /*if column > 2 {
                         x = (column - 2) /3;
                         y = row/2;
-                    }
+                    }*/
+                    // TODO square click
                 }
             }
             Event::Resize(_w, _h) => {
             }
         }
 
+        layout.render(&state)?;
         // Draw
 
     }
     // println!("{:?}", k);
     Ok(())
-}
-
-fn draw(border: char, node: &Node, window: Option<Window>) {
-    for row in node.draw_node(window, &DrawConfiguration::default()) {
-        write!(stdout(), "{0} {1} {0}\n", border, row);
-        execute!(stdout(), crossterm::cursor::MoveToColumn(0));
-    }
 }

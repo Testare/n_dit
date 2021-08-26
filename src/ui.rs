@@ -1,10 +1,39 @@
 use super::configuration::{DrawConfiguration, DrawType, FillMethod};
 use super::game::{Node, Piece};
+use super::{Direction, Point};
 use itertools::Itertools;
 use std::cmp;
 use std::num::NonZeroUsize;
+use crossterm::style::Stylize;
 
 pub mod layout;
+
+pub struct UiState {
+    draw_config: DrawConfiguration,
+    terminal_size: (usize, usize),
+    selected_square: Point,
+    selected_action_index: Option<usize>
+}
+
+impl UiState {
+
+    pub fn draw_config(&self) -> &DrawConfiguration {
+        &self.draw_config
+    }
+
+    pub fn selected_square(&self) -> Point {
+        self.selected_square
+    }
+
+    pub fn selected_action_index(&self) -> Option<usize> {
+        self.selected_action_index
+    }
+
+    pub fn move_selected_square(&mut self, direction: Direction, node: &Node, speed: usize) {
+        self.selected_square = direction.add_to_point(self.selected_square, speed, node.bounds() )
+
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct Window {
@@ -178,7 +207,6 @@ impl Node {
                                     );
                                 }
                                 if include_space {
-                                    // TODO square logic here too
                                     let square = piece_map.get(&(x,y)).map(String::as_ref).unwrap_or("  ");
                                     if square.chars().count() == 1 {
                                         space_line.push(draw_config.half_char());
@@ -199,8 +227,6 @@ impl Node {
                         );
                     }
                     if include_space {
-                        // TODO square display logic
-                        // let square = "  ";
                         let square = piece_map.get(&(x,y)).map(String::as_ref).unwrap_or("  ");
                         space_line.push_str(square);
                         if x == x_start && skip_x == 2 && square.chars().count() == 1 {
@@ -254,4 +280,28 @@ fn intersection_for_pivot(
     let west = border_type_bit(&draw_config, left[0], left[1]) << 3;
 
     INTERSECTION_CHAR[north | east | south | west]
+}
+
+impl Window {
+    fn of(width: NonZeroUsize, height: NonZeroUsize) -> Self {
+        Window {
+            height,
+            scroll_x: 0,
+            scroll_y: 0,
+            width,
+        }
+    }
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        // TODO This should be more safe, probably not an actual trait for UiState
+        let (t_width, t_height) = crossterm::terminal::size().expect("Problem getting terminal size");
+        UiState {
+            selected_square: (0, 0),
+            selected_action_index: None,
+            draw_config: DrawConfiguration::default(),
+            terminal_size: (t_width.into(), t_height.into())
+        }
+    }
 }
