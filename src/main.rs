@@ -4,9 +4,9 @@ use crossterm::{
     execute,
 };
 use n_dit::{
-    ui::{SuperState, layout::NodeLayout},
-    game::{Node, Sprite, Piece},
+    game::{Node, Piece, Sprite},
     grid_map::GridMap,
+    ui::{layout::NodeLayout, SuperState},
     Direction,
 };
 use std::io::stdout;
@@ -127,38 +127,10 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
                     1
                 };
                 match code {
-                    KeyCode::Char('h') => state.ui.move_selected_square(
-                        Direction::West,
-                        state
-                            .game
-                            .node()
-                            .expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"),
-                        speed,
-                    ),
-                    KeyCode::Char('k') => state.ui.move_selected_square(
-                        Direction::North,
-                        state
-                            .game
-                            .node()
-                            .expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"),
-                        speed,
-                    ),
-                    KeyCode::Char('j') => state.ui.move_selected_square(
-                        Direction::South,
-                        state
-                            .game
-                            .node()
-                            .expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"),
-                        speed,
-                    ),
-                    KeyCode::Char('l') => state.ui.move_selected_square(
-                        Direction::East,
-                        state
-                            .game
-                            .node()
-                            .expect("TODO DIFFERENT LOGIC WHEN NODE DOES NOT EXIST"),
-                        speed,
-                    ),
+                    KeyCode::Char('h') => state.move_selected_square(Direction::West, speed),
+                    KeyCode::Char('k') => state.move_selected_square(Direction::North, speed),
+                    KeyCode::Char('j') => state.move_selected_square(Direction::South, speed),
+                    KeyCode::Char('l') => state.move_selected_square(Direction::East, speed),
                     KeyCode::Char('-') => {
                         panic!("Last action was {:?}", action);
                     }
@@ -170,8 +142,8 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
             }
             Event::Mouse(MouseEvent {
                 kind,
-                column:_column,
-                row:_row,
+                column: _column,
+                row: _row,
                 modifiers: _,
             }) => {
                 if let MouseEventKind::Down(_) = kind {
@@ -186,8 +158,6 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
         }
 
         layout.render(&state)?;
-        // Draw
     }
-    // println!("{:?}", k);
     Ok(())
 }

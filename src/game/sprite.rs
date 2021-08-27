@@ -1,4 +1,3 @@
-
 #[derive(PartialEq, Eq)]
 pub struct Sprite {
     display: String,

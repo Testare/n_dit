@@ -1,12 +1,12 @@
-use super::super::configuration::DrawConfiguration;
-use super::super::game::{Node, Piece};
-use super::super::Point;
-use super::{Window, SuperState};
-use crossterm::{execute};
-use std::cmp;
-use std::convert::TryInto;
-use std::io::{stdout, Write};
-use std::num::NonZeroUsize;
+use super::super::{Node, Piece, Point};
+use super::{DrawConfiguration, SuperState, Window};
+use crossterm::execute;
+use std::{
+    cmp,
+    convert::TryInto,
+    io::{stdout, Write},
+    num::NonZeroUsize,
+};
 use unicode_width::UnicodeWidthStr;
 
 #[derive(Clone, Copy)]
@@ -25,15 +25,19 @@ pub struct StandardNodeLayout {
 impl NodeLayout {
     fn get_max_width(&self) -> usize {
         match self {
-            Self::Standard(StandardNodeLayout { max_width, ..}) => max_width.map(|nzu|nzu.get()).unwrap_or(120),
-            Self::FlipMenu => unimplemented!("Not yet implemented")
+            Self::Standard(StandardNodeLayout { max_width, .. }) => {
+                max_width.map(|nzu| nzu.get()).unwrap_or(120)
+            }
+            Self::FlipMenu => unimplemented!("Not yet implemented"),
         }
     }
 
     fn get_max_height(&self) -> usize {
         match self {
-            Self::Standard(StandardNodeLayout { max_height, ..}) => max_height.map(|nzu|nzu.get()).unwrap_or(24),
-            Self::FlipMenu => unimplemented!("Not yet implemented")
+            Self::Standard(StandardNodeLayout { max_height, .. }) => {
+                max_height.map(|nzu| nzu.get()).unwrap_or(24)
+            }
+            Self::FlipMenu => unimplemented!("Not yet implemented"),
         }
     }
 
@@ -48,7 +52,7 @@ impl NodeLayout {
      */
     pub fn render(&self, super_state: &SuperState) -> crossterm::Result<bool> {
         execute!(stdout(), crossterm::cursor::MoveTo(0, 0))?;
-        let (available_width, available_height) = super_state.ui.terminal_size;
+        let (available_width, available_height) = super_state.terminal_size();
 
         if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
             for i in 0..available_height {
@@ -66,7 +70,7 @@ impl NodeLayout {
         let height = cmp::min(available_height, self.get_max_height());
         let include_title = height >= Self::MIN_HEIGHT_FOR_TITLE;
         let border = '\\';
-        let draw_config = &super_state.ui.draw_config;
+        let draw_config = &super_state.draw_config();
         let node = super_state.game.node().unwrap(); // TODO how to handle no Node
         let menu_width = 10;
         let map_width = width - menu_width - 5;
@@ -80,7 +84,7 @@ impl NodeLayout {
             crossterm::style::Print("\\".repeat(width)),
             crossterm::style::Print("\n".to_string()),
             crossterm::cursor::MoveToColumn(0)
-        );
+        )?;
         if include_title {
             println!(
                 "{border}{0:^width$.width$}{border}",
@@ -127,8 +131,8 @@ impl NodeLayout {
             )?;
             execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
         }
-        execute!(stdout(), crossterm::style::Print("/".repeat(width)));
-        let (x, y) = super_state.ui.selected_square();
+        execute!(stdout(), crossterm::style::Print("/".repeat(width)))?;
+        let (x, y) = super_state.selected_square();
 
         execute!(
             stdout(),
@@ -141,7 +145,7 @@ impl NodeLayout {
     }
 
     pub fn draw_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
-        let pt: Point = state.ui.selected_square();
+        let pt: Point = state.selected_square();
         let piece_opt = state
             .game
             .node()

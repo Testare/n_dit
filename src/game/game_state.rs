@@ -5,7 +5,6 @@ pub struct GameState {
     node: Option<Node>,
 }
 
-
 impl GameState {
     pub fn node(&self) -> Option<&Node> {
         self.node.as_ref()

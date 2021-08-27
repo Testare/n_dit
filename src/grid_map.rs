@@ -1,6 +1,5 @@
 use super::Point;
-use std::collections::HashMap;
-use std::{iter::Rev, vec::IntoIter};
+use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 
 // Potential future developments:
 // * removing squares from the middle of an Item

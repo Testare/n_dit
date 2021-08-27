@@ -1,6 +1,5 @@
 pub type Point = (usize, usize);
 
-// TODO use this
 pub struct Bounds(usize, usize);
 
 pub enum Direction {

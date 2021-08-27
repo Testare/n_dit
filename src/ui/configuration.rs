@@ -28,7 +28,6 @@ impl Default for DrawConfiguration {
         }
     }
 }
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum DrawType {
     BorderlessLink = 0,

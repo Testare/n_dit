@@ -1,6 +1,5 @@
-use super::super::configuration::{DrawConfiguration, DrawType, FillMethod};
 use super::super::game::{Node, Piece};
-use super::{Window};
+use super::{DrawConfiguration, DrawType, FillMethod, Window};
 use itertools::Itertools;
 use std::cmp;
 
