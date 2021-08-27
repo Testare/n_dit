@@ -1,20 +1,13 @@
 use super::super::configuration::DrawConfiguration;
-use super::super::game::{Node, Piece, SuperState};
+use super::super::game::{Node, Piece};
 use super::super::Point;
-use super::Window;
-use crossterm::{execute, terminal};
+use super::{Window, SuperState};
+use crossterm::{execute};
 use std::cmp;
 use std::convert::TryInto;
 use std::io::{stdout, Write};
 use std::num::NonZeroUsize;
 use unicode_width::UnicodeWidthStr;
-
-const ONE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1) };
-
-#[derive(Clone, Copy)]
-enum WorldLayout {
-    Standard,
-}
 
 #[derive(Clone, Copy)]
 pub enum NodeLayout {
@@ -29,40 +22,24 @@ pub struct StandardNodeLayout {
     window: Window,
 }
 
-enum LayoutElem {
-    CloseButton,
-    ActionMenu(usize, usize),
-    NodeMap(usize, usize),
-}
-
 impl NodeLayout {
     fn get_max_width(&self) -> usize {
-        80
-    }
-
-    fn get_map_width(&self) -> usize {
-        31
+        match self {
+            Self::Standard(StandardNodeLayout { max_width, ..}) => max_width.map(|nzu|nzu.get()).unwrap_or(120),
+            Self::FlipMenu => unimplemented!("Not yet implemented")
+        }
     }
 
     fn get_max_height(&self) -> usize {
-        28
-    }
-
-    fn get_map_height(&self) -> usize {
-        21
+        match self {
+            Self::Standard(StandardNodeLayout { max_height, ..}) => max_height.map(|nzu|nzu.get()).unwrap_or(24),
+            Self::FlipMenu => unimplemented!("Not yet implemented")
+        }
     }
 
     const MIN_HEIGHT: usize = 8;
     const MIN_HEIGHT_FOR_TITLE: usize = 10;
     const MIN_WIDTH: usize = 18;
-
-    fn get_menu() -> Vec<String> {
-        vec![]
-    }
-
-    fn char_position_for_point((x, y): Point) -> (usize, usize) {
-        (13 + 3 * x, 1 + 2 * y)
-    }
 
     /**
      * Returns Result(false) if something went wrong displaying the result, such as the terminal is too small
@@ -242,8 +219,8 @@ impl Default for StandardNodeLayout {
         StandardNodeLayout {
             // max_width: Some(NonZeroUsize::new(master_width.into()).unwrap_or(ONE)),
             // max_height: Some(NonZeroUsize::new(master_height.into()).unwrap_or(ONE)),
-            max_width: Some(NonZeroUsize::new(80).unwrap_or(ONE)),
-            max_height: Some(NonZeroUsize::new(80).unwrap_or(ONE)),
+            max_width: None,
+            max_height: None,
             window,
         }
     }

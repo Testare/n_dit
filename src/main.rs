@@ -3,11 +3,9 @@ use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind},
     execute,
 };
-use n_dit::game::{Piece, SuperState};
-use n_dit::ui::layout::NodeLayout;
 use n_dit::{
-    configuration::DrawConfiguration,
-    game::{Node, Sprite},
+    ui::{SuperState, layout::NodeLayout},
+    game::{Node, Sprite, Piece},
     grid_map::GridMap,
     Direction,
 };
@@ -172,8 +170,8 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
             }
             Event::Mouse(MouseEvent {
                 kind,
-                column,
-                row,
+                column:_column,
+                row:_row,
                 modifiers: _,
             }) => {
                 if let MouseEventKind::Down(_) = kind {
