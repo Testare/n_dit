@@ -70,7 +70,6 @@ impl NodeLayout {
         let height = cmp::min(available_height, self.get_max_height());
         let include_title = height >= Self::MIN_HEIGHT_FOR_TITLE;
         let border = '\\';
-        let draw_config = &super_state.draw_config();
         let node = super_state.game.node().unwrap(); // TODO how to handle no Node
         let menu_width = 10;
         let map_width = width - menu_width - 5;
@@ -102,10 +101,12 @@ impl NodeLayout {
         }
 
         // for row in node.draw_node(Some(map_window), draw_config) {
-        for (map_row, menu_row) in node
-            .draw_node(Some(map_window), draw_config)
-            .iter()
-            .zip(Self::draw_menu(&super_state, height, menu_width))
+
+        let node_rendering = super::render::render_node(&super_state, map_window);
+        for (map_row, menu_row) in
+            node_rendering
+                .iter()
+                .zip(Self::draw_menu(&super_state, height, menu_width))
         {
             let row_width: usize = UnicodeWidthStr::width(map_row.as_str());
             let padding_size: usize = if row_width < map_width {

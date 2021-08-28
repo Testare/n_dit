@@ -1,5 +1,6 @@
 use super::super::game::{Node, Piece};
-use super::{DrawConfiguration, DrawType, FillMethod, Window};
+use super::{DrawConfiguration, DrawType, FillMethod, SuperState, Window};
+use crossterm::style::Stylize;
 use itertools::Itertools;
 use std::cmp;
 
@@ -81,6 +82,134 @@ impl BorderType {
             },
         }
     }
+}
+
+pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
+    let node = state.game_state().node();
+    if node.is_none() {
+        return vec![]; // Panic?
+    }
+    let draw_config = state.draw_config();
+    let grid = node.unwrap().grid();
+    let width = grid.width();
+    let height = grid.height();
+    let grid_map = grid.number_map();
+
+    let piece_map = grid.point_map(|i, piece| piece.render_square(i, draw_config));
+
+    let str_width = width * 3 + 3;
+    let x_start = window.scroll_x / 3;
+    let x2 = cmp::min(width * 3 + 1, window.scroll_x + window.width.get());
+    let padding_size = window.width.get() + window.scroll_x - x2;
+    let padding = " ".repeat(padding_size);
+
+    let x_end = (x2 - 1) / 3;
+    let skip_x = window.scroll_x % 3;
+    let y_start = window.scroll_y / 2;
+    let y_end = cmp::min(height, (window.scroll_y + window.height.get() - 1) / 2);
+    let skip_y = window.scroll_y % 2;
+    let keep_last_space = skip_y + window.height.get() % 2 == 0;
+
+    let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
+        .map(|y| {
+            let mut border_line = String::with_capacity(str_width);
+            let mut space_line = String::with_capacity(str_width);
+            let include_border = y != y_start || skip_y != 1;
+            let include_space = y != height && (y != y_end || keep_last_space);
+            for x in x_start..=x_end {
+                let (left1, left2) = if x == 0 {
+                    (0, 0)
+                } else if y == 0 {
+                    (0, grid_map[x - 1][0])
+                } else if y == height {
+                    (grid_map[x - 1][y - 1], 0)
+                } else {
+                    (grid_map[x - 1][y - 1], grid_map[x - 1][y])
+                };
+
+                let (right1, right2) = if x == width {
+                    (0, 0)
+                } else if y == 0 {
+                    (0, grid_map[x][0])
+                } else if y == height {
+                    (grid_map[x][y - 1], 0)
+                } else {
+                    (grid_map[x][y - 1], grid_map[x][y])
+                };
+
+                if include_border {
+                    border_line.push(intersection_for_pivot(
+                        &[left1, left2],
+                        &[right1, right2],
+                        draw_config,
+                    ));
+                }
+
+                if include_space {
+                    space_line.push(BorderType::of(left2, right2).vertical_border(draw_config));
+                }
+
+                if x == x_end {
+                    match x2 % 3 {
+                        0 => {} // Continues on to the the normal operation
+                        1 => {
+                            break; // Already done
+                        }
+                        2 => {
+                            // Only half the square is rendered
+                            if include_border {
+                                border_line.push(
+                                    BorderType::of(right1, right2)
+                                        .horizontal_border(draw_config)
+                                        .chars()
+                                        .next()
+                                        .unwrap(),
+                                );
+                            }
+                            if include_space {
+                                let square =
+                                    piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                                if square.chars().count() == 1 {
+                                    space_line.push(draw_config.half_char());
+                                } else {
+                                    space_line.push(square.chars().next().unwrap());
+                                }
+                            }
+                            break;
+                        }
+                        _ => {
+                            panic!("Impossible!")
+                        }
+                    }
+                }
+                if include_border {
+                    border_line
+                        .push_str(BorderType::of(right1, right2).horizontal_border(draw_config));
+                }
+                if include_space {
+                    let square = piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                    space_line.push_str(square);
+                    if x == x_start && skip_x == 2 && square.chars().count() == 1 {
+                        // To keep the grid aligned in the event of a double-width character.
+                        space_line.push(draw_config.half_char());
+                    }
+                }
+            }
+            (
+                border_line.chars().skip(skip_x).collect(),
+                space_line.chars().skip(skip_x).collect(),
+            )
+        })
+        .unzip();
+    space_lines.truncate(height); // Still used for when the height isn't specified
+    Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
+        .skip(skip_y)
+        .take(window.height.get())
+        .map(|mut row| {
+            row.push_str(padding.as_str());
+            row.green().to_string()
+        })
+        .collect()
 }
 
 impl Node {

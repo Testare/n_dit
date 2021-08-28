@@ -55,4 +55,8 @@ impl SuperState {
                 .bounds(),
         )
     }
+
+    pub fn game_state(&self) -> &GameState {
+        &self.game
+    }
 }
