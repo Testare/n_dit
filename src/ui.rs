@@ -4,7 +4,7 @@ mod render;
 mod super_state;
 
 pub use configuration::DrawConfiguration;
-pub(self) use configuration::{DrawType, FillMethod};
+pub(self) use configuration::{DrawType, FillMethod, UiFormat};
 pub use super_state::SuperState;
 
 use std::num::NonZeroUsize;

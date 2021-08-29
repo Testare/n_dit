@@ -92,22 +92,21 @@ fn main() -> crossterm::Result<()> {
     let state = SuperState::from(Some(node));
     execute!(
         stdout(),
+        crossterm::cursor::Hide,
         crossterm::terminal::EnterAlternateScreen,
         crossterm::terminal::SetTitle("n_dit"),
         crossterm::event::EnableMouseCapture
     )?;
     crossterm::terminal::enable_raw_mode()?;
-    // draw('\\', &node, None);
-    // layout.draw_layout(&node, &DrawConfiguration::default())?;
     layout.render(&state)?;
     game_loop(state)?;
     crossterm::terminal::disable_raw_mode()?;
     execute!(
         stdout(),
+        crossterm::cursor::Show,
         crossterm::terminal::LeaveAlternateScreen,
         crossterm::event::DisableMouseCapture
     )?;
-    // draw('/', &node, None);
 
     Ok(())
 }

@@ -1,9 +1,8 @@
-use super::super::{Node, Piece, Point};
-use super::{DrawConfiguration, SuperState, Window};
+use super::super::{Piece, Point};
+use super::{SuperState, Window};
 use crossterm::execute;
 use std::{
     cmp,
-    convert::TryInto,
     io::{stdout, Write},
     num::NonZeroUsize,
 };
@@ -19,7 +18,6 @@ pub enum NodeLayout {
 pub struct StandardNodeLayout {
     max_width: Option<NonZeroUsize>,
     max_height: Option<NonZeroUsize>,
-    window: Window,
 }
 
 impl NodeLayout {
@@ -133,15 +131,6 @@ impl NodeLayout {
             execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
         }
         execute!(stdout(), crossterm::style::Print("/".repeat(width)))?;
-        let (x, y) = super_state.selected_square();
-
-        execute!(
-            stdout(),
-            crossterm::cursor::MoveTo(
-                (4 + menu_width + 3 * x).try_into().unwrap(),
-                (4 + 2 * y).try_into().unwrap()
-            )
-        )?;
         Ok(true)
     }
 
@@ -176,33 +165,6 @@ impl NodeLayout {
         }
         base_vec
     }
-
-    pub fn draw_layout(
-        &self,
-        node: &Node,
-        draw_config: &DrawConfiguration,
-    ) -> crossterm::Result<()> {
-        let border = '\\';
-        if let NodeLayout::Standard(StandardNodeLayout { window, .. }) = self {
-            // write!(stdout(), "{0}          {0} {1} {0}\n", border, row);
-            // execute!(stdout(), crossterm::cursor::MoveToColumn(0));
-            write!(
-                stdout(),
-                "/////////////////////////////////////////////////////\n"
-            )?;
-            execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
-            write!(
-                stdout(),
-                "/////////////////////////////////////////////////////\n"
-            )?;
-            execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
-            for row in node.draw_node(Some(*window), draw_config) {
-                write!(stdout(), "{0}           {0} {1} {0}\n", border, row)?;
-                execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
-            }
-        }
-        Ok(())
-    }
 }
 
 impl Default for NodeLayout {
@@ -213,20 +175,9 @@ impl Default for NodeLayout {
 
 impl Default for StandardNodeLayout {
     fn default() -> Self {
-        // let (master_width, master_height) = terminal::size().expect("Problem getting terminal size");
-        let window = Window {
-            width: unsafe { NonZeroUsize::new_unchecked(80) }, //((master_width - 24).into()).unwrap_or(ONE),
-            height: unsafe { NonZeroUsize::new_unchecked(80) }, //((master_height - 13).into()).unwrap_or(ONE),
-            scroll_x: 0,
-            scroll_y: 0,
-        };
-
         StandardNodeLayout {
-            // max_width: Some(NonZeroUsize::new(master_width.into()).unwrap_or(ONE)),
-            // max_height: Some(NonZeroUsize::new(master_height.into()).unwrap_or(ONE)),
             max_width: None,
             max_height: None,
-            window,
         }
     }
 }

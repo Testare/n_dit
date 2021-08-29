@@ -1,10 +1,16 @@
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Team {
+    PlayerTeam = 0,
+    EnemyTeam = 1,
+}
+
 #[derive(PartialEq, Eq)]
 pub struct Sprite {
     display: String,
     name: String,
     max_size: usize,
     moved: bool,
-    team: usize,
+    team: Team,
     // actions
 }
 
@@ -15,7 +21,7 @@ impl Sprite {
             name: String::from("George"),
             max_size: 3,
             moved: false,
-            team: 0,
+            team: Team::PlayerTeam,
         }
     }
     pub fn display(&self) -> &str {
@@ -24,5 +30,9 @@ impl Sprite {
 
     pub fn name(&self) -> &str {
         self.name.as_ref()
+    }
+
+    pub fn team(&self) -> Team {
+        self.team
     }
 }
