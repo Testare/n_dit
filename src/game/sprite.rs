@@ -7,9 +7,10 @@ pub enum Team {
 #[derive(PartialEq, Eq)]
 pub struct Sprite {
     display: String,
-    name: String,
     max_size: usize,
-    moved: bool,
+    movement_speed: usize,
+    moves_taken: usize,
+    name: String,
     team: Team,
     // actions
 }
@@ -18,9 +19,10 @@ impl Sprite {
     pub fn new(display: &str) -> Sprite {
         Sprite {
             display: String::from(display),
-            name: String::from("George"),
             max_size: 3,
-            moved: false,
+            movement_speed: 3,
+            moves_taken: 0,
+            name: String::from("George"),
             team: Team::PlayerTeam,
         }
     }

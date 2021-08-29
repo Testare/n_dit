@@ -1,56 +1,58 @@
 use crossterm::style::{Attribute, Color, StyledContent, Stylize};
+use getset::{CopyGetters, Getters};
 use std::fmt::Display;
-#[derive(Clone, Debug)]
+
+#[derive(Clone, Debug, CopyGetters, Getters)]
 pub struct DrawConfiguration {
+    #[get_copy = "pub"]
+    border_appearance: DrawType,
+    #[get = "pub"]
     color_scheme: ColorScheme,
-    draw_type: DrawType,
-    fill_method: FillMethod,
+    #[get_copy = "pub"]
     half_char: char,
+    #[get_copy = "pub"]
+    tail_appearance: FillMethod,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct UiFormat(Option<Color>, Option<Color>, Option<Attribute>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, CopyGetters, Debug)]
 pub struct ColorScheme {
+    #[get_copy = "pub"]
     access_point: UiFormat,
-    mon: UiFormat,
-    selected_square: UiFormat,
-    selected_square_border: UiFormat,
+    #[get_copy = "pub"]
+    enemy_team: UiFormat,
+    #[get_copy = "pub"]
     grid_border_default: UiFormat,
-    pub possible_movement: UiFormat,
-    pub friendly_team: UiFormat,
-    pub enemy_team: UiFormat,
+    #[get_copy = "pub"]
+    mon: UiFormat,
+    #[get_copy = "pub"]
+    player_team: UiFormat,
+    #[get_copy = "pub"]
+    possible_movement: UiFormat,
+    #[get_copy = "pub"]
+    selected_square: UiFormat,
+    #[get_copy = "pub"]
+    selected_square_border: UiFormat,
 }
 
-impl ColorScheme {
-    pub fn selected_square(&self) -> UiFormat {
-        self.selected_square
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DrawType {
+    BorderlessLink = 0,
+    CrossLink1,
+    CrossLink2, // Personal favorite
+    CrossLink3,
+    DotLink,
+}
 
-    pub fn selected_square_border(&self) -> UiFormat {
-        self.selected_square_border
-    }
-
-    pub fn grid_border_default(&self) -> UiFormat {
-        self.grid_border_default
-    }
-
-    pub fn mon(&self) -> UiFormat {
-        self.mon
-    }
-
-    pub fn access_point(&self) -> UiFormat {
-        self.access_point
-    }
-
-    pub fn player_team(&self) -> UiFormat {
-        self.friendly_team
-    }
-
-    pub fn enemy_team(&self) -> UiFormat {
-        self.enemy_team
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FillMethod {
+    Brackets = 0, // Personal favorite
+    NoFill = 1,   // Really terrible
+    HeadCopy = 2, // Hard to tell where head is
+    DotFill = 3, // Kinda works with DotLink, but not perfectly. Might need to adjust color scheme logic
+    Sequence = 4, // Nice additional information, but a little rough on the eyes
 }
 
 impl Default for ColorScheme {
@@ -62,7 +64,7 @@ impl Default for ColorScheme {
             selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
             grid_border_default: UiFormat::new(Some(Color::Green), None, None),
             possible_movement: UiFormat::default(),
-            friendly_team: UiFormat::new(Some(Color::Blue), None, None),
+            player_team: UiFormat::new(Some(Color::Blue), None, None),
             enemy_team: UiFormat::new(Some(Color::Red), None, None),
         }
     }
@@ -90,54 +92,13 @@ impl UiFormat {
     }
 }
 
-impl Default for UiFormat {
-    fn default() -> Self {
-        UiFormat::new(None, None, None)
-    }
-}
-
-impl DrawConfiguration {
-    pub fn half_char(&self) -> char {
-        self.half_char
-    }
-
-    pub fn border_appearance(&self) -> DrawType {
-        self.draw_type
-    }
-
-    pub fn tail_appearance(&self) -> FillMethod {
-        self.fill_method
-    }
-
-    pub fn color_scheme(&self) -> &ColorScheme {
-        &self.color_scheme
-    }
-}
-
 impl Default for DrawConfiguration {
     fn default() -> Self {
         DrawConfiguration {
             color_scheme: ColorScheme::default(),
-            draw_type: DrawType::CrossLink2,
-            fill_method: FillMethod::Brackets,
+            border_appearance: DrawType::CrossLink2,
+            tail_appearance: FillMethod::Brackets,
             half_char: '~',
         }
     }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DrawType {
-    BorderlessLink = 0,
-    CrossLink1,
-    CrossLink2,
-    CrossLink3,
-    DotLink,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FillMethod {
-    Brackets = 0,
-    NoFill = 1,
-    HeadCopy = 2,
-    DotFill = 3,
-    Sequence = 4,
 }
