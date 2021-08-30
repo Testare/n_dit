@@ -1,4 +1,4 @@
-use super::super::{Direction, GameState, Node, Point};
+use super::super::{Bounds, Direction, GameAction, GameState, Node, Point};
 use super::{DrawConfiguration, Layout};
 
 pub struct SuperState {
@@ -73,4 +73,23 @@ impl SuperState {
     pub fn game_state(&self) -> &GameState {
         &self.game
     }
+
+    pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
+        match ui_action {
+            UiAction::MoveSelectedSquare { direction, speed } => {
+                self.move_selected_square(direction, speed);
+                Ok(())
+            }
+            UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
+            UiAction::SetTerminalSize(_bounds) => {
+                unimplemented!("TODO implement terminal size changing")
+            }
+        }
+    }
+}
+
+pub enum UiAction {
+    MoveSelectedSquare { direction: Direction, speed: usize },
+    DoGameAction(GameAction),
+    SetTerminalSize(Bounds),
 }

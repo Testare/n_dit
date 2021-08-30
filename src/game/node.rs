@@ -4,6 +4,7 @@ use super::Sprite;
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
+    activated_sprite: Option<usize>,
 }
 
 pub enum Piece {
@@ -13,6 +14,14 @@ pub enum Piece {
 }
 
 impl Node {
+    pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
+        if self.grid.contains_key(sprite_key) {
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn grid(&self) -> &GridMap<Piece> {
         &self.grid
     }
@@ -60,6 +69,7 @@ impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
         Node {
             name: String::from("Node"),
+            activated_sprite: None,
             grid,
         }
     }
@@ -67,6 +77,10 @@ impl From<GridMap<Piece>> for Node {
 
 impl From<(String, GridMap<Piece>)> for Node {
     fn from((name, grid): (String, GridMap<Piece>)) -> Self {
-        Node { name, grid }
+        Node {
+            activated_sprite: None,
+            name,
+            grid,
+        }
     }
 }

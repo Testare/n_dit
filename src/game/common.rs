@@ -3,6 +3,7 @@ pub type Point = (usize, usize);
 #[derive(Clone, Copy)]
 pub struct Bounds(usize, usize);
 
+#[derive(Clone, PartialEq, Eq)]
 pub enum Direction {
     North,
     East,

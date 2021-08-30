@@ -117,6 +117,11 @@ impl<T> GridMap<T> {
         }
     }
 
+    /// Determine if a key is actually
+    pub fn contains_key(&self, item_key: usize) -> bool {
+        self.entries.contains_key(&item_key)
+    }
+
     /// Determins if a point is within bounds of the GridMap
     pub fn contains_point(&self, (x, y): Point) -> bool {
         x < self.width && y < self.height
