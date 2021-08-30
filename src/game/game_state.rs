@@ -17,8 +17,9 @@ impl GameState {
         }
     }
 
+    // TODO look at this
     pub fn waiting_on_player_input(&self) -> bool {
-        unimplemented!("TODO: Return true when waiting for player action. False indicates that the game state should update itself without player input before the next loop")
+        true
     }
 
     pub fn apply_action(&mut self, game_action: GameAction) -> Result<(), String> {
@@ -58,4 +59,10 @@ pub enum GameAction {
     ActivateSprite(usize), // Starts using a unit.
     MoveActiveSprite(Vec<Direction>),
     TakeSpriteAction(usize, Point),
+}
+
+impl GameAction {
+    pub fn next() -> GameAction {
+        GameAction::Next
+    }
 }

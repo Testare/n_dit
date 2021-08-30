@@ -58,6 +58,10 @@ impl Bounds {
     pub fn height(&self) -> usize {
         self.1
     }
+
+    pub fn contains_pt(&self, pt: Point) -> bool {
+        pt.0 < self.0 && pt.1 < self.1
+    }
 }
 
 impl From<(u16, u16)> for Bounds {

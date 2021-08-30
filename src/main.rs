@@ -1,3 +1,4 @@
+use core::time::Duration;
 use crossterm::{
     self,
     event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind},
@@ -6,7 +7,7 @@ use crossterm::{
 use n_dit::{
     game::{Node, Piece, Sprite},
     grid_map::GridMap,
-    ui::{layout::NodeLayout, SuperState},
+    ui::{layout::NodeLayout, SuperState, UiAction},
     Direction,
 };
 use std::io::stdout;
@@ -112,50 +113,67 @@ fn main() -> crossterm::Result<()> {
 }
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
-    let mut action = ' ';
+    let layout = NodeLayout::default();
+    let mut keep_going = true;
 
-    while action != 'q' {
-        // execute!(stdout(), crossterm::cursor::MoveTo(11+3*x,4+2*y))?;
-        let event = crossterm::event::read()?;
-        match event {
-            Event::Key(KeyEvent { code, modifiers }) => {
-                let speed = if modifiers.contains(KeyModifiers::CONTROL) {
-                    2
-                } else {
-                    1
-                };
-                match code {
-                    KeyCode::Char('h') => state.move_selected_square(Direction::West, speed),
-                    KeyCode::Char('k') => state.move_selected_square(Direction::North, speed),
-                    KeyCode::Char('j') => state.move_selected_square(Direction::South, speed),
-                    KeyCode::Char('l') => state.move_selected_square(Direction::East, speed),
-                    KeyCode::Char('-') => {
-                        panic!("Last action was {:?}", action);
-                    }
-                    KeyCode::Char(char_) => {
-                        action = char_;
-                    }
-                    _ => {}
-                }
+    while keep_going {
+        if let Some(action) = get_next_action(&state, &layout)? {
+            if action.is_quit() {
+                keep_going = false;
+            } else {
+                state.apply_action(action).unwrap();
+                //layout.render(&state)?;
+                state.render()?;
             }
-            Event::Mouse(MouseEvent {
-                kind,
-                column: _column,
-                row: _row,
-                modifiers: _,
-            }) => {
-                if let MouseEventKind::Down(_) = kind {
-                    /*if column > 2 {
-                        x = (column - 2) /3;
-                        y = row/2;
-                    }*/
-                    // TODO square click
-                }
-            }
-            Event::Resize(_w, _h) => {}
         }
-
-        state.render()?;
     }
     Ok(())
+}
+
+const TIMEOUT: Duration = Duration::from_millis(500);
+
+// TODO Could be implemented as an Iterator<Item=Result<UiAction>>, where no-ops are ignored
+// instead of returning None
+fn get_next_action(state: &SuperState, layout: &NodeLayout) -> crossterm::Result<Option<UiAction>> {
+    let event = if state.game_state().waiting_on_player_input() {
+        crossterm::event::read()?
+    } else {
+        if crossterm::event::poll(TIMEOUT)? {
+            crossterm::event::read()?
+        } else {
+            return Ok(Some(UiAction::next()));
+        }
+    };
+    let action = match event {
+        Event::Key(KeyEvent { code, modifiers }) => {
+            let speed = if modifiers.contains(KeyModifiers::CONTROL) {
+                2
+            } else {
+                1
+            };
+            match code {
+                KeyCode::Char('h') => Some(UiAction::move_selected_square(Direction::West, speed)),
+                KeyCode::Char('k') => Some(UiAction::move_selected_square(Direction::North, speed)),
+                KeyCode::Char('j') => Some(UiAction::move_selected_square(Direction::South, speed)),
+                KeyCode::Char('l') => Some(UiAction::move_selected_square(Direction::East, speed)),
+                KeyCode::Char('q') => Some(UiAction::quit()),
+                KeyCode::Char('-') => panic!("State report: TODO"),
+                _ => None,
+            }
+        }
+        Event::Mouse(MouseEvent {
+            kind,
+            column,
+            row,
+            modifiers: _,
+        }) => {
+            if let MouseEventKind::Down(_) = kind {
+                unsafe { layout.action_for_char_pt(&state, (column.into(), row.into())) }
+            } else {
+                None
+            }
+        }
+        Event::Resize(w, h) => Some(UiAction::set_terminal_size(w, h)),
+    };
+    Ok(action)
 }

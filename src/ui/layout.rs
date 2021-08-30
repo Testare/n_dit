@@ -1,5 +1,5 @@
 use super::super::{Bounds, Direction, GameState, Piece, Point};
-use super::{SuperState, Window};
+use super::{SuperState, UiAction, Window};
 use crossterm::execute;
 use std::{
     cmp,
@@ -255,9 +255,56 @@ impl StandardNodeLayout {
         execute!(stdout(), crossterm::style::Print("/".repeat(fields.width)))?;
         Ok(true)
     }
+
+    /// Unsafe: Only use when the state.game_state().node().is_some() is true, otherwise this
+    /// will panic
+    pub unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
+        // TODO change logic for eager layout math and adjust for scrolling
+        let (available_width, available_height) = state.terminal_size();
+        if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
+            return None;
+        }
+        let height = cmp::min(available_height, self.get_max_height());
+        let width = cmp::min(available_width, self.get_max_width());
+        let include_title = height >= Self::MIN_HEIGHT_FOR_TITLE;
+
+        let top = if include_title { 3 } else { 1 };
+        let left = 13;
+        if pt.0 >= left && pt.0 < width && pt.1 >= top && pt.1 < height {
+            let y = (pt.1 - top) / 2;
+            let x = (pt.0 - left) / 3;
+            if state
+                .game_state()
+                .node()
+                .unwrap()
+                .bounds()
+                .contains_pt((x, y))
+            {
+                Some(UiAction::SetSelectedSquare((x, y)))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
+// TODO Onlu use this internally: Have a super layout that only calls NodeLayout methods when there
+// IS a node. Until then, every method of this will assume that a node exists, and might be marked
+// unsafe for this reason
+
+// TODO investigate using a trait for these methods, and implement it on this and StandardNodeLayout.
 impl NodeLayout {
+    pub unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
+        match self {
+            NodeLayout::Standard(standard_node_layout) => {
+                standard_node_layout.action_for_char_pt(state, pt)
+            }
+            _ => unimplemented!("No other layouts yet implemented"),
+        }
+    }
+
     fn scroll_to_node_pt(&mut self, pt: Point) {
         match self {
             NodeLayout::Standard(standard_node_layout) => {

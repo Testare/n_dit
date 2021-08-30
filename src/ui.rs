@@ -6,7 +6,7 @@ mod super_state;
 pub use configuration::DrawConfiguration;
 pub(self) use configuration::{DrawType, FillMethod, UiFormat};
 pub use layout::Layout;
-pub use super_state::SuperState;
+pub use super_state::{SuperState, UiAction};
 
 use std::num::NonZeroUsize;
 

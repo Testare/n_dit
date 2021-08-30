@@ -1,6 +1,7 @@
 use super::super::{Bounds, Direction, GameAction, GameState, Node, Point};
 use super::{DrawConfiguration, Layout};
 
+// TODO Include layout in SuperState or DrawConfiguration
 pub struct SuperState {
     pub game: GameState,
     layout: Layout,
@@ -52,6 +53,10 @@ impl SuperState {
         self.layout.render(self)
     }
 
+    pub fn set_selected_square(&mut self, pt: Point) {
+        self.selected_square = pt
+    }
+
     pub fn move_selected_square(&mut self, direction: Direction, speed: usize) {
         self.selected_square = direction.add_to_point(
             self.selected_square,
@@ -80,9 +85,16 @@ impl SuperState {
                 self.move_selected_square(direction, speed);
                 Ok(())
             }
+            UiAction::SetSelectedSquare(pt) => {
+                self.set_selected_square(pt);
+                Ok(())
+            }
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
             UiAction::SetTerminalSize(_bounds) => {
                 unimplemented!("TODO implement terminal size changing")
+            }
+            UiAction::Quit => {
+                panic!("Thanks for playing")
             }
         }
     }
@@ -90,6 +102,38 @@ impl SuperState {
 
 pub enum UiAction {
     MoveSelectedSquare { direction: Direction, speed: usize },
+    SetSelectedSquare(Point),
     DoGameAction(GameAction),
     SetTerminalSize(Bounds),
+    Quit,
+}
+
+impl UiAction {
+    pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
+        UiAction::MoveSelectedSquare { direction, speed }
+    }
+
+    pub fn set_selected_square(pt: Point) -> UiAction {
+        UiAction::SetSelectedSquare(pt)
+    }
+
+    pub fn set_terminal_size(width: u16, height: u16) -> UiAction {
+        UiAction::SetTerminalSize(Bounds::of(width.into(), height.into()))
+    }
+
+    pub fn next() -> UiAction {
+        UiAction::DoGameAction(GameAction::next())
+    }
+
+    pub fn quit() -> UiAction {
+        UiAction::Quit
+    }
+
+    pub fn is_quit(&self) -> bool {
+        if let UiAction::Quit = self {
+            true
+        } else {
+            false
+        }
+    }
 }
