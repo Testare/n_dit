@@ -7,7 +7,7 @@ use crossterm::{
 use n_dit::{
     game::{Node, Piece, Sprite},
     grid_map::GridMap,
-    ui::{layout::NodeLayout, SuperState, UiAction},
+    ui::{SuperState, UiAction},
     Direction,
 };
 use std::io::stdout;
@@ -72,9 +72,6 @@ fn main() -> crossterm::Result<()> {
             false, false, false, false, false, true, false, false, false, false, false,
         ],
     ]));
-
-    let layout = NodeLayout::default();
-
     let guy_key = node.add_sprite((1, 6), Sprite::new("あ"));
     node.move_sprite((2, 6), guy_key.unwrap());
     node.move_sprite((3, 6), guy_key.unwrap());
@@ -99,7 +96,6 @@ fn main() -> crossterm::Result<()> {
         crossterm::event::EnableMouseCapture
     )?;
     crossterm::terminal::enable_raw_mode()?;
-    layout.render(&state)?;
     game_loop(state)?;
     crossterm::terminal::disable_raw_mode()?;
     execute!(
@@ -114,7 +110,7 @@ fn main() -> crossterm::Result<()> {
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;
-
+    state.render()?;
     while keep_going {
         if let Some(action) = get_next_action(&state)? {
             if action.is_quit() {

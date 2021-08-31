@@ -1,13 +1,12 @@
 use super::super::{Bounds, Direction, GameAction, GameState, Node, Point};
 use super::{DrawConfiguration, Layout};
 
-// TODO Include layout in SuperState or DrawConfiguration
 pub struct SuperState {
     pub game: GameState,
     layout: Layout,
     draw_config: DrawConfiguration,
     terminal_size: (usize, usize),
-    selected_square: Point,
+    selected_square: Point, // Might be a property of layout?
     selected_action_index: Option<usize>,
 }
 
@@ -94,8 +93,9 @@ impl SuperState {
                 Ok(())
             }
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
-            UiAction::SetTerminalSize(_bounds) => {
-                unimplemented!("TODO implement terminal size changing")
+            UiAction::SetTerminalSize(bounds) => {
+                self.layout.resize(bounds);
+                Ok(())
             }
             UiAction::Quit => {
                 panic!("Thanks for playing")

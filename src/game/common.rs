@@ -1,6 +1,6 @@
 pub type Point = (usize, usize);
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Bounds(usize, usize);
 
 #[derive(Clone, PartialEq, Eq)]

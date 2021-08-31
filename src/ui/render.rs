@@ -55,6 +55,38 @@ impl Piece {
     }
 }
 
+pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
+    let pt: Point = state.selected_square();
+    let piece_opt = state
+        .game
+        .node()
+        .expect("TODO What if there is no node?")
+        .piece_at(pt);
+    let mut base_vec = vec![String::from(""); height];
+    if let Some(piece) = piece_opt {
+        match piece {
+            Piece::Mon(mon_val) => {
+                base_vec[2].push_str("Money");
+                base_vec[3] = "=".repeat(width);
+                base_vec[4].push('$');
+                base_vec[4].push_str(mon_val.to_string().as_str());
+            }
+            Piece::AccessPoint => {
+                base_vec[2].push_str("Access Pnt");
+            }
+            Piece::Program(sprite) => {
+                base_vec[2].push_str("Program");
+                base_vec[3] = "=".repeat(width);
+                base_vec[4].push('[');
+                base_vec[4].push_str(sprite.display());
+                base_vec[4].push(']');
+                base_vec[5].push_str(sprite.name());
+            }
+        };
+    }
+    base_vec
+}
+
 impl BorderType {
     fn of(lhs: usize, rhs: usize) -> BorderType {
         if lhs != rhs {
