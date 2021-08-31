@@ -1,8 +1,9 @@
 use super::super::{Direction, GameState, Node, Point};
-use super::DrawConfiguration;
+use super::{DrawConfiguration, Layout};
 
 pub struct SuperState {
     pub game: GameState,
+    layout: Layout,
     draw_config: DrawConfiguration,
     terminal_size: (usize, usize),
     selected_square: Point,
@@ -17,6 +18,7 @@ impl SuperState {
 
         SuperState {
             game: GameState::from(node),
+            layout: Layout::new((t_width, t_height).into()),
             selected_square: (0, 0),
             selected_action_index: None,
             draw_config: DrawConfiguration::default(),
@@ -34,6 +36,7 @@ impl SuperState {
     }
 
     pub fn set_terminal_size(&mut self, bounds: (usize, usize)) {
+        // TODO use Layout, trigger recalculations
         self.terminal_size = bounds;
     }
 
@@ -45,6 +48,10 @@ impl SuperState {
         self.selected_action_index
     }
 
+    pub fn render(&self) -> std::io::Result<bool> {
+        self.layout.render(self)
+    }
+
     pub fn move_selected_square(&mut self, direction: Direction, speed: usize) {
         self.selected_square = direction.add_to_point(
             self.selected_square,
@@ -53,7 +60,14 @@ impl SuperState {
                 .node()
                 .expect("TODO Why is this method called when there is no node?")
                 .bounds(),
-        )
+        );
+        let SuperState {
+            layout,
+            game,
+            selected_square,
+            ..
+        } = self;
+        layout.scroll_to_pt(game, *selected_square);
     }
 
     pub fn game_state(&self) -> &GameState {

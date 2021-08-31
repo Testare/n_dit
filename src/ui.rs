@@ -5,11 +5,12 @@ mod super_state;
 
 pub use configuration::DrawConfiguration;
 pub(self) use configuration::{DrawType, FillMethod, UiFormat};
+pub use layout::Layout;
 pub use super_state::SuperState;
 
 use std::num::NonZeroUsize;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Window {
     scroll_x: usize,
     scroll_y: usize,

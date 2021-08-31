@@ -1,10 +1,10 @@
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Team {
     PlayerTeam = 0,
     EnemyTeam = 1,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Sprite {
     display: String,
     max_size: usize,

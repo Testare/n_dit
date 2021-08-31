@@ -1,5 +1,6 @@
 pub type Point = (usize, usize);
 
+#[derive(Clone, Copy)]
 pub struct Bounds(usize, usize);
 
 pub enum Direction {
@@ -21,14 +22,14 @@ impl Direction {
             }
             Self::East => {
                 if point.0 + speed >= bounds.width() {
-                    (bounds.width(), point.1)
+                    (bounds.width() - 1, point.1)
                 } else {
                     (point.0 + speed, point.1)
                 }
             }
             Self::South => {
                 if point.1 + speed >= bounds.height() {
-                    (point.0, bounds.height())
+                    (point.0, bounds.height() - 1)
                 } else {
                     (point.0, point.1 + speed)
                 }
@@ -55,5 +56,23 @@ impl Bounds {
 
     pub fn height(&self) -> usize {
         self.1
+    }
+}
+
+impl From<(u16, u16)> for Bounds {
+    fn from((width, height): (u16, u16)) -> Self {
+        Bounds(<usize>::from(width), <usize>::from(height))
+    }
+}
+
+impl From<(usize, usize)> for Bounds {
+    fn from((width, height): (usize, usize)) -> Self {
+        Bounds(width, height)
+    }
+}
+
+impl From<Bounds> for (usize, usize) {
+    fn from(Bounds(width, height): Bounds) -> Self {
+        (width, height)
     }
 }

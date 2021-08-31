@@ -113,7 +113,6 @@ fn main() -> crossterm::Result<()> {
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut action = ' ';
-    let layout = NodeLayout::default();
 
     while action != 'q' {
         // execute!(stdout(), crossterm::cursor::MoveTo(11+3*x,4+2*y))?;
@@ -156,7 +155,7 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
             Event::Resize(_w, _h) => {}
         }
 
-        layout.render(&state)?;
+        state.render()?;
     }
     Ok(())
 }
