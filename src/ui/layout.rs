@@ -45,6 +45,15 @@ impl Layout {
             unimplemented!("TODO World map not implemented")
         }
     }
+
+    pub fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
+        if state.game.node().is_some() {
+            // It should be safe, we have verifies a node exists
+            unsafe { self.node_layout.action_for_char_pt(state, pt) }
+        } else {
+            unimplemented!("TODO World map not implemented")
+        }
+    }
 }
 
 #[derive(Clone, Copy)]

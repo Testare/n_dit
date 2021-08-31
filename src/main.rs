@@ -113,11 +113,10 @@ fn main() -> crossterm::Result<()> {
 }
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
-    let layout = NodeLayout::default();
     let mut keep_going = true;
 
     while keep_going {
-        if let Some(action) = get_next_action(&state, &layout)? {
+        if let Some(action) = get_next_action(&state)? {
             if action.is_quit() {
                 keep_going = false;
             } else {
@@ -134,8 +133,9 @@ const TIMEOUT: Duration = Duration::from_millis(500);
 
 // TODO Could be implemented as an Iterator<Item=Result<UiAction>>, where no-ops are ignored
 // instead of returning None
-fn get_next_action(state: &SuperState, layout: &NodeLayout) -> crossterm::Result<Option<UiAction>> {
+fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
     let event = if state.game_state().waiting_on_player_input() {
+        // TODO better handling for when keys are held down/ clearing input queue
         crossterm::event::read()?
     } else {
         if crossterm::event::poll(TIMEOUT)? {
@@ -168,7 +168,7 @@ fn get_next_action(state: &SuperState, layout: &NodeLayout) -> crossterm::Result
             modifiers: _,
         }) => {
             if let MouseEventKind::Down(_) = kind {
-                unsafe { layout.action_for_char_pt(&state, (column.into(), row.into())) }
+                state.action_for_char_pt((column.into(), row.into()))
             } else {
                 None
             }

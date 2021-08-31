@@ -27,6 +27,10 @@ impl SuperState {
         }
     }
 
+    pub fn action_for_char_pt(&self, pt: Point) -> Option<UiAction> {
+        self.layout.action_for_char_pt(self, pt)
+    }
+
     pub fn draw_config(&self) -> &DrawConfiguration {
         &self.draw_config
     }
