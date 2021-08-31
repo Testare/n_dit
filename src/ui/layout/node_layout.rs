@@ -110,9 +110,6 @@ impl StandardNodeLayout {
         );
         map_window.scroll_x = self.scroll.0;
         map_window.scroll_y = self.scroll.1;
-        /*if self.scroll != (0, 0) {
-            panic!("Huh? {:?}", map_window)
-        }*/
 
         self.calculated_fields = Some(StandardNodeLayoutCalculatedFields {
             height,
@@ -284,10 +281,13 @@ impl SubLayout for StandardNodeLayout {
                 space = " ",
                 menu_padding = menu_padding_size,
                 padding = padding_size
+                )?;
+                    execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
+            }
+            execute!(stdout(), crossterm::style::Print("/".repeat(fields.width)),
+            // crossterm::style::Print("/".repeat(fields.width)),
+            crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
             )?;
-            execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
-        }
-        execute!(stdout(), crossterm::style::Print("/".repeat(fields.width)))?;
         Ok(true)
     }
 
