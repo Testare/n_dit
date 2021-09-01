@@ -12,6 +12,8 @@ pub enum Direction {
 }
 
 impl Direction {
+    pub const EVERY_DIRECTION: [Direction; 4] = [Direction::North, Direction::East, Direction::South, Direction::West];
+
     pub fn add_to_point(&self, point: Point, speed: usize, bounds: Bounds) -> Point {
         match self {
             Self::North => {
@@ -44,6 +46,7 @@ impl Direction {
             }
         }
     }
+
 }
 
 impl Bounds {

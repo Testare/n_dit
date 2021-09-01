@@ -150,6 +150,11 @@ impl<T> GridMap<T> {
         self.item(self.square_ref(pt)?.item_key()?)
     }
 
+    /// Returns the key to the item at the given point
+    pub fn item_key_at(&self, pt: Point) -> Option<usize> {
+        self.square_ref(pt)?.item_key()
+    }
+
     /// Returns a [`Vec<&T>`] of all entries contained in the grid.
     ///
     /// There is no guarantee to order.

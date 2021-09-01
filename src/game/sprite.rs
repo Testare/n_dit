@@ -37,4 +37,8 @@ impl Sprite {
     pub fn team(&self) -> Team {
         self.team
     }
+
+    pub fn moves(&self) -> usize {
+        self.movement_speed - self.moves_taken
+    }
 }

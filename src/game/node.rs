@@ -1,5 +1,6 @@
-use super::super::{Bounds, GridMap, Point};
+use crate::{Bounds, Direction, GridMap, Point};
 use super::Sprite;
+use std::collections::HashSet;
 
 pub struct Node {
     grid: GridMap<Piece>,
@@ -63,6 +64,36 @@ impl Node {
     pub fn piece_at(&self, pt: Point) -> Option<&Piece> {
         self.grid.item_at(pt)
     }
+
+    pub fn possible_moves(&self, sprite_key: usize) -> HashSet<Point> {
+        let piece = self.grid.item(sprite_key).unwrap();
+        let bounds = self.bounds();
+        if let Piece::Program(sprite) = piece {
+            fn possible_moves_recur(point: Point, hash_set: HashSet<Point>, moves: usize, bounds: &Bounds, sprite_key: usize, grid: &GridMap<Piece>) -> HashSet<Point> {
+                if moves == 0 {
+                    hash_set
+                } else {
+                    Direction::EVERY_DIRECTION.iter().fold(hash_set, |mut set, dir| {
+                        let next_pt = dir.add_to_point(point, 1, *bounds);
+                        if grid.square_is_free(next_pt) || grid.item_key_at(next_pt) == Some(sprite_key) {
+                            set.insert(next_pt);
+                            possible_moves_recur(next_pt, set, moves-1, bounds, sprite_key, grid)
+                        } else {
+                            set
+                        }
+                    })
+                }
+            }
+            let head = self.grid.head(sprite_key).unwrap();
+            let moves = sprite.moves();
+            let mut point_set = HashSet::new();
+            point_set.insert(head);
+            possible_moves_recur(head, point_set, moves, &bounds, sprite_key, self.grid())
+        } else {
+            HashSet::default()
+        }
+    }
+
 }
 
 impl From<GridMap<Piece>> for Node {

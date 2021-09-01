@@ -63,7 +63,7 @@ impl Default for ColorScheme {
             selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
             selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
             grid_border_default: UiFormat::new(Some(Color::Green), None, None),
-            possible_movement: UiFormat::default(),
+            possible_movement: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
             player_team: UiFormat::new(Some(Color::Blue), None, None),
             enemy_team: UiFormat::new(Some(Color::Red), None, None),
         }

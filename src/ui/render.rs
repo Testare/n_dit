@@ -1,7 +1,7 @@
 use super::super::game::{Piece, Point, Team};
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 use itertools::Itertools;
-use std::{cmp, ops::RangeInclusive};
+use std::{cmp, ops::RangeInclusive, collections::HashSet};
 
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
@@ -14,8 +14,10 @@ enum BorderType {
     Linked = 2,
 }
 
+// TODO render to arbitrary write object
 impl Piece {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
+    // Might want to change this to accept SuperState to allow coloring sprites here.
     fn render_square(&self, position: usize, configuration: &DrawConfiguration) -> String {
         let string = match self {
             Piece::AccessPoint => String::from("&&"),
@@ -127,15 +129,32 @@ impl BorderType {
     }
 }
 
+fn points_in_range(
+    x_range: &RangeInclusive<usize>,
+    y_range: &RangeInclusive<usize>) -> HashSet<Point> {
+        let mut set = HashSet::default();
+        for x in x_range.clone().into_iter() {
+            for y in y_range.clone().into_iter() {
+                set.insert((x,y));
+            }
+        }
+        set
+    }
+
 pub fn border_style_for(
+    available_moves: &HashSet<Point>,
     state: &SuperState,
     x_range: &RangeInclusive<usize>,
     y_range: &RangeInclusive<usize>,
 ) -> UiFormat {
     let color_scheme = state.draw_config().color_scheme();
-    let (selected_x, selected_y) = state.selected_square();
+    let selected_square = state.selected_square();
+    let (selected_x, selected_y) = selected_square;
     if x_range.contains(&selected_x) && y_range.contains(&selected_y) {
         color_scheme.selected_square_border()
+        // TODO optimized logic so we don't create a full set of points for every square
+    } else if !available_moves.is_disjoint(&points_in_range(x_range, y_range)) {
+        color_scheme.possible_movement()
     } else {
         color_scheme.grid_border_default()
     }
@@ -149,18 +168,26 @@ pub fn space_style_for(state: &SuperState, pt: Point) -> UiFormat {
     }
 }
 
+// TODO make this unsafe, panic if there is no node
+// TODO "NodeRenderingMathCache" struct
 pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
-    let node = state.game_state().node();
-    if node.is_none() {
+    let node_opt = state.game_state().node();
+    if node_opt.is_none() {
         return vec![]; // Panic?
     }
+    let node = node_opt.unwrap();
     let draw_config = state.draw_config();
-    let grid = node.unwrap().grid();
+    let grid = node.grid();
+
+    let selected_piece = grid.item_key_at(state.selected_square());
+    let available_moves = selected_piece.map(|piece_key|node.possible_moves(piece_key)).unwrap_or(HashSet::default());
+
     let width = grid.width();
     let height = grid.height();
     let grid_map = grid.number_map();
 
     let piece_map = grid.point_map(|i, piece| piece.render_square(i, draw_config));
+
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -208,7 +235,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
 
                 if include_border {
                     // TODO Really should be x-1..x+1, but we don't have a way to handle x=0 in that case
-                    let pivot_format = border_style_for(&state, &border_x_range, &border_y_range);
+                    let pivot_format = border_style_for(&available_moves, &state, &border_x_range, &border_y_range);
                     border_line.push_str(
                         pivot_format
                             .apply(intersection_for_pivot(
@@ -229,7 +256,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 }
 
                 if include_space {
-                    let border_style = border_style_for(&state, &border_x_range, &(y..=y));
+                    let border_style = border_style_for(&available_moves, &state, &border_x_range, &(y..=y));
                     space_line.push_str(
                         border_style
                             .apply(BorderType::of(left2, right2).vertical_border(draw_config))
@@ -247,7 +274,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                             // Only half the square is rendered
                             if include_border {
                                 let border_style =
-                                    border_style_for(&state, &(x..=x), &border_y_range);
+                                    border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
                                 border_line.push_str(
                                     border_style
                                         .apply(
@@ -282,7 +309,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     }
                 }
                 if include_border {
-                    let border_style = border_style_for(&state, &(x..=x), &border_y_range);
+                    let border_style = border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
                     border_line.push_str(
                         border_style
                             .apply(BorderType::of(right1, right2).horizontal_border(draw_config))
