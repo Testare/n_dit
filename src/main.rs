@@ -1,14 +1,9 @@
 use core::time::Duration;
-use crossterm::{
-    self,
-    event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind},
-    execute,
-};
+use crossterm::{self, execute};
 use n_dit::{
     game::{Node, Piece, Sprite},
     grid_map::GridMap,
-    ui::{SuperState, UiAction},
-    Direction,
+    ui::{SuperState, UiAction, UserInput},
 };
 use std::io::stdout;
 
@@ -140,36 +135,5 @@ fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
             return Ok(Some(UiAction::next()));
         }
     };
-    let action = match event {
-        Event::Key(KeyEvent { code, modifiers }) => {
-            let speed = if modifiers.contains(KeyModifiers::CONTROL) {
-                2
-            } else {
-                1
-            };
-            match code {
-                KeyCode::Char('h') => Some(UiAction::move_selected_square(Direction::West, speed)),
-                KeyCode::Char('k') => Some(UiAction::move_selected_square(Direction::North, speed)),
-                KeyCode::Char('j') => Some(UiAction::move_selected_square(Direction::South, speed)),
-                KeyCode::Char('l') => Some(UiAction::move_selected_square(Direction::East, speed)),
-                KeyCode::Char('q') => Some(UiAction::quit()),
-                KeyCode::Char('-') => panic!("State report: TODO"),
-                _ => None,
-            }
-        }
-        Event::Mouse(MouseEvent {
-            kind,
-            column,
-            row,
-            modifiers: _,
-        }) => {
-            if let MouseEventKind::Down(_) = kind {
-                state.action_for_char_pt((column.into(), row.into()))
-            } else {
-                None
-            }
-        }
-        Event::Resize(w, h) => Some(UiAction::set_terminal_size(w, h)),
-    };
-    Ok(action)
+    Ok(UserInput::from_event(event).and_then(|user_input| state.ui_action_for_input(user_input)))
 }

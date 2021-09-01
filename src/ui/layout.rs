@@ -1,4 +1,4 @@
-use super::super::{Bounds, Direction, GameState, Point};
+use super::super::{Bounds, GameState, Point};
 use super::{SuperState, UiAction};
 
 mod node_layout;

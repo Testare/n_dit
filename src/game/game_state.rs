@@ -1,5 +1,6 @@
 use super::{Direction, Node, Point, WorldMap};
 
+#[derive(Debug)]
 pub struct GameState {
     _world_map: WorldMap,
     node: Option<Node>,

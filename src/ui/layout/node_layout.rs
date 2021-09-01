@@ -281,13 +281,15 @@ impl SubLayout for StandardNodeLayout {
                 space = " ",
                 menu_padding = menu_padding_size,
                 padding = padding_size
-                )?;
-                    execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
-            }
-            execute!(stdout(), crossterm::style::Print("/".repeat(fields.width)),
+            )?;
+            execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
+        }
+        execute!(
+            stdout(),
+            crossterm::style::Print("/".repeat(fields.width)),
             // crossterm::style::Print("/".repeat(fields.width)),
             crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
-            )?;
+        )?;
         Ok(true)
     }
 

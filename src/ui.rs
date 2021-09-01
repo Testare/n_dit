@@ -2,11 +2,13 @@ pub mod configuration;
 pub mod layout;
 mod render;
 mod super_state;
+mod user_input;
 
 pub use configuration::DrawConfiguration;
 pub(self) use configuration::{DrawType, FillMethod, UiFormat};
 pub use layout::Layout;
 pub use super_state::{SuperState, UiAction};
+pub use user_input::UserInput;
 
 use std::num::NonZeroUsize;
 

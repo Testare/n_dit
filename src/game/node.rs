@@ -1,13 +1,15 @@
-use crate::{Bounds, Direction, GridMap, Point};
 use super::Sprite;
+use crate::{Bounds, Direction, GridMap, Point};
 use std::collections::HashSet;
 
+#[derive(Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
     activated_sprite: Option<usize>,
 }
 
+#[derive(Debug)]
 pub enum Piece {
     AccessPoint,
     Program(Sprite),
@@ -69,19 +71,37 @@ impl Node {
         let piece = self.grid.item(sprite_key).unwrap();
         let bounds = self.bounds();
         if let Piece::Program(sprite) = piece {
-            fn possible_moves_recur(point: Point, hash_set: HashSet<Point>, moves: usize, bounds: &Bounds, sprite_key: usize, grid: &GridMap<Piece>) -> HashSet<Point> {
+            fn possible_moves_recur(
+                point: Point,
+                hash_set: HashSet<Point>,
+                moves: usize,
+                bounds: &Bounds,
+                sprite_key: usize,
+                grid: &GridMap<Piece>,
+            ) -> HashSet<Point> {
                 if moves == 0 {
                     hash_set
                 } else {
-                    Direction::EVERY_DIRECTION.iter().fold(hash_set, |mut set, dir| {
-                        let next_pt = dir.add_to_point(point, 1, *bounds);
-                        if grid.square_is_free(next_pt) || grid.item_key_at(next_pt) == Some(sprite_key) {
-                            set.insert(next_pt);
-                            possible_moves_recur(next_pt, set, moves-1, bounds, sprite_key, grid)
-                        } else {
-                            set
-                        }
-                    })
+                    Direction::EVERY_DIRECTION
+                        .iter()
+                        .fold(hash_set, |mut set, dir| {
+                            let next_pt = dir.add_to_point(point, 1, *bounds);
+                            if grid.square_is_free(next_pt)
+                                || grid.item_key_at(next_pt) == Some(sprite_key)
+                            {
+                                set.insert(next_pt);
+                                possible_moves_recur(
+                                    next_pt,
+                                    set,
+                                    moves - 1,
+                                    bounds,
+                                    sprite_key,
+                                    grid,
+                                )
+                            } else {
+                                set
+                            }
+                        })
                 }
             }
             let head = self.grid.head(sprite_key).unwrap();
@@ -93,7 +113,6 @@ impl Node {
             HashSet::default()
         }
     }
-
 }
 
 impl From<GridMap<Piece>> for Node {

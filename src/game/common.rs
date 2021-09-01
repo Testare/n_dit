@@ -3,7 +3,7 @@ pub type Point = (usize, usize);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Bounds(usize, usize);
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Direction {
     North,
     East,
@@ -12,7 +12,12 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub const EVERY_DIRECTION: [Direction; 4] = [Direction::North, Direction::East, Direction::South, Direction::West];
+    pub const EVERY_DIRECTION: [Direction; 4] = [
+        Direction::North,
+        Direction::East,
+        Direction::South,
+        Direction::West,
+    ];
 
     pub fn add_to_point(&self, point: Point, speed: usize, bounds: Bounds) -> Point {
         match self {
@@ -46,7 +51,6 @@ impl Direction {
             }
         }
     }
-
 }
 
 impl Bounds {

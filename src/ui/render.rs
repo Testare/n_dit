@@ -1,7 +1,7 @@
 use super::super::game::{Piece, Point, Team};
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 use itertools::Itertools;
-use std::{cmp, ops::RangeInclusive, collections::HashSet};
+use std::{cmp, collections::HashSet, ops::RangeInclusive};
 
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
@@ -131,15 +131,16 @@ impl BorderType {
 
 fn points_in_range(
     x_range: &RangeInclusive<usize>,
-    y_range: &RangeInclusive<usize>) -> HashSet<Point> {
-        let mut set = HashSet::default();
-        for x in x_range.clone().into_iter() {
-            for y in y_range.clone().into_iter() {
-                set.insert((x,y));
-            }
+    y_range: &RangeInclusive<usize>,
+) -> HashSet<Point> {
+    let mut set = HashSet::default();
+    for x in x_range.clone().into_iter() {
+        for y in y_range.clone().into_iter() {
+            set.insert((x, y));
         }
-        set
     }
+    set
+}
 
 pub fn border_style_for(
     available_moves: &HashSet<Point>,
@@ -180,14 +181,15 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let grid = node.grid();
 
     let selected_piece = grid.item_key_at(state.selected_square());
-    let available_moves = selected_piece.map(|piece_key|node.possible_moves(piece_key)).unwrap_or(HashSet::default());
+    let available_moves = selected_piece
+        .map(|piece_key| node.possible_moves(piece_key))
+        .unwrap_or(HashSet::default());
 
     let width = grid.width();
     let height = grid.height();
     let grid_map = grid.number_map();
 
     let piece_map = grid.point_map(|i, piece| piece.render_square(i, draw_config));
-
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -235,7 +237,12 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
 
                 if include_border {
                     // TODO Really should be x-1..x+1, but we don't have a way to handle x=0 in that case
-                    let pivot_format = border_style_for(&available_moves, &state, &border_x_range, &border_y_range);
+                    let pivot_format = border_style_for(
+                        &available_moves,
+                        &state,
+                        &border_x_range,
+                        &border_y_range,
+                    );
                     border_line.push_str(
                         pivot_format
                             .apply(intersection_for_pivot(
@@ -256,7 +263,8 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 }
 
                 if include_space {
-                    let border_style = border_style_for(&available_moves, &state, &border_x_range, &(y..=y));
+                    let border_style =
+                        border_style_for(&available_moves, &state, &border_x_range, &(y..=y));
                     space_line.push_str(
                         border_style
                             .apply(BorderType::of(left2, right2).vertical_border(draw_config))
@@ -273,8 +281,12 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                         2 => {
                             // Only half the square is rendered
                             if include_border {
-                                let border_style =
-                                    border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
+                                let border_style = border_style_for(
+                                    &available_moves,
+                                    &state,
+                                    &(x..=x),
+                                    &border_y_range,
+                                );
                                 border_line.push_str(
                                     border_style
                                         .apply(
@@ -309,7 +321,8 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     }
                 }
                 if include_border {
-                    let border_style = border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
+                    let border_style =
+                        border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
                     border_line.push_str(
                         border_style
                             .apply(BorderType::of(right1, right2).horizontal_border(draw_config))

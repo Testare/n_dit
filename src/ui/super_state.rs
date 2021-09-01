@@ -1,6 +1,7 @@
 use super::super::{Bounds, Direction, GameAction, GameState, Node, Point};
-use super::{DrawConfiguration, Layout};
+use super::{DrawConfiguration, Layout, UserInput};
 
+#[derive(Debug)]
 pub struct SuperState {
     pub game: GameState,
     layout: Layout,
@@ -34,7 +35,7 @@ impl SuperState {
         &self.draw_config
     }
 
-    // TODO use Bounds
+    // TODO remove from SuperState when Layout can handle it by itself
     pub fn terminal_size(&self) -> (usize, usize) {
         self.terminal_size
     }
@@ -82,6 +83,18 @@ impl SuperState {
         &self.game
     }
 
+    pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
+        match user_input {
+            UserInput::Dir(dir) => Some(UiAction::move_selected_square(dir, 1)),
+            UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 2)),
+            UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
+            UserInput::Debug => panic!("Debug state: {:?}", self),
+            UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
+            UserInput::Click(pt) => self.action_for_char_pt(pt),
+            _ => None,
+        }
+    }
+
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::MoveSelectedSquare { direction, speed } => {
@@ -121,8 +134,8 @@ impl UiAction {
         UiAction::SetSelectedSquare(pt)
     }
 
-    pub fn set_terminal_size(width: u16, height: u16) -> UiAction {
-        UiAction::SetTerminalSize(Bounds::of(width.into(), height.into()))
+    pub fn set_terminal_size(bounds: Bounds) -> UiAction {
+        UiAction::SetTerminalSize(bounds)
     }
 
     pub fn next() -> UiAction {
