@@ -1,12 +1,12 @@
 use super::Sprite;
-use crate::{Bounds, Direction, GridMap, Point};
+use crate::{Bounds, Direction, GridMap, Point, Team};
 use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
-    activated_sprite: Option<usize>,
+    active_sprite: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -17,9 +17,40 @@ pub enum Piece {
 }
 
 impl Node {
+
+    pub fn active_sprite(&self) -> Option<&Sprite> {
+        self.active_sprite.map(|sprite_key| {
+            if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
+                sprite
+            } else {
+                panic!("Somehow a non-sprite was activated")
+            }
+        })
+    }
+
+    pub fn active_sprite_mut(&mut self) -> Option<&mut Sprite> {
+        self.active_sprite.map(move |sprite_key| {
+            if let Some(Piece::Program(sprite)) = self.grid.item_mut(sprite_key) {
+                sprite
+            } else {
+                panic!("Somehow a non-sprite was activated")
+            }
+        })
+    }
+
+    pub fn deactivate_sprite(&mut self) {
+        self.active_sprite = None;
+    }
+
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
-        if self.grid.contains_key(sprite_key) {
-            true
+        if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
+            if sprite.team() == Team::PlayerTeam {
+                // TODO Check that sprite isn't already tapped
+                self.active_sprite = Some(sprite_key);
+                true
+            } else {
+                false 
+            }
         } else {
             false
         }
@@ -65,6 +96,10 @@ impl Node {
 
     pub fn piece_at(&self, pt: Point) -> Option<&Piece> {
         self.grid.item_at(pt)
+    }
+
+    pub fn piece_key_at(&self, pt: Point) -> Option<usize> {
+        self.grid.item_key_at(pt)
     }
 
     pub fn possible_moves(&self, sprite_key: usize) -> HashSet<Point> {
@@ -118,9 +153,9 @@ impl Node {
 impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
         Node {
-            name: String::from("Node"),
-            activated_sprite: None,
+            active_sprite: None,
             grid,
+            name: String::from("Node"),
         }
     }
 }
@@ -128,9 +163,9 @@ impl From<GridMap<Piece>> for Node {
 impl From<(String, GridMap<Piece>)> for Node {
     fn from((name, grid): (String, GridMap<Piece>)) -> Self {
         Node {
-            activated_sprite: None,
-            name,
+            active_sprite: None,
             grid,
+            name,
         }
     }
 }

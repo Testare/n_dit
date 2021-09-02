@@ -18,7 +18,7 @@ enum BorderType {
 impl Piece {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
     // Might want to change this to accept SuperState to allow coloring sprites here.
-    fn render_square(&self, position: usize, configuration: &DrawConfiguration) -> String {
+    fn render_square(&self, state: &SuperState, position: usize, configuration: &DrawConfiguration) -> String {
         let string = match self {
             Piece::AccessPoint => String::from("&&"),
             Piece::Mon(_) => configuration.color_scheme().mon().apply("$$"),
@@ -42,15 +42,21 @@ impl Piece {
                 }
             }
         };
-        self.style(configuration).apply(string)
+        self.style(state, position, configuration).apply(string)
     }
 
-    pub fn style(&self, draw_config: &DrawConfiguration) -> UiFormat {
+    fn style(&self, state: &SuperState, _position: usize, draw_config: &DrawConfiguration) -> UiFormat {
         match self {
             Piece::Mon(_) => draw_config.color_scheme().mon(),
             Piece::AccessPoint => draw_config.color_scheme().access_point(),
             Piece::Program(sprite) => match sprite.team() {
-                Team::PlayerTeam => draw_config.color_scheme().player_team(),
+                Team::PlayerTeam => {
+                    if state.game.node().unwrap().active_sprite() == Some(sprite) {
+                        draw_config.color_scheme().mon() // TODO active_sprite
+                    } else {
+                        draw_config.color_scheme().player_team()
+                    }
+                }
                 Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
             },
         }
@@ -179,17 +185,11 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let node = node_opt.unwrap();
     let draw_config = state.draw_config();
     let grid = node.grid();
-
-    let selected_piece = grid.item_key_at(state.selected_square());
-    let available_moves = selected_piece
-        .map(|piece_key| node.possible_moves(piece_key))
-        .unwrap_or(HashSet::default());
-
     let width = grid.width();
     let height = grid.height();
     let grid_map = grid.number_map();
 
-    let piece_map = grid.point_map(|i, piece| piece.render_square(i, draw_config));
+    let piece_map = grid.point_map(|i, piece| piece.render_square(&state, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -203,6 +203,12 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let y_end = cmp::min(height, (window.scroll_y + window.height.get() - 1) / 2);
     let skip_y = window.scroll_y % 2;
     let keep_last_space = skip_y + window.height.get() % 2 == 0;
+
+    let selected_piece = grid.item_key_at(state.selected_square());
+    let available_moves = selected_piece
+        .map(|piece_key| node.possible_moves(piece_key))
+        .unwrap_or(HashSet::default());
+
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
         .map(|y| {
@@ -236,7 +242,6 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 let border_y_range = if y == 0 { 0..=0 } else { y - 1..=y };
 
                 if include_border {
-                    // TODO Really should be x-1..x+1, but we don't have a way to handle x=0 in that case
                     let pivot_format = border_style_for(
                         &available_moves,
                         &state,
@@ -252,14 +257,6 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                             ))
                             .as_str(),
                     );
-
-                    /*
-
-                    border_line.push(intersection_for_pivot(
-                        &[left1, left2],
-                        &[right1, right2],
-                        draw_config,
-                    ));*/
                 }
 
                 if include_space {

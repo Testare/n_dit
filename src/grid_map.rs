@@ -145,6 +145,14 @@ impl<T> GridMap<T> {
         self.entries.get(&item_key.into()?).map(|(item, _)| item)
     }
 
+    /// Returns a reference to the item in the GridMap with the given key
+    ///
+    /// Input could be an item_key (usize), an optional item_key (Optional<usize>),
+    /// a Square, or anything else that converts into Optional<usize>
+    pub fn item_mut<K: Into<Option<usize>>>(&mut self, item_key: K) -> Option<&mut T> {
+        self.entries.get_mut(&item_key.into()?).map(|(item, _)| item)
+    }
+
     /// Returns a reference to the item at the given point
     pub fn item_at(&self, pt: Point) -> Option<&T> {
         self.item(self.square_ref(pt)?.item_key()?)

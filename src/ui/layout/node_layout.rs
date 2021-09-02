@@ -215,6 +215,7 @@ impl SubLayout for StandardNodeLayout {
     ///
     /// Assumes game_state.node().is_some()
     unsafe fn render(&self, super_state: &SuperState) -> std::io::Result<bool> {
+        // TODO queue + flush over execute
         execute!(stdout(), crossterm::cursor::MoveTo(0, 0))?;
         if self.calculated_fields.is_none() {
             let (available_width, available_height) = self.terminal_bounds.into();

@@ -1,4 +1,4 @@
-use super::super::{Bounds, Direction, GameAction, GameState, Node, Point};
+use super::super::{Bounds, Direction, GameAction, GameState, Node, Point, Piece};
 use super::{DrawConfiguration, Layout, UserInput};
 
 #[derive(Debug)]
@@ -90,6 +90,17 @@ impl SuperState {
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
+            UserInput::Activate => if let Some(node) = self.game.node() {
+                let pt = self.selected_square();
+                let piece_opt = node.piece_at(pt);
+                if let Some(Piece::Program(_)) = piece_opt {
+                    let piece_key = node.piece_key_at(pt).unwrap();
+                    Some(UiAction::activate_sprite(piece_key))
+                } else {
+                    None
+                }
+
+            } else { None }
             UserInput::Click(pt) => self.action_for_char_pt(pt),
             _ => None,
         }
@@ -104,6 +115,13 @@ impl SuperState {
             UiAction::SetSelectedSquare(pt) => {
                 self.set_selected_square(pt);
                 Ok(())
+            }
+            UiAction::ActivateSprite(sprite_key) => {
+                if self.game.activate_sprite(sprite_key) {
+                    Ok(())
+                } else {
+                    Err("Trouble activating specified sprite".to_string())
+                }
             }
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
             UiAction::SetTerminalSize(bounds) => {
@@ -121,11 +139,17 @@ pub enum UiAction {
     MoveSelectedSquare { direction: Direction, speed: usize },
     SetSelectedSquare(Point),
     DoGameAction(GameAction),
+    ActivateSprite(usize),
     SetTerminalSize(Bounds),
     Quit,
 }
 
 impl UiAction {
+
+    pub fn activate_sprite(sprite_key: usize) -> UiAction {
+        UiAction::ActivateSprite(sprite_key)
+    }
+
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
         UiAction::MoveSelectedSquare { direction, speed }
     }

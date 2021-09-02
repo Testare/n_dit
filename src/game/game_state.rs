@@ -11,6 +11,14 @@ impl GameState {
         self.node.as_ref()
     }
 
+    pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
+        if let Some(node) = self.node.as_mut() {
+            node.activate_sprite(sprite_key)
+        } else {
+            false
+        }
+    }
+
     pub fn from(node: Option<Node>) -> Self {
         GameState {
             node,
