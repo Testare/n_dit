@@ -17,7 +17,12 @@ pub enum Piece {
 }
 
 impl Node {
+    #[deprecated]
+    pub(super) fn grid_mut(&mut self) -> &mut GridMap<Piece> {
+        &mut self.grid
+    }
 
+    // TODO Idea: Make these functions return a tuple of key and sprite?
     pub fn active_sprite(&self) -> Option<&Sprite> {
         self.active_sprite.map(|sprite_key| {
             if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
@@ -38,24 +43,28 @@ impl Node {
         })
     }
 
+    pub fn active_sprite_key(&self) -> Option<usize> {
+        self.active_sprite
+    }
+
     pub fn deactivate_sprite(&mut self) {
+        self.active_sprite_mut().map(|sprite| sprite.tap());
         self.active_sprite = None;
     }
 
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
-        if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
-            if sprite.team() == Team::PlayerTeam {
-                // TODO Check that sprite isn't already tapped
-                self.active_sprite = Some(sprite_key);
-                true
-            } else {
-                false 
-            }
-        } else {
-            false
+        let can_activate = self
+            .with_sprite(sprite_key, |sprite| {
+                sprite.team() == Team::PlayerTeam && !sprite.tapped()
+            })
+            .unwrap_or(false);
+        if can_activate {
+            self.active_sprite = Some(sprite_key);
         }
+        can_activate
     }
 
+    #[deprecated]
     pub(crate) fn grid(&self) -> &GridMap<Piece> {
         &self.grid
     }
@@ -102,10 +111,37 @@ impl Node {
         self.grid.item_key_at(pt)
     }
 
+    pub fn with_sprite_mut<T, R: Into<Option<T>>, F: FnOnce(&mut Sprite) -> R>(
+        &mut self,
+        sprite_key: usize,
+        sprite_op: F,
+    ) -> Option<T> {
+        if let Some(Piece::Program(sprite)) = self.grid.item_mut(sprite_key) {
+            sprite_op(sprite).into()
+        } else {
+            None
+        }
+    }
+
+    pub fn with_sprite<T, R: Into<Option<T>>, F: FnOnce(&Sprite) -> R>(
+        &self,
+        sprite_key: usize,
+        sprite_op: F,
+    ) -> Option<T> {
+        if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
+            sprite_op(sprite).into()
+        } else {
+            None
+        }
+    }
+
     pub fn possible_moves(&self, sprite_key: usize) -> HashSet<Point> {
         let piece = self.grid.item(sprite_key).unwrap();
         let bounds = self.bounds();
         if let Piece::Program(sprite) = piece {
+            if sprite.moves() == 0 || sprite.tapped() {
+                return HashSet::default();
+            }
             fn possible_moves_recur(
                 point: Point,
                 hash_set: HashSet<Point>,

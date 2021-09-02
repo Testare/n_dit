@@ -11,12 +11,70 @@ impl GameState {
         self.node.as_ref()
     }
 
+    pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<(), String> {
+        // TODO instead of invoking grid_map functions directly, use Node as an interface
+        // TODO refactor main logic to "move_sprite(sprite_key, direction) -> Result<usize>" where usize is remaiining moves
+        let node = self.node.as_mut().ok_or("No node".to_string())?;
+        let sprite_key = node
+            .active_sprite_key()
+            .ok_or("No active sprite".to_string())?;
+        if node
+            .with_sprite(sprite_key, |sprite| sprite.moves() == 0 || sprite.tapped())
+            .unwrap()
+        {
+            return Err("Sprite cannot move".to_string());
+        }
+        let bounds = node.bounds();
+        let mut size = node.grid().len_of(sprite_key);
+        let (mut remaining_moves, max_size) = node
+            .with_sprite(sprite_key, |sprite| (sprite.moves(), sprite.max_size()))
+            .unwrap();
+
+        for dir in directions {
+            let head = node.grid().head(sprite_key).unwrap();
+            let next_pt = dir.add_to_point(head, 1, bounds);
+            let sucessful_movement = node.grid_mut().push_front(next_pt, sprite_key);
+            if sucessful_movement {
+                size += 1;
+                remaining_moves = node
+                    .with_sprite_mut(sprite_key, |sprite| {
+                        sprite.took_a_move();
+                        sprite.moves()
+                    })
+                    .unwrap();
+            }
+            if remaining_moves == 0 {
+                node.deactivate_sprite(); // TODO don't deactivate
+                break;
+            }
+        }
+        node.grid_mut()
+            .pop_back_n(sprite_key, size.checked_sub(max_size).unwrap_or(0));
+
+        Ok(())
+    }
+
+    pub fn deactivate_sprite(&mut self) -> bool {
+        self.node
+            .as_mut()
+            .map(|node| {
+                node.deactivate_sprite();
+                true
+            })
+            .unwrap_or(false)
+    }
+
+    // TODO use logic in apply action, and make this create the game action?
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
         if let Some(node) = self.node.as_mut() {
             node.activate_sprite(sprite_key)
         } else {
             false
         }
+    }
+
+    pub fn active_sprite_key(&self) -> Option<usize> {
+        self.node().and_then(|node| node.active_sprite_key())
     }
 
     pub fn from(node: Option<Node>) -> Self {

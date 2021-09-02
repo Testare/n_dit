@@ -18,7 +18,12 @@ enum BorderType {
 impl Piece {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
     // Might want to change this to accept SuperState to allow coloring sprites here.
-    fn render_square(&self, state: &SuperState, position: usize, configuration: &DrawConfiguration) -> String {
+    fn render_square(
+        &self,
+        state: &SuperState,
+        position: usize,
+        configuration: &DrawConfiguration,
+    ) -> String {
         let string = match self {
             Piece::AccessPoint => String::from("&&"),
             Piece::Mon(_) => configuration.color_scheme().mon().apply("$$"),
@@ -45,7 +50,12 @@ impl Piece {
         self.style(state, position, configuration).apply(string)
     }
 
-    fn style(&self, state: &SuperState, _position: usize, draw_config: &DrawConfiguration) -> UiFormat {
+    fn style(
+        &self,
+        state: &SuperState,
+        position: usize,
+        draw_config: &DrawConfiguration,
+    ) -> UiFormat {
         match self {
             Piece::Mon(_) => draw_config.color_scheme().mon(),
             Piece::AccessPoint => draw_config.color_scheme().access_point(),
@@ -53,6 +63,8 @@ impl Piece {
                 Team::PlayerTeam => {
                     if state.game.node().unwrap().active_sprite() == Some(sprite) {
                         draw_config.color_scheme().mon() // TODO active_sprite
+                    } else if sprite.tapped() && position == 0 {
+                        draw_config.color_scheme().access_point() // TODO tapped_sprite
                     } else {
                         draw_config.color_scheme().player_team()
                     }
@@ -208,7 +220,6 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let available_moves = selected_piece
         .map(|piece_key| node.possible_moves(piece_key))
         .unwrap_or(HashSet::default());
-
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
         .map(|y| {

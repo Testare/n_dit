@@ -7,7 +7,6 @@ use node_layout::{NodeLayout, StandardNodeLayout};
 
 // TODO Figure out Layout vs Render module boundaries
 // TODO DrawConfiguration determines NodeLayout used?
-// TODO Resize events trigger Layout recalculations
 
 trait SubLayout {
     unsafe fn render(&self, state: &SuperState) -> std::io::Result<bool>;

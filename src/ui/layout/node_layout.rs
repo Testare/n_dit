@@ -298,5 +298,6 @@ impl SubLayout for StandardNodeLayout {
         self.terminal_bounds = terminal_size;
         self.calculate_fields();
         self.calculated_fields.is_some()
+        // TODO adjust scrolling after resize
     }
 }

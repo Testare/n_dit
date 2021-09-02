@@ -1,4 +1,4 @@
-use super::super::{Bounds, Direction, GameAction, GameState, Node, Point, Piece};
+use super::super::{Bounds, Direction, GameAction, GameState, Node, Piece, Point};
 use super::{DrawConfiguration, Layout, UserInput};
 
 #[derive(Debug)]
@@ -85,22 +85,31 @@ impl SuperState {
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         match user_input {
-            UserInput::Dir(dir) => Some(UiAction::move_selected_square(dir, 1)),
+            UserInput::Dir(dir) => {
+                if self.game.active_sprite_key().is_some() {
+                    Some(UiAction::move_active_sprite(dir))
+                } else {
+                    Some(UiAction::move_selected_square(dir, 1))
+                }
+            }
             UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 2)),
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
-            UserInput::Activate => if let Some(node) = self.game.node() {
-                let pt = self.selected_square();
-                let piece_opt = node.piece_at(pt);
-                if let Some(Piece::Program(_)) = piece_opt {
-                    let piece_key = node.piece_key_at(pt).unwrap();
-                    Some(UiAction::activate_sprite(piece_key))
+            UserInput::Activate => {
+                if let Some(node) = self.game.node() {
+                    let pt = self.selected_square();
+                    let piece_opt = node.piece_at(pt);
+                    if let Some(Piece::Program(_)) = piece_opt {
+                        let piece_key = node.piece_key_at(pt).unwrap();
+                        Some(UiAction::activate_sprite(piece_key))
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
-
-            } else { None }
+            }
             UserInput::Click(pt) => self.action_for_char_pt(pt),
             _ => None,
         }
@@ -117,10 +126,16 @@ impl SuperState {
                 Ok(())
             }
             UiAction::ActivateSprite(sprite_key) => {
-                if self.game.activate_sprite(sprite_key) {
+                if self.game.active_sprite_key() == Some(sprite_key) {
+                    self.game.deactivate_sprite();
+                    Ok(())
+                } else if self.game.activate_sprite(sprite_key) {
+                    self.set_selected_square(
+                        self.game.node().unwrap().grid().head(sprite_key).unwrap(),
+                    );
                     Ok(())
                 } else {
-                    Err("Trouble activating specified sprite".to_string())
+                    Ok(()) // Err("Trouble activating specified sprite".to_string())
                 }
             }
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
@@ -131,12 +146,22 @@ impl SuperState {
             UiAction::Quit => {
                 panic!("Thanks for playing")
             }
+            UiAction::MoveActiveSprite(dir) => {
+                let sprite_key = self.game.active_sprite_key().unwrap();
+                self.game.move_active_sprite(vec![dir])?;
+                self.set_selected_square(
+                    self.game.node().unwrap().grid().head(sprite_key).unwrap(),
+                );
+                // If active sprite is out of moves, automatically select an item from the sprite action list
+                Ok(())
+            }
         }
     }
 }
 
 pub enum UiAction {
     MoveSelectedSquare { direction: Direction, speed: usize },
+    MoveActiveSprite(Direction),
     SetSelectedSquare(Point),
     DoGameAction(GameAction),
     ActivateSprite(usize),
@@ -145,7 +170,6 @@ pub enum UiAction {
 }
 
 impl UiAction {
-
     pub fn activate_sprite(sprite_key: usize) -> UiAction {
         UiAction::ActivateSprite(sprite_key)
     }
@@ -176,5 +200,9 @@ impl UiAction {
         } else {
             false
         }
+    }
+
+    pub fn move_active_sprite(dir: Direction) -> UiAction {
+        UiAction::MoveActiveSprite(dir)
     }
 }

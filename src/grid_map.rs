@@ -150,7 +150,9 @@ impl<T> GridMap<T> {
     /// Input could be an item_key (usize), an optional item_key (Optional<usize>),
     /// a Square, or anything else that converts into Optional<usize>
     pub fn item_mut<K: Into<Option<usize>>>(&mut self, item_key: K) -> Option<&mut T> {
-        self.entries.get_mut(&item_key.into()?).map(|(item, _)| item)
+        self.entries
+            .get_mut(&item_key.into()?)
+            .map(|(item, _)| item)
     }
 
     /// Returns a reference to the item at the given point
@@ -175,6 +177,11 @@ impl<T> GridMap<T> {
     /// the grid or the amount of square each item takes.
     pub fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    /// Returns the number of squares an item takes up
+    pub fn len_of(&self, item_key: usize) -> usize {
+        self.square_iter(item_key).count()
     }
 
     /// Creates a new grid map of certain dimensions. By default all squares will be closed,
