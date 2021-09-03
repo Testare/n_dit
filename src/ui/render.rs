@@ -62,9 +62,9 @@ impl Piece {
             Piece::Program(sprite) => match sprite.team() {
                 Team::PlayerTeam => {
                     if state.game.node().unwrap().active_sprite() == Some(sprite) {
-                        draw_config.color_scheme().mon() // TODO active_sprite
+                        draw_config.color_scheme().player_team_active()
                     } else if sprite.tapped() && position == 0 {
-                        draw_config.color_scheme().access_point() // TODO tapped_sprite
+                        draw_config.color_scheme().player_team_tapped()
                     } else {
                         draw_config.color_scheme().player_team()
                     }

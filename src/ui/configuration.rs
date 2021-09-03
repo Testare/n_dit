@@ -35,6 +35,10 @@ pub struct ColorScheme {
     selected_square: UiFormat,
     #[get_copy = "pub"]
     selected_square_border: UiFormat,
+    #[get_copy = "pub"]
+    player_team_active: UiFormat,
+    #[get_copy = "pub"]
+    player_team_tapped: UiFormat,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,25 +59,47 @@ pub enum FillMethod {
     Sequence = 4, // Nice additional information, but a little rough on the eyes
 }
 
-impl Default for ColorScheme {
-    fn default() -> Self {
-        ColorScheme {
-            access_point: UiFormat::new(Some(Color::Black), Some(Color::Green), None),
-            mon: UiFormat::new(Some(Color::Yellow), None, None),
+impl ColorScheme {
+    const CLASSIC: Self = ColorScheme {
+            access_point: UiFormat::new(Some(Color::Black), Some(Color::Green), Some(Attribute::Underlined)),
+            mon: UiFormat::new(Some(Color::Yellow), None, Some(Attribute::Bold)),
             selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
             selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
             grid_border_default: UiFormat::new(Some(Color::Green), None, None),
             possible_movement: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
             player_team: UiFormat::new(Some(Color::Blue), None, None),
             enemy_team: UiFormat::new(Some(Color::Red), None, None),
-        }
+            player_team_active: UiFormat::new(Some(Color::White), Some(Color::Blue), Some(Attribute::Bold)),
+            player_team_tapped: UiFormat::new(Some(Color::Grey), None, None),
+    };
+
+    const MODERN: Self = ColorScheme {
+            access_point: UiFormat::new(Some(Color::Black), Some(Color::Green), Some(Attribute::SlowBlink)),
+            mon: UiFormat::new(Some(Color::Yellow), None, None),
+            selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
+            selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
+            grid_border_default: UiFormat::new(Some(Color::Green), None, None),
+            possible_movement: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
+
+            // TODO Separate color schemes 
+            enemy_team: UiFormat::new(Some(Color::Red), None, None),
+            player_team: UiFormat::new(Some(Color::AnsiValue(214)), None, None),
+            player_team_active: UiFormat::new(Some(Color::White), Some(Color::Blue), None),
+            player_team_tapped: UiFormat::new(Some(Color::DarkBlue), Some(Color::Blue), None),
+        };
+
+}
+
+impl Default for ColorScheme {
+    fn default() -> Self {
+        Self::CLASSIC
     }
 }
 
 impl UiFormat {
     pub const NONE: Self = UiFormat(None, None, None);
 
-    fn new(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> Self {
+    const fn new(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> Self {
         UiFormat(fg, bg, attr)
     }
 
