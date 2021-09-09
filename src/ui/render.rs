@@ -76,6 +76,7 @@ impl Piece {
 }
 
 pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
+    // TODO height checking + scrolling + etc
     let pt: Point = state.selected_square();
     let piece_opt = state
         .game
@@ -101,6 +102,10 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
                 base_vec[4].push_str(sprite.display());
                 base_vec[4].push(']');
                 base_vec[5].push_str(sprite.name());
+                base_vec[6] = "=".repeat(width);
+                for (i, action) in sprite.actions().iter().enumerate() {
+                    base_vec[7 + i].push_str(*action.unwrap().name());
+                }
             }
         };
     }

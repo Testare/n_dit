@@ -24,11 +24,11 @@ impl Node {
 
     // TODO Idea: Make these functions return a tuple of key and sprite?
     pub fn active_sprite(&self) -> Option<&Sprite> {
-        self.active_sprite.map(|sprite_key| {
-            if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
-                sprite
-            } else {
-                panic!("Somehow a non-sprite was activated")
+        self.active_sprite.and_then(|sprite_key| {
+            match self.grid.item(sprite_key) {
+                Some(Piece::Program(sprite)) => Some(sprite),
+                None => panic!("Somehow the active sprite was deleted without being deactivated"),
+                _ => panic!("Somehow a non-sprite was activated")
             }
         })
     }
@@ -135,6 +135,18 @@ impl Node {
         }
     }
 
+    pub fn with_sprite_at<T, R: Into<Option<T>>, F: FnOnce(&Sprite) -> R>(
+        &self,
+        pt: Point,
+        sprite_op: F,
+    ) -> Option<T> {
+        if let Some(Piece::Program(sprite)) = self.grid.item_at(pt) {
+            sprite_op(sprite).into()
+        } else {
+            None
+        }
+    }
+
     pub fn possible_moves(&self, sprite_key: usize) -> HashSet<Point> {
         let piece = self.grid.item(sprite_key).unwrap();
         let bounds = self.bounds();
@@ -183,6 +195,10 @@ impl Node {
         } else {
             HashSet::default()
         }
+    }
+
+    pub fn piece_len(&self, piece_key: usize) -> usize {
+        self.grid.len_of(piece_key)
     }
 }
 

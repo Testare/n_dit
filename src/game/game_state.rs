@@ -11,9 +11,29 @@ impl GameState {
         self.node.as_ref()
     }
 
-    pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<(), String> {
+    pub fn node_mut(&mut self) -> Option<&mut Node> {
+        self.node.as_mut()
+    }
+
+    pub fn perform_sprite_action(&mut self, sprite_action_index: usize, target_pt: Point) -> Option<()> {
+        let node = self.node.as_mut()?;
+        let active_sprite_key = node.active_sprite_key()?;
+        let action = node.with_sprite(active_sprite_key, |sprite| sprite.actions().get(sprite_action_index).map(|action|action.unwrap())).flatten()?;
+        let result = action.apply(self, active_sprite_key, target_pt);
+        match result {
+            Ok(()) => {
+                self.node.as_mut().unwrap().deactivate_sprite();
+                Some(())
+            },
+            _ => None
+        }
+    }
+
+    /// Returns remaining moves
+    /// Perhaps should be a function on NODE
+    pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
         // TODO instead of invoking grid_map functions directly, use Node as an interface
-        // TODO refactor main logic to "move_sprite(sprite_key, direction) -> Result<usize>" where usize is remaiining moves
+        // TODO refactor main logic to "move_sprite(sprite_key, direction) -> Result<usize>" where usize is remaining moves
         let node = self.node.as_mut().ok_or("No node".to_string())?;
         let sprite_key = node
             .active_sprite_key()
@@ -43,15 +63,20 @@ impl GameState {
                     })
                     .unwrap();
             }
-            if remaining_moves == 0 {
-                node.deactivate_sprite(); // TODO don't deactivate
+            // Tap if there are no remaining moves or actions
+            if remaining_moves == 0
+                && node
+                    .with_sprite(sprite_key, |sprite| sprite.actions().is_empty())
+                    .unwrap()
+            {
+                node.deactivate_sprite();
                 break;
             }
         }
         node.grid_mut()
             .pop_back_n(sprite_key, size.checked_sub(max_size).unwrap_or(0));
 
-        Ok(())
+        Ok(remaining_moves)
     }
 
     pub fn deactivate_sprite(&mut self) -> bool {

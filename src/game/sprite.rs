@@ -1,11 +1,13 @@
-use getset::CopyGetters;
+use super::sprite_action::{SpriteAction, StandardSpriteAction};
+use getset::{CopyGetters, Getters};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Team {
     PlayerTeam = 0,
     EnemyTeam = 1,
 }
 
-#[derive(Debug, PartialEq, Eq, CopyGetters)]
+#[derive(Debug, PartialEq, Eq, Getters, CopyGetters)]
 pub struct Sprite {
     display: String,
     #[get_copy = "pub"]
@@ -13,9 +15,11 @@ pub struct Sprite {
     movement_speed: usize,
     moves_taken: usize,
     name: String,
+    #[get_copy = "pub"]
     team: Team,
     tapped: bool,
-    // actions
+    #[get = "pub"]
+    actions: Vec<StandardSpriteAction>, // Vec<Metadata>
 }
 
 impl Sprite {
@@ -28,6 +32,7 @@ impl Sprite {
             name: String::from("George"),
             team: Team::PlayerTeam,
             tapped: false,
+            actions: vec![StandardSpriteAction::Brutus],
         }
     }
 
@@ -37,10 +42,6 @@ impl Sprite {
 
     pub fn name(&self) -> &str {
         self.name.as_ref()
-    }
-
-    pub fn team(&self) -> Team {
-        self.team
     }
 
     pub fn moves(&self) -> usize {
