@@ -17,9 +17,72 @@ pub enum Piece {
 }
 
 impl Node {
+
     #[deprecated]
     pub(super) fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
+    }
+
+    pub fn perform_sprite_action(&mut self, sprite_action_index: usize, target_pt: Point) -> Option<()> {
+        let active_sprite_key = self.active_sprite_key()?;
+        let action = self.with_sprite(active_sprite_key, |sprite| sprite.actions().get(sprite_action_index).map(|action|action.unwrap())).flatten()?;
+        let result = action.apply(self, active_sprite_key, target_pt);
+        match result {
+            Ok(()) => {
+                self.deactivate_sprite();
+                Some(())
+            },
+            _ => None
+        }
+    }
+
+    /// Returns remaining moves
+    /// Perhaps should be a function on NODE
+    pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
+        // TODO instead of invoking grid_map functions directly, use Node as an interface
+        // TODO refactor main logic to "move_sprite(sprite_key, direction) -> Result<usize>" where usize is remaining moves
+        let sprite_key = self
+            .active_sprite_key()
+            .ok_or("No active sprite".to_string())?;
+        if self
+            .with_sprite(sprite_key, |sprite| sprite.moves() == 0 || sprite.tapped())
+            .unwrap()
+        {
+            return Err("Sprite cannot move".to_string());
+        }
+        let bounds = self.bounds();
+        let mut size = self.grid().len_of(sprite_key);
+        let (mut remaining_moves, max_size) = self
+            .with_sprite(sprite_key, |sprite| (sprite.moves(), sprite.max_size()))
+            .unwrap();
+
+        for dir in directions {
+            let head = self.grid().head(sprite_key).unwrap();
+            let next_pt = dir.add_to_point(head, 1, bounds);
+            let sucessful_movement = self.grid_mut().push_front(next_pt, sprite_key);
+            if sucessful_movement {
+                size += 1;
+                remaining_moves = self
+                    .with_sprite_mut(sprite_key, |sprite| {
+                        sprite.took_a_move();
+                        sprite.moves()
+                    })
+                    .unwrap();
+            }
+            // Tap if there are no remaining moves or actions
+            if remaining_moves == 0
+                && self
+                    .with_sprite(sprite_key, |sprite| sprite.actions().is_empty())
+                    .unwrap()
+            {
+                self.deactivate_sprite();
+                break;
+            }
+        }
+        self.grid_mut()
+            .pop_back_n(sprite_key, size.checked_sub(max_size).unwrap_or(0));
+
+        Ok(remaining_moves)
     }
 
     // TODO Idea: Make these functions return a tuple of key and sprite?

@@ -83,27 +83,26 @@ impl SpriteAction<'_> {
     // Or perhaps just Node
     pub fn apply(
         &self,
-        state: &mut GameState,
+        node: &mut Node,
         sprite_key: usize,
         target_pt: Point,
     ) -> Result<(), SpriteActionError> {
         if let Some(_target_type) = self
             .targets
             .iter()
-            .find(|target| target.matches(state, sprite_key, target_pt))
+            .find(|target| target.matches(node, sprite_key, target_pt))
         {
             if self
                 .conditions
                 .iter()
-                .all(|condition| condition.met(state.node().unwrap(), sprite_key, target_pt))
+                .all(|condition| condition.met(node, sprite_key, target_pt))
             {
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
-                        let node = state.node().unwrap();
                         let target_key = node
                             .piece_key_at(target_pt)
                             .ok_or(SpriteActionError::DealingDamageToNoPiece)?; // Assume it to be valid if target checks out
-                        let mut grid = state.node_mut().unwrap().grid_mut();
+                        let mut grid = node.grid_mut();
                         grid.pop_back_n(target_key, dmg);
                         // Win condition check
                     }
@@ -121,17 +120,15 @@ impl SpriteAction<'_> {
 
 impl Target {
     // UNSAFE assumes presence of node
-    fn matches(&self, state: &GameState, sprite_key: usize, target_pt: Point) -> bool {
+    fn matches(&self, node: &Node, sprite_key: usize, target_pt: Point) -> bool {
         match self {
             Self::Enemy => {
-                let node = state.node().unwrap();
                 let source_team = node.with_sprite(sprite_key, |sprite| sprite.team());
                 let target_team = node.with_sprite_at(target_pt, |sprite| sprite.team());
                 source_team.is_some() && target_team.is_some() && source_team != target_team
             }
             Self::Ally => {
                 // TODO shouldn't be able to target self.
-                let node = state.node().unwrap();
                 let source_team = node.with_sprite(sprite_key, |sprite| sprite.team());
                 let target_team = node.with_sprite_at(target_pt, |sprite| sprite.team());
                 source_team.is_some() && target_team.is_some() && source_team == target_team
