@@ -17,22 +17,32 @@ pub enum Piece {
 }
 
 impl Node {
-
     #[deprecated]
     pub(super) fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
     }
 
-    pub fn perform_sprite_action(&mut self, sprite_action_index: usize, target_pt: Point) -> Option<()> {
+    pub fn perform_sprite_action(
+        &mut self,
+        sprite_action_index: usize,
+        target_pt: Point,
+    ) -> Option<()> {
         let active_sprite_key = self.active_sprite_key()?;
-        let action = self.with_sprite(active_sprite_key, |sprite| sprite.actions().get(sprite_action_index).map(|action|action.unwrap())).flatten()?;
+        let action = self
+            .with_sprite(active_sprite_key, |sprite| {
+                sprite
+                    .actions()
+                    .get(sprite_action_index)
+                    .map(|action| action.unwrap())
+            })
+            .flatten()?;
         let result = action.apply(self, active_sprite_key, target_pt);
         match result {
             Ok(()) => {
                 self.deactivate_sprite();
                 Some(())
-            },
-            _ => None
+            }
+            _ => None,
         }
     }
 
@@ -87,13 +97,12 @@ impl Node {
 
     // TODO Idea: Make these functions return a tuple of key and sprite?
     pub fn active_sprite(&self) -> Option<&Sprite> {
-        self.active_sprite.and_then(|sprite_key| {
-            match self.grid.item(sprite_key) {
+        self.active_sprite
+            .and_then(|sprite_key| match self.grid.item(sprite_key) {
                 Some(Piece::Program(sprite)) => Some(sprite),
                 None => panic!("Somehow the active sprite was deleted without being deactivated"),
-                _ => panic!("Somehow a non-sprite was activated")
-            }
-        })
+                _ => panic!("Somehow a non-sprite was activated"),
+            })
     }
 
     pub fn active_sprite_mut(&mut self) -> Option<&mut Sprite> {
@@ -164,6 +173,10 @@ impl Node {
 
     pub fn name(&self) -> &str {
         self.name.as_str()
+    }
+
+    pub fn piece(&self, piece_key: usize) -> Option<&Piece> {
+        self.grid.item(piece_key)
     }
 
     pub fn piece_at(&self, pt: Point) -> Option<&Piece> {

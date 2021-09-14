@@ -1,6 +1,7 @@
 use super::super::game::{Piece, Point, Team};
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 use itertools::Itertools;
+use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
 
 const INTERSECTION_CHAR: [char; 16] = [
@@ -77,13 +78,18 @@ impl Piece {
 
 pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
     // TODO height checking + scrolling + etc
-    let pt: Point = state.selected_square();
-    let piece_opt = state
-        .game
-        .node()
-        .expect("TODO What if there is no node?")
-        .piece_at(pt);
+    // TODO When a sprite is active, show that sprite's menu even if the square isn't there.
+    let node = state.game.node().expect("TODO what if there is no node?");
+    let piece_opt = node
+        .active_sprite_key()
+        .and_then(|key| node.piece(key))
+        .or_else(|| {
+            let pt: Point = state.selected_square();
+            node.piece_at(pt)
+        });
+
     let mut base_vec = vec![String::from(""); height];
+    let color_scheme = state.draw_config().color_scheme();
     if let Some(piece) = piece_opt {
         match piece {
             Piece::Mon(mon_val) => {
@@ -103,8 +109,13 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
                 base_vec[4].push(']');
                 base_vec[5].push_str(sprite.name());
                 base_vec[6] = "=".repeat(width);
+                let selected_action = state.selected_action_index();
                 for (i, action) in sprite.actions().iter().enumerate() {
-                    base_vec[7 + i].push_str(*action.unwrap().name());
+                    let mut action = action.unwrap().name().with_exact_width(width);
+                    if Some(i) == selected_action {
+                        action = color_scheme.selected_menu_item().apply(action);
+                    }
+                    base_vec[7 + i].push_str(action.as_str());
                 }
             }
         };

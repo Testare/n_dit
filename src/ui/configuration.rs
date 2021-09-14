@@ -32,6 +32,8 @@ pub struct ColorScheme {
     #[get_copy = "pub"]
     possible_movement: UiFormat,
     #[get_copy = "pub"]
+    selected_menu_item: UiFormat,
+    #[get_copy = "pub"]
     selected_square: UiFormat,
     #[get_copy = "pub"]
     selected_square_border: UiFormat,
@@ -67,6 +69,7 @@ impl ColorScheme {
             Some(Attribute::Underlined),
         ),
         mon: UiFormat::new(Some(Color::Yellow), None, Some(Attribute::Bold)),
+        selected_menu_item: UiFormat::new(None, None, Some(Attribute::Reverse)),
         selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
         selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
         grid_border_default: UiFormat::new(Some(Color::Green), None, None),
@@ -88,6 +91,7 @@ impl ColorScheme {
             Some(Attribute::SlowBlink),
         ),
         mon: UiFormat::new(Some(Color::Yellow), None, None),
+        selected_menu_item: UiFormat::new(None, None, Some(Attribute::Reverse)),
         selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
         selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
         grid_border_default: UiFormat::new(Some(Color::Green), None, None),

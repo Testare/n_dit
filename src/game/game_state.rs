@@ -15,8 +15,6 @@ impl GameState {
         self.node.as_mut()
     }
 
-
-
     pub fn deactivate_sprite(&mut self) -> bool {
         self.node
             .as_mut()

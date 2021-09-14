@@ -1,5 +1,4 @@
-use super::Node;
-use crate::{GameState, Piece, Point};
+use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 

@@ -75,7 +75,12 @@ impl SuperState {
         // TODO check sprite metadata for last selected action?
         self.selected_action_index = Some(0);
     }
-pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range_limit: Option<(Point, usize)>) {
+    pub fn move_selected_square(
+        &mut self,
+        direction: Direction,
+        speed: usize,
+        range_limit: Option<(Point, usize)>,
+    ) {
         let new_pt = direction.add_to_point(
             self.selected_square,
             speed,
@@ -85,14 +90,20 @@ pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range
                 .bounds(),
         );
         if let Some((range_pt, range_distance)) = range_limit {
-            let x_diff = range_pt.0.checked_sub(new_pt.0).unwrap_or_else(||{new_pt.0 - range_pt.0});
-            let y_diff = range_pt.1.checked_sub(new_pt.1).unwrap_or_else(||{new_pt.1 - range_pt.1});
+            let x_diff = range_pt
+                .0
+                .checked_sub(new_pt.0)
+                .unwrap_or_else(|| new_pt.0 - range_pt.0);
+            let y_diff = range_pt
+                .1
+                .checked_sub(new_pt.1)
+                .unwrap_or_else(|| new_pt.1 - range_pt.1);
             let manhattan_distance = x_diff + y_diff;
             if manhattan_distance > range_distance {
                 return; // Can't move, out of range
             }
         }
-        self.selected_square  = new_pt;
+        self.selected_square = new_pt;
         let SuperState {
             layout,
             game,
@@ -109,7 +120,8 @@ pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         match user_input {
             UserInput::Dir(dir) => {
-                if self.game.active_sprite_key().is_some() && self.selected_action_index().is_none() {
+                if self.game.active_sprite_key().is_some() && self.selected_action_index().is_none()
+                {
                     Some(UiAction::move_active_sprite(dir))
                 } else {
                     Some(UiAction::move_selected_square(dir, 1))
@@ -152,12 +164,15 @@ pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range
                         let node = self.game.node().unwrap();
                         let head = node.grid().head(sprite_key);
                         // TODO with_sprite, key included (usize, &Sprite) or better yet, head included ((usize, usize), &Sprite)
-                        let range_dist = node.with_sprite(sprite_key, |sprite| {
-                            sprite.actions()
-                            .get(action_index)
-                            .and_then(|action|action.unwrap().range())
-                            .map(|rng|rng.get())
-                        }).flatten();
+                        let range_dist = node
+                            .with_sprite(sprite_key, |sprite| {
+                                sprite
+                                    .actions()
+                                    .get(action_index)
+                                    .and_then(|action| action.unwrap().range())
+                                    .map(|rng| rng.get())
+                            })
+                            .flatten();
                         range_limit = head.zip(range_dist);
                     }
                 }
@@ -191,7 +206,11 @@ pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range
             }
             UiAction::MoveActiveSprite(dir) => {
                 let sprite_key = self.game.active_sprite_key().unwrap();
-                let remaining_moves = self.game.node_mut().unwrap().move_active_sprite(vec![dir])?;
+                let remaining_moves = self
+                    .game
+                    .node_mut()
+                    .unwrap()
+                    .move_active_sprite(vec![dir])?;
                 self.set_selected_square(
                     self.game.node().unwrap().grid().head(sprite_key).unwrap(),
                 );
@@ -210,16 +229,19 @@ pub fn move_selected_square(&mut self, direction: Direction, speed: usize, range
                     self.set_default_selected_action();
                 }
                 Ok(())
-            },
+            }
             UiAction::PerformSpriteAction => {
                 if let Some(action_index) = self.selected_action_index() {
-                    let result = self.game.node_mut().unwrap().perform_sprite_action(action_index, self.selected_square);
+                    let result = self
+                        .game
+                        .node_mut()
+                        .unwrap()
+                        .perform_sprite_action(action_index, self.selected_square);
                     if result.is_some() {
                         self.selected_action_index = None;
                     }
                 }
                 Ok(())
-
             }
         }
     }
