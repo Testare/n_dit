@@ -1,4 +1,46 @@
+use std::collections::HashSet;
+use std::cmp::{min, max};
+use std::convert::TryInto;
+
 pub type Point = (usize, usize);
+
+#[derive(Clone, Debug)]
+pub struct PointSet(HashSet<Point>);
+
+impl PointSet {
+    pub fn range_of_pt((center_x, center_y): Point, range: usize, bounds: Bounds) -> Self {
+        let mut set = HashSet::new();
+        let irange = range.try_into().unwrap_or(<isize>::MAX);
+        let ix: isize = center_x.try_into().unwrap();
+        let iy: isize = center_y.try_into().unwrap();
+
+        let min_y_diff = -min(iy, irange);
+        let max_y_diff = min(bounds.height() - center_y, range).try_into().unwrap();
+        for y_diff in min_y_diff..=max_y_diff {
+            let range_remaining = irange - y_diff.abs();
+            let min_x_diff = -min(ix, range_remaining);
+            let max_x_diff = min((bounds.width() - center_x).try_into().unwrap(), range_remaining);
+            for x_diff in min_x_diff..=max_x_diff {
+                set.insert(((ix + x_diff).try_into().unwrap(), (iy + y_diff).try_into().unwrap()));
+                // panic!("{:?} - {:?} - {:?}", set, x_diff, y_diff);
+            }
+        }
+        /*
+        for y in center_y.saturating_sub(range)..=min(center_y + range, bounds.height()) {
+            let y_remaining = center_y.checked_sub(y).unwrap_or_else(||y-center_y);
+            let range_remaining = range - y_remaining;
+            set.insert((y, range_remaining));
+            /*for x in center_x.saturating_sub(y_remaining)..=min(center_x + y_remaining, bounds.width()) {
+                set.insert((x, y));
+            }*/
+        }*/
+        PointSet(set)
+    }
+    pub fn as_set(self) -> HashSet<Point> {
+        self.0
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Bounds(usize, usize);
@@ -87,4 +129,19 @@ impl From<Bounds> for (usize, usize) {
     fn from(Bounds(width, height): Bounds) -> Self {
         (width, height)
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{Bounds, PointSet};
+
+    #[test]
+    #[ignore] // TODO NOT DONE
+    pub fn range_of_pt_test() {
+        let bounds = Bounds::of(10, 10);
+        let pt = (1, 1);
+        let set = PointSet::range_of_pt(pt, 1, bounds);
+    }
+
+
 }

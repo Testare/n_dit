@@ -1,4 +1,4 @@
-use super::super::game::{Piece, Point, Team};
+use crate::{Piece, Point, PointSet, Team};
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 use itertools::Itertools;
 use pad::PadStr;
@@ -78,7 +78,6 @@ impl Piece {
 
 pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
     // TODO height checking + scrolling + etc
-    // TODO When a sprite is active, show that sprite's menu even if the square isn't there.
     let node = state.game.node().expect("TODO what if there is no node?");
     let piece_opt = node
         .active_sprite_key()
@@ -178,6 +177,7 @@ fn points_in_range(
 
 pub fn border_style_for(
     available_moves: &HashSet<Point>,
+    available_moves_type: usize, // TODO something nicer
     state: &SuperState,
     x_range: &RangeInclusive<usize>,
     y_range: &RangeInclusive<usize>,
@@ -189,7 +189,10 @@ pub fn border_style_for(
         color_scheme.selected_square_border()
         // TODO optimized logic so we don't create a full set of points for every square
     } else if !available_moves.is_disjoint(&points_in_range(x_range, y_range)) {
-        color_scheme.possible_movement()
+        match available_moves_type {
+            0 => color_scheme.possible_movement(),
+            _ => color_scheme.enemy_team(),
+        }
     } else {
         color_scheme.grid_border_default()
     }
@@ -233,9 +236,25 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let keep_last_space = skip_y + window.height.get() % 2 == 0;
 
     let selected_piece = grid.item_key_at(state.selected_square());
-    let available_moves = selected_piece
+    let mut available_moves = selected_piece
         .map(|piece_key| node.possible_moves(piece_key))
         .unwrap_or(HashSet::default());
+    let mut action_type = 0;
+
+    // TODO this is a prime example of inefficiencies with current architecture
+    // Caching would benefit, as well as better sprite logic
+    let available_actions: Option<HashSet<Point>> = node.active_sprite_key().zip(state.selected_action_index()).and_then(|(key, action_index)| {
+        let head_pt = grid.head(key).unwrap(); // TODO is this safe?
+        node.with_sprite(key, |sprite|
+            sprite.actions().get(action_index).map(|action|PointSet::range_of_pt(head_pt, action.unwrap().range().map(|i|i.get()).unwrap_or(0), node.bounds()).as_set())
+        )
+    });
+
+    if available_actions.is_some() {
+        action_type = 1;
+        available_moves = available_actions.unwrap();
+    }
+
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
         .map(|y| {
@@ -271,6 +290,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 if include_border {
                     let pivot_format = border_style_for(
                         &available_moves,
+                        action_type,
                         &state,
                         &border_x_range,
                         &border_y_range,
@@ -288,7 +308,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
 
                 if include_space {
                     let border_style =
-                        border_style_for(&available_moves, &state, &border_x_range, &(y..=y));
+                        border_style_for(&available_moves, action_type, &state, &border_x_range, &(y..=y));
                     space_line.push_str(
                         border_style
                             .apply(BorderType::of(left2, right2).vertical_border(draw_config))
@@ -307,6 +327,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                             if include_border {
                                 let border_style = border_style_for(
                                     &available_moves,
+                                    action_type,
                                     &state,
                                     &(x..=x),
                                     &border_y_range,
@@ -346,7 +367,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 }
                 if include_border {
                     let border_style =
-                        border_style_for(&available_moves, &state, &(x..=x), &border_y_range);
+                        border_style_for(&available_moves, action_type, &state, &(x..=x), &border_y_range);
                     border_line.push_str(
                         border_style
                             .apply(BorderType::of(right1, right2).horizontal_border(draw_config))

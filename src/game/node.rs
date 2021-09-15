@@ -136,7 +136,6 @@ impl Node {
         can_activate
     }
 
-    #[deprecated]
     pub(crate) fn grid(&self) -> &GridMap<Piece> {
         &self.grid
     }

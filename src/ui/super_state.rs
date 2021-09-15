@@ -1,6 +1,7 @@
 use super::super::{Bounds, Direction, GameAction, GameState, Node, Piece, Point};
 use super::{DrawConfiguration, Layout, UserInput};
 
+// TODO NodeUiState
 #[derive(Debug)]
 pub struct SuperState {
     pub game: GameState,

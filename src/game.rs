@@ -5,7 +5,7 @@ mod sprite;
 mod sprite_action;
 mod world_map;
 
-pub use common::{Bounds, Direction, Point};
+pub use common::{Bounds, Direction, Point, PointSet};
 pub use game_state::{GameAction, GameState};
 pub use node::{Node, Piece};
 pub use sprite::{Sprite, Team};
