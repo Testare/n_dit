@@ -22,6 +22,8 @@ pub struct ColorScheme {
     #[get_copy = "pub"]
     access_point: UiFormat,
     #[get_copy = "pub"]
+    attack_action: UiFormat,
+    #[get_copy = "pub"]
     enemy_team: UiFormat,
     #[get_copy = "pub"]
     grid_border_default: UiFormat,
@@ -68,6 +70,7 @@ impl ColorScheme {
             Some(Color::Green),
             Some(Attribute::Underlined),
         ),
+        attack_action: UiFormat::new(Some(Color::White), Some(Color::Red), None),
         mon: UiFormat::new(Some(Color::Yellow), None, Some(Attribute::Bold)),
         selected_menu_item: UiFormat::new(None, None, Some(Attribute::Reverse)),
         selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
@@ -102,6 +105,7 @@ impl ColorScheme {
         player_team: UiFormat::new(Some(Color::AnsiValue(214)), None, None),
         player_team_active: UiFormat::new(Some(Color::White), Some(Color::Blue), None),
         player_team_tapped: UiFormat::new(Some(Color::DarkBlue), Some(Color::Blue), None),
+        ..Self::CLASSIC
     };
 }
 

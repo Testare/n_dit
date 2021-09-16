@@ -180,7 +180,7 @@ pub fn border_style_for(
     available_moves_type: usize, // TODO something nicer
     state: &SuperState,
     x_range: &RangeInclusive<usize>,
-    y_range: &RangeInclusive<usize>,
+    y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
 ) -> UiFormat {
     let color_scheme = state.draw_config().color_scheme();
     let selected_square = state.selected_square();
@@ -196,7 +196,7 @@ pub fn border_style_for(
     {
         match available_moves_type {
             0 => color_scheme.possible_movement(),
-            _ => color_scheme.enemy_team(),
+            _ => color_scheme.attack_action(),
         }
     } else {
         color_scheme.grid_border_default()
