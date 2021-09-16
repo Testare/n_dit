@@ -5,35 +5,64 @@ use std::convert::TryInto;
 pub type Point = (usize, usize);
 
 #[derive(Clone, Debug)]
-pub struct PointSet(HashSet<Point>);
+pub enum PointSet {
+    Range(Point, usize, Bounds),
+    Pts(HashSet<Point>)
+}
 
 impl PointSet {
-    pub fn range_of_pt((center_x, center_y): Point, range: usize, bounds: Bounds) -> Self {
-        let mut set = HashSet::new();
-        let irange = range.try_into().unwrap_or(<isize>::MAX);
-        let ix: isize = center_x.try_into().unwrap();
-        let iy: isize = center_y.try_into().unwrap();
+    pub fn range_of_pt(pt: Point, range: usize, bounds: Bounds) -> Self {
+        PointSet::Range(pt, range, bounds)
+    }
 
-        let min_y_diff = -min(iy, irange);
-        let max_y_diff = min(bounds.height() - center_y, range).try_into().unwrap();
-        for y_diff in min_y_diff..=max_y_diff {
-            let range_remaining = irange - y_diff.abs();
-            let min_x_diff = -min(ix, range_remaining);
-            let max_x_diff = min(
-                (bounds.width() - center_x).try_into().unwrap(),
-                range_remaining,
-            );
-            for x_diff in min_x_diff..=max_x_diff {
-                set.insert((
-                    (ix + x_diff).try_into().unwrap(),
-                    (iy + y_diff).try_into().unwrap(),
-                ));
+    pub fn contains(&self, pt: Point) -> bool {
+        match self {
+            PointSet::Pts(pts) => pts.contains(&pt),
+            PointSet::Range((x,y), range, bounds) => {
+                if !bounds.contains_pt(pt) {
+                    return false;
+                }
+                let x_diff = x
+                    .checked_sub(pt.0)
+                    .unwrap_or_else(|| pt.0 - x);
+                let y_diff = y
+                    .checked_sub(pt.1)
+                    .unwrap_or_else(|| pt.1 - y);
+                let manhattan_distance = x_diff + y_diff;
+                manhattan_distance <= *range
             }
         }
-        PointSet(set)
     }
+
     pub fn as_set(self) -> HashSet<Point> {
-        self.0
+        match self {
+            PointSet::Pts(pts) => pts,
+            PointSet::Range((center_x, center_y), range, bounds) => {
+                let mut set = HashSet::new();
+                let irange = range.try_into().unwrap_or(<isize>::MAX);
+                let ix: isize = center_x.try_into().unwrap();
+                let iy: isize = center_y.try_into().unwrap();
+
+                let min_y_diff = -min(iy, irange);
+                let max_y_diff = min(bounds.height() - center_y, range).try_into().unwrap();
+                for y_diff in min_y_diff..=max_y_diff {
+                    let range_remaining = irange - y_diff.abs();
+                    let min_x_diff = -min(ix, range_remaining);
+                    let max_x_diff = min(
+                        (bounds.width() - center_x).try_into().unwrap(),
+                        range_remaining,
+                    );
+                    for x_diff in min_x_diff..=max_x_diff {
+                        set.insert((
+                            (ix + x_diff).try_into().unwrap(),
+                            (iy + y_diff).try_into().unwrap(),
+                        ));
+                    }
+                }
+                set
+            }
+
+        }
     }
 }
 

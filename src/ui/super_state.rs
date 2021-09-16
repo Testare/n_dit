@@ -1,4 +1,4 @@
-use super::super::{Bounds, Direction, GameAction, GameState, Node, Piece, Point};
+use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet};
 use super::{DrawConfiguration, Layout, UserInput};
 
 // TODO NodeUiState
@@ -80,7 +80,7 @@ impl SuperState {
         &mut self,
         direction: Direction,
         speed: usize,
-        range_limit: Option<(Point, usize)>,
+        range_limit: Option<PointSet>,
     ) {
         let new_pt = direction.add_to_point(
             self.selected_square,
@@ -90,18 +90,9 @@ impl SuperState {
                 .expect("TODO Why is this method called when there is no node?")
                 .bounds(),
         );
-        if let Some((range_pt, range_distance)) = range_limit {
-            let x_diff = range_pt
-                .0
-                .checked_sub(new_pt.0)
-                .unwrap_or_else(|| new_pt.0 - range_pt.0);
-            let y_diff = range_pt
-                .1
-                .checked_sub(new_pt.1)
-                .unwrap_or_else(|| new_pt.1 - range_pt.1);
-            let manhattan_distance = x_diff + y_diff;
-            if manhattan_distance > range_distance {
-                return; // Can't move, out of range
+        if let Some(point_set) = range_limit {
+            if !point_set.contains(new_pt) {
+                return;
             }
         }
         self.selected_square = new_pt;
@@ -158,25 +149,9 @@ impl SuperState {
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::MoveSelectedSquare { direction, speed } => {
-                let mut range_limit = None;
-                // TODO this is too much asking
-                if let Some(action_index) = self.selected_action_index() {
-                    if let Some(sprite_key) = self.game.active_sprite_key() {
-                        let node = self.game.node().unwrap();
-                        let head = node.grid().head(sprite_key);
-                        // TODO with_sprite, key included (usize, &Sprite) or better yet, head included ((usize, usize), &Sprite)
-                        let range_dist = node
-                            .with_sprite(sprite_key, |sprite| {
-                                sprite
-                                    .actions()
-                                    .get(action_index)
-                                    .and_then(|action| action.unwrap().range())
-                                    .map(|rng| rng.get())
-                            })
-                            .flatten();
-                        range_limit = head.zip(range_dist);
-                    }
-                }
+                let range_limit = self.selected_action_index().and_then(|action_index|self.game.node().and_then(|node|
+                        node.with_active_sprite_wrapped(|sprite|sprite.range_of_action(action_index))
+                ));
                 self.move_selected_square(direction, speed, range_limit);
                 Ok(())
             }

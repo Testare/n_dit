@@ -224,6 +224,7 @@ impl Node {
         }
     }
 
+    // TODO move to WithSprite
     pub fn possible_moves(&self, sprite_key: usize) -> HashSet<Point> {
         let piece = self.grid.item(sprite_key).unwrap();
         let bounds = self.bounds();
