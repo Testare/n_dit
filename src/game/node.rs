@@ -2,6 +2,8 @@ use super::Sprite;
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use std::collections::HashSet;
 
+mod with_sprite;
+
 #[derive(Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
