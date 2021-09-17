@@ -1,5 +1,5 @@
-use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet};
 use super::{DrawConfiguration, Layout, UserInput};
+use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet};
 
 // TODO NodeUiState
 #[derive(Debug)]
@@ -149,9 +149,13 @@ impl SuperState {
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::MoveSelectedSquare { direction, speed } => {
-                let range_limit = self.selected_action_index().and_then(|action_index|self.game.node().and_then(|node|
-                        node.with_active_sprite_wrapped(|sprite|sprite.range_of_action(action_index))
-                ));
+                let range_limit = self.selected_action_index().and_then(|action_index| {
+                    self.game.node().and_then(|node| {
+                        node.with_active_sprite_wrapped(|sprite| {
+                            sprite.range_of_action(action_index)
+                        })
+                    })
+                });
                 self.move_selected_square(direction, speed, range_limit);
                 Ok(())
             }
@@ -181,28 +185,26 @@ impl SuperState {
                 panic!("Thanks for playing")
             }
             UiAction::MoveActiveSprite(dir) => {
-                let sprite_key = self.game.active_sprite_key().unwrap();
-                let remaining_moves = self
-                    .game
-                    .node_mut()
-                    .unwrap()
-                    .move_active_sprite(vec![dir])?;
-                self.set_selected_square(
-                    self.game.node().unwrap().grid().head(sprite_key).unwrap(),
-                );
-                if remaining_moves == 0
-                    && self.selected_action_index().is_none()
-                    && self
-                        .game
-                        .node()
-                        .unwrap()
-                        .with_sprite(sprite_key, |sprite| {
-                            !sprite.tapped() && sprite.actions().len() > 0
+                if let Some(node) = self.game.node_mut() {
+                    let (remaining_moves, head, is_tapped) = node
+                        .with_active_sprite_mut_wrapped(|mut sprite| {
+                            (
+                                sprite.move_sprite(vec![dir]),
+                                sprite.head(),
+                                sprite.tapped(),
+                            )
                         })
-                        .unwrap_or(false)
-                {
-                    // If active sprite is out of moves, automatically select an item from the sprite action list
-                    self.set_default_selected_action();
+                        .ok_or("No active sprite".to_string())?;
+
+                    self.set_selected_square(head);
+
+                    if remaining_moves? == 0 && !is_tapped && self.selected_action_index().is_none()
+                    {
+                        // Sprite is still active, must still have some moves
+                        self.set_default_selected_action();
+                    }
+                } else {
+                    unimplemented!("We don't have an implementation for world map yet")
                 }
                 Ok(())
             }

@@ -9,5 +9,5 @@ pub use common::{Bounds, Direction, Point, PointSet};
 pub use game_state::{GameAction, GameState};
 pub use node::{Node, Piece};
 pub use sprite::{Sprite, Team};
-pub use sprite_action::{StandardSpriteAction, SpriteAction};
+pub use sprite_action::{SpriteAction, StandardSpriteAction};
 pub use world_map::WorldMap;

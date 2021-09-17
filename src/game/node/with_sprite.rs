@@ -1,4 +1,4 @@
-use super::{Node};
+use super::Node;
 use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction};
 
 const SPRITE_KEY_IS_VALID: &'static str = "Sprite key is expected to be valid key for node grid";
@@ -29,17 +29,21 @@ impl<'a> WithSpriteMut<'a> {
     }
 
     pub fn moves(&self) -> usize {
-        self.with_sprite(|sprite|sprite.moves())
+        self.with_sprite(|sprite| sprite.moves())
     }
-    
+
     pub fn max_size(&self) -> usize {
-        self.with_sprite(|sprite|sprite.max_size())
+        self.with_sprite(|sprite| sprite.max_size())
+    }
+
+    pub fn tapped(&self) -> bool {
+        self.with_sprite(|sprite| sprite.tapped())
     }
 
     pub fn tap(&mut self) {
-        self.with_sprite_mut(|sprite|sprite.tap());
+        self.with_sprite_mut(|sprite| sprite.tap());
         if self.node.active_sprite_key() == Some(self.sprite_key) {
-            self.node.drop_active_sprite();// deactivate_sprite();
+            self.node.drop_active_sprite(); // deactivate_sprite();
         }
     }
 
@@ -54,7 +58,13 @@ impl<'a> WithSpriteMut<'a> {
 
     /// Returns remaining moves
     pub fn move_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
-        if self.node.with_sprite(self.sprite_key, |sprite| sprite.moves() == 0 || sprite.tapped()).expect(SPRITE_KEY_IS_VALID) {
+        if self
+            .node
+            .with_sprite(self.sprite_key, |sprite| {
+                sprite.moves() == 0 || sprite.tapped()
+            })
+            .expect(SPRITE_KEY_IS_VALID)
+        {
             return Err("Sprite cannot move".to_string());
         }
         let bounds = self.node.bounds();
@@ -69,11 +79,10 @@ impl<'a> WithSpriteMut<'a> {
             let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);
             if sucessful_movement {
                 size += 1;
-                remaining_moves = self
-                    .with_sprite_mut(|sprite| {
-                        sprite.took_a_move();
-                        sprite.moves()
-                    })
+                remaining_moves = self.with_sprite_mut(|sprite| {
+                    sprite.took_a_move();
+                    sprite.moves()
+                })
             }
             if remaining_moves == 0 {
                 break;
@@ -83,17 +92,14 @@ impl<'a> WithSpriteMut<'a> {
         if has_no_actions {
             self.tap();
         }
-        self.node.grid_mut()
+        self.node
+            .grid_mut()
             .pop_back_n(self.sprite_key, size.checked_sub(max_size).unwrap_or(0));
 
         Ok(remaining_moves)
     }
 
-
-    fn with_sprite<R, F: FnOnce(&Sprite) -> R>(
-        &self,
-        sprite_op: F,
-    ) -> R {
+    fn with_sprite<R, F: FnOnce(&Sprite) -> R>(&self, sprite_op: F) -> R {
         if let Some(Piece::Program(sprite)) = self.node.grid().item(self.sprite_key) {
             sprite_op(sprite).into()
         } else {
@@ -101,10 +107,7 @@ impl<'a> WithSpriteMut<'a> {
         }
     }
 
-    fn with_sprite_mut<R, F: FnOnce(&mut Sprite) -> R>(
-        &mut self,
-        sprite_op: F,
-    ) -> R {
+    fn with_sprite_mut<R, F: FnOnce(&mut Sprite) -> R>(&mut self, sprite_op: F) -> R {
         if let Some(Piece::Program(sprite)) = self.node.grid_mut().item_mut(self.sprite_key) {
             sprite_op(sprite).into()
         } else {

@@ -7,7 +7,7 @@ pub type Point = (usize, usize);
 #[derive(Clone, Debug)]
 pub enum PointSet {
     Range(Point, usize, Bounds),
-    Pts(HashSet<Point>)
+    Pts(HashSet<Point>),
 }
 
 impl PointSet {
@@ -18,16 +18,12 @@ impl PointSet {
     pub fn contains(&self, pt: Point) -> bool {
         match self {
             PointSet::Pts(pts) => pts.contains(&pt),
-            PointSet::Range((x,y), range, bounds) => {
+            PointSet::Range((x, y), range, bounds) => {
                 if !bounds.contains_pt(pt) {
                     return false;
                 }
-                let x_diff = x
-                    .checked_sub(pt.0)
-                    .unwrap_or_else(|| pt.0 - x);
-                let y_diff = y
-                    .checked_sub(pt.1)
-                    .unwrap_or_else(|| pt.1 - y);
+                let x_diff = x.checked_sub(pt.0).unwrap_or_else(|| pt.0 - x);
+                let y_diff = y.checked_sub(pt.1).unwrap_or_else(|| pt.1 - y);
                 let manhattan_distance = x_diff + y_diff;
                 manhattan_distance <= *range
             }
@@ -61,7 +57,6 @@ impl PointSet {
                 }
                 set
             }
-
         }
     }
 }
