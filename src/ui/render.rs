@@ -245,7 +245,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     .unwrap_or(HashSet::default());*/
     let mut action_type = 1;
 
-    let mut available_moves: Option<HashSet<Point>> = node.with_active_sprite_wrapped(|sprite| {
+    let mut available_moves: Option<HashSet<Point>> = node.with_active_sprite(|sprite| {
         state
             .selected_action_index()
             .and_then(|action_index| sprite.range_of_action(action_index))

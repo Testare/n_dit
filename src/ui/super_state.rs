@@ -151,7 +151,7 @@ impl SuperState {
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit = self.selected_action_index().and_then(|action_index| {
                     self.game.node().and_then(|node| {
-                        node.with_active_sprite_wrapped(|sprite| {
+                        node.with_active_sprite(|sprite| {
                             sprite.range_of_action(action_index)
                         })
                     })
@@ -187,7 +187,7 @@ impl SuperState {
             UiAction::MoveActiveSprite(dir) => {
                 if let Some(node) = self.game.node_mut() {
                     let (remaining_moves, head, is_tapped) = node
-                        .with_active_sprite_mut_wrapped(|mut sprite| {
+                        .with_active_sprite_mut(|mut sprite| {
                             (
                                 sprite.move_sprite(vec![dir]),
                                 sprite.head(),

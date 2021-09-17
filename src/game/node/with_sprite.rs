@@ -1,5 +1,5 @@
 use super::Node;
-use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction};
+use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
 
 const SPRITE_KEY_IS_VALID: &'static str = "Sprite key is expected to be valid key for node grid";
 
@@ -14,14 +14,12 @@ pub struct WithSprite<'a> {
 }
 
 impl<'a> WithSpriteMut<'a> {
-    const SPRITE_KEY_IS_VALID: &'static str =
-        "Sprite key is expected to be valid key for node grid";
 
     pub fn head(&self) -> Point {
         self.node
             .grid()
             .head(self.sprite_key)
-            .expect(Self::SPRITE_KEY_IS_VALID)
+            .expect(SPRITE_KEY_IS_VALID)
     }
 
     pub fn size(&self) -> usize {
@@ -47,6 +45,10 @@ impl<'a> WithSpriteMut<'a> {
         }
     }
 
+    pub fn team(&mut self) -> Team {
+        self.with_sprite(Sprite::team)
+    }
+
     // NOTE maybe this shouldn't be public?
     pub fn actions(&self) -> &Vec<StandardSpriteAction> {
         if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
@@ -58,13 +60,7 @@ impl<'a> WithSpriteMut<'a> {
 
     /// Returns remaining moves
     pub fn move_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
-        if self
-            .node
-            .with_sprite(self.sprite_key, |sprite| {
-                sprite.moves() == 0 || sprite.tapped()
-            })
-            .expect(SPRITE_KEY_IS_VALID)
-        {
+        if self.moves() == 0 || self.tapped() {
             return Err("Sprite cannot move".to_string());
         }
         let bounds = self.node.bounds();
@@ -117,14 +113,21 @@ impl<'a> WithSpriteMut<'a> {
 }
 
 impl<'a> WithSprite<'a> {
-    const SPRITE_KEY_IS_VALID: &'static str =
-        "Sprite key is expected to be valid key for node grid";
+
+    // NOTE maybe this shouldn't be public?
+    pub fn actions(&self) -> &Vec<StandardSpriteAction> {
+        if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
+            sprite.actions()
+        } else {
+            panic!("{}", SPRITE_KEY_IS_VALID);
+        }
+    }
 
     pub fn head(&self) -> Point {
         self.node
             .grid()
             .head(self.sprite_key)
-            .expect(Self::SPRITE_KEY_IS_VALID)
+            .expect(SPRITE_KEY_IS_VALID)
     }
 
     fn sprite(&self) -> &Sprite {
@@ -132,12 +135,20 @@ impl<'a> WithSprite<'a> {
             .node
             .grid()
             .item(self.sprite_key)
-            .expect(Self::SPRITE_KEY_IS_VALID)
+            .expect(SPRITE_KEY_IS_VALID)
         {
             sprite
         } else {
-            panic!("{}", Self::SPRITE_KEY_IS_VALID);
+            panic!("{}", SPRITE_KEY_IS_VALID);
         }
+    }
+
+    pub fn tapped(&self) -> bool {
+        self.sprite().tapped()
+    }
+
+    pub fn team(&self) -> Team {
+        self.sprite().team()
     }
 
     pub fn range_of_action(&self, action_index: usize) -> Option<PointSet> {
@@ -164,25 +175,37 @@ impl<'a> WithSprite<'a> {
 }
 
 impl Node {
-    pub fn with_active_sprite_mut_wrapped<F, R, O>(&mut self, f: F) -> Option<R>
-    where
-        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
-        O: Into<Option<R>>,
-    {
-        self.active_sprite_key()
-            .and_then(|key| self.with_sprite_mut_wrapped(key, f))
-    }
-
-    pub fn with_active_sprite_wrapped<F, R, O>(&self, f: F) -> Option<R>
+    pub fn with_active_sprite<F, R, O>(&self, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
         O: Into<Option<R>>,
     {
         self.active_sprite_key()
-            .and_then(|key| self.with_sprite_wrapped(key, f))
+            .and_then(|key| self.with_sprite(key, f))
     }
 
-    pub fn with_sprite_mut_wrapped<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
+    pub fn with_active_sprite_mut<F, R, O>(&mut self, f: F) -> Option<R>
+    where
+        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
+        O: Into<Option<R>>,
+    {
+        self.active_sprite_key()
+            .and_then(|key| self.with_sprite_mut(key, f))
+    }
+
+    pub fn with_sprite<F, R, O>(&self, sprite_key: usize, f: F) -> Option<R>
+    where
+        for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
+        O: Into<Option<R>>,
+    {
+        let with_sprite_mut = WithSprite {
+            node: self,
+            sprite_key,
+        };
+        f(with_sprite_mut).into()
+    }
+
+    pub fn with_sprite_mut<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
         O: Into<Option<R>>,
@@ -194,15 +217,21 @@ impl Node {
         f(with_sprite_mut).into()
     }
 
-    pub fn with_sprite_wrapped<F, R, O>(&self, sprite_key: usize, f: F) -> Option<R>
+    pub fn with_sprite_at<F, R, O>(&self, pt: Point, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        let with_sprite_mut = WithSprite {
-            node: self,
-            sprite_key,
-        };
-        f(with_sprite_mut).into()
+        let sprite_key = self.grid().item_key_at(pt)?;
+        self.with_sprite(sprite_key, f)
+    }
+
+    pub fn with_sprite_at_mut<F, R, O>(&mut self, pt: Point, f: F) -> Option<R>
+    where
+        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
+        O: Into<Option<R>>,
+    {
+        let sprite_key = self.grid().item_key_at(pt)?;
+        self.with_sprite_mut(sprite_key, f)
     }
 }

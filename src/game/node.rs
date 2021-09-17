@@ -54,7 +54,7 @@ impl Node {
 
     /// Returns remaining moves
     pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
-        self.with_active_sprite_mut_wrapped(|mut sprite| sprite.move_sprite(directions))
+        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(directions))
             .unwrap_or(Err("No active sprite".to_string()))
     }
 
@@ -146,42 +146,6 @@ impl Node {
 
     pub fn piece_key_at(&self, pt: Point) -> Option<usize> {
         self.grid.item_key_at(pt)
-    }
-
-    pub fn with_sprite_mut<T, R: Into<Option<T>>, F: FnOnce(&mut Sprite) -> R>(
-        &mut self,
-        sprite_key: usize,
-        sprite_op: F,
-    ) -> Option<T> {
-        if let Some(Piece::Program(sprite)) = self.grid.item_mut(sprite_key) {
-            sprite_op(sprite).into()
-        } else {
-            None
-        }
-    }
-
-    pub fn with_sprite<T, R: Into<Option<T>>, F: FnOnce(&Sprite) -> R>(
-        &self,
-        sprite_key: usize,
-        sprite_op: F,
-    ) -> Option<T> {
-        if let Some(Piece::Program(sprite)) = self.grid.item(sprite_key) {
-            sprite_op(sprite).into()
-        } else {
-            None
-        }
-    }
-
-    pub fn with_sprite_at<T, R: Into<Option<T>>, F: FnOnce(&Sprite) -> R>(
-        &self,
-        pt: Point,
-        sprite_op: F,
-    ) -> Option<T> {
-        if let Some(Piece::Program(sprite)) = self.grid.item_at(pt) {
-            sprite_op(sprite).into()
-        } else {
-            None
-        }
     }
 
     // TODO move to WithSprite
