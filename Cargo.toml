@@ -13,3 +13,7 @@ itertools = "0.10.1"
 lazy_static = "1.4.0"
 pad = "0.1"
 unicode-width = "0.1.8"
+
+# Use for "cargo flamegraph"
+# [profile.release]
+# debug = true

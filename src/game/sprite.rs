@@ -1,5 +1,9 @@
-use super::sprite_action::{SpriteAction, StandardSpriteAction};
+mod sprite_builder;
+
+use super::sprite_action::StandardSpriteAction;
 use getset::{CopyGetters, Getters};
+use sprite_builder::SpriteBuilder;
+
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Team {
@@ -23,6 +27,11 @@ pub struct Sprite {
 }
 
 impl Sprite {
+
+    pub fn builder() -> SpriteBuilder {
+        SpriteBuilder::new()
+    }
+
     pub fn new(display: &str) -> Sprite {
         Sprite {
             display: String::from(display),

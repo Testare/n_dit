@@ -29,7 +29,7 @@ lazy_static! {
         genre: SpriteActionGenre::Attack,
         range: NonZeroUsize::new(2),
         effect: SAEffect::DealDamage(2),
-        targets: vec![Target::Ally],
+        targets: vec![Target::Ally, Target::Enemy],
         conditions: Vec::new()
     };
 }
