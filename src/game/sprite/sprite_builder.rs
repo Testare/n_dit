@@ -1,9 +1,9 @@
 use crate::{Sprite, StandardSpriteAction, Team};
-use getset::{Getters, CopyGetters, Setters};
+use getset::{CopyGetters, Getters, Setters};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SpriteBuilder {
-    actions: Vec<StandardSpriteAction>, 
+    actions: Vec<StandardSpriteAction>,
     display: Option<String>,
     max_size: Option<usize>,
     movement_speed: Option<usize>,
@@ -12,7 +12,6 @@ pub struct SpriteBuilder {
 }
 
 impl SpriteBuilder {
-
     pub fn action(&mut self, action: StandardSpriteAction) -> &mut Self {
         self.actions.push(action);
         self
@@ -51,7 +50,7 @@ impl SpriteBuilder {
             movement_speed: None,
             name: None,
             team: None,
-            actions: Vec::new()
+            actions: Vec::new(),
         }
     }
 
@@ -66,7 +65,5 @@ impl SpriteBuilder {
             tapped: false,
             moves_taken: 0,
         })
-
     }
-
 }

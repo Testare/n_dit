@@ -1,4 +1,4 @@
-use super::{SAEffect, SpriteAction, SpriteActionGenre, Target};
+use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -12,6 +12,8 @@ impl StandardSpriteAction {
     pub fn unwrap(&self) -> &'static SpriteAction<'static> {
         match self {
             StandardSpriteAction::Brutus => &BRUTUS,
+            StandardSpriteAction::Bite => &BITE,
+            StandardSpriteAction::Fiddle => &FIDDLE,
             _ => unimplemented!("Not implemented yet"),
         }
     }
@@ -29,7 +31,26 @@ lazy_static! {
         genre: SpriteActionGenre::Attack,
         range: NonZeroUsize::new(2),
         effect: SAEffect::DealDamage(2),
-        targets: vec![Target::Ally, Target::Enemy],
+        targets: vec![Target::Ally],
         conditions: Vec::new()
+    };
+    static ref BITE: SpriteAction<'static> = SpriteAction {
+        name: "Bite",
+        genre: SpriteActionGenre::Attack,
+        range: NonZeroUsize::new(1),
+        effect: SAEffect::DealDamage(2),
+        targets: vec![Target::Enemy],
+        conditions: Vec::new()
+    };
+    static ref FIDDLE: SpriteAction<'static> = SpriteAction {
+        name: "Fiddle",
+        genre: SpriteActionGenre::Support,
+        range: NonZeroUsize::new(2),
+        effect: SAEffect::IncreaseMaxSize {
+            amount: 1,
+            bound: NonZeroUsize::new(4)
+        },
+        targets: vec![Target::Ally],
+        conditions: vec![SACondition::TargetMaxSize(1..=4)],
     };
 }

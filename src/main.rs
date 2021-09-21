@@ -1,10 +1,10 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    Team,
     game::{Node, Piece, Sprite},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
+    Team,
 };
 use std::io::stdout;
 
@@ -80,13 +80,17 @@ fn main() -> crossterm::Result<()> {
     let guy_key = node.add_sprite((3, 3), Sprite::new("8]"));
     node.move_sprite((3, 4), guy_key.unwrap());
 
-    let bad_guy = node.add_sprite((14, 4), Sprite::builder()
-        .team(Team::EnemyTeam)
-        .display("骨")
-        .name("Jackson")
-        .max_size(4)
-        .movement_speed(1)
-        .build().unwrap());
+    let bad_guy = node.add_sprite(
+        (14, 4),
+        Sprite::builder()
+            .team(Team::EnemyTeam)
+            .display("骨")
+            .name("Jackson")
+            .max_size(4)
+            .movement_speed(1)
+            .build()
+            .unwrap(),
+    );
 
     node.add_sprite((14, 6), Sprite::new("<>"));
     node.add_piece((6, 1), Piece::Mon(500));

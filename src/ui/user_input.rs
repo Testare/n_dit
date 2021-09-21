@@ -9,7 +9,7 @@ pub enum UserInput {
     AltDir(Direction), // Gamepad D-pad: Moving while special key is held down
     Activate,       // Gamepad "A": Default binds are "A" or Space
     Back,           // Gamepad "B": Default binds are "U" or Backspace
-    Select,         // Gamepad "X" or "Select": Default binds are "S" or Shift+Space
+    Select,         // Gamepad "X" or "Select": Default binds are "S" or Tab
     Menu,           // Gamepad "Y" or "Start": Default binds are "M" or Escape
     Next,           // Gamepad "R": Default binds are "N"
     Previous,       // Gamepad "L": Default binds are "P"
@@ -47,13 +47,8 @@ impl UserInput {
                     KeyCode::Char('q') => Some(UserInput::Quit),
                     KeyCode::Char('-') => Some(UserInput::Debug),
                     KeyCode::Esc => Some(UserInput::Menu),
-                    KeyCode::Char(' ') => {
-                        if shift {
-                            Some(UserInput::Select)
-                        } else {
-                            Some(UserInput::Activate)
-                        }
-                    }
+                    KeyCode::Tab => Some(UserInput::Select),
+                    KeyCode::Char(' ') => Some(UserInput::Activate),
                     _ => None,
                 }
             }

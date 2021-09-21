@@ -51,15 +51,17 @@ pub enum SAEffect {
 
 #[derive(Debug)]
 pub enum SACondition {
-    Size { range: RangeInclusive<usize> },
-    TargetSize { range: RangeInclusive<usize> },
-    Uses { count: usize },
+    Size(RangeInclusive<usize>),
+    TargetSize(RangeInclusive<usize>),
+    TargetMaxSize(RangeInclusive<usize>),
+    Uses(usize),
+    UsesPerTarget(usize),
 }
 
 impl SACondition {
     fn met(&self, node: &Node, sprite_key: usize, _target_pt: Point) -> bool {
         match self {
-            SACondition::Size { range } => range.contains(&node.piece_len(sprite_key)),
+            SACondition::Size(range) => range.contains(&node.piece_len(sprite_key)),
             _ => unimplemented!("TODO implement other conditions"),
         }
     }

@@ -14,7 +14,6 @@ pub struct WithSprite<'a> {
 }
 
 impl<'a> WithSpriteMut<'a> {
-
     pub fn head(&self) -> Point {
         self.node
             .grid()
@@ -113,7 +112,6 @@ impl<'a> WithSpriteMut<'a> {
 }
 
 impl<'a> WithSprite<'a> {
-
     // NOTE maybe this shouldn't be public?
     pub fn actions(&self) -> &Vec<StandardSpriteAction> {
         if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
@@ -128,6 +126,14 @@ impl<'a> WithSprite<'a> {
             .grid()
             .head(self.sprite_key)
             .expect(SPRITE_KEY_IS_VALID)
+    }
+
+    pub fn moves(&self) -> usize {
+        self.sprite().moves()
+    }
+
+    pub fn key(&self) -> usize {
+        self.sprite_key
     }
 
     fn sprite(&self) -> &Sprite {

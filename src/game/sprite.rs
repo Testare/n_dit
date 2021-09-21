@@ -4,7 +4,6 @@ use super::sprite_action::StandardSpriteAction;
 use getset::{CopyGetters, Getters};
 use sprite_builder::SpriteBuilder;
 
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Team {
     PlayerTeam = 0,
@@ -27,7 +26,6 @@ pub struct Sprite {
 }
 
 impl Sprite {
-
     pub fn builder() -> SpriteBuilder {
         SpriteBuilder::new()
     }
@@ -41,7 +39,11 @@ impl Sprite {
             name: String::from("George"),
             team: Team::PlayerTeam,
             tapped: false,
-            actions: vec![StandardSpriteAction::Brutus],
+            actions: vec![
+                StandardSpriteAction::Brutus,
+                StandardSpriteAction::Bite,
+                StandardSpriteAction::Fiddle,
+            ],
         }
     }
 

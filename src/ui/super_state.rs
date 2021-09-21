@@ -2,6 +2,7 @@ use super::{DrawConfiguration, Layout, UserInput};
 use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet};
 
 // TODO NodeUiState
+// TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug)]
 pub struct SuperState {
     pub game: GameState,
@@ -13,7 +14,7 @@ pub struct SuperState {
     selection: Selection,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum Selection {
     Grid = 0,
     PauseMenu = 1,
@@ -112,20 +113,27 @@ impl SuperState {
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         match user_input {
             UserInput::Dir(dir) => {
-                if self.game.active_sprite_key().is_some() && self.selected_action_index().is_none()
-                {
-                    Some(UiAction::move_active_sprite(dir))
+                if self.selection == Selection::Grid {
+                    if self.game.active_sprite_key().is_some() && self.selected_action_index().is_none()
+                    {
+                        Some(UiAction::move_active_sprite(dir))
+                    } else {
+                        Some(UiAction::move_selected_square(dir, 1))
+                    }
                 } else {
-                    Some(UiAction::move_selected_square(dir, 1))
+                    Some(UiAction::change_selected_menu_item(dir))
                 }
             }
+            UserInput::Select => Some(UiAction::ChangeSelection),
             UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 2)),
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
             UserInput::Activate => {
                 if let Some(node) = self.game.node() {
-                    if self.selected_action_index.is_some() {
+                    if self.selection == Selection::SubMenu {
+                        Some(UiAction::ConfirmSelection)
+                    } else if self.selected_action_index.is_some() {
                         Some(UiAction::PerformSpriteAction)
                     } else {
                         let pt = self.selected_square();
@@ -148,12 +156,54 @@ impl SuperState {
 
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
+            UiAction::ConfirmSelection => {
+                self.selection = Selection::Grid;
+                Ok(())
+            },
+            UiAction::ChangeSelectedMenuItem(dir) => {
+                if let Some(node) = self.game.node() {
+                    if self.selection == Selection::SubMenu {
+                        let selected_sprite_key = node.active_sprite_key().or_else(||node.with_sprite_at(self.selected_square(), |sprite|(sprite.key()))).unwrap();
+                        if let Some(action_index) = self.selected_action_index() {
+                            let num_actions = node.with_sprite(selected_sprite_key, |sprite|sprite.actions().len()).unwrap();
+                            self.selected_action_index = match dir {
+                                Direction::North => Some((action_index + num_actions - 1) % num_actions),
+                                Direction::South => Some((action_index + 1) & num_actions),
+                                _ => Some(action_index)
+                            }
+                        }
+                    }
+                    Ok(())
+                } else {
+                    Err("No node".to_string())
+                }
+            },
+            UiAction::ChangeSelection => {
+                if let Some(node) = self.game.node() {
+                    let selected_sprite_key = node.active_sprite_key().or_else(||node.with_sprite_at(self.selected_square(), |sprite|(sprite.key())));
+                    if self.selection == Selection::SubMenu {
+                        if 0 != node.with_sprite(selected_sprite_key.unwrap(), |sprite|sprite.moves()).unwrap_or(0) {
+                            self.selected_action_index = None;
+                        }
+                        self.selection = Selection::Grid;
+                    } else if self.selection == Selection::Grid {
+                        if selected_sprite_key.is_some() {
+                            if self.selected_action_index() == None {
+                                self.set_default_selected_action();
+                            }
+                            self.selection = Selection::SubMenu;
+                        } 
+                    }
+                    Ok(())
+                } else {
+                    Err("No node".to_string())
+                }
+                
+            }
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit = self.selected_action_index().and_then(|action_index| {
                     self.game.node().and_then(|node| {
-                        node.with_active_sprite(|sprite| {
-                            sprite.range_of_action(action_index)
-                        })
+                        node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
                     })
                 });
                 self.move_selected_square(direction, speed, range_limit);
@@ -226,6 +276,9 @@ impl SuperState {
 }
 
 pub enum UiAction {
+    ChangeSelection,
+    ConfirmSelection,
+    ChangeSelectedMenuItem(Direction),
     MoveSelectedSquare { direction: Direction, speed: usize },
     MoveActiveSprite(Direction),
     SetSelectedSquare(Point),
@@ -271,5 +324,9 @@ impl UiAction {
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
         UiAction::MoveActiveSprite(dir)
+    }
+
+    pub fn change_selected_menu_item(dir: Direction) -> UiAction {
+        UiAction::ChangeSelectedMenuItem(dir)
     }
 }
