@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::collections::HashSet;
 use std::convert::TryInto;
 
@@ -147,18 +147,5 @@ impl From<(usize, usize)> for Bounds {
 impl From<Bounds> for (usize, usize) {
     fn from(Bounds(width, height): Bounds) -> Self {
         (width, height)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{Bounds, PointSet};
-
-    #[test]
-    #[ignore] // TODO NOT DONE
-    pub fn range_of_pt_test() {
-        let bounds = Bounds::of(10, 10);
-        let pt = (1, 1);
-        let set = PointSet::range_of_pt(pt, 1, bounds);
     }
 }

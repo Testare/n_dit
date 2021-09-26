@@ -71,7 +71,6 @@ fn main() -> crossterm::Result<()> {
     let guy_key = node.add_sprite((1, 6), Sprite::new("あ"));
     node.move_sprite((2, 6), guy_key.unwrap());
     node.move_sprite((3, 6), guy_key.unwrap());
-    node.move_sprite((3, 7), guy_key.unwrap());
 
     let guy_key = node.add_sprite((4, 6), Sprite::new("死"));
     node.move_sprite((5, 6), guy_key.unwrap());
@@ -80,7 +79,7 @@ fn main() -> crossterm::Result<()> {
     let guy_key = node.add_sprite((3, 3), Sprite::new("8]"));
     node.move_sprite((3, 4), guy_key.unwrap());
 
-    let bad_guy = node.add_sprite(
+    let _bad_guy = node.add_sprite(
         (14, 4),
         Sprite::builder()
             .team(Team::EnemyTeam)

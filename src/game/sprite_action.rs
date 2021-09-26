@@ -15,7 +15,6 @@ pub struct SpriteAction<'a> {
     genre: SpriteActionGenre,
     #[get_copy = "pub"]
     range: Option<NonZeroUsize>,
-
     effect: SAEffect,
     targets: Vec<Target>,
     conditions: Vec<SACondition>,
@@ -28,6 +27,7 @@ pub enum SpriteActionGenre {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum SAEffect {
     DealDamage(usize),
     IncreaseMaxSize {
@@ -50,6 +50,7 @@ pub enum SAEffect {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum SACondition {
     Size(RangeInclusive<usize>),
     TargetSize(RangeInclusive<usize>),
@@ -59,9 +60,15 @@ pub enum SACondition {
 }
 
 impl SACondition {
-    fn met(&self, node: &Node, sprite_key: usize, _target_pt: Point) -> bool {
+    fn met(&self, node: &Node, sprite_key: usize, target_pt: Point) -> bool {
         match self {
             SACondition::Size(range) => range.contains(&node.piece_len(sprite_key)),
+            SACondition::TargetSize(range) => node
+                .with_sprite_at(target_pt, |target| range.contains(&target.size()))
+                .unwrap_or(false),
+            SACondition::TargetMaxSize(range) => node
+                .with_sprite_at(target_pt, |target| range.contains(&target.max_size()))
+                .unwrap_or(false),
             _ => unimplemented!("TODO implement other conditions"),
         }
     }
@@ -100,12 +107,15 @@ impl SpriteAction<'_> {
             {
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
-                        let target_key = node
-                            .piece_key_at(target_pt)
-                            .ok_or(SpriteActionError::DealingDamageToNoPiece)?; // Assume it to be valid if target checks out
-                        let mut grid = node.grid_mut();
-                        grid.pop_back_n(target_key, dmg);
-                        // Win condition check
+                        let _: Option<Piece> = node
+                            .with_sprite_at_mut(target_pt, |target| target.take_damage(dmg))
+                            .ok_or(SpriteActionError::SpriteSpecificEffectOnNonSpriteTarget)?;
+                    }
+                    SAEffect::IncreaseMaxSize { amount, bound } => {
+                        node.with_sprite_at_mut(target_pt, |mut target| {
+                            target.increase_max_size(amount, bound)
+                        })
+                        .ok_or(SpriteActionError::SpriteSpecificEffectOnNonSpriteTarget)?;
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
@@ -120,7 +130,6 @@ impl SpriteAction<'_> {
 }
 
 impl Target {
-    // UNSAFE assumes presence of node
     fn matches(&self, node: &Node, sprite_key: usize, target_pt: Point) -> bool {
         match self {
             Self::Enemy => {
@@ -139,8 +148,9 @@ impl Target {
     }
 }
 
+#[non_exhaustive]
 pub enum SpriteActionError {
     InvalidTarget,
     ConditionNotMet,
-    DealingDamageToNoPiece,
+    SpriteSpecificEffectOnNonSpriteTarget,
 }

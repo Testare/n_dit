@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Piece, Point, PointSet, Team};
+use crate::{Piece, Point, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};

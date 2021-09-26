@@ -1,5 +1,6 @@
 use super::Node;
 use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
+use std::{cmp, num::NonZeroUsize};
 
 const SPRITE_KEY_IS_VALID: &'static str = "Sprite key is expected to be valid key for node grid";
 
@@ -33,6 +34,20 @@ impl<'a> WithSpriteMut<'a> {
         self.with_sprite(|sprite| sprite.max_size())
     }
 
+    pub fn increase_max_size(&mut self, increase: usize, bound: Option<NonZeroUsize>) -> usize {
+        self.with_sprite_mut(|sprite| {
+            // TODO test this logic
+            let increased_max_size = sprite.max_size() + increase;
+            let bounded_max_size = bound
+                .map(|bnd| cmp::min(increased_max_size, bnd.get()))
+                .unwrap_or(increased_max_size);
+            let final_max_size = cmp::max(bounded_max_size, sprite.max_size());
+
+            sprite.set_max_size(final_max_size);
+            final_max_size
+        })
+    }
+
     pub fn tapped(&self) -> bool {
         self.with_sprite(|sprite| sprite.tapped())
     }
@@ -55,6 +70,11 @@ impl<'a> WithSpriteMut<'a> {
         } else {
             panic!("{}", SPRITE_KEY_IS_VALID);
         }
+    }
+
+    /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
+    pub fn take_damage(self, dmg: usize) -> Option<Piece> {
+        self.node.grid_mut().pop_back_n(self.sprite_key, dmg)
     }
 
     /// Returns remaining moves
@@ -119,6 +139,14 @@ impl<'a> WithSprite<'a> {
         } else {
             panic!("{}", SPRITE_KEY_IS_VALID);
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.node.grid().len_of(self.sprite_key)
+    }
+
+    pub fn max_size(&self) -> usize {
+        self.sprite().max_size()
     }
 
     pub fn head(&self) -> Point {

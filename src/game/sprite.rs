@@ -1,7 +1,7 @@
 mod sprite_builder;
 
 use super::sprite_action::StandardSpriteAction;
-use getset::{CopyGetters, Getters};
+use getset::{CopyGetters, Getters, Setters};
 use sprite_builder::SpriteBuilder;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -10,11 +10,13 @@ pub enum Team {
     EnemyTeam = 1,
 }
 
-#[derive(Debug, PartialEq, Eq, Getters, CopyGetters)]
+#[derive(Clone, Debug, PartialEq, Eq, Getters, CopyGetters, Setters)]
 pub struct Sprite {
     display: String,
     #[get_copy = "pub"]
+    #[set = "pub"]
     max_size: usize,
+    #[set]
     movement_speed: usize,
     moves_taken: usize,
     name: String,

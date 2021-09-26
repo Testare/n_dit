@@ -4,6 +4,8 @@ use std::collections::HashSet;
 
 mod with_sprite;
 
+pub struct NodeRestorePoint(GridMap<Piece>);
+
 #[derive(Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
@@ -11,7 +13,7 @@ pub struct Node {
     active_sprite: Option<usize>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Piece {
     AccessPoint,
     Program(Sprite),
@@ -19,8 +21,7 @@ pub enum Piece {
 }
 
 impl Node {
-    #[deprecated]
-    pub(super) fn grid_mut(&mut self) -> &mut GridMap<Piece> {
+    fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
     }
 

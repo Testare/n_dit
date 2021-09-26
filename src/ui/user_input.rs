@@ -35,7 +35,6 @@ impl UserInput {
         match event {
             Event::Key(KeyEvent { code, modifiers }) => {
                 let ctrl = modifiers.contains(KeyModifiers::CONTROL);
-                let shift = modifiers.contains(KeyModifiers::SHIFT);
                 match code {
                     KeyCode::Char('h') | KeyCode::Left => direction_input(ctrl, Direction::West),
                     KeyCode::Char('k') | KeyCode::Up => direction_input(ctrl, Direction::North),

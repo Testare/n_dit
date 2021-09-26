@@ -1,5 +1,4 @@
 use crate::{Sprite, StandardSpriteAction, Team};
-use getset::{CopyGetters, Getters, Setters};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SpriteBuilder {

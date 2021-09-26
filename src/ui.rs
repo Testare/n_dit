@@ -1,5 +1,6 @@
 pub mod configuration;
 pub mod layout;
+mod node_ui;
 mod render;
 mod super_state;
 mod user_input;
@@ -10,6 +11,7 @@ pub use layout::Layout;
 pub use super_state::{SuperState, UiAction};
 pub use user_input::UserInput;
 
+use node_ui::NodeUiState;
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Copy, Debug)]

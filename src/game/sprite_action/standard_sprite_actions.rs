@@ -2,6 +2,7 @@ use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum StandardSpriteAction {
     Brutus,
     Bite,
@@ -14,7 +15,6 @@ impl StandardSpriteAction {
             StandardSpriteAction::Brutus => &BRUTUS,
             StandardSpriteAction::Bite => &BITE,
             StandardSpriteAction::Fiddle => &FIDDLE,
-            _ => unimplemented!("Not implemented yet"),
         }
     }
 }
