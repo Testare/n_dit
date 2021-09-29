@@ -115,6 +115,15 @@ impl SuperState {
             }
         }
         self.set_selected_square(new_pt);
+        let selected_sprite_key = self
+            .game
+            .node()
+            .unwrap()
+            .with_sprite_at(new_pt, |sprite| sprite.key());
+        if let Some(node_ui) = &mut self.node_ui {
+            node_ui.set_selected_sprite_key_if_phase_is_right(selected_sprite_key)
+        }
+
         let SuperState {
             layout,
             game,
@@ -130,113 +139,19 @@ impl SuperState {
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         match user_input {
-            UserInput::Dir(dir) => {
-                if self.selection == Selection::Grid {
-                    if self.game.active_sprite_key().is_some()
-                        && self.selected_action_index().is_none()
-                    {
-                        Some(UiAction::move_active_sprite(dir))
-                    } else {
-                        Some(UiAction::move_selected_square(dir, 1))
-                    }
-                } else {
-                    Some(UiAction::change_selected_menu_item(dir))
-                }
-            }
-            UserInput::Select => Some(UiAction::ChangeSelection),
-            UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 2)),
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
-            UserInput::Activate => {
-                if let Some(node) = self.game.node() {
-                    if self.selection == Selection::SubMenu {
-                        Some(UiAction::ConfirmSelection)
-                    } else if self.selected_action_index().is_some() {
-                        Some(UiAction::PerformSpriteAction)
-                    } else {
-                        let pt = self.selected_square();
-                        let piece_opt = node.piece_at(pt);
-                        if let Some(Piece::Program(_)) = piece_opt {
-                            let piece_key = node.piece_key_at(pt).unwrap();
-                            Some(UiAction::activate_sprite(piece_key))
-                        } else {
-                            None
-                        }
-                    }
-                } else {
-                    None
-                }
-            }
             UserInput::Click(pt) => self.action_for_char_pt(pt),
-            _ => None,
+            _ => self
+                .node_ui
+                .as_ref()
+                .and_then(|node_ui| node_ui.ui_action_for_input(user_input)),
         }
     }
 
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
-            UiAction::ConfirmSelection => {
-                self.selection = Selection::Grid;
-                Ok(())
-            }
-            UiAction::ChangeSelectedMenuItem(dir) => {
-                if let Some(node) = self.game.node() {
-                    if self.selection == Selection::SubMenu {
-                        let selected_sprite_key = node
-                            .active_sprite_key()
-                            .or_else(|| {
-                                node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
-                            })
-                            .unwrap();
-                        if let Some(action_index) = self.selected_action_index() {
-                            let num_actions = node
-                                .with_sprite(selected_sprite_key, |sprite| sprite.actions().len())
-                                .unwrap();
-                            self.node_ui
-                                .as_mut()
-                                .unwrap()
-                                .set_selected_action_index(match dir {
-                                    Direction::North => {
-                                        (action_index + num_actions - 1) % num_actions
-                                    }
-                                    Direction::South => (action_index + 1) & num_actions,
-                                    _ => action_index,
-                                })
-                        }
-                    }
-                    Ok(())
-                } else {
-                    Err("No node".to_string())
-                }
-            }
-            UiAction::ChangeSelection => {
-                if let Some(node) = self.game.node() {
-                    let selected_sprite_key = node.active_sprite_key().or_else(|| {
-                        node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
-                    });
-                    if self.selection == Selection::SubMenu {
-                        if 0 != node
-                            .with_sprite(selected_sprite_key.unwrap(), |sprite| sprite.moves())
-                            .unwrap_or(0)
-                        {
-                            unsafe {
-                                self.node_ui.as_mut().unwrap().clear_selected_action_index();
-                            }
-                        }
-                        self.selection = Selection::Grid;
-                    } else if self.selection == Selection::Grid {
-                        if selected_sprite_key.is_some() {
-                            if self.selected_action_index() == None {
-                                self.set_default_selected_action();
-                            }
-                            self.selection = Selection::SubMenu;
-                        }
-                    }
-                    Ok(())
-                } else {
-                    Err("No node".to_string())
-                }
-            }
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit = self.selected_action_index().and_then(|action_index| {
                     self.game.node().and_then(|node| {
@@ -246,23 +161,6 @@ impl SuperState {
                 self.move_selected_square(direction, speed, range_limit);
                 Ok(())
             }
-            UiAction::SetSelectedSquare(pt) => {
-                self.set_selected_square(pt);
-                Ok(())
-            }
-            UiAction::ActivateSprite(sprite_key) => {
-                if self.game.active_sprite_key() == Some(sprite_key) {
-                    self.game.deactivate_sprite();
-                    Ok(())
-                } else if self.game.activate_sprite(sprite_key) {
-                    self.set_selected_square(
-                        self.game.node().unwrap().grid().head(sprite_key).unwrap(),
-                    );
-                    Ok(())
-                } else {
-                    Ok(()) // Err("Trouble activating specified sprite".to_string())
-                }
-            }
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
             UiAction::SetTerminalSize(bounds) => {
                 self.layout.resize(bounds);
@@ -271,44 +169,12 @@ impl SuperState {
             UiAction::Quit => {
                 panic!("Thanks for playing")
             }
-            UiAction::MoveActiveSprite(dir) => {
-                if let Some(node) = self.game.node_mut() {
-                    let (remaining_moves, head, is_tapped) = node
-                        .with_active_sprite_mut(|mut sprite| {
-                            (
-                                sprite.move_sprite(vec![dir]),
-                                sprite.head(),
-                                sprite.tapped(),
-                            )
-                        })
-                        .ok_or("No active sprite".to_string())?;
-
-                    self.set_selected_square(head);
-
-                    if remaining_moves? == 0 && !is_tapped && self.selected_action_index().is_none()
-                    {
-                        // Sprite is still active, must still have some moves
-                        self.set_default_selected_action();
-                    }
-                } else {
-                    unimplemented!("We don't have an implementation for world map yet")
-                }
-                Ok(())
-            }
-            UiAction::PerformSpriteAction => {
-                if let Some(action_index) = self.selected_action_index() {
-                    let result = self.game.node_mut().unwrap().perform_sprite_action(
-                        action_index,
-                        self.node_ui.as_ref().unwrap().selected_square(),
-                    );
-                    if result.is_some() {
-                        unsafe {
-                            self.node_ui.as_mut().unwrap().clear_selected_action_index();
-                        }
-                    }
-                }
-                Ok(())
-            }
+            _ => self
+                .node_ui
+                .as_mut()
+                .zip(self.game.node_mut())
+                .map(|(node_ui, node)| node_ui.apply_action(node, ui_action))
+                .unwrap_or(Err("Node UI action, but no node".to_string())),
         }
     }
 }

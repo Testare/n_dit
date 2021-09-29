@@ -4,7 +4,10 @@ use std::collections::HashSet;
 
 mod with_sprite;
 
-pub struct NodeRestorePoint(GridMap<Piece>);
+#[derive(Debug)]
+
+//pub struct NodeRestorePoint(GridMap<Piece>);
+pub struct NodeRestorePoint();
 
 #[derive(Debug)]
 pub struct Node {
@@ -21,6 +24,11 @@ pub enum Piece {
 }
 
 impl Node {
+    // TODO Node undo states
+    pub fn create_restore_point(&self) -> NodeRestorePoint {
+        NodeRestorePoint()
+    }
+
     fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
     }

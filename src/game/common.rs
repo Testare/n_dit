@@ -1,6 +1,7 @@
 use std::cmp::min;
 use std::collections::HashSet;
 use std::convert::TryInto;
+use std::ops::BitOr;
 
 pub type Point = (usize, usize);
 
@@ -66,10 +67,24 @@ pub struct Bounds(usize, usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Direction {
-    North,
-    East,
-    South,
-    West,
+    North = 0b1,
+    East = 0b10,
+    South = 0b100,
+    West = 0b1000,
+}
+
+impl BitOr for Direction {
+    type Output = u8;
+    fn bitor(self, rhs: Direction) -> Self::Output {
+        self as u8 | rhs as u8
+    }
+}
+
+impl BitOr<Direction> for u8 {
+    type Output = u8;
+    fn bitor(self, rhs: Direction) -> Self::Output {
+        self | rhs
+    }
 }
 
 impl Direction {
@@ -79,6 +94,10 @@ impl Direction {
         Direction::South,
         Direction::West,
     ];
+
+    pub fn matches(&self, directions: u8) -> bool {
+        ((*self as u8) & directions) != 0
+    }
 
     pub fn add_to_point(&self, point: Point, speed: usize, bounds: Bounds) -> Point {
         match self {
