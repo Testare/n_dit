@@ -141,6 +141,7 @@ fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
         // TODO better handling for when keys are held down/ clearing input queue
         crossterm::event::read()?
     } else {
+        // TODO Allow "rapid next" mode for a shorter timeout, and then
         if crossterm::event::poll(TIMEOUT)? {
             crossterm::event::read()?
         } else {

@@ -1,5 +1,5 @@
 use super::Node;
-use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team, GridMap};
+use crate::{Direction, GridMap, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
 use std::{cmp, num::NonZeroUsize};
 
 const SPRITE_KEY_IS_VALID: &'static str = "Sprite key is expected to be valid key for node grid";
@@ -208,7 +208,6 @@ impl<'a> WithSprite<'a> {
     }
 }
 
-
 impl Node {
     pub fn with_active_sprite<F, R, O>(&self, f: F) -> Option<R>
     where
@@ -239,7 +238,9 @@ impl Node {
                 sprite_key,
             };
             f(with_sprite_mut).into()
-        } else { None }
+        } else {
+            None
+        }
     }
 
     pub fn with_sprite_mut<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
@@ -253,7 +254,9 @@ impl Node {
                 sprite_key,
             };
             f(with_sprite_mut).into()
-        } else { None }
+        } else {
+            None
+        }
     }
 
     pub fn with_sprite_at<F, R, O>(&self, pt: Point, f: F) -> Option<R>

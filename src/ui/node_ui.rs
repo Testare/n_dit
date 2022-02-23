@@ -135,7 +135,7 @@ impl NodeUiState {
                             .unwrap();
                         self.set_selected_action_index(match dir {
                             Direction::North => (action_index + num_actions - 1) % num_actions,
-                            Direction::South => (action_index + 1) & num_actions,
+                            Direction::South => (action_index + 1) % num_actions,
                             _ => action_index,
                         })
                     }
@@ -190,7 +190,9 @@ impl NodeUiState {
                     } => {
                         if node.activate_sprite(sprite_key) {
                             // Should make this a function
-                            if let Some((moves, actions)) = node.with_active_sprite(|sprite| (sprite.moves(), sprite.actions().len())) {
+                            if let Some((moves, actions)) = node.with_active_sprite(|sprite| {
+                                (sprite.moves(), sprite.actions().len())
+                            }) {
                                 if moves != 0 {
                                     self.phase.transition_to_move_sprite(node);
                                 } else if actions != 0 {
@@ -207,7 +209,8 @@ impl NodeUiState {
                     }
                     _ => {
                         node.deactivate_sprite();
-                        self.phase.transition_to_free_select(self.selected_square, node);
+                        self.phase
+                            .transition_to_free_select(self.selected_square, node);
                         Ok(())
                     }
                 }
@@ -236,7 +239,8 @@ impl NodeUiState {
                 if let Some(action_index) = self.selected_action_index() {
                     let result = node.perform_sprite_action(action_index, self.selected_square());
                     if result.is_some() {
-                        self.phase.transition_to_free_select(self.selected_square, node);
+                        self.phase
+                            .transition_to_free_select(self.selected_square, node);
                         unsafe {
                             self.clear_selected_action_index();
                         }
@@ -363,9 +367,8 @@ impl NodePhase {
         }
     }
 
-
     fn transition_to_free_select(&mut self, selected_square: Point, node: &Node) {
-        let selected_sprite_key = node.with_sprite_at(selected_square, |sprite| sprite.key()) ;
+        let selected_sprite_key = node.with_sprite_at(selected_square, |sprite| sprite.key());
         *self = NodePhase::FreeSelect {
             selected_sprite_key,
             selected_action_index: None,
@@ -377,24 +380,20 @@ impl NodePhase {
             NodePhase::FreeSelect {
                 selected_action_index,
                 selected_sprite_key: Some(selected_sprite_key),
-            } => {
-                Ok::<_, String>(NodePhase::MoveSprite {
-                    selected_action_index: selected_action_index.clone(),
-                    selected_sprite_key: *selected_sprite_key,
-                    undo_state: Rc::new(node.create_restore_point()),
-                })
-            }
+            } => Ok::<_, String>(NodePhase::MoveSprite {
+                selected_action_index: selected_action_index.clone(),
+                selected_sprite_key: *selected_sprite_key,
+                undo_state: Rc::new(node.create_restore_point()),
+            }),
             NodePhase::SpriteAction {
                 selected_sprite_key,
                 undo_state,
                 ..
-            } => {
-                Ok::<_, String>(NodePhase::MoveSprite {
-                    selected_sprite_key: *selected_sprite_key,
-                    selected_action_index: None,
-                    undo_state: undo_state.clone(),
-                })
-            }
+            } => Ok::<_, String>(NodePhase::MoveSprite {
+                selected_sprite_key: *selected_sprite_key,
+                selected_action_index: None,
+                undo_state: undo_state.clone(),
+            }),
             _ => unimplemented!("Implement!"),
         }?;
         Ok(())
@@ -405,19 +404,17 @@ impl NodePhase {
             NodePhase::FreeSelect {
                 selected_action_index: Some(selected_action_index),
                 selected_sprite_key: Some(selected_sprite_key),
-            } => {
-                Ok::<_, String>(NodePhase::SpriteAction {
-                    selected_action_index: *selected_action_index,
-                    selected_sprite_key: *selected_sprite_key,
-                    undo_state: Rc::new(node.create_restore_point()),
-                })
-            }
+            } => Ok::<_, String>(NodePhase::SpriteAction {
+                selected_action_index: *selected_action_index,
+                selected_sprite_key: *selected_sprite_key,
+                undo_state: Rc::new(node.create_restore_point()),
+            }),
             NodePhase::MoveSprite {
                 selected_sprite_key,
                 selected_action_index,
                 undo_state,
             } => {
-                // TODO check if sprite has actions available, else go to 
+                // TODO check if sprite has actions available, else go to
                 Ok::<_, String>(NodePhase::SpriteAction {
                     selected_sprite_key: *selected_sprite_key,
                     selected_action_index: selected_action_index.unwrap_or(0),
