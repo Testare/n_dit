@@ -1,3 +1,4 @@
+mod ai;
 mod common;
 mod game_state;
 mod node;
@@ -5,6 +6,7 @@ mod sprite;
 mod sprite_action;
 mod world_map;
 
+pub use ai::EnemyAi;
 pub use common::{Bounds, Direction, Point, PointSet};
 pub use game_state::{GameAction, GameState};
 pub use node::{Node, NodeRestorePoint, Piece};

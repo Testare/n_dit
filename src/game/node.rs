@@ -1,4 +1,4 @@
-use super::Sprite;
+use super::{Sprite, EnemyAi};
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use std::collections::HashSet;
 
@@ -9,14 +9,15 @@ mod with_sprite;
 //pub struct NodeRestorePoint(GridMap<Piece>);
 pub struct NodeRestorePoint();
 
-
 type NodeConstructionError = String;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
     active_sprite: Option<usize>,
+    enemy_ai: EnemyAi,
+    active_team: Team,
 }
 
 #[derive(Clone, Debug)]
@@ -101,7 +102,7 @@ impl Node {
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
         let can_activate = self
             .with_sprite(sprite_key, |sprite| {
-                sprite.team() == Team::PlayerTeam && !sprite.tapped()
+                sprite.team() == self.active_team() && !sprite.tapped()
             })
             .unwrap_or(false);
         if can_activate {
@@ -222,12 +223,21 @@ impl Node {
     pub fn piece_len(&self, piece_key: usize) -> usize {
         self.grid.len_of(piece_key)
     }
+
+    pub fn active_team(&self) -> Team {
+        self.active_team
+    }
+    pub fn enemy_ai(&self) -> &EnemyAi {
+        &self.enemy_ai
+    }
 }
 
 impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
         Node {
             active_sprite: None,
+            active_team: Team::PlayerTeam,
+            enemy_ai: EnemyAi::SimpleAi,
             grid,
             name: String::from("Node"),
         }
@@ -238,6 +248,21 @@ impl From<(String, GridMap<Piece>)> for Node {
     fn from((name, grid): (String, GridMap<Piece>)) -> Self {
         Node {
             active_sprite: None,
+            active_team: Team::PlayerTeam,
+            enemy_ai: EnemyAi::SimpleAi,
+            grid,
+            name,
+        }
+    }
+}
+
+
+impl From<(String, GridMap<Piece>, EnemyAi)> for Node {
+    fn from((name, grid, enemy_ai): (String, GridMap<Piece>, EnemyAi)) -> Self {
+        Node {
+            active_sprite: None,
+            active_team: Team::PlayerTeam,
+            enemy_ai,
             grid,
             name,
         }
