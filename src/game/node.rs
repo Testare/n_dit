@@ -9,6 +9,9 @@ mod with_sprite;
 //pub struct NodeRestorePoint(GridMap<Piece>);
 pub struct NodeRestorePoint();
 
+
+type NodeConstructionError = String;
+
 #[derive(Debug)]
 pub struct Node {
     grid: GridMap<Piece>,
@@ -111,9 +114,17 @@ impl Node {
         &self.grid
     }
 
-    // TODO sprite builder pattern
-    pub fn add_sprite(&mut self, pt: Point, spr: Sprite) -> Option<usize> {
-        self.grid.put_item(pt, Piece::Program(spr))
+    pub fn add_sprite(&mut self, spr: Sprite, pt_vec: Vec<Point>) -> Result<usize, NodeConstructionError> {
+        // Could possibly be optimized with GridMap::put_entries
+        let mut pts = pt_vec.into_iter();
+        let first_pt = pts.next().ok_or("Sprite needs at least one point!")?;
+        let key = self.grid.put_item(first_pt, Piece::Program(spr)).ok_or::<NodeConstructionError>("Could not add sprite to initial location".into())?;
+        for pt in pts {
+            if !self.move_sprite(pt, key) {
+                return Err(format!("Could not add sprite to location {:?}", pt));
+            }
+        }
+        Ok(key)
     }
 
     pub fn add_piece(&mut self, pt: Point, piece: Piece) -> Option<usize> {

@@ -68,19 +68,11 @@ fn main() -> crossterm::Result<()> {
             false, false, false, false, false, true, false, false, false, false, false,
         ],
     ]));
-    let guy_key = node.add_sprite((1, 6), Sprite::new("あ"));
-    node.move_sprite((2, 6), guy_key.unwrap());
-    node.move_sprite((3, 6), guy_key.unwrap());
 
-    let guy_key = node.add_sprite((4, 6), Sprite::new("死"));
-    node.move_sprite((5, 6), guy_key.unwrap());
-    node.move_sprite((5, 7), guy_key.unwrap());
-
-    let guy_key = node.add_sprite((3, 3), Sprite::new("8]"));
-    node.move_sprite((3, 4), guy_key.unwrap());
-
-    let _bad_guy = node.add_sprite(
-        (14, 4),
+    node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2,6), (3, 6)]).unwrap();
+    node.add_sprite(Sprite::new("死"), vec![(4, 6), (5, 6), (5, 7)]).unwrap();
+    node.add_sprite(Sprite::new("8]"), vec![(3, 3), (3, 4)]).unwrap();
+    node.add_sprite(
         Sprite::builder()
             .team(Team::EnemyTeam)
             .display("骨")
@@ -89,9 +81,12 @@ fn main() -> crossterm::Result<()> {
             .movement_speed(1)
             .build()
             .unwrap(),
-    );
+        vec![
+            (14, 4),
+        ]
 
-    node.add_sprite((14, 6), Sprite::new("<>"));
+    ).unwrap();
+    node.add_sprite(Sprite::new("<>"), vec![(14, 6)]).unwrap();
     node.add_piece((6, 1), Piece::Mon(500));
     node.add_piece((6, 2), Piece::AccessPoint);
     let state = SuperState::from(Some(node));

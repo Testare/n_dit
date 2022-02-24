@@ -1,5 +1,6 @@
 use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
 use std::num::NonZeroUsize;
+use std::ops::Deref;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -17,6 +18,15 @@ impl StandardSpriteAction {
             StandardSpriteAction::Fiddle => &FIDDLE,
         }
     }
+}
+
+impl Deref for StandardSpriteAction {
+    type Target = SpriteAction<'static>;
+
+    fn deref(&self) -> &Self::Target {
+        self.unwrap()
+    }
+
 }
 
 impl From<StandardSpriteAction> for &'static SpriteAction<'static> {
