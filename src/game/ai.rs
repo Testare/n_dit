@@ -1,4 +1,4 @@
-use super::{Direction, Node, Point};
+use super::{Direction, Node, Point, Team};
 
 mod simple_ai;
 
@@ -11,14 +11,18 @@ pub enum EnemyAiAction {
 
 #[derive(Clone, Debug)]
 pub enum EnemyAi {
-    SimpleAi
+    SimpleAi,
 }
 
 impl EnemyAi {
     pub fn generate_enemy_ai_actions(&self, node: &Node) -> Vec<EnemyAiAction> {
         let node_destructible = node.clone();
         match node.enemy_ai() {
-            SimpleAi => simple_ai::generate_enemy_ai_actions(node)
+            SimpleAi => simple_ai::generate_enemy_ai_actions(node_destructible),
         }
     }
+}
+
+fn find_sprites_on_team(node: &Node) -> Vec<usize> {
+    node.filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
 }

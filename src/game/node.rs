@@ -1,4 +1,4 @@
-use super::{Sprite, EnemyAi};
+use super::{EnemyAi, Sprite};
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use std::collections::HashSet;
 
@@ -230,6 +230,20 @@ impl Node {
     pub fn enemy_ai(&self) -> &EnemyAi {
         &self.enemy_ai
     }
+
+    pub fn pieces<'a>(&'a self) -> Vec<&'a Piece> {
+        self.grid().entries()
+    }
+
+    pub fn filtered_sprite_keys<P: Fn(usize, &Sprite) -> bool>(&self, predicate: P) -> Vec<usize> {
+        self.grid.filtered_keys(|key, piece| {
+            if let Piece::Program(sprite) = piece {
+                predicate(key, sprite)
+            } else {
+                false
+            }
+        })
+    }
 }
 
 impl From<GridMap<Piece>> for Node {
@@ -255,7 +269,6 @@ impl From<(String, GridMap<Piece>)> for Node {
         }
     }
 }
-
 
 impl From<(String, GridMap<Piece>, EnemyAi)> for Node {
     fn from((name, grid, enemy_ai): (String, GridMap<Piece>, EnemyAi)) -> Self {

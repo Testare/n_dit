@@ -173,6 +173,29 @@ impl<T> GridMap<T> {
         self.entries.values().map(|(item, _)| item).collect()
     }
 
+    /// Returns a list of keys for all entries contained in the grid.
+    ///
+    /// There is no guarantee to order.
+    pub fn keys(&self) -> Vec<usize> {
+        self.entries.keys().map(|u| *u).collect()
+    }
+
+    /// Returns a list of keys for all entries contained in the grid that match the criteria
+    /// of the predicate.
+    ///
+    /// Predicate function takes two parameters: The key and an immutable reference to the item.EnemyAi
+    ///
+    /// Result is a list of keys.
+    ///
+    /// There is no guarantee to order.
+    pub fn filtered_keys<'a, P: Fn(usize, &T) -> bool>(&'a self, predicate: P) -> Vec<usize> {
+        self.entries
+            .iter()
+            .filter(|(key, (item, _))| predicate(**key, item))
+            .map(|(key, _)| *key)
+            .collect()
+    }
+
     /// Returns the number of entries currently stored in the grid. Unrelated to the dimensions of
     /// the grid or the amount of square each item takes.
     pub fn len(&self) -> usize {
