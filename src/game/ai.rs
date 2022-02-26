@@ -11,14 +11,14 @@ pub enum EnemyAiAction {
 
 #[derive(Clone, Debug)]
 pub enum EnemyAi {
-    SimpleAi,
+    Simple,
 }
 
 impl EnemyAi {
     pub fn generate_enemy_ai_actions(&self, node: &Node) -> Vec<EnemyAiAction> {
         let node_destructible = node.clone();
         match node.enemy_ai() {
-            SimpleAi => simple_ai::generate_enemy_ai_actions(node_destructible),
+            EnemyAi::Simple => simple_ai::generate_enemy_ai_actions(node_destructible),
         }
     }
 }

@@ -97,6 +97,13 @@ impl Node {
     pub fn deactivate_sprite(&mut self) {
         self.active_sprite_mut().map(|sprite| sprite.tap());
         self.active_sprite = None;
+        let sprites_remaining = self
+            .filtered_sprite_keys(|_, sprite| sprite.team() == Team::PlayerTeam && !sprite.tapped())
+            .len();
+        if sprites_remaining == 0 {
+            // Well for now let's just do this and see what happens
+            self.active_team = Team::EnemyTeam;
+        }
     }
 
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
@@ -251,7 +258,7 @@ impl From<GridMap<Piece>> for Node {
         Node {
             active_sprite: None,
             active_team: Team::PlayerTeam,
-            enemy_ai: EnemyAi::SimpleAi,
+            enemy_ai: EnemyAi::Simple,
             grid,
             name: String::from("Node"),
         }
@@ -263,7 +270,7 @@ impl From<(String, GridMap<Piece>)> for Node {
         Node {
             active_sprite: None,
             active_team: Team::PlayerTeam,
-            enemy_ai: EnemyAi::SimpleAi,
+            enemy_ai: EnemyAi::Simple,
             grid,
             name,
         }

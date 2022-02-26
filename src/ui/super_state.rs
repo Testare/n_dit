@@ -161,6 +161,7 @@ impl SuperState {
                 self.move_selected_square(direction, speed, range_limit);
                 Ok(())
             }
+            // I think this is the wrong pattern. I think we should have the UI react to game actions as well, but game actions are always applied anyways
             UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
             UiAction::SetTerminalSize(bounds) => {
                 self.layout.resize(bounds);

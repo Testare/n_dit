@@ -1,4 +1,4 @@
-use super::{Direction, Node, Point, WorldMap};
+use super::{Direction, Node, Point, Team, WorldMap};
 
 #[derive(Debug)]
 pub struct GameState {
@@ -47,7 +47,9 @@ impl GameState {
 
     // TODO look at this
     pub fn waiting_on_player_input(&self) -> bool {
-        true
+        self.node()
+            .map(|node| node.active_team() == Team::PlayerTeam)
+            .unwrap_or(false)
     }
 
     pub fn apply_action(&mut self, game_action: GameAction) -> Result<(), String> {

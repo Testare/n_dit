@@ -78,6 +78,7 @@ impl NodeUiState {
         };
     }
 
+    // TODO A lot of this logic shouldn't be in the UI layer
     pub fn apply_action(&mut self, node: &mut Node, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::ConfirmSelection => {
