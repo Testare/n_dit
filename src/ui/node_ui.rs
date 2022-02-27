@@ -291,6 +291,7 @@ impl NodeUiState {
                 ..
             } => *selected_action_index = None,
             NodePhase::SpriteAction { .. } => {
+                // Was somehow able to reach this
                 panic!("can't clear selected action index when in sprite action phase")
             }
         }

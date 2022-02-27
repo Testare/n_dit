@@ -59,6 +59,10 @@ impl<'a> WithSpriteMut<'a> {
         }
     }
 
+    pub fn untap(&mut self) {
+        self.with_sprite_mut(|sprite| sprite.untap());
+    }
+
     pub fn team(&mut self) -> Team {
         self.with_sprite(Sprite::team)
     }

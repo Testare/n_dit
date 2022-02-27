@@ -97,13 +97,6 @@ impl Node {
     pub fn deactivate_sprite(&mut self) {
         self.active_sprite_mut().map(|sprite| sprite.tap());
         self.active_sprite = None;
-        let sprites_remaining = self
-            .filtered_sprite_keys(|_, sprite| sprite.team() == Team::PlayerTeam && !sprite.tapped())
-            .len();
-        if sprites_remaining == 0 {
-            // Well for now let's just do this and see what happens
-            self.active_team = Team::EnemyTeam;
-        }
     }
 
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
@@ -234,6 +227,20 @@ impl Node {
     pub fn active_team(&self) -> Team {
         self.active_team
     }
+
+    pub fn change_active_team(&mut self) {
+        let active_team = match self.active_team {
+            Team::EnemyTeam => Team::PlayerTeam,
+            Team::PlayerTeam => Team::EnemyTeam,
+        };
+        self.active_team = active_team;
+        for sprite_key in self.filtered_sprite_keys(|_, sprite| sprite.team() == active_team).iter() {
+            self.with_sprite_mut(*sprite_key, |mut sprite|sprite.untap());
+        }
+
+    }
+
+
     pub fn enemy_ai(&self) -> &EnemyAi {
         &self.enemy_ai
     }

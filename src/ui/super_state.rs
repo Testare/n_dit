@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet};
+use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet, Team};
 
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug)]
@@ -151,44 +151,75 @@ impl SuperState {
     }
 
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
-        match ui_action {
+        if let UiAction::GameAction(game_action) = &ui_action {
+            self.game.apply_action(game_action)?;
+        }
+
+        // TODO after ui action is refactored to properly separate game actions, move this below the match statement and remove clone
+        self.node_ui
+            .as_mut()
+            .zip(self.game.node_mut())
+            .map(|(node_ui, node)| node_ui.apply_action(node, ui_action.clone()))
+            .unwrap_or(Err("Node UI action, but no node".to_string()))?;
+
+        match &ui_action {
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit = self.selected_action_index().and_then(|action_index| {
                     self.game.node().and_then(|node| {
                         node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
                     })
                 });
-                self.move_selected_square(direction, speed, range_limit);
-                Ok(())
+                self.move_selected_square(*direction, *speed, range_limit);
             }
-            // I think this is the wrong pattern. I think we should have the UI react to game actions as well, but game actions are always applied anyways
-            UiAction::DoGameAction(game_action) => self.game.apply_action(game_action),
             UiAction::SetTerminalSize(bounds) => {
-                self.layout.resize(bounds);
-                Ok(())
+                self.layout.resize(*bounds);
             }
             UiAction::Quit => {
                 panic!("Thanks for playing")
             }
-            _ => self
-                .node_ui
-                .as_mut()
-                .zip(self.game.node_mut())
-                .map(|(node_ui, node)| node_ui.apply_action(node, ui_action))
-                .unwrap_or(Err("Node UI action, but no node".to_string())),
+            // Should be moved into the GameAction
+            UiAction::PerformSpriteAction | UiAction::ActivateSprite(_) => {
+                if let Some(node) = self.game.node_mut() {
+
+                    let enemy_sprites_remaining = node
+                        .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
+                        .len();
+                    if enemy_sprites_remaining == 0 {
+                        panic!("No enemies remain! You win!")
+                    }
+                    let untapped_player_sprites_remaining = node
+                        .filtered_sprite_keys(|_, sprite| sprite.team() == Team::PlayerTeam && !sprite.tapped())
+                        .len();
+                    
+                    if untapped_player_sprites_remaining == 0 {
+                        node.change_active_team();
+                        if node.active_team() == Team::EnemyTeam {
+                            let enemy_ai_actions = node.enemy_ai().generate_animation(node);
+                            self.game.set_animation(enemy_ai_actions);
+                        }
+                    }
+                }
+            }
+            _ => {}
         }
+        Ok(())
     }
 }
 
+#[derive(Clone)]
 pub enum UiAction {
     ChangeSelection,
     ConfirmSelection,
     ChangeSelectedMenuItem(Direction),
+    // Should be a GameAction
     MoveSelectedSquare { direction: Direction, speed: usize },
+    // Should be a GameAction
     MoveActiveSprite(Direction),
     SetSelectedSquare(Point),
-    DoGameAction(GameAction),
+    GameAction(GameAction),
+    // Should be a GameAction
     PerformSpriteAction,
+    // Should be a GameAction
     ActivateSprite(usize),
     SetTerminalSize(Bounds),
     Quit,
@@ -212,7 +243,7 @@ impl UiAction {
     }
 
     pub fn next() -> UiAction {
-        UiAction::DoGameAction(GameAction::next())
+        UiAction::GameAction(GameAction::next())
     }
 
     pub fn quit() -> UiAction {
