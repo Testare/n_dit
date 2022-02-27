@@ -1,3 +1,4 @@
+use simplelog::{WriteLogger, LevelFilter};
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
@@ -6,9 +7,11 @@ use n_dit::{
     ui::{SuperState, UiAction, UserInput},
     Team,
 };
-use std::io::stdout;
+use std::io::{stdout, Write};
+use std::fs::File;
 
 fn main() -> crossterm::Result<()> {
+    setup_logging();
     let mut node = Node::from(GridMap::from(vec![
         vec![
             false, false, false, false, false, true, false, false, false, false, false,
@@ -144,4 +147,14 @@ fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
         }
     };
     Ok(UserInput::from_event(event).and_then(|user_input| state.ui_action_for_input(user_input)))
+}
+
+
+// Can set up more advanced CLI support in the future with clap
+fn setup_logging() {
+    if std::env::args().any(|arg|arg == "--debug") {
+        // Should I do something in the future to make this append style instead of recreate file?
+        WriteLogger::init(LevelFilter::Debug, simplelog::Config::default(), File::create("debug.log").unwrap()).unwrap()
+    }
+    // WriteLogger::init(LevelFilter::Debug, simplelog::Config::default(), File::create("debug.log").unwrap()).unwrap()
 }

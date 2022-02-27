@@ -1,4 +1,5 @@
 use super::{GameState, EnemyAiAction};
+use log::{debug};
 
 #[derive(Debug, Clone)]
 pub enum Animation {
@@ -18,9 +19,12 @@ impl Animation {
                             node.deactivate_sprite();
                         },
                         EnemyAiAction::MoveSprite(dir) => {
+                            debug!("Sprite movement occured in dir {:?}", dir);
                             node.move_active_sprite(vec![dir])?;
                         },
                         EnemyAiAction::ActivateSprite(sprite_key) => {
+                            debug!("Sprite key activated {:?}", sprite_key);
+
                             node.activate_sprite(sprite_key);
                         },
                         _ => {
