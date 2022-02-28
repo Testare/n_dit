@@ -16,8 +16,12 @@ impl GameState {
         self.node.as_ref()
     }
 
-    pub(super) fn to_mutable_pieces<'a>(&'a mut self) -> (&'a mut Option<Node>, &'a mut Option<Animation>) {
-        let GameState{node, animation, ..} = self;
+    pub(super) fn to_mutable_pieces<'a>(
+        &'a mut self,
+    ) -> (&'a mut Option<Node>, &'a mut Option<Animation>) {
+        let GameState {
+            node, animation, ..
+        } = self;
         (node, animation)
     }
 
@@ -59,7 +63,7 @@ impl GameState {
     }
 
     pub fn waiting_on_player_input(&self) -> bool {
-    // TODO Check if there is an active animation?
+        // TODO Check if there is an active animation?
         self.node()
             .map(|node| node.active_team() == Team::PlayerTeam)
             .unwrap_or(false)

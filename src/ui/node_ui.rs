@@ -1,5 +1,6 @@
 use crate::{Direction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
+use log::debug;
 use std::rc::Rc;
 
 #[derive(Debug, CopyGetters, Setters)]
@@ -226,6 +227,13 @@ impl NodeUiState {
                         )
                     })
                     .ok_or("No active sprite".to_string())?;
+                debug!(
+                    "Active Sprite moved {:?} to {:?} with {:?} moves remaining, and is {}.",
+                    dir,
+                    head,
+                    remaining_moves,
+                    if is_tapped { "tapped" } else { "not tapped" }
+                );
 
                 self.set_selected_square(head);
 

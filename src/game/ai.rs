@@ -1,4 +1,4 @@
-use super::{Direction, Node, Point, Team, Animation};
+use super::{Animation, Direction, Node, Point, Team};
 
 mod simple_ai;
 

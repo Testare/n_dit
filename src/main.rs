@@ -1,4 +1,3 @@
-use simplelog::{WriteLogger, LevelFilter};
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
@@ -7,8 +6,9 @@ use n_dit::{
     ui::{SuperState, UiAction, UserInput},
     Team,
 };
-use std::io::{stdout, Write};
+use simplelog::{LevelFilter, WriteLogger};
 use std::fs::File;
+use std::io::{stdout, Write};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();
@@ -72,9 +72,12 @@ fn main() -> crossterm::Result<()> {
         ],
     ]));
 
-    node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2,6), (3, 6)]).unwrap();
-    node.add_sprite(Sprite::new("死"), vec![(4, 6), (5, 6), (5, 7)]).unwrap();
-    node.add_sprite(Sprite::new("8]"), vec![(3, 3), (3, 4)]).unwrap();
+    node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
+        .unwrap();
+    node.add_sprite(Sprite::new("死"), vec![(4, 6), (5, 6), (5, 7)])
+        .unwrap();
+    node.add_sprite(Sprite::new("8]"), vec![(3, 3), (3, 4)])
+        .unwrap();
     node.add_sprite(
         Sprite::builder()
             .team(Team::EnemyTeam)
@@ -84,11 +87,9 @@ fn main() -> crossterm::Result<()> {
             .movement_speed(1)
             .build()
             .unwrap(),
-        vec![
-            (14, 4),
-        ]
-
-    ).unwrap();
+        vec![(14, 4)],
+    )
+    .unwrap();
     node.add_sprite(Sprite::new("<>"), vec![(14, 6)]).unwrap();
     node.add_piece((6, 1), Piece::Mon(500));
     node.add_piece((6, 2), Piece::AccessPoint);
@@ -149,12 +150,16 @@ fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
     Ok(UserInput::from_event(event).and_then(|user_input| state.ui_action_for_input(user_input)))
 }
 
-
 // Can set up more advanced CLI support in the future with clap
 fn setup_logging() {
-    if std::env::args().any(|arg|arg == "--debug") {
+    if std::env::args().any(|arg| arg == "--debug") {
         // Should I do something in the future to make this append style instead of recreate file?
-        WriteLogger::init(LevelFilter::Debug, simplelog::Config::default(), File::create("debug.log").unwrap()).unwrap()
+        WriteLogger::init(
+            LevelFilter::Debug,
+            simplelog::Config::default(),
+            File::create("debug.log").unwrap(),
+        )
+        .unwrap()
     }
     // WriteLogger::init(LevelFilter::Debug, simplelog::Config::default(), File::create("debug.log").unwrap()).unwrap()
 }

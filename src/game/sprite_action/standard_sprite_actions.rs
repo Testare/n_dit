@@ -26,7 +26,6 @@ impl Deref for StandardSpriteAction {
     fn deref(&self) -> &Self::Target {
         self.unwrap()
     }
-
 }
 
 impl From<StandardSpriteAction> for &'static SpriteAction<'static> {
@@ -58,7 +57,7 @@ lazy_static! {
         range: NonZeroUsize::new(2),
         effect: SAEffect::IncreaseMaxSize {
             amount: 1,
-            bound: NonZeroUsize::new(4)
+            bound: NonZeroUsize::new(5)
         },
         targets: vec![Target::Ally],
         conditions: vec![SACondition::TargetMaxSize(1..=4)],

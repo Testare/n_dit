@@ -87,7 +87,6 @@ impl<'a> WithSpriteMut<'a> {
             return Err("Sprite cannot move".to_string());
         }
         let bounds = self.node.bounds();
-        let mut size = self.size();
         let mut remaining_moves = self.moves();
         let max_size = self.max_size();
         let has_no_actions = self.actions().is_empty();
@@ -97,7 +96,6 @@ impl<'a> WithSpriteMut<'a> {
             let next_pt = dir.add_to_point(head, 1, bounds);
             let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);
             if sucessful_movement {
-                size += 1;
                 remaining_moves = self.with_sprite_mut(|sprite| {
                     sprite.took_a_move();
                     sprite.moves()
@@ -107,6 +105,8 @@ impl<'a> WithSpriteMut<'a> {
                 break;
             }
         }
+
+        let size = self.size();
         // Tap if there are no remaining moves or actions
         if has_no_actions {
             self.tap();

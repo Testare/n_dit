@@ -115,11 +115,18 @@ impl Node {
         &self.grid
     }
 
-    pub fn add_sprite(&mut self, spr: Sprite, pt_vec: Vec<Point>) -> Result<usize, NodeConstructionError> {
+    pub fn add_sprite(
+        &mut self,
+        spr: Sprite,
+        pt_vec: Vec<Point>,
+    ) -> Result<usize, NodeConstructionError> {
         // Could possibly be optimized with GridMap::put_entries
         let mut pts = pt_vec.into_iter();
         let first_pt = pts.next().ok_or("Sprite needs at least one point!")?;
-        let key = self.grid.put_item(first_pt, Piece::Program(spr)).ok_or::<NodeConstructionError>("Could not add sprite to initial location".into())?;
+        let key = self
+            .grid
+            .put_item(first_pt, Piece::Program(spr))
+            .ok_or::<NodeConstructionError>("Could not add sprite to initial location".into())?;
         for pt in pts {
             if !self.move_sprite(pt, key) {
                 return Err(format!("Could not add sprite to location {:?}", pt));
@@ -234,12 +241,13 @@ impl Node {
             Team::PlayerTeam => Team::EnemyTeam,
         };
         self.active_team = active_team;
-        for sprite_key in self.filtered_sprite_keys(|_, sprite| sprite.team() == active_team).iter() {
-            self.with_sprite_mut(*sprite_key, |mut sprite|sprite.untap());
+        for sprite_key in self
+            .filtered_sprite_keys(|_, sprite| sprite.team() == active_team)
+            .iter()
+        {
+            self.with_sprite_mut(*sprite_key, |mut sprite| sprite.untap());
         }
-
     }
-
 
     pub fn enemy_ai(&self) -> &EnemyAi {
         &self.enemy_ai

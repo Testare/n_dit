@@ -180,7 +180,6 @@ impl SuperState {
             // Should be moved into the GameAction
             UiAction::PerformSpriteAction | UiAction::ActivateSprite(_) => {
                 if let Some(node) = self.game.node_mut() {
-
                     let enemy_sprites_remaining = node
                         .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
                         .len();
@@ -188,9 +187,11 @@ impl SuperState {
                         panic!("No enemies remain! You win!")
                     }
                     let untapped_player_sprites_remaining = node
-                        .filtered_sprite_keys(|_, sprite| sprite.team() == Team::PlayerTeam && !sprite.tapped())
+                        .filtered_sprite_keys(|_, sprite| {
+                            sprite.team() == Team::PlayerTeam && !sprite.tapped()
+                        })
                         .len();
-                    
+
                     if untapped_player_sprites_remaining == 0 {
                         node.change_active_team();
                         if node.active_team() == Team::EnemyTeam {
