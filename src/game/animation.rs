@@ -20,6 +20,7 @@ impl Animation {
                 if let Some(enemy_action) = enemy_actions_vec_clone.pop() {
                     match enemy_action {
                         EnemyAiAction::PerformNoAction => {
+                            debug!("Active sprite deactivating with no action");
                             node.deactivate_sprite();
                         }
                         EnemyAiAction::MoveSprite(dir) => {

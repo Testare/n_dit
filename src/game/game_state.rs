@@ -1,4 +1,5 @@
 use super::{Animation, Direction, Node, Point, Team, WorldMap};
+use log::debug;
 
 #[derive(Debug)]
 pub struct GameState {
@@ -39,16 +40,6 @@ impl GameState {
             .unwrap_or(false)
     }
 
-    // TODO use logic in apply action, and make this create the game action?
-    // Or perhaps just remove this entirely
-    pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
-        if let Some(node) = self.node.as_mut() {
-            node.activate_sprite(sprite_key)
-        } else {
-            false
-        }
-    }
-
     pub fn active_sprite_key(&self) -> Option<usize> {
         self.node().and_then(|node| node.active_sprite_key())
     }
@@ -77,19 +68,29 @@ impl GameState {
         if self.waiting_on_player_input() {
             match game_action {
                 GameAction::Next => Err(String::from("Waiting for player input")),
-                GameAction::ActivateSprite(sprite_key) => self
+                GameAction::ActivateSprite(sprite_key) => {
+                    debug!("GameAction::ActivateSprite({:?}) called", sprite_key);
+
+                    self.node
+                        .as_mut()
+                        .ok_or(String::from(
+                            "Action doesn't make sense when we're not in a node", // Honestly might just make a helper function for "This is a node action"
+                        ))
+                        .and_then(|node| {
+                            if node.activate_sprite(*sprite_key) {
+                                Ok(())
+                            } else {
+                                Err(String::from("Sprite does not exist"))
+                            }
+                        })
+                }
+                GameAction::DeactivateSprite => self
                     .node
                     .as_mut()
+                    .map(|node| node.deactivate_sprite())
                     .ok_or(String::from(
                         "Action doesn't make sense when we're not in a node",
-                    ))
-                    .and_then(|node| {
-                        if node.activate_sprite(*sprite_key) {
-                            Ok(())
-                        } else {
-                            Err(String::from("Sprite does not exist"))
-                        }
-                    }),
+                    )),
                 _ => unimplemented!("TODO other game actions"),
             }
         } else {
@@ -109,6 +110,7 @@ impl GameState {
 pub enum GameAction {
     Next,                  // when we're not waiting on player_input, go to next action.
     ActivateSprite(usize), // Starts using a unit.
+    DeactivateSprite,      //Finishes using a unit
     MoveActiveSprite(Vec<Direction>),
     TakeSpriteAction(usize, Point),
 }
@@ -116,5 +118,13 @@ pub enum GameAction {
 impl GameAction {
     pub fn next() -> GameAction {
         GameAction::Next
+    }
+
+    pub fn activate_sprite(sprite_key: usize) -> GameAction {
+        GameAction::ActivateSprite(sprite_key)
+    }
+
+    pub fn deactivate_sprite() -> GameAction {
+        GameAction::DeactivateSprite
     }
 }

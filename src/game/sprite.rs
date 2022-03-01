@@ -18,6 +18,7 @@ pub struct Sprite {
     max_size: usize,
     #[set]
     movement_speed: usize,
+    #[get_copy = "pub"]
     moves_taken: usize,
     name: String,
     #[get_copy = "pub"]

@@ -1,4 +1,4 @@
-use crate::{Direction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
+use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
 use std::rc::Rc;
@@ -26,6 +26,7 @@ impl NodeUiState {
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         // TODO Undo
+        // TODO Not sure why we don't have node state passed in here
         return match self.focus {
             NodeFocus::ActionMenu => {
                 match user_input {
@@ -64,11 +65,8 @@ impl NodeUiState {
                         NodePhase::FreeSelect {
                             selected_sprite_key: Some(sprite_key),
                             ..
-                        }
-                        | NodePhase::MoveSprite {
-                            selected_sprite_key: sprite_key,
-                            ..
-                        } => Some(UiAction::ActivateSprite(sprite_key)),
+                        } => Some(UiAction::activate_sprite(sprite_key)),
+                        NodePhase::MoveSprite { .. } => Some(UiAction::deactivate_sprite()), // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
                         _ => None,
                     },
 
@@ -184,38 +182,30 @@ impl NodeUiState {
                 self.set_selected_square(pt);
                 Ok(())
             }
-            UiAction::ActivateSprite(sprite_key) => {
-                match &mut self.phase {
-                    NodePhase::FreeSelect {
-                        selected_sprite_key,
-                        selected_action_index,
-                    } => {
-                        if node.activate_sprite(sprite_key) {
-                            // Should make this a function
-                            if let Some((moves, actions)) = node.with_active_sprite(|sprite| {
-                                (sprite.moves(), sprite.actions().len())
-                            }) {
-                                if moves != 0 {
-                                    self.phase.transition_to_move_sprite(node);
-                                } else if actions != 0 {
-                                    self.phase.transition_to_sprite_action(node);
-                                } else {
-                                    // TODO guard against this in game
-                                    panic!("How do we have a sprite with no actions or moves?")
-                                }
-                            }
-                            Ok(())
-                        } else {
-                            Ok(())
-                        }
-                    }
-                    _ => {
-                        node.deactivate_sprite();
-                        self.phase
-                            .transition_to_free_select(self.selected_square, node);
-                        Ok(())
+            UiAction::GameAction(GameAction::ActivateSprite(sprite_key)) => {
+                // TODO We don't know if this action was successful?
+                // This means if we try to activate unsuccessfully, selected square will go to
+                // active sprite
+                // ...But is this a bug or a feature?
+
+                if let Some((moves, actions)) =
+                    node.with_active_sprite(|sprite| (sprite.moves(), sprite.actions().len()))
+                {
+                    if moves != 0 {
+                        self.phase.transition_to_move_sprite(node)?;
+                    } else if actions != 0 {
+                        self.phase.transition_to_sprite_action(node)?;
+                    } else {
+                        // TODO guard against this in game
+                        panic!("How do we have a sprite with no actions or moves?")
                     }
                 }
+                Ok(())
+            }
+            UiAction::GameAction(GameAction::DeactivateSprite) => {
+                self.phase
+                    .transition_to_free_select(self.selected_square, node);
+                Ok(())
             }
             UiAction::MoveActiveSprite(dir) => {
                 let (remaining_moves, head, is_tapped) = node

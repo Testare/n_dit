@@ -30,6 +30,10 @@ impl<'a> WithSpriteMut<'a> {
         self.with_sprite(|sprite| sprite.moves())
     }
 
+    pub fn moves_taken(&self) -> usize {
+        self.with_sprite(|sprite| sprite.moves_taken())
+    }
+
     pub fn max_size(&self) -> usize {
         self.with_sprite(|sprite| sprite.max_size())
     }

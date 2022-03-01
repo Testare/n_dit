@@ -1,5 +1,6 @@
 use super::{EnemyAi, Sprite};
 use crate::{Bounds, Direction, GridMap, Point, Team};
+use log::debug;
 use std::collections::HashSet;
 
 mod with_sprite;
@@ -105,7 +106,13 @@ impl Node {
                 sprite.team() == self.active_team() && !sprite.tapped()
             })
             .unwrap_or(false);
+
         if can_activate {
+            self.with_active_sprite_mut(|mut sprite|
+                if sprite.moves_taken() != 0 {
+                    debug!("Activating new sprite, old sprite had taken {:?} moves and so must be tapped", sprite.moves_taken());
+                    sprite.tap();
+                });
             self.active_sprite = Some(sprite_key);
         }
         can_activate

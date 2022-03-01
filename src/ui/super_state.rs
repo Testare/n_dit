@@ -178,7 +178,9 @@ impl SuperState {
                 panic!("Thanks for playing")
             }
             // Should be moved into the GameAction
-            UiAction::PerformSpriteAction | UiAction::ActivateSprite(_) => {
+            UiAction::PerformSpriteAction | UiAction::GameAction(_) => {
+                // Note: This gets call after animation frames as well, including during enemy
+                // turns
                 if let Some(node) = self.game.node_mut() {
                     let enemy_sprites_remaining = node
                         .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
@@ -186,17 +188,21 @@ impl SuperState {
                     if enemy_sprites_remaining == 0 {
                         panic!("No enemies remain! You win!")
                     }
-                    let untapped_player_sprites_remaining = node
-                        .filtered_sprite_keys(|_, sprite| {
-                            sprite.team() == Team::PlayerTeam && !sprite.tapped()
-                        })
-                        .len();
 
-                    if untapped_player_sprites_remaining == 0 {
-                        node.change_active_team();
-                        if node.active_team() == Team::EnemyTeam {
-                            let enemy_ai_actions = node.enemy_ai().generate_animation(node);
-                            self.game.set_animation(enemy_ai_actions);
+                    if node.active_team() == Team::PlayerTeam {
+                        let untapped_player_sprites_remaining = node
+                            .filtered_sprite_keys(|_, sprite| {
+                                sprite.team() == Team::PlayerTeam && !sprite.tapped()
+                            })
+                            .len();
+
+                        if untapped_player_sprites_remaining == 0 {
+                            node.change_active_team();
+                            if node.active_team() == Team::EnemyTeam {
+                                // This check in pla
+                                let enemy_ai_actions = node.enemy_ai().generate_animation(node);
+                                self.game.set_animation(enemy_ai_actions);
+                            }
                         }
                     }
                 }
@@ -212,23 +218,29 @@ pub enum UiAction {
     ChangeSelection,
     ConfirmSelection,
     ChangeSelectedMenuItem(Direction),
+    MoveSelectedSquare {
+        direction: Direction,
+        speed: usize,
+    },
     // Should be a GameAction
-    MoveSelectedSquare { direction: Direction, speed: usize },
-    // Should be a GameAction
+    #[deprecated]
     MoveActiveSprite(Direction),
     SetSelectedSquare(Point),
     GameAction(GameAction),
     // Should be a GameAction
+    #[deprecated]
     PerformSpriteAction,
-    // Should be a GameAction
-    ActivateSprite(usize),
     SetTerminalSize(Bounds),
     Quit,
 }
 
 impl UiAction {
     pub fn activate_sprite(sprite_key: usize) -> UiAction {
-        UiAction::ActivateSprite(sprite_key)
+        UiAction::GameAction(GameAction::activate_sprite(sprite_key))
+    }
+
+    pub fn deactivate_sprite() -> UiAction {
+        UiAction::GameAction(GameAction::deactivate_sprite())
     }
 
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
