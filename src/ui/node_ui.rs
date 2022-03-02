@@ -61,7 +61,13 @@ impl NodeUiState {
                     }
 
                     UserInput::Activate => match self.phase {
-                        NodePhase::SpriteAction { .. } => Some(UiAction::PerformSpriteAction),
+                        NodePhase::SpriteAction {
+                            selected_action_index,
+                            ..
+                        } => Some(UiAction::perform_sprite_action(
+                            selected_action_index,
+                            self.selected_square(),
+                        )),
                         NodePhase::FreeSelect {
                             selected_sprite_key: Some(sprite_key),
                             ..
@@ -78,7 +84,7 @@ impl NodeUiState {
     }
 
     // TODO A lot of this logic shouldn't be in the UI layer
-    pub fn apply_action(&mut self, node: &mut Node, ui_action: UiAction) -> Result<(), String> {
+    pub fn apply_action(&mut self, node: &Node, ui_action: UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::ConfirmSelection => {
                 if self.focus == NodeFocus::ActionMenu {
@@ -107,14 +113,6 @@ impl NodeUiState {
                         }
                         _ => {}
                     };
-                    //*/
-                    /*
-                    match self.phase {
-                        NodePhase::FreeSelect{..} | NodePhase::MoveSprite {..} => {
-                            self.phase.transition_to_sprite_action(node)?;
-                        }
-                        _ => {}
-                    }*/
                     self.focus = NodeFocus::Grid;
                     Ok(())
                 } else {
@@ -182,21 +180,22 @@ impl NodeUiState {
                 self.set_selected_square(pt);
                 Ok(())
             }
-            UiAction::GameAction(GameAction::ActivateSprite(sprite_key)) => {
+            UiAction::GameAction(GameAction::ActivateSprite(_sprite_key)) => {
                 // TODO We don't know if this action was successful?
                 // This means if we try to activate unsuccessfully, selected square will go to
                 // active sprite
                 // ...But is this a bug or a feature?
 
-                if let Some((moves, actions)) =
-                    node.with_active_sprite(|sprite| (sprite.moves(), sprite.actions().len()))
-                {
+                if let Some((moves, actions, head)) = node.with_active_sprite(|sprite| {
+                    (sprite.moves(), sprite.actions().len(), sprite.head())
+                }) {
+                    self.set_selected_square(head);
                     if moves != 0 {
                         self.phase.transition_to_move_sprite(node)?;
                     } else if actions != 0 {
                         self.phase.transition_to_sprite_action(node)?;
                     } else {
-                        // TODO guard against this in game
+                        // TODO guard against this in game, perhaps never untap these sprites
                         panic!("How do we have a sprite with no actions or moves?")
                     }
                 }
@@ -207,42 +206,32 @@ impl NodeUiState {
                     .transition_to_free_select(self.selected_square, node);
                 Ok(())
             }
-            UiAction::MoveActiveSprite(dir) => {
-                let (remaining_moves, head, is_tapped) = node
-                    .with_active_sprite_mut(|mut sprite| {
-                        (
-                            sprite.move_sprite(vec![dir]),
-                            sprite.head(),
-                            sprite.tapped(),
-                        )
-                    })
-                    .ok_or("No active sprite".to_string())?;
-                debug!(
-                    "Active Sprite moved {:?} to {:?} with {:?} moves remaining, and is {}.",
-                    dir,
-                    head,
-                    remaining_moves,
-                    if is_tapped { "tapped" } else { "not tapped" }
-                );
-
-                self.set_selected_square(head);
-
-                if remaining_moves? == 0 && !is_tapped && self.selected_action_index().is_none() {
-                    // Sprite is still active, must still have some moves
-                    self.set_default_selected_action();
-                    self.phase.transition_to_sprite_action(node)?;
+            UiAction::GameAction(GameAction::MoveActiveSprite(_directions)) => {
+                if let Some((remaining_moves, head, is_tapped)) = node
+                    .with_active_sprite(|sprite| (sprite.moves(), sprite.head(), sprite.tapped()))
+                {
+                    self.set_selected_square(head);
+                    if remaining_moves == 0 && !is_tapped && self.selected_action_index().is_none()
+                    {
+                        // Sprite is still active, must still have some moves
+                        self.set_default_selected_action();
+                        self.phase.transition_to_sprite_action(node)?;
+                    }
+                } else {
+                    // TODO fix this bug hat applies to sprites without actions
+                    // self.set_selected_square(self.selected_square() + directions);
+                    self.phase
+                        .transition_to_free_select(self.selected_square, node);
                 }
+
                 Ok(())
             }
-            UiAction::PerformSpriteAction => {
-                if let Some(action_index) = self.selected_action_index() {
-                    let result = node.perform_sprite_action(action_index, self.selected_square());
-                    if result.is_some() {
-                        self.phase
-                            .transition_to_free_select(self.selected_square, node);
-                        unsafe {
-                            self.clear_selected_action_index();
-                        }
+            UiAction::GameAction(GameAction::TakeSpriteAction(index, _)) => {
+                if node.active_sprite().is_none() {
+                    self.phase
+                        .transition_to_free_select(self.selected_square, node);
+                    unsafe {
+                        self.clear_selected_action_index();
                     }
                 }
                 Ok(())

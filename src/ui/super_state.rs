@@ -177,64 +177,31 @@ impl SuperState {
             UiAction::Quit => {
                 panic!("Thanks for playing")
             }
-            // Should be moved into the GameAction
-            UiAction::PerformSpriteAction | UiAction::GameAction(_) => {
-                // Note: This gets call after animation frames as well, including during enemy
-                // turns
-                if let Some(node) = self.game.node_mut() {
-                    let enemy_sprites_remaining = node
-                        .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
-                        .len();
-                    if enemy_sprites_remaining == 0 {
-                        panic!("No enemies remain! You win!")
-                    }
-
-                    if node.active_team() == Team::PlayerTeam {
-                        let untapped_player_sprites_remaining = node
-                            .filtered_sprite_keys(|_, sprite| {
-                                sprite.team() == Team::PlayerTeam && !sprite.tapped()
-                            })
-                            .len();
-
-                        if untapped_player_sprites_remaining == 0 {
-                            node.change_active_team();
-                            if node.active_team() == Team::EnemyTeam {
-                                // This check in pla
-                                let enemy_ai_actions = node.enemy_ai().generate_animation(node);
-                                self.game.set_animation(enemy_ai_actions);
-                            }
-                        }
-                    }
-                }
-            }
             _ => {}
         }
         Ok(())
     }
 }
 
+// TODO idea: UiAction is a public struct with a hidden "type" variable, this enum becomes
+// UiActionType?
 #[derive(Clone)]
 pub enum UiAction {
     ChangeSelection,
     ConfirmSelection,
     ChangeSelectedMenuItem(Direction),
-    MoveSelectedSquare {
-        direction: Direction,
-        speed: usize,
-    },
-    // Should be a GameAction
-    #[deprecated]
-    MoveActiveSprite(Direction),
+    MoveSelectedSquare { direction: Direction, speed: usize },
     SetSelectedSquare(Point),
     GameAction(GameAction),
-    // Should be a GameAction
-    #[deprecated]
-    PerformSpriteAction,
     SetTerminalSize(Bounds),
     Quit,
 }
 
 impl UiAction {
+    pub fn perform_sprite_action(action_index: usize, pnt: Point) -> UiAction {
+        UiAction::GameAction(GameAction::take_sprite_action(action_index, pnt))
+    }
+
     pub fn activate_sprite(sprite_key: usize) -> UiAction {
         UiAction::GameAction(GameAction::activate_sprite(sprite_key))
     }
@@ -272,7 +239,7 @@ impl UiAction {
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::MoveActiveSprite(dir)
+        UiAction::GameAction(GameAction::move_activee_sprite(vec![dir]))
     }
 
     pub fn change_selected_menu_item(dir: Direction) -> UiAction {

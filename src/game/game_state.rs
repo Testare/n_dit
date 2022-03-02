@@ -9,21 +9,40 @@ pub struct GameState {
 }
 
 impl GameState {
+    fn state_check_after_player_action(&mut self) {
+        if let Some(node) = self.node_mut() {
+            let enemy_sprites_remaining = node
+                .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
+                .len();
+            if enemy_sprites_remaining == 0 {
+                panic!("No enemies remain! You win!")
+            }
+
+            if node.active_team() == Team::PlayerTeam {
+                let untapped_player_sprites_remaining = node
+                    .filtered_sprite_keys(|_, sprite| {
+                        sprite.team() == Team::PlayerTeam && !sprite.tapped()
+                    })
+                    .len();
+
+                if untapped_player_sprites_remaining == 0 {
+                    node.change_active_team();
+                    if node.active_team() == Team::EnemyTeam {
+                        // This check in pla
+                        let enemy_ai_actions = node.enemy_ai().generate_animation(node);
+                        self.set_animation(enemy_ai_actions);
+                    }
+                }
+            }
+        }
+    }
+
     pub fn animation(&self) -> Option<&Animation> {
         self.animation.as_ref()
     }
 
     pub fn node(&self) -> Option<&Node> {
         self.node.as_ref()
-    }
-
-    pub(super) fn to_mutable_pieces<'a>(
-        &'a mut self,
-    ) -> (&'a mut Option<Node>, &'a mut Option<Animation>) {
-        let GameState {
-            node, animation, ..
-        } = self;
-        (node, animation)
     }
 
     pub fn node_mut(&mut self) -> Option<&mut Node> {
@@ -66,11 +85,10 @@ impl GameState {
 
     pub fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
         if self.waiting_on_player_input() {
+            debug!("Game action called: {:#?}", game_action);
             match game_action {
                 GameAction::Next => Err(String::from("Waiting for player input")),
                 GameAction::ActivateSprite(sprite_key) => {
-                    debug!("GameAction::ActivateSprite({:?}) called", sprite_key);
-
                     self.node
                         .as_mut()
                         .ok_or(String::from(
@@ -84,14 +102,35 @@ impl GameState {
                             }
                         })
                 }
-                GameAction::DeactivateSprite => self
-                    .node
-                    .as_mut()
-                    .map(|node| node.deactivate_sprite())
-                    .ok_or(String::from(
-                        "Action doesn't make sense when we're not in a node",
-                    )),
-                _ => unimplemented!("TODO other game actions"),
+                GameAction::DeactivateSprite => {
+                    self.node
+                        .as_mut()
+                        .map(|node| node.deactivate_sprite())
+                        .ok_or(String::from(
+                            "Action doesn't make sense when we're not in a node",
+                        ))?;
+                    self.state_check_after_player_action();
+                    Ok(())
+                }
+                GameAction::TakeSpriteAction(action_index, pt) => {
+                    self.node
+                        .as_mut()
+                        .map(|node| node.perform_sprite_action(*action_index, *pt))
+                        .ok_or(String::from(
+                            "Action doesn't make sense when we're not in a node",
+                        ))?;
+                    self.state_check_after_player_action();
+                    Ok(())
+                }
+                GameAction::MoveActiveSprite(directions) => {
+                    self.node
+                        .as_mut()
+                        .ok_or(String::from(
+                            "Action doesn't make sense when we're not in a node",
+                        ))
+                        .and_then(|node| node.move_active_sprite(directions))
+                        .and(Ok(())) // TODO Maybe instead of dropping return values of these methods, we should return an object from apply _action
+                }
             }
         } else {
             if let GameAction::Next = game_action {
@@ -106,7 +145,7 @@ impl GameState {
     }
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GameAction {
     Next,                  // when we're not waiting on player_input, go to next action.
     ActivateSprite(usize), // Starts using a unit.
@@ -126,5 +165,13 @@ impl GameAction {
 
     pub fn deactivate_sprite() -> GameAction {
         GameAction::DeactivateSprite
+    }
+
+    pub fn take_sprite_action(action_index: usize, pnt: Point) -> GameAction {
+        GameAction::TakeSpriteAction(action_index, pnt)
+    }
+
+    pub fn move_activee_sprite(directions: Vec<Direction>) -> GameAction {
+        GameAction::MoveActiveSprite(directions)
     }
 }

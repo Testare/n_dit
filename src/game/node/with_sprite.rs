@@ -85,8 +85,9 @@ impl<'a> WithSpriteMut<'a> {
         self.node.grid_mut().pop_back_n(self.sprite_key, dmg)
     }
 
+    // TODO evaluate if we should no longer return remaining moves. Only if we don't return anything from GameState::apply_action
     /// Returns remaining moves
-    pub fn move_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
+    pub fn move_sprite(&mut self, directions: &Vec<Direction>) -> Result<usize, String> {
         if self.moves() == 0 || self.tapped() {
             return Err("Sprite cannot move".to_string());
         }

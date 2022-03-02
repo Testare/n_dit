@@ -67,8 +67,8 @@ impl Node {
     }
 
     /// Returns remaining moves
-    pub fn move_active_sprite(&mut self, directions: Vec<Direction>) -> Result<usize, String> {
-        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(directions))
+    pub fn move_active_sprite(&mut self, directions: &Vec<Direction>) -> Result<usize, String> {
+        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(&directions))
             .unwrap_or(Err("No active sprite".to_string()))
     }
 

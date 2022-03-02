@@ -25,7 +25,7 @@ impl Animation {
                         }
                         EnemyAiAction::MoveSprite(dir) => {
                             debug!("Sprite movement occured in dir {:?}", dir);
-                            node.move_active_sprite(vec![dir])?;
+                            node.move_active_sprite(&vec![dir])?;
                         }
                         EnemyAiAction::ActivateSprite(sprite_key) => {
                             debug!("Sprite key activated {:?}", sprite_key);
