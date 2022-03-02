@@ -1,8 +1,8 @@
 use super::Node;
-use crate::{Direction, GridMap, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
+use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
 use std::{cmp, num::NonZeroUsize};
 
-const SPRITE_KEY_IS_VALID: &'static str = "Sprite key is expected to be valid key for node grid";
+const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
 
 pub struct WithSpriteMut<'a> {
     node: &'a mut Node,
@@ -87,7 +87,7 @@ impl<'a> WithSpriteMut<'a> {
 
     // TODO evaluate if we should no longer return remaining moves. Only if we don't return anything from GameState::apply_action
     /// Returns remaining moves
-    pub fn move_sprite(&mut self, directions: &Vec<Direction>) -> Result<usize, String> {
+    pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<usize, String> {
         if self.moves() == 0 || self.tapped() {
             return Err("Sprite cannot move".to_string());
         }
@@ -118,14 +118,14 @@ impl<'a> WithSpriteMut<'a> {
         }
         self.node
             .grid_mut()
-            .pop_back_n(self.sprite_key, size.checked_sub(max_size).unwrap_or(0));
+            .pop_back_n(self.sprite_key, size.saturating_sub(max_size));
 
         Ok(remaining_moves)
     }
 
     fn with_sprite<R, F: FnOnce(&Sprite) -> R>(&self, sprite_op: F) -> R {
         if let Some(Piece::Program(sprite)) = self.node.grid().item(self.sprite_key) {
-            sprite_op(sprite).into()
+            sprite_op(sprite)
         } else {
             panic!("{}", SPRITE_KEY_IS_VALID)
         }
@@ -133,7 +133,7 @@ impl<'a> WithSpriteMut<'a> {
 
     fn with_sprite_mut<R, F: FnOnce(&mut Sprite) -> R>(&mut self, sprite_op: F) -> R {
         if let Some(Piece::Program(sprite)) = self.node.grid_mut().item_mut(self.sprite_key) {
-            sprite_op(sprite).into()
+            sprite_op(sprite)
         } else {
             panic!("{}", SPRITE_KEY_IS_VALID)
         }

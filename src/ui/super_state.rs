@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{Bounds, Direction, GameAction, GameState, Node, Piece, Point, PointSet, Team};
+use crate::{Bounds, Direction, GameAction, GameState, Node, Point, PointSet};
 
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug)]
@@ -71,10 +71,11 @@ impl SuperState {
         self.terminal_size = bounds;
     }
 
-    // Use on nodeUi instead
-    #[deprecated]
     pub fn selected_square(&self) -> Point {
-        self.node_ui.as_ref().unwrap().selected_square()
+        self.node_ui
+            .as_ref()
+            .map(|node| node.selected_square())
+            .unwrap_or(self.world_ui.current_square)
     }
 
     pub fn selected_action_index(&self) -> Option<usize> {
@@ -83,18 +84,22 @@ impl SuperState {
             .and_then(|node_ui| node_ui.selected_action_index())
     }
 
+    pub fn node_ui(&self) -> Option<&NodeUiState> {
+        self.node_ui.as_ref()
+    }
+
     pub fn render(&self) -> std::io::Result<bool> {
         self.layout.render(self)
     }
 
+    /// Should be used in NodeUiState or WorldUiState directly
+    #[deprecated]
     pub fn set_selected_square(&mut self, pt: Point) {
         self.node_ui.as_mut().unwrap().set_selected_square(pt);
     }
 
-    fn set_default_selected_action(&mut self) {
-        self.node_ui.as_mut().unwrap().set_default_selected_action();
-    }
-
+    /// Should be used on NodeUiState or WorldUiState directly
+    #[deprecated]
     pub fn move_selected_square(
         &mut self,
         direction: Direction,
@@ -160,7 +165,7 @@ impl SuperState {
             .as_mut()
             .zip(self.game.node_mut())
             .map(|(node_ui, node)| node_ui.apply_action(node, ui_action.clone()))
-            .unwrap_or(Err("Node UI action, but no node".to_string()))?;
+            .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
 
         match &ui_action {
             UiAction::MoveSelectedSquare { direction, speed } => {
@@ -231,11 +236,7 @@ impl UiAction {
     }
 
     pub fn is_quit(&self) -> bool {
-        if let UiAction::Quit = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, UiAction::Quit)
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {

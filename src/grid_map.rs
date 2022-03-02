@@ -168,7 +168,7 @@ impl<T> GridMap<T> {
     /// Returns a [`Vec<&T>`] of all entries contained in the grid.
     ///
     /// There is no guarantee to order.
-    pub fn entries<'a>(&'a self) -> Vec<&'a T> {
+    pub fn entries(&self) -> Vec<&'_ T> {
         // self.entries.values().map(|(item, _)|&item)
         self.entries.values().map(|(item, _)| item).collect()
     }
@@ -177,7 +177,7 @@ impl<T> GridMap<T> {
     ///
     /// There is no guarantee to order.
     pub fn keys(&self) -> Vec<usize> {
-        self.entries.keys().map(|u| *u).collect()
+        self.entries.keys().copied().collect()
     }
 
     /// Returns a list of keys for all entries contained in the grid that match the criteria
@@ -188,7 +188,7 @@ impl<T> GridMap<T> {
     /// Result is a list of keys.
     ///
     /// There is no guarantee to order.
-    pub fn filtered_keys<'a, P: Fn(usize, &T) -> bool>(&'a self, predicate: P) -> Vec<usize> {
+    pub fn filtered_keys<P: Fn(usize, &T) -> bool>(&self, predicate: P) -> Vec<usize> {
         self.entries
             .iter()
             .filter(|(key, (item, _))| predicate(**key, item))
@@ -200,6 +200,11 @@ impl<T> GridMap<T> {
     /// the grid or the amount of square each item takes.
     pub fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    /// Returns if the grid is empty
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
     }
 
     /// Returns the number of squares an item takes up
@@ -433,7 +438,7 @@ impl<T> GridMap<T> {
             true
         } else if self.square_is_free(pt) {
             if let Some(item_tuple) = self.entries.get_mut(&item_key) {
-                let last_pt = item_tuple.1.clone();
+                let last_pt = item_tuple.1;
                 item_tuple.1 = pt;
                 let dest = self
                     .square_mut(pt)
@@ -528,7 +533,7 @@ impl<T> GridMap<T> {
 
     /// Returns a copy of the square at a certain point, or None if square is closed
     pub fn square(&self, (x, y): Point) -> Option<Square> {
-        self.grid.get(x)?.get(y)?.clone()
+        *self.grid.get(x)?.get(y)?
     }
 
     /// Square is either closed or has an item already (cannot be assigned an item)
@@ -561,7 +566,7 @@ impl<T> GridMap<T> {
     }
 
     /// Iterates through all the squares that contain the item referred to by the key, from front to back.
-    pub fn square_iter<'a>(&'a self, item_key: usize) -> SquareIter<'a, T> {
+    pub fn square_iter(&self, item_key: usize) -> SquareIter<'_, T> {
         SquareIter {
             map: self,
             next: self.entries.get(&item_key).map(|(_, pt)| *pt),
@@ -606,7 +611,7 @@ impl<T> GridMap<T> {
     ///
     /// Not made public since we don't want squares to mutably accessible outside of grid map
     /// to avoid invalid states.
-    fn square_iter_mut<'a>(&'a mut self, item_key: usize) -> SquareIterMut<'a, T> {
+    fn square_iter_mut(&mut self, item_key: usize) -> SquareIterMut<'_, T> {
         let next = self.entries.get(&item_key).map(|(_, pt)| *pt);
 
         SquareIterMut { map: self, next }
@@ -616,7 +621,7 @@ impl<T> GridMap<T> {
     ///
     /// Not made public since we don't want squares to mutably accessible outside of grid map
     /// to avoid invalid states.
-    fn square_mut<'a>(&'a mut self, (x, y): Point) -> Option<&'a mut Square> {
+    fn square_mut(&mut self, (x, y): Point) -> Option<&mut Square> {
         self.grid.get_mut(x)?.get_mut(y)?.as_mut()
     }
 
@@ -670,6 +675,7 @@ impl<T> From<Vec<Vec<bool>>> for GridMap<T> {
 impl<'a, T> SquareIterMut<'a, T> {
     /// Convenience method for internal functions, allows us to reverse the iterator even though it
     /// doesn't really work as a Double-Ended iterator.
+    #[allow(clippy::needless_collect)]
     fn rev(self) -> Rev<IntoIter<&'a mut Square>> {
         let v: Vec<_> = self.collect();
         v.into_iter().rev()

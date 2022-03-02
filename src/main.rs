@@ -7,8 +7,7 @@ use n_dit::{
     Team,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::fs::File;
-use std::io::{stdout, Write};
+use std::{fs::File, io::stdout};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();

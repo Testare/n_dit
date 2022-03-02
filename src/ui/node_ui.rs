@@ -27,7 +27,7 @@ impl NodeUiState {
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
         // TODO Undo
         // TODO Not sure why we don't have node state passed in here
-        return match self.focus {
+        match self.focus {
             NodeFocus::ActionMenu => {
                 match user_input {
                     UserInput::Activate => Some(UiAction::ConfirmSelection),
@@ -80,7 +80,7 @@ impl NodeUiState {
                     _ => None,
                 }
             }
-        };
+        }
     }
 
     // TODO A lot of this logic shouldn't be in the UI layer
@@ -167,12 +167,13 @@ impl NodeUiState {
                 }
                 Ok(())
             }
+            // FIXME IMMEDIATELY Move MoveSelecteSquare logic to node_ui instead of super_state
             UiAction::MoveSelectedSquare { direction, speed } => {
-                let range_limit: Option<PointSet> =
+                let _range_limit: Option<PointSet> =
                     self.selected_action_index().and_then(|action_index| {
                         node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
                     });
-                // FIXME IMMEDIATELY
+                debug!("Moving selected square {:?} by {}", direction, speed);
                 // self.move_selected_square(direction, speed, range_limit);
                 Ok(())
             }
@@ -226,7 +227,7 @@ impl NodeUiState {
 
                 Ok(())
             }
-            UiAction::GameAction(GameAction::TakeSpriteAction(index, _)) => {
+            UiAction::GameAction(GameAction::TakeSpriteAction(_, _)) => {
                 if node.active_sprite().is_none() {
                     self.phase
                         .transition_to_free_select(self.selected_square, node);
@@ -370,7 +371,7 @@ impl NodePhase {
                 selected_action_index,
                 selected_sprite_key: Some(selected_sprite_key),
             } => Ok::<_, String>(NodePhase::MoveSprite {
-                selected_action_index: selected_action_index.clone(),
+                selected_action_index: *selected_action_index,
                 selected_sprite_key: *selected_sprite_key,
                 undo_state: Rc::new(node.create_restore_point()),
             }),

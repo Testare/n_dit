@@ -78,6 +78,7 @@ impl Piece {
 
 pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
     // TODO height checking + scrolling + etc
+    // TODO render_menu when there is no node
     let node = state.game.node().expect("TODO what if there is no node?");
     let piece_opt = node
         .active_sprite_key()
@@ -225,7 +226,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let height = grid.height();
     let grid_map = grid.number_map();
 
-    let piece_map = grid.point_map(|i, piece| piece.render_square(&state, i, draw_config));
+    let piece_map = grid.point_map(|i, piece| piece.render_square(state, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -252,7 +253,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
             .map(|point_set| point_set.as_set())
     });
 
-    if !available_moves.is_some() {
+    if available_moves.is_none() {
         action_type = 0;
         let selected_piece = grid.item_key_at(state.selected_square());
         available_moves = selected_piece.map(|piece_key| node.possible_moves(piece_key))
@@ -293,7 +294,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     let pivot_format = border_style_for(
                         &available_moves,
                         action_type,
-                        &state,
+                        state,
                         &border_x_range,
                         &border_y_range,
                     );
@@ -312,7 +313,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     let border_style = border_style_for(
                         &available_moves,
                         action_type,
-                        &state,
+                        state,
                         &border_x_range,
                         &(y..=y),
                     );
@@ -335,7 +336,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                                 let border_style = border_style_for(
                                     &available_moves,
                                     action_type,
-                                    &state,
+                                    state,
                                     &(x..=x),
                                     &border_y_range,
                                 );
@@ -352,7 +353,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                                 );
                             }
                             if include_space {
-                                let space_style = space_style_for(&state, (x, y));
+                                let space_style = space_style_for(state, (x, y));
                                 let square =
                                     piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                                 if square.chars().count() == 1 {
@@ -376,7 +377,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     let border_style = border_style_for(
                         &available_moves,
                         action_type,
-                        &state,
+                        state,
                         &(x..=x),
                         &border_y_range,
                     );
@@ -387,7 +388,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                     );
                 }
                 if include_space {
-                    let space_style = space_style_for(&state, (x, y));
+                    let space_style = space_style_for(state, (x, y));
                     let square = piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                     // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                     space_line.push_str(space_style.apply(square).as_str());
@@ -428,10 +429,10 @@ fn intersection_for_pivot(
             usize::from(BorderType::of(one, the_other) != BorderType::Borderless)
         }
     }
-    let north = border_type_bit(&draw_config, left[0], right[0]);
-    let east = border_type_bit(&draw_config, right[0], right[1]) << 1;
-    let south = border_type_bit(&draw_config, left[1], right[1]) << 2;
-    let west = border_type_bit(&draw_config, left[0], left[1]) << 3;
+    let north = border_type_bit(draw_config, left[0], right[0]);
+    let east = border_type_bit(draw_config, right[0], right[1]) << 1;
+    let south = border_type_bit(draw_config, left[1], right[1]) << 2;
+    let west = border_type_bit(draw_config, left[0], left[1]) << 3;
 
     INTERSECTION_CHAR[north | east | south | west]
 }

@@ -89,59 +89,46 @@ impl GameState {
             match game_action {
                 GameAction::Next => Err(String::from("Waiting for player input")),
                 GameAction::ActivateSprite(sprite_key) => {
-                    self.node
-                        .as_mut()
-                        .ok_or(String::from(
-                            "Action doesn't make sense when we're not in a node", // Honestly might just make a helper function for "This is a node action"
-                        ))
-                        .and_then(|node| {
-                            if node.activate_sprite(*sprite_key) {
-                                Ok(())
-                            } else {
-                                Err(String::from("Sprite does not exist"))
-                            }
-                        })
+                    if self.node_action(|node| node.activate_sprite(*sprite_key))? {
+                        Ok(())
+                    } else {
+                        Err("Sprite does not exist".to_string())
+                    }
                 }
                 GameAction::DeactivateSprite => {
-                    self.node
-                        .as_mut()
-                        .map(|node| node.deactivate_sprite())
-                        .ok_or(String::from(
-                            "Action doesn't make sense when we're not in a node",
-                        ))?;
+                    self.node_action(|node| {
+                        node.deactivate_sprite();
+                    })?;
                     self.state_check_after_player_action();
                     Ok(())
                 }
                 GameAction::TakeSpriteAction(action_index, pt) => {
-                    self.node
-                        .as_mut()
-                        .map(|node| node.perform_sprite_action(*action_index, *pt))
-                        .ok_or(String::from(
-                            "Action doesn't make sense when we're not in a node",
-                        ))?;
+                    self.node_action(|node| {
+                        node.perform_sprite_action(*action_index, *pt);
+                    })?;
                     self.state_check_after_player_action();
                     Ok(())
                 }
-                GameAction::MoveActiveSprite(directions) => {
-                    self.node
-                        .as_mut()
-                        .ok_or(String::from(
-                            "Action doesn't make sense when we're not in a node",
-                        ))
-                        .and_then(|node| node.move_active_sprite(directions))
-                        .and(Ok(())) // TODO Maybe instead of dropping return values of these methods, we should return an object from apply _action
-                }
+                GameAction::MoveActiveSprite(directions) => self.node_action(|node| {
+                    node.move_active_sprite(directions)?;
+                    Ok(())
+                })?,
             }
+        } else if let GameAction::Next = game_action {
+            // TODO Check lose conditions for Node
+            Animation::next(self)
         } else {
-            if let GameAction::Next = game_action {
-                // Check lose conditions for Node
-                Animation::next(self)
-            } else {
-                Err(String::from(
-                    "Cannot accept player actions right now, next action must be 'Next'",
-                ))
-            }
+            Err(String::from(
+                "Cannot accept player actions right now, next action must be 'Next'",
+            ))
         }
+    }
+
+    fn node_action<R, F: FnOnce(&mut Node) -> R>(&mut self, action: F) -> Result<R, String> {
+        self.node
+            .as_mut()
+            .ok_or_else(|| String::from("Action doesn't make sense when we're not in a node"))
+            .map(action)
     }
 }
 
@@ -149,7 +136,7 @@ impl GameState {
 pub enum GameAction {
     Next,                  // when we're not waiting on player_input, go to next action.
     ActivateSprite(usize), // Starts using a unit.
-    DeactivateSprite,      //Finishes using a unit
+    DeactivateSprite,      // Finishes using a unit
     MoveActiveSprite(Vec<Direction>),
     TakeSpriteAction(usize, Point),
 }

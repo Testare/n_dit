@@ -14,9 +14,9 @@ impl Animation {
             ),
             Some(Animation::EnemyActions(enemy_actions_vec)) => {
                 let mut enemy_actions_vec_clone = enemy_actions_vec.clone();
-                let node = game
-                    .node_mut()
-                    .ok_or("Enemy AI animation shouldn't occur when there is no Node".to_owned())?;
+                let node = game.node_mut().ok_or_else(|| {
+                    "Enemy AI animation shouldn't occur when there is no Node".to_owned()
+                })?; // TODO stabalize on String::from(..) vs .to_owned() vs .to_string()
                 if let Some(enemy_action) = enemy_actions_vec_clone.pop() {
                     match enemy_action {
                         EnemyAiAction::PerformNoAction => {
@@ -25,7 +25,7 @@ impl Animation {
                         }
                         EnemyAiAction::MoveSprite(dir) => {
                             debug!("Sprite movement occured in dir {:?}", dir);
-                            node.move_active_sprite(&vec![dir])?;
+                            node.move_active_sprite(&[dir])?;
                         }
                         EnemyAiAction::ActivateSprite(sprite_key) => {
                             debug!("Sprite key activated {:?}", sprite_key);

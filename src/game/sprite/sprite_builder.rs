@@ -58,11 +58,17 @@ impl SpriteBuilder {
             display: self.display.as_ref()?.clone(),
             max_size: self.max_size?,
             movement_speed: self.movement_speed?,
-            name: self.name.clone().unwrap_or("George".to_string()),
+            name: self.name.clone().unwrap_or_else(|| "George".to_string()),
             team: self.team.unwrap_or(Team::EnemyTeam),
             actions: self.actions.clone(),
             tapped: false,
             moves_taken: 0,
         })
+    }
+}
+
+impl Default for SpriteBuilder {
+    fn default() -> Self {
+        SpriteBuilder::new()
     }
 }

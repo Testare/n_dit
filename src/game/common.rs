@@ -83,7 +83,7 @@ impl BitOr for Direction {
 impl BitOr<Direction> for u8 {
     type Output = u8;
     fn bitor(self, rhs: Direction) -> Self::Output {
-        self | rhs
+        self | (rhs as u8)
     }
 }
 

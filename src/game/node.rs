@@ -67,9 +67,9 @@ impl Node {
     }
 
     /// Returns remaining moves
-    pub fn move_active_sprite(&mut self, directions: &Vec<Direction>) -> Result<usize, String> {
-        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(&directions))
-            .unwrap_or(Err("No active sprite".to_string()))
+    pub fn move_active_sprite(&mut self, directions: &[Direction]) -> Result<usize, String> {
+        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(directions))
+            .unwrap_or_else(|| Err("No active sprite".to_string()))
     }
 
     pub fn active_sprite(&self) -> Option<&Sprite> {
@@ -96,7 +96,9 @@ impl Node {
     }
 
     pub fn deactivate_sprite(&mut self) {
-        self.active_sprite_mut().map(|sprite| sprite.tap());
+        if let Some(sprite) = self.active_sprite_mut() {
+            sprite.tap()
+        }
         self.active_sprite = None;
     }
 
@@ -133,7 +135,9 @@ impl Node {
         let key = self
             .grid
             .put_item(first_pt, Piece::Program(spr))
-            .ok_or::<NodeConstructionError>("Could not add sprite to initial location".into())?;
+            .ok_or_else::<NodeConstructionError, _>(|| {
+                "Could not add sprite to initial location".into()
+            })?;
         for pt in pts {
             if !self.move_sprite(pt, key) {
                 return Err(format!("Could not add sprite to location {:?}", pt));
@@ -260,7 +264,7 @@ impl Node {
         &self.enemy_ai
     }
 
-    pub fn pieces<'a>(&'a self) -> Vec<&'a Piece> {
+    pub fn pieces(&self) -> Vec<&Piece> {
         self.grid().entries()
     }
 

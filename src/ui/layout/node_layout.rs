@@ -40,16 +40,16 @@ impl NodeLayout {
      * Returns Result(true) if successfully rendered
      */
 
-    fn layout(&self) -> Box<&dyn SubLayout> {
+    fn layout(&self) -> &dyn SubLayout {
         match self {
-            NodeLayout::Standard(standard_node_layout) => Box::new(standard_node_layout),
+            NodeLayout::Standard(standard_node_layout) => standard_node_layout,
             _ => unimplemented!("Only standard layout has been implemented"),
         }
     }
 
-    fn layout_mut(&mut self) -> Box<&mut dyn SubLayout> {
+    fn layout_mut(&mut self) -> &mut dyn SubLayout {
         match self {
-            NodeLayout::Standard(standard_node_layout) => Box::new(standard_node_layout),
+            NodeLayout::Standard(standard_node_layout) => standard_node_layout,
             _ => unimplemented!("Only standard layout has been implemented"),
         }
     }
@@ -150,6 +150,8 @@ impl StandardNodeLayout {
 }
 
 impl SubLayout for StandardNodeLayout {
+    // TODO Should probably have node_ui determine UI actions for clicks as well, with help from
+    // the layout.
     /// Unsafe: Only use when the state.game_state().node().is_some() is true, otherwise this
     /// will panic
     unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
@@ -174,7 +176,7 @@ impl SubLayout for StandardNodeLayout {
                 .bounds()
                 .contains_pt((x, y))
             {
-                Some(UiAction::SetSelectedSquare((x, y)))
+                Some(UiAction::set_selected_square((x, y)))
             } else {
                 None
             }
@@ -193,15 +195,11 @@ impl SubLayout for StandardNodeLayout {
             let (scroll_x, scroll_y) = self.scroll;
             let x = cmp::max(
                 cmp::min(scroll_x, char_x),
-                (char_x + Self::SQUARE_WIDTH + 1)
-                    .checked_sub(fields.map_width)
-                    .unwrap_or(0),
+                (char_x + Self::SQUARE_WIDTH + 1).saturating_sub(fields.map_width),
             );
             let y = cmp::max(
                 cmp::min(scroll_y, char_y),
-                (char_y + Self::SQUARE_HEIGHT + 1)
-                    .checked_sub(fields.map_menu_height)
-                    .unwrap_or(0),
+                (char_y + Self::SQUARE_HEIGHT + 1).saturating_sub(fields.map_menu_height),
             );
             self.scroll = (x, y);
             // Optimization: Do we need to calculate all fields, or just map_window?
@@ -255,9 +253,9 @@ impl SubLayout for StandardNodeLayout {
             )?;
         }
 
-        let node_rendering = render::render_node(&super_state, fields.map_window);
+        let node_rendering = render::render_node(super_state, fields.map_window);
         for (map_row, menu_row) in node_rendering.iter().zip(render::render_menu(
-            &super_state,
+            super_state,
             fields.height,
             fields.menu_width,
         )) {
@@ -273,9 +271,9 @@ impl SubLayout for StandardNodeLayout {
             } else {
                 0
             }; // TODO logic to truncate if menu_row is greater than menu size...
-            write!(
+            writeln!(
                 stdout(),
-                "{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}\n",
+                "{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}",
                 border,
                 menu_row,
                 map_row,
