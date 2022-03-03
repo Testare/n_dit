@@ -53,8 +53,10 @@ impl SuperState {
         }
     }
 
-    pub fn action_for_char_pt(&self, pt: Point) -> Option<UiAction> {
-        self.layout.action_for_char_pt(self, pt)
+    pub fn action_for_char_pt(&self, pt: Point, in_animation: bool) -> Option<UiAction> {
+        self.layout
+            .action_for_char_pt(self, pt)
+            .filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)
     }
 
     pub fn draw_config(&self) -> &DrawConfiguration {
@@ -97,16 +99,23 @@ impl SuperState {
     }
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
+        let in_animation = self.game.animation().is_some();
         match user_input {
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
-            UserInput::Click(pt) => self.action_for_char_pt(pt),
-            _ => self
-                .node_ui
-                .as_ref()
-                .zip(self.game.node())
-                .and_then(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input)),
+            UserInput::Click(pt) => self.action_for_char_pt(pt, in_animation),
+            UserInput::Next => Some(UiAction::next()).filter(|_| in_animation),
+            _ => {
+                if !in_animation {
+                    self.node_ui
+                        .as_ref()
+                        .zip(self.game.node())
+                        .and_then(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input))
+                } else {
+                    None
+                }
+            }
         }
     }
 
@@ -144,7 +153,7 @@ impl SuperState {
 
 // TODO idea: UiAction is a public struct with a hidden "type" variable, this enum becomes
 // UiActionType?
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum UiAction {
     ChangeSelection,
     ConfirmSelection,
@@ -194,7 +203,7 @@ impl UiAction {
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::GameAction(GameAction::move_activee_sprite(vec![dir]))
+        UiAction::GameAction(GameAction::move_active_sprite(vec![dir]))
     }
 
     pub fn change_selected_menu_item(dir: Direction) -> UiAction {

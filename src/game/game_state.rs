@@ -155,7 +155,7 @@ impl GameAction {
         GameAction::TakeSpriteAction(action_index, pnt)
     }
 
-    pub fn move_activee_sprite(directions: Vec<Direction>) -> GameAction {
+    pub fn move_active_sprite(directions: Vec<Direction>) -> GameAction {
         GameAction::MoveActiveSprite(directions)
     }
 }
