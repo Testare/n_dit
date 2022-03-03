@@ -275,9 +275,10 @@ impl<T> GridMap<T> {
         vec
     }
 
+
     pub fn point_map<F, R>(&self, func: F) -> HashMap<Point, R>
     where
-        F: Fn(usize, &T) -> R,
+        F: Fn(usize, usize, &T) -> R,
     {
         self.entries
             .iter()
@@ -285,7 +286,7 @@ impl<T> GridMap<T> {
                 let func_ref = &func;
                 self.square_iter(*key)
                     .enumerate()
-                    .map(move |(i, sqr)| (sqr.location(), func_ref(i, item)))
+                    .map(move |(i, sqr)| (sqr.location(), func_ref(*key, i, item)))
             })
             .collect()
     }

@@ -31,7 +31,7 @@ impl PointSet {
         }
     }
 
-    pub fn as_set(self) -> HashSet<Point> {
+    pub fn into_set(self) -> HashSet<Point> {
         match self {
             PointSet::Pts(pts) => pts,
             PointSet::Range((center_x, center_y), range, bounds) => {

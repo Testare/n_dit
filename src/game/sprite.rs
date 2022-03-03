@@ -75,6 +75,10 @@ impl Sprite {
         self.tapped
     }
 
+    pub fn untapped(&self) -> bool {
+        !self.tapped
+    }
+
     pub fn took_a_move(&mut self) {
         self.moves_taken += 1;
     }

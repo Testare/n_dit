@@ -190,6 +190,10 @@ impl<'a> WithSprite<'a> {
         self.sprite().tapped()
     }
 
+    pub fn untapped(&self) -> bool {
+        self.sprite().untapped()
+    }
+
     pub fn team(&self) -> Team {
         self.sprite().team()
     }

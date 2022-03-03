@@ -73,10 +73,7 @@ impl GameState {
     }
 
     pub fn waiting_on_player_input(&self) -> bool {
-        // TODO Check if there is an active animation?
-        self.node()
-            .map(|node| node.active_team() == Team::PlayerTeam)
-            .unwrap_or(false)
+        self.animation.is_none()
     }
 
     pub fn set_animation<A: Into<Option<Animation>>>(&mut self, animation: A) {

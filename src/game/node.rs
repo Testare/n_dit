@@ -72,33 +72,12 @@ impl Node {
             .unwrap_or_else(|| Err("No active sprite".to_string()))
     }
 
-    pub fn active_sprite(&self) -> Option<&Sprite> {
-        self.active_sprite
-            .and_then(|sprite_key| match self.grid.item(sprite_key) {
-                Some(Piece::Program(sprite)) => Some(sprite),
-                None => panic!("Somehow the active sprite was deleted without being deactivated"),
-                _ => panic!("Somehow a non-sprite was activated"),
-            })
-    }
-
-    pub fn active_sprite_mut(&mut self) -> Option<&mut Sprite> {
-        self.active_sprite.map(move |sprite_key| {
-            if let Some(Piece::Program(sprite)) = self.grid.item_mut(sprite_key) {
-                sprite
-            } else {
-                panic!("Somehow a non-sprite was activated")
-            }
-        })
-    }
-
     pub fn active_sprite_key(&self) -> Option<usize> {
         self.active_sprite
     }
 
     pub fn deactivate_sprite(&mut self) {
-        if let Some(sprite) = self.active_sprite_mut() {
-            sprite.tap()
-        }
+        self.with_active_sprite_mut(|mut sprite| sprite.tap());
         self.active_sprite = None;
     }
 

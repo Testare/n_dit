@@ -71,13 +71,13 @@ impl NodeUiState {
         layout.scroll_node_to_pt(new_pt);
     }
 
-    pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
+    pub fn ui_action_for_input(&self, node: &Node, user_input: UserInput) -> Option<UiAction> {
         // TODO Undo
         // TODO Not sure why we don't have node state passed in here
         match self.focus {
             NodeFocus::ActionMenu => {
                 match user_input {
-                    UserInput::Activate => Some(UiAction::ConfirmSelection),
+                    UserInput::Activate => Some(UiAction::confirm_selection()),
                     UserInput::Dir(dir) => {
                         if dir.matches(Direction::North | Direction::South) {
                             Some(UiAction::change_selected_menu_item(dir))
@@ -86,7 +86,7 @@ impl NodeUiState {
                         }
                     }
                     UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 1)),
-                    UserInput::Select => Some(UiAction::ChangeSelection),
+                    UserInput::Select | UserInput::Back => Some(UiAction::change_selection()),
                     _ => None, // TODO Undo
                 }
             }
@@ -105,8 +105,7 @@ impl NodeUiState {
                             // Otherwise, just increase movement speed
                             _ => Some(UiAction::move_selected_square(dir, 2)),
                         }
-                    }
-
+                    },
                     UserInput::Activate => match self.phase {
                         NodePhase::SpriteAction {
                             selected_action_index,
@@ -118,7 +117,11 @@ impl NodeUiState {
                         NodePhase::FreeSelect {
                             selected_sprite_key: Some(sprite_key),
                             ..
-                        } => Some(UiAction::activate_sprite(sprite_key)),
+                        } => {
+                            if node.with_sprite(sprite_key, |sprite| sprite.untapped()).unwrap_or(false) {
+                                Some(UiAction::activate_sprite(sprite_key))
+                            } else { None }
+                        }
                         NodePhase::MoveSprite { .. } => Some(UiAction::deactivate_sprite()), // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
                         _ => None,
                     },
@@ -175,7 +178,7 @@ impl NodeUiState {
                     let selected_sprite_key = node
                         .active_sprite_key()
                         .or_else(|| {
-                            node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
+                            node.with_sprite_at(self.selected_square(), |sprite| sprite.key())
                         })
                         .unwrap();
                     if let Some(action_index) = self.selected_action_index() {
@@ -279,7 +282,7 @@ impl NodeUiState {
                 Ok(())
             }
             UiAction::GameAction(GameAction::TakeSpriteAction(_, _)) => {
-                if node.active_sprite().is_none() {
+                if node.active_sprite_key().is_none() {
                     self.phase
                         .transition_to_free_select(self.selected_square, node);
                     unsafe {

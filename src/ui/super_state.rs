@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{Bounds, Direction, GameAction, GameState, Node, Point, PointSet};
+use crate::{Bounds, Direction, GameAction, GameState, Node, Point};
 
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug)]
@@ -105,7 +105,8 @@ impl SuperState {
             _ => self
                 .node_ui
                 .as_ref()
-                .and_then(|node_ui| node_ui.ui_action_for_input(user_input)),
+                .zip(self.game.node())
+                .and_then(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input)),
         }
     }
 
@@ -198,5 +199,14 @@ impl UiAction {
 
     pub fn change_selected_menu_item(dir: Direction) -> UiAction {
         UiAction::ChangeSelectedMenuItem(dir)
+    }
+
+    pub fn confirm_selection() -> UiAction {
+        UiAction::ConfirmSelection
+    }
+
+    pub fn change_selection() -> UiAction {
+        UiAction::ChangeSelection
+    
     }
 }

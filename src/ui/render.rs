@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Piece, Point, Team};
+use crate::{Node, Piece, Point, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
@@ -18,10 +18,10 @@ enum BorderType {
 // TODO render to arbitrary write object
 impl Piece {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
-    // Might want to change this to accept SuperState to allow coloring sprites here.
     fn render_square(
         &self,
-        state: &SuperState,
+        node: &Node,
+        key: usize,
         position: usize,
         configuration: &DrawConfiguration,
     ) -> String {
@@ -48,12 +48,13 @@ impl Piece {
                 }
             }
         };
-        self.style(state, position, configuration).apply(string)
+        self.style(node, key, position, configuration).apply(string)
     }
 
     fn style(
         &self,
-        state: &SuperState,
+        node: &Node,
+        key: usize,
         position: usize,
         draw_config: &DrawConfiguration,
     ) -> UiFormat {
@@ -62,7 +63,7 @@ impl Piece {
             Piece::AccessPoint => draw_config.color_scheme().access_point(),
             Piece::Program(sprite) => match sprite.team() {
                 Team::PlayerTeam => {
-                    if state.game.node().unwrap().active_sprite() == Some(sprite) {
+                    if node.active_sprite_key() == Some(key) {
                         draw_config.color_scheme().player_team_active()
                     } else if sprite.tapped() && position == 0 {
                         draw_config.color_scheme().player_team_tapped()
@@ -226,7 +227,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let height = grid.height();
     let grid_map = grid.number_map();
 
-    let piece_map = grid.point_map(|i, piece| piece.render_square(state, i, draw_config));
+    let piece_map = grid.point_map(|key, i, piece| piece.render_square(node, key, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -250,7 +251,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
         state
             .selected_action_index()
             .and_then(|action_index| sprite.range_of_action(action_index))
-            .map(|point_set| point_set.as_set())
+            .map(|point_set| point_set.into_set())
     });
 
     if available_moves.is_none() {

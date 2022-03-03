@@ -37,9 +37,13 @@ impl UserInput {
                 let ctrl = modifiers.contains(KeyModifiers::CONTROL);
                 match code {
                     KeyCode::Char('h') | KeyCode::Left => direction_input(ctrl, Direction::West),
+                    KeyCode::Char('H') => direction_input(true, Direction::West),
                     KeyCode::Char('k') | KeyCode::Up => direction_input(ctrl, Direction::North),
+                    KeyCode::Char('K') => direction_input(true, Direction::North),
                     KeyCode::Char('j') | KeyCode::Down => direction_input(ctrl, Direction::South),
+                    KeyCode::Char('J') => direction_input(true, Direction::South),
                     KeyCode::Char('l') | KeyCode::Right => direction_input(ctrl, Direction::East),
+                    KeyCode::Char('L') => direction_input(true, Direction::East),
                     KeyCode::Char('u') | KeyCode::Backspace => Some(UserInput::Back),
                     KeyCode::Char('n') => Some(UserInput::Next),
                     KeyCode::Char('p') => Some(UserInput::Previous),
