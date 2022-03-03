@@ -20,7 +20,7 @@ impl SubLayout for NodeLayout {
         self.layout().action_for_char_pt(state, pt)
     }
 
-    unsafe fn scroll_to_pt(&mut self, pt: Point) {
+    fn scroll_to_pt(&mut self, pt: Point) {
         self.layout_mut().scroll_to_pt(pt)
     }
 
@@ -186,7 +186,7 @@ impl SubLayout for StandardNodeLayout {
     }
 
     /// If the square in the node at this point isn't fully rendered, scroll until it is
-    unsafe fn scroll_to_pt(&mut self, pt: Point) {
+    fn scroll_to_pt(&mut self, pt: Point) {
         if let Some(fields) = self.calculated_fields {
             let old_scroll = self.scroll;
             // Adjusting to deal with characters instead of squares

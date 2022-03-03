@@ -92,52 +92,6 @@ impl SuperState {
         self.layout.render(self)
     }
 
-    /// Should be used in NodeUiState or WorldUiState directly
-    #[deprecated]
-    pub fn set_selected_square(&mut self, pt: Point) {
-        self.node_ui.as_mut().unwrap().set_selected_square(pt);
-    }
-
-    /// Should be used on NodeUiState or WorldUiState directly
-    #[deprecated]
-    pub fn move_selected_square(
-        &mut self,
-        direction: Direction,
-        speed: usize,
-        range_limit: Option<PointSet>,
-    ) {
-        let new_pt = direction.add_to_point(
-            self.node_ui.as_ref().unwrap().selected_square(),
-            speed,
-            self.game
-                .node()
-                .expect("TODO Why is this method called when there is no node?")
-                .bounds(),
-        );
-        if let Some(point_set) = range_limit {
-            if !point_set.contains(new_pt) {
-                return;
-            }
-        }
-        self.set_selected_square(new_pt);
-        let selected_sprite_key = self
-            .game
-            .node()
-            .unwrap()
-            .with_sprite_at(new_pt, |sprite| sprite.key());
-        if let Some(node_ui) = &mut self.node_ui {
-            node_ui.set_selected_sprite_key_if_phase_is_right(selected_sprite_key)
-        }
-
-        let SuperState {
-            layout,
-            game,
-            node_ui,
-            ..
-        } = self;
-        layout.scroll_to_pt(game, node_ui.as_ref().unwrap().selected_square());
-    }
-
     pub fn game_state(&self) -> &GameState {
         &self.game
     }
@@ -161,21 +115,20 @@ impl SuperState {
         }
 
         // TODO after ui action is refactored to properly separate game actions, move this below the match statement and remove clone
-        self.node_ui
+        let SuperState {
+            game,
+            node_ui,
+            layout,
+            ..
+        } = self;
+
+        node_ui
             .as_mut()
-            .zip(self.game.node_mut())
-            .map(|(node_ui, node)| node_ui.apply_action(node, ui_action.clone()))
+            .zip(game.node_mut())
+            .map(|(node_ui, node)| node_ui.apply_action(node, layout, ui_action.clone()))
             .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
 
         match &ui_action {
-            UiAction::MoveSelectedSquare { direction, speed } => {
-                let range_limit = self.selected_action_index().and_then(|action_index| {
-                    self.game.node().and_then(|node| {
-                        node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
-                    })
-                });
-                self.move_selected_square(*direction, *speed, range_limit);
-            }
             UiAction::SetTerminalSize(bounds) => {
                 self.layout.resize(*bounds);
             }

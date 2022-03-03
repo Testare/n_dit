@@ -10,7 +10,7 @@ use node_layout::{NodeLayout, StandardNodeLayout};
 
 trait SubLayout {
     unsafe fn render(&self, state: &SuperState) -> std::io::Result<bool>;
-    unsafe fn scroll_to_pt(&mut self, pt: Point);
+    fn scroll_to_pt(&mut self, pt: Point);
     unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction>;
     fn resize(&mut self, terminal_size: Bounds) -> bool;
     // fn can_be_rendered
@@ -18,6 +18,8 @@ trait SubLayout {
     // TODO scroll(Direction)
 }
 
+// TODO Reevaluate if we want this to be a super layout, or break layout down for different uis, and the role of interplay between layout and ui, especially
+// when there is a node
 /// Represents all layout stuff. Its fields should be the configuration for preferred layout for in-node and out-of-node
 /// Eventually, we want all layout implementation details to be obscured by this one struct
 #[derive(Clone, Copy, Debug)]
@@ -26,19 +28,24 @@ pub struct Layout {
 }
 
 impl Layout {
+    pub fn node_layout(&self) -> &NodeLayout {
+        &self.node_layout
+    }
+
     pub fn new(terminal_size: Bounds) -> Self {
         Layout {
             node_layout: NodeLayout::Standard(StandardNodeLayout::new(terminal_size, None, None)),
         }
     }
 
+    pub fn scroll_node_to_pt(&mut self, pt: Point) {
+        self.node_layout.scroll_to_pt(pt);
+    }
+
     pub fn scroll_to_pt(&mut self, game_state: &GameState, pt: Point) {
         if game_state.node().is_some() {
-            unsafe {
-                // Only unsafe because it requires node to be present, but node IS present
-                self.node_layout.scroll_to_pt(pt);
-            }
-        }
+            self.scroll_node_to_pt(pt);
+        } // TODO World UI scorlling
     }
 
     pub fn render(&self, state: &SuperState) -> std::io::Result<bool> {
@@ -91,7 +98,7 @@ mod too_small_layout {
             Ok(false)
         }
 
-        unsafe fn scroll_to_pt(&mut self, _pt: Point) {}
+        fn scroll_to_pt(&mut self, _pt: Point) {}
         unsafe fn action_for_char_pt(&self, _state: &SuperState, _pt: Point) -> Option<UiAction> {
             None
         }

@@ -1,9 +1,10 @@
+use super::layout::Layout;
 use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
 use std::rc::Rc;
 
-#[derive(Debug, CopyGetters, Setters)]
+#[derive(Clone, Debug, CopyGetters, Setters)]
 pub struct NodeUiState {
     focus: NodeFocus,
     phase: NodePhase,
@@ -12,16 +13,62 @@ pub struct NodeUiState {
     selected_square: Point,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum NodeFocus {
+    Grid,
+    ActionMenu,
+}
+
+#[derive(Clone, Debug)]
+enum NodePhase {
+    /* TODO SetUp
+    SetUp {
+        selected_sprite_index: usize,
+        selected_action_index: Option<usize>,
+    }, */
+    /* TODO Enemy Turn?
+    EnemyTurn,*/
+    FreeSelect {
+        selected_sprite_key: Option<usize>,
+        selected_action_index: Option<usize>,
+    },
+    MoveSprite {
+        undo_state: Rc<NodeRestorePoint>,
+        selected_sprite_key: usize,
+        selected_action_index: Option<usize>,
+    },
+    SpriteAction {
+        undo_state: Rc<NodeRestorePoint>,
+        selected_sprite_key: usize,
+        selected_action_index: usize,
+    },
+}
+
 impl NodeUiState {
-    #[deprecated]
-    pub fn set_selected_sprite_key_if_phase_is_right(&mut self, sprite_key: Option<usize>) {
+    fn move_selected_square(
+        &mut self,
+        node: &Node,
+        direction: Direction,
+        speed: usize,
+        range_limit: Option<PointSet>,
+        layout: &mut Layout,
+    ) {
+        let new_pt = direction.add_to_point(self.selected_square(), speed, node.bounds());
+        if let Some(point_set) = range_limit {
+            if !point_set.contains(new_pt) {
+                return;
+            }
+        }
+        self.set_selected_square(new_pt);
+
         if let NodePhase::FreeSelect {
             selected_sprite_key,
             ..
         } = &mut self.phase
         {
-            *selected_sprite_key = sprite_key;
+            *selected_sprite_key = node.with_sprite_at(new_pt, |sprite| sprite.key());
         }
+        layout.scroll_node_to_pt(new_pt);
     }
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
@@ -83,8 +130,12 @@ impl NodeUiState {
         }
     }
 
-    // TODO A lot of this logic shouldn't be in the UI layer
-    pub fn apply_action(&mut self, node: &Node, ui_action: UiAction) -> Result<(), String> {
+    pub fn apply_action(
+        &mut self,
+        node: &Node,
+        layout: &mut Layout,
+        ui_action: UiAction,
+    ) -> Result<(), String> {
         match ui_action {
             UiAction::ConfirmSelection => {
                 if self.focus == NodeFocus::ActionMenu {
@@ -169,12 +220,12 @@ impl NodeUiState {
             }
             // FIXME IMMEDIATELY Move MoveSelecteSquare logic to node_ui instead of super_state
             UiAction::MoveSelectedSquare { direction, speed } => {
-                let _range_limit: Option<PointSet> =
+                let range_limit: Option<PointSet> =
                     self.selected_action_index().and_then(|action_index| {
                         node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
                     });
                 debug!("Moving selected square {:?} by {}", direction, speed);
-                // self.move_selected_square(direction, speed, range_limit);
+                self.move_selected_square(node, direction, speed, range_limit, layout);
                 Ok(())
             }
             UiAction::SetSelectedSquare(pt) => {
@@ -314,38 +365,6 @@ impl From<&Node> for NodeUiState {
             selected_square: (0, 0),
         }
     }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum NodeFocus {
-    Grid,
-    ActionMenu,
-    // SpriteMenu
-}
-
-#[derive(Debug)]
-enum NodePhase {
-    /* TODO SetUp
-    SetUp {
-        selected_sprite_index: usize,
-        selected_action_index: Option<usize>,
-    }, */
-    /* TODO Enemy Turn
-    EnemyTurn,*/
-    FreeSelect {
-        selected_sprite_key: Option<usize>,
-        selected_action_index: Option<usize>,
-    },
-    MoveSprite {
-        undo_state: Rc<NodeRestorePoint>,
-        selected_sprite_key: usize,
-        selected_action_index: Option<usize>,
-    },
-    SpriteAction {
-        undo_state: Rc<NodeRestorePoint>,
-        selected_sprite_key: usize,
-        selected_action_index: usize,
-    },
 }
 
 impl NodePhase {
