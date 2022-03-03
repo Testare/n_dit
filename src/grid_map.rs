@@ -275,7 +275,6 @@ impl<T> GridMap<T> {
         vec
     }
 
-
     pub fn point_map<F, R>(&self, func: F) -> HashMap<Point, R>
     where
         F: Fn(usize, usize, &T) -> R,

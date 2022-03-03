@@ -207,6 +207,5 @@ impl UiAction {
 
     pub fn change_selection() -> UiAction {
         UiAction::ChangeSelection
-    
     }
 }

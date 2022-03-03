@@ -13,6 +13,7 @@ pub struct NodeUiState {
     selected_square: Point,
 }
 
+// TODO Visual differences between NodeFocus
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum NodeFocus {
     Grid,
@@ -105,7 +106,7 @@ impl NodeUiState {
                             // Otherwise, just increase movement speed
                             _ => Some(UiAction::move_selected_square(dir, 2)),
                         }
-                    },
+                    }
                     UserInput::Activate => match self.phase {
                         NodePhase::SpriteAction {
                             selected_action_index,
@@ -118,15 +119,19 @@ impl NodeUiState {
                             selected_sprite_key: Some(sprite_key),
                             ..
                         } => {
-                            if node.with_sprite(sprite_key, |sprite| sprite.untapped()).unwrap_or(false) {
+                            if node
+                                .with_sprite(sprite_key, |sprite| sprite.untapped())
+                                .unwrap_or(false)
+                            {
                                 Some(UiAction::activate_sprite(sprite_key))
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                         NodePhase::MoveSprite { .. } => Some(UiAction::deactivate_sprite()), // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
                         _ => None,
                     },
-
-                    UserInput::Select => Some(UiAction::ChangeSelection),
+                    UserInput::Select => Some(UiAction::change_selection()),
                     _ => None,
                 }
             }
@@ -195,22 +200,42 @@ impl NodeUiState {
                 Ok(())
             }
             UiAction::ChangeSelection => {
-                let selected_sprite_key = node.active_sprite_key().or_else(|| {
-                    node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
-                });
                 match self.focus {
                     NodeFocus::ActionMenu => {
-                        if 0 != node
-                            .with_sprite(selected_sprite_key.unwrap(), |sprite| sprite.moves())
-                            .unwrap_or(0)
-                        {
-                            unsafe {
-                                self.clear_selected_action_index();
+                        match self.phase {
+                            NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
+                            NodePhase::MoveSprite {
+                                selected_sprite_key,
+                                ..
+                            } => {
+                                // TODO To consider: What if the selected square is over another sprite and not the active sprite?
+                                if node
+                                    .with_sprite(selected_sprite_key, |sprite| sprite.moves() != 0)
+                                    .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?
+                                {
+                                    self.clear_selected_action_index();
+                                }
+                            }
+                            NodePhase::SpriteAction {
+                                selected_sprite_key,
+                                ..
+                            } => {
+                                let (moves, head_pt) = node
+                                    .with_sprite(selected_sprite_key, |sprite| (sprite.moves(), sprite.head()))
+                                    .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?;
+                                if moves != 0 {
+                                    self.phase.transition_to_move_sprite(node)?;
+                                    self.set_selected_square(head_pt);
+                                    self.clear_selected_action_index();
+                                }
                             }
                         }
                         self.focus = NodeFocus::Grid;
                     }
                     NodeFocus::Grid => {
+                        let selected_sprite_key = node.active_sprite_key().or_else(|| {
+                            node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
+                        });
                         if selected_sprite_key.is_some() {
                             if self.selected_action_index() == None {
                                 self.set_default_selected_action();
@@ -221,7 +246,6 @@ impl NodeUiState {
                 }
                 Ok(())
             }
-            // FIXME IMMEDIATELY Move MoveSelecteSquare logic to node_ui instead of super_state
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit: Option<PointSet> =
                     self.selected_action_index().and_then(|action_index| {
@@ -285,9 +309,7 @@ impl NodeUiState {
                 if node.active_sprite_key().is_none() {
                     self.phase
                         .transition_to_free_select(self.selected_square, node);
-                    unsafe {
-                        self.clear_selected_action_index();
-                    }
+                    self.clear_selected_action_index();
                 }
                 Ok(())
             }
@@ -319,10 +341,7 @@ impl NodeUiState {
         self.set_selected_action_index(0);
     }
 
-    // # Safety
-    // Do not call when in sprite action phase. Hope in future to remove this function
-    #[deprecated]
-    pub unsafe fn clear_selected_action_index(&mut self) {
+    pub fn clear_selected_action_index(&mut self) {
         match &mut self.phase {
             NodePhase::FreeSelect {
                 selected_action_index,
@@ -333,8 +352,7 @@ impl NodeUiState {
                 ..
             } => *selected_action_index = None,
             NodePhase::SpriteAction { .. } => {
-                // Was somehow able to reach this
-                panic!("can't clear selected action index when in sprite action phase")
+                log::warn!("clear_selected_action_index() called while we were NodePhase::SpriteAction, which is a noop")
             }
         }
     }
@@ -388,27 +406,31 @@ impl NodePhase {
     }
 
     fn transition_to_move_sprite(&mut self, node: &Node) -> Result<(), String> {
-        *self = match self {
-            NodePhase::FreeSelect {
-                selected_action_index,
-                selected_sprite_key: Some(selected_sprite_key),
-            } => Ok::<_, String>(NodePhase::MoveSprite {
-                selected_action_index: *selected_action_index,
-                selected_sprite_key: *selected_sprite_key,
-                undo_state: Rc::new(node.create_restore_point()),
-            }),
-            NodePhase::SpriteAction {
-                selected_sprite_key,
-                undo_state,
-                ..
-            } => Ok::<_, String>(NodePhase::MoveSprite {
-                selected_sprite_key: *selected_sprite_key,
-                selected_action_index: None,
-                undo_state: undo_state.clone(),
-            }),
-            _ => unimplemented!("Implement!"),
-        }?;
-        Ok(())
+        if matches!(self, NodePhase::MoveSprite { .. }) {
+            Ok(())
+        } else {
+            *self = match self {
+                NodePhase::FreeSelect {
+                    selected_action_index,
+                    selected_sprite_key: Some(selected_sprite_key),
+                } => Ok::<_, String>(NodePhase::MoveSprite {
+                    selected_action_index: *selected_action_index,
+                    selected_sprite_key: *selected_sprite_key,
+                    undo_state: Rc::new(node.create_restore_point()),
+                }),
+                NodePhase::SpriteAction {
+                    selected_sprite_key,
+                    undo_state,
+                    ..
+                } => Ok::<_, String>(NodePhase::MoveSprite {
+                    selected_sprite_key: *selected_sprite_key,
+                    selected_action_index: None,
+                    undo_state: undo_state.clone(),
+                }),
+                _ => unimplemented!("Implement!"),
+            }?;
+            Ok(())
+        }
     }
 
     fn transition_to_sprite_action(&mut self, node: &Node) -> Result<(), String> {
