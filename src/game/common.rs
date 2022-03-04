@@ -1,6 +1,5 @@
 use std::cmp::min;
 use std::collections::HashSet;
-use std::convert::TryInto;
 use std::ops::BitOr;
 
 pub type Point = (usize, usize);
