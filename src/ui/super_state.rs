@@ -99,6 +99,8 @@ impl SuperState {
     }
 
     pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
+        // TODO Perhaps have a method "is_animation_safe" property to indicate UI actions that can
+        // apply even during animations
         let in_animation = self.game.animation().is_some();
         match user_input {
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here

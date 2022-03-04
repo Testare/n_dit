@@ -7,7 +7,7 @@ use n_dit::{
     Team,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::{fs::File, io::stdout};
+use std::{fs::File, io::stdout, time::Instant};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();
@@ -115,15 +115,17 @@ fn main() -> crossterm::Result<()> {
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;
+    let mut last_action = Instant::now();
     state.render()?;
     while keep_going {
-        if let Some(action) = get_next_action(&state)? {
+        if let Some(action) = get_next_action(&state, last_action)? {
             if action.is_quit() {
                 keep_going = false;
             } else {
                 state.apply_action(action).unwrap();
                 //layout.render(&state)?;
                 state.render()?;
+                last_action = Instant::now();
             }
         }
     }
@@ -131,16 +133,22 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
 }
 
 const TIMEOUT: Duration = Duration::from_millis(500);
+const MINIMUM_POLLING: Duration = Duration::from_millis(50);
 
 // TODO Could be implemented as an Iterator<Item=Result<UiAction>>, where no-ops are ignored
 // instead of returning None
-fn get_next_action(state: &SuperState) -> crossterm::Result<Option<UiAction>> {
+fn get_next_action(
+    state: &SuperState,
+    last_update: Instant,
+) -> crossterm::Result<Option<UiAction>> {
     let event = if state.game_state().waiting_on_player_input() {
         // TODO better handling for when keys are held down/ clearing input queue
         crossterm::event::read()?
     } else {
-        // TODO Allow "rapid next" mode for a shorter timeout, and then
-        if crossterm::event::poll(TIMEOUT)? {
+        let now = Instant::now();
+        let update_time = last_update + TIMEOUT;
+        // TODO Allow adjustable animation speed, and "skip animation" button
+        if now + MINIMUM_POLLING < update_time && crossterm::event::poll(update_time - now)? {
             crossterm::event::read()?
         } else {
             return Ok(Some(UiAction::next()));
