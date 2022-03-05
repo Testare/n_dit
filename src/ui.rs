@@ -11,6 +11,7 @@ pub use layout::Layout;
 pub use super_state::{SuperState, UiAction};
 pub use user_input::UserInput;
 
+use super_state::UiView;
 use node_ui::NodeUiState;
 use std::num::NonZeroUsize;
 

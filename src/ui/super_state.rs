@@ -1,14 +1,16 @@
 use super::{DrawConfiguration, Layout, NodeUiState, UserInput};
 use crate::{Bounds, Direction, GameAction, GameState, Node, Point};
+use getset::{CopyGetters, Getters};
 
 // TODO Might be best to represent soem of this state as an enum state machine
-#[derive(Debug)]
+#[derive(Debug, Getters, CopyGetters)]
 pub struct SuperState {
     pub game: GameState,
     layout: Layout,
     draw_config: DrawConfiguration,
     terminal_size: (usize, usize),
-    selection: Selection,
+    #[get_copy = "pub"]
+    view: UiView,
     node_ui: Option<NodeUiState>,
     world_ui: WorldUiState,
 }
@@ -26,14 +28,11 @@ impl WorldUiState {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-enum Selection {
-    Grid,
-    PauseMenu(Box<Selection>),
-    SubMenu,
-    SubMenu2,
-    Node,
-    World,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiView {
+    Node, // Do not set this view when node is none
+    // TODO PauseMenu(Box<Selection>),
+    // TODO World,
 }
 
 impl SuperState {
@@ -49,7 +48,7 @@ impl SuperState {
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
             terminal_size: (t_width.into(), t_height.into()),
-            selection: Selection::Grid,
+            view: UiView::Node,
         }
     }
 

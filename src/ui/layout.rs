@@ -1,5 +1,5 @@
 use super::super::{Bounds, GameState, Point};
-use super::{SuperState, UiAction};
+use super::{SuperState, UiAction, UiView};
 
 mod node_layout;
 
@@ -49,7 +49,7 @@ impl Layout {
     }
 
     pub fn render(&self, state: &SuperState) -> std::io::Result<bool> {
-        if state.game.node().is_some() {
+        if state.view() == UiView::Node {
             unsafe {
                 // Only unsafe because it requires node to be present, but node IS present
                 self.node_layout.render(state)
