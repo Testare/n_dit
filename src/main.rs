@@ -7,10 +7,60 @@ use n_dit::{
     Team,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::{fs::File, io::stdout, time::Instant};
+use std::{panic, fs::File, io::stdout, time::Instant};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();
+    let state = load_state();
+    reset_terminal_on_panic(); // If the game panics, we want to bring the terminal back to a normal state
+    set_terminal_state()?;
+    game_loop(state)?;
+    reset_terminal_state()?;
+    Ok(())
+}
+
+fn reset_terminal_on_panic() {
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |panic_info| {
+        log::error!("Panic occurred\n{:#?}\n\nAttempting to reset terminal", panic_info);
+
+        match reset_terminal_state() {
+            Ok(()) => {
+                log::info!("Successfully reset terminal")
+            },
+            Err(e) => {
+                log::error!("Failure resetting terminal: {:#?}", e)
+            }
+        }
+        default_hook(panic_info)
+    }))
+}
+
+fn reset_terminal_state() -> std::io::Result<()> {
+    crossterm::terminal::disable_raw_mode()?;
+    execute!(
+        stdout(),
+        crossterm::cursor::Show,
+        crossterm::terminal::LeaveAlternateScreen,
+        crossterm::event::DisableMouseCapture
+    )?;
+    Ok(())
+}
+
+fn set_terminal_state() -> std::io::Result<()> {
+    execute!(
+        stdout(),
+        crossterm::cursor::Hide,
+        crossterm::terminal::EnterAlternateScreen,
+        crossterm::terminal::SetTitle("n_dit"),
+        crossterm::event::EnableMouseCapture
+    )?;
+    crossterm::terminal::enable_raw_mode()?;
+    Ok(())
+}
+
+
+fn load_state() -> SuperState {
     let mut node = Node::from(GridMap::from(vec![
         vec![
             false, false, false, false, false, true, false, false, false, false, false,
@@ -92,26 +142,9 @@ fn main() -> crossterm::Result<()> {
     node.add_sprite(Sprite::new("<>"), vec![(14, 6)]).unwrap();
     node.add_piece((6, 1), Piece::Mon(500));
     node.add_piece((6, 2), Piece::AccessPoint);
-    let state = SuperState::from(Some(node));
-    execute!(
-        stdout(),
-        crossterm::cursor::Hide,
-        crossterm::terminal::EnterAlternateScreen,
-        crossterm::terminal::SetTitle("n_dit"),
-        crossterm::event::EnableMouseCapture
-    )?;
-    crossterm::terminal::enable_raw_mode()?;
-    game_loop(state)?;
-    crossterm::terminal::disable_raw_mode()?;
-    execute!(
-        stdout(),
-        crossterm::cursor::Show,
-        crossterm::terminal::LeaveAlternateScreen,
-        crossterm::event::DisableMouseCapture
-    )?;
-
-    Ok(())
+    SuperState::from(Some(node))
 }
+
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;
