@@ -1,5 +1,5 @@
 use super::Node;
-use crate::{Direction, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
+use crate::{Direction, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
 use std::{cmp, num::NonZeroUsize};
 
 const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
@@ -87,7 +87,7 @@ impl<'a> WithSpriteMut<'a> {
 
     // TODO evaluate if we should no longer return remaining moves. Only if we don't return anything from GameState::apply_action
     /// Returns remaining moves
-    pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<usize, String> {
+    pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>, String> {
         if self.moves() == 0 || self.tapped() {
             return Err("Sprite cannot move".to_string());
         }
@@ -95,10 +95,30 @@ impl<'a> WithSpriteMut<'a> {
         let mut remaining_moves = self.moves();
         let max_size = self.max_size();
         let has_no_actions = self.actions().is_empty();
+        let mut results = Vec::new();
 
         for dir in directions {
             let head = self.head();
             let next_pt = dir.add_to_point(head, 1, bounds);
+            let grid_mut = self.node.grid_mut();
+            if grid_mut
+                .item_at(next_pt)
+                .map(|piece| piece.is_pickup())
+                .unwrap_or(false)
+            {
+                let key = grid_mut.item_key_at(next_pt).unwrap();
+                if let Some(Piece::Pickup(pickup)) = grid_mut.pop_front(key) {
+                    results.push(pickup);
+                } else {
+                    log::error!("Error when moving sprite [{:?}] from [{:?}] to [{:?}], trying to pick up [{:?}]", 
+                        self.sprite_key,
+                        head,
+                        next_pt,
+                        key
+                    );
+                    panic!("Error picking up pickup");
+                }
+            }
             let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);
             if sucessful_movement {
                 remaining_moves = self.with_sprite_mut(|sprite| {
@@ -120,7 +140,7 @@ impl<'a> WithSpriteMut<'a> {
             .grid_mut()
             .pop_back_n(self.sprite_key, size.saturating_sub(max_size));
 
-        Ok(remaining_moves)
+        Ok(results)
     }
 
     fn with_sprite<R, F: FnOnce(&Sprite) -> R>(&self, sprite_op: F) -> R {

@@ -1,4 +1,4 @@
-use super::{Animation, Direction, Node, Point, Team, WorldMap};
+use super::{Animation, Direction, Inventory, Node, Point, Team, WorldMap};
 use log::debug;
 
 #[derive(Debug)]
@@ -6,13 +6,12 @@ pub struct GameState {
     _world_map: WorldMap,
     node: Option<Node>,
     animation: Option<Animation>,
-    player_mon: usize,
+    inventory: Inventory,
 }
 
 impl GameState {
-
     pub fn player_mon(&self) -> usize {
-        self.player_mon
+        self.inventory.wallet()
     }
 
     fn state_check_after_player_action(&mut self) {
@@ -75,7 +74,7 @@ impl GameState {
             node,
             _world_map: WorldMap { nodes: 1 },
             animation: None,
-            player_mon: 0
+            inventory: Inventory::default(),
         }
     }
 
@@ -113,10 +112,14 @@ impl GameState {
                     self.state_check_after_player_action();
                     Ok(())
                 }
-                GameAction::MoveActiveSprite(directions) => self.node_action(|node| {
-                    node.move_active_sprite(directions)?;
+                GameAction::MoveActiveSprite(directions) => {
+                    let pickups =
+                        self.node_action(|node| node.move_active_sprite(directions))??;
+                    for pickup in pickups {
+                        self.inventory.pick_up(pickup);
+                    }
                     Ok(())
-                })?,
+                }
             }
         } else if let GameAction::Next = game_action {
             // TODO Check lose conditions for Node

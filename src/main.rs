@@ -1,13 +1,13 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    game::{Node, Piece, Sprite},
+    game::{Card, Node, Pickup, Piece, Sprite},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
     Team,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::{panic, fs::File, io::stdout, time::Instant};
+use std::{fs::File, io::stdout, panic, time::Instant};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();
@@ -22,12 +22,15 @@ fn main() -> crossterm::Result<()> {
 fn reset_terminal_on_panic() {
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
-        log::error!("Panic occurred\n{:#?}\n\nAttempting to reset terminal", panic_info);
+        log::error!(
+            "Panic occurred\n{:#?}\n\nAttempting to reset terminal",
+            panic_info
+        );
 
         match reset_terminal_state() {
             Ok(()) => {
                 log::info!("Successfully reset terminal")
-            },
+            }
             Err(e) => {
                 log::error!("Failure resetting terminal: {:#?}", e)
             }
@@ -58,7 +61,6 @@ fn set_terminal_state() -> std::io::Result<()> {
     crossterm::terminal::enable_raw_mode()?;
     Ok(())
 }
-
 
 fn load_state() -> SuperState {
     let mut node = Node::from(GridMap::from(vec![
@@ -140,11 +142,17 @@ fn load_state() -> SuperState {
     )
     .unwrap();
     node.add_sprite(Sprite::new("<>"), vec![(14, 6)]).unwrap();
-    node.add_piece((6, 1), Piece::Mon(500));
+    node.add_piece(
+        (15, 7),
+        Card {
+            name: "Jeremy".to_string(),
+        }
+        .into(),
+    );
+    node.add_piece((6, 1), Pickup::Mon(500).to_piece());
     node.add_piece((6, 2), Piece::AccessPoint);
     SuperState::from(Some(node))
 }
-
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;

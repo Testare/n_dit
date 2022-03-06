@@ -278,15 +278,16 @@ impl SubLayout for StandardNodeLayout {
 
             queue!(
                 stdout,
-                crossterm::style::Print(
-                    format!("{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}\n",
-                border,
-                menu_row,
-                map_row,
-                space = " ",
-                menu_padding = menu_padding_size,
-                padding = padding_size)),
-crossterm::cursor::MoveToColumn(0)
+                crossterm::style::Print(format!(
+                    "{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}\n",
+                    border,
+                    menu_row,
+                    map_row,
+                    space = " ",
+                    menu_padding = menu_padding_size,
+                    padding = padding_size
+                )),
+                crossterm::cursor::MoveToColumn(0)
             )?;
         }
         queue!(

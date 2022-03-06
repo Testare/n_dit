@@ -31,8 +31,9 @@ impl WorldUiState {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiView {
     Node, // Do not set this view when node is none
-    // TODO PauseMenu(Box<Selection>),
-    // TODO World,
+    _NodePauseMenu,
+    _World,
+    _WorldPauseMenu,
 }
 
 impl SuperState {

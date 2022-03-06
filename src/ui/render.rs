@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Node, Piece, Point, Team};
+use crate::{Node, Pickup, Piece, Point, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
@@ -15,7 +15,6 @@ enum BorderType {
     Linked = 2,
 }
 
-// TODO render to arbitrary write object
 impl Piece {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
     fn render_square(
@@ -27,7 +26,10 @@ impl Piece {
     ) -> String {
         let string = match self {
             Piece::AccessPoint => String::from("&&"),
-            Piece::Mon(_) => configuration.color_scheme().mon().apply("$$"),
+            Piece::Pickup(pickup) => configuration
+                .color_scheme()
+                .mon()
+                .apply(pickup.square_display()),
             Piece::Program(sprite) => {
                 if position == 0 {
                     String::from(sprite.display())
@@ -59,7 +61,7 @@ impl Piece {
         draw_config: &DrawConfiguration,
     ) -> UiFormat {
         match self {
-            Piece::Mon(_) => draw_config.color_scheme().mon(),
+            Piece::Pickup(_) => draw_config.color_scheme().mon(),
             Piece::AccessPoint => draw_config.color_scheme().access_point(),
             Piece::Program(sprite) => match sprite.team() {
                 Team::PlayerTeam => {
@@ -93,11 +95,21 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
     let color_scheme = state.draw_config().color_scheme();
     if let Some(piece) = piece_opt {
         match piece {
-            Piece::Mon(mon_val) => {
+            Piece::Pickup(Pickup::Mon(mon_val)) => {
                 base_vec[2].push_str("Money");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push('$');
                 base_vec[4].push_str(mon_val.to_string().as_str());
+            }
+            Piece::Pickup(Pickup::Item(item)) => {
+                base_vec[2].push_str("Loose Item");
+                base_vec[3] = "=".repeat(width);
+                base_vec[4].push_str(item.name());
+            }
+            Piece::Pickup(Pickup::Card(card)) => {
+                base_vec[2].push_str("Loose Card");
+                base_vec[3] = "=".repeat(width);
+                base_vec[4].push_str(card.name());
             }
             Piece::AccessPoint => {
                 base_vec[2].push_str("Access Pnt");
@@ -169,8 +181,8 @@ fn points_in_range(
     y_range: &RangeInclusive<usize>,
 ) -> HashSet<Point> {
     let mut set = HashSet::default();
-    for x in x_range.clone().into_iter() {
-        for y in y_range.clone().into_iter() {
+    for x in x_range.clone() {
+        for y in y_range.clone() {
             set.insert((x, y));
         }
     }

@@ -1,4 +1,4 @@
-use super::{EnemyAi, Sprite};
+use super::{EnemyAi, Pickup, Sprite};
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use log::debug;
 use std::collections::HashSet;
@@ -25,7 +25,7 @@ pub struct Node {
 pub enum Piece {
     AccessPoint,
     Program(Sprite),
-    Mon(u32),
+    Pickup(Pickup),
 }
 
 impl Node {
@@ -67,7 +67,7 @@ impl Node {
     }
 
     /// Returns remaining moves
-    pub fn move_active_sprite(&mut self, directions: &[Direction]) -> Result<usize, String> {
+    pub fn move_active_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>, String> {
         self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(directions))
             .unwrap_or_else(|| Err("No active sprite".to_string()))
     }
@@ -118,7 +118,7 @@ impl Node {
                 "Could not add sprite to initial location".into()
             })?;
         for pt in pts {
-            if !self.move_sprite(pt, key) {
+            if !self.grid.push_front(pt, key) {
                 return Err(format!("Could not add sprite to location {:?}", pt));
             }
         }
@@ -129,8 +129,8 @@ impl Node {
         self.grid.put_item(pt, piece)
     }
 
-    pub fn add_money(&mut self, pt: Point, amount: u32) -> Option<usize> {
-        self.grid.put_item(pt, Piece::Mon(amount))
+    pub fn add_money(&mut self, pt: Point, amount: usize) -> Option<usize> {
+        self.grid.put_item(pt, Piece::Pickup(Pickup::Mon(amount)))
     }
 
     pub fn width(&self) -> usize {
@@ -143,11 +143,6 @@ impl Node {
 
     pub fn bounds(&self) -> Bounds {
         Bounds::of(self.grid.width(), self.grid.height())
-    }
-
-    // Stubby
-    pub fn move_sprite(&mut self, pt: Point, key: usize) -> bool {
-        self.grid.push_front(pt, key)
     }
 
     pub fn name(&self) -> &str {
@@ -255,6 +250,12 @@ impl Node {
                 false
             }
         })
+    }
+}
+
+impl Piece {
+    pub fn is_pickup(&self) -> bool {
+        matches!(self, Piece::Pickup(_))
     }
 }
 
