@@ -6,9 +6,15 @@ pub struct GameState {
     _world_map: WorldMap,
     node: Option<Node>,
     animation: Option<Animation>,
+    player_mon: usize,
 }
 
 impl GameState {
+
+    pub fn player_mon(&self) -> usize {
+        self.player_mon
+    }
+
     fn state_check_after_player_action(&mut self) {
         if let Some(node) = self.node_mut() {
             let enemy_sprites_remaining = node
@@ -69,6 +75,7 @@ impl GameState {
             node,
             _world_map: WorldMap { nodes: 1 },
             animation: None,
+            player_mon: 0
         }
     }
 

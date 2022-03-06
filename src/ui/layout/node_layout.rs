@@ -1,7 +1,7 @@
 use super::super::{render, SuperState, UiAction, Window};
 use super::SubLayout;
 use crate::{Bounds, Direction, Point};
-use crossterm::execute;
+use crossterm::queue;
 use std::{
     cmp,
     io::{stdout, Write},
@@ -105,8 +105,8 @@ impl StandardNodeLayout {
         let map_width = width - menu_width - 5;
         let map_menu_height = height - if include_title { 4 } else { 2 };
         let mut map_window = Window::of(
-            NonZeroUsize::new(map_width).unwrap(),
-            NonZeroUsize::new(map_menu_height).unwrap(),
+            NonZeroUsize::new(map_width).unwrap(), // TODO BUG: Panicked here
+            NonZeroUsize::new(map_menu_height).unwrap(), // TODO BUG: Panicked here
         );
         map_window.scroll_x = self.scroll.0;
         map_window.scroll_y = self.scroll.1;
@@ -214,13 +214,14 @@ impl SubLayout for StandardNodeLayout {
     /// Assumes game_state.node().is_some()
     unsafe fn render(&self, super_state: &SuperState) -> std::io::Result<bool> {
         // TODO queue + flush over execute
-        execute!(stdout(), crossterm::cursor::MoveTo(0, 0))?;
+        let mut stdout = stdout();
+        queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;
         if self.calculated_fields.is_none() {
             let (available_width, available_height) = self.terminal_bounds.into();
             for i in 0..available_height {
                 let blinds = if i % 2 == 0 { ">" } else { "<" };
-                execute!(
-                    stdout(),
+                queue!(
+                    stdout,
                     crossterm::style::Print(blinds.repeat(available_width)),
                     crossterm::style::Print("\n".to_string()),
                     crossterm::cursor::MoveToColumn(0)
@@ -228,24 +229,27 @@ impl SubLayout for StandardNodeLayout {
             }
             return Ok(false);
         }
+        let mon = super_state.game.player_mon();
         let fields = self.calculated_fields.unwrap(); // TODO change to an if let
         let border = '\\';
         let node = super_state.game.node().unwrap();
-        execute!(
-            stdout(),
+        queue!(
+            stdout,
             crossterm::style::Print("\\".repeat(fields.width)),
             crossterm::style::Print("\n".to_string()),
             crossterm::cursor::MoveToColumn(0)
         )?;
         if fields.include_title {
+            let mon_str = format!("${}", mon);
             println!(
-                "{border}{0:^width$.width$}{border}",
+                "{border}{0:^width$.width$} [{mon}] {border}",
                 node.name(),
-                width = fields.width - 2,
+                width = fields.width - 6 - mon_str.len(),
+                mon = mon_str,
                 border = border
             );
-            execute!(
-                stdout(),
+            queue!(
+                stdout,
                 crossterm::cursor::MoveToColumn(0),
                 crossterm::style::Print("\\".repeat(fields.width)),
                 crossterm::style::Print("\n".to_string()),
@@ -271,24 +275,27 @@ impl SubLayout for StandardNodeLayout {
             } else {
                 0
             }; // TODO logic to truncate if menu_row is greater than menu size...
-            writeln!(
-                stdout(),
-                "{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}",
+
+            queue!(
+                stdout,
+                crossterm::style::Print(
+                    format!("{0}{1}{space:menu_padding$.menu_padding$}{0} {2}{space:padding$}{0}\n",
                 border,
                 menu_row,
                 map_row,
                 space = " ",
                 menu_padding = menu_padding_size,
-                padding = padding_size
+                padding = padding_size)),
+crossterm::cursor::MoveToColumn(0)
             )?;
-            execute!(stdout(), crossterm::cursor::MoveToColumn(0))?;
         }
-        execute!(
-            stdout(),
+        queue!(
+            stdout,
             crossterm::style::Print("/".repeat(fields.width)),
             // crossterm::style::Print("/".repeat(fields.width)),
             crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
         )?;
+        stdout.flush()?;
         Ok(true)
     }
 
