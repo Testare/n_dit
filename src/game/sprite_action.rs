@@ -34,19 +34,19 @@ pub enum SAEffect {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
-    IncreaseMovementSpeed {
+    _IncreaseMovementSpeed {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
-    Recover {
+    _Recover {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
-    Create {
+    _Create {
         piece: Piece,
     },
-    OpenSquare,
-    CloseSquare,
+    _OpenSquare,
+    _CloseSquare,
 }
 
 #[derive(Debug)]
@@ -55,8 +55,8 @@ pub enum SACondition {
     Size(RangeInclusive<usize>),
     TargetSize(RangeInclusive<usize>),
     TargetMaxSize(RangeInclusive<usize>),
-    Uses(usize),
-    UsesPerTarget(usize),
+    _Uses(usize),
+    _UsesPerTarget(usize),
 }
 
 impl SACondition {
@@ -79,10 +79,10 @@ impl SACondition {
 pub enum Target {
     Ally = 0,
     // Area,
-    ClosedSquare,
-    EmptySquare,
+    _ClosedSquare,
+    _EmptySquare,
     Enemy,
-    Itself,
+    _Itself,
 }
 
 impl SpriteAction<'_> {
