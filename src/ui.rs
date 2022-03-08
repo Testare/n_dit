@@ -1,3 +1,4 @@
+mod click;
 pub mod configuration;
 pub mod layout;
 mod node_ui;
@@ -11,6 +12,7 @@ pub use layout::Layout;
 pub use super_state::{SuperState, UiAction};
 pub use user_input::UserInput;
 
+use click::{ClickTarget, NodeCt};
 use node_ui::NodeUiState;
 use std::num::NonZeroUsize;
 use super_state::UiView;

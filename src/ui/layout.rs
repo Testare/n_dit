@@ -1,5 +1,5 @@
 use super::super::{Bounds, GameState, Point};
-use super::{SuperState, UiAction, UiView};
+use super::{ClickTarget, SuperState, UiAction, UiView};
 
 mod node_layout;
 
@@ -13,6 +13,7 @@ trait SubLayout {
     fn scroll_to_pt(&mut self, pt: Point);
     unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction>;
     fn resize(&mut self, terminal_size: Bounds) -> bool;
+    fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget>;
     // fn can_be_rendered
     // fn update_size
     // TODO scroll(Direction)
@@ -28,6 +29,14 @@ pub struct Layout {
 }
 
 impl Layout {
+    pub fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
+        if state.game.node().is_some() {
+            self.node_layout.click_target(state, pt)
+        } else {
+            None
+        }
+    }
+
     pub fn node_layout(&self) -> &NodeLayout {
         &self.node_layout
     }
@@ -75,7 +84,7 @@ impl Layout {
 
 // Will likely be used later when I figure out how to handle multiple layouts.
 mod too_small_layout {
-    use super::SubLayout;
+    use super::{ClickTarget, SubLayout};
     use crate::{Bounds, Point, SuperState, UiAction};
     use crossterm::execute;
     use std::io::stdout;
@@ -106,6 +115,10 @@ mod too_small_layout {
         fn resize(&mut self, terminal_size: Bounds) -> bool {
             self.0 = terminal_size;
             true
+        }
+
+        fn click_target(&self, _: &SuperState, _: Point) -> Option<ClickTarget> {
+            None
         }
     }
 }

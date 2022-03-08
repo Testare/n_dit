@@ -48,12 +48,14 @@ impl SuperState {
             game: GameState::from(node),
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
-            terminal_size: (t_width.into(), t_height.into()),
+            terminal_size: (t_width.into(), t_height.into()), // TODO Is this used?
             view: UiView::Node,
         }
     }
 
     pub fn action_for_char_pt(&self, pt: Point, in_animation: bool) -> Option<UiAction> {
+        let ct = self.layout.click_target(self, pt);
+        log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
         self.layout
             .action_for_char_pt(self, pt)
             .filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)

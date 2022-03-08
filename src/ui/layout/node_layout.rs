@@ -1,4 +1,4 @@
-use super::super::{render, SuperState, UiAction, Window};
+use super::super::{render, ClickTarget, NodeCt, SuperState, UiAction, Window};
 use super::SubLayout;
 use crate::{Bounds, Direction, Point};
 use crossterm::queue;
@@ -30,6 +30,10 @@ impl SubLayout for NodeLayout {
 
     fn resize(&mut self, terminal_size: Bounds) -> bool {
         self.layout_mut().resize(terminal_size)
+    }
+
+    fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
+        self.layout().click_target(state, pt)
     }
 }
 
@@ -305,5 +309,35 @@ impl SubLayout for StandardNodeLayout {
         self.calculate_fields();
         self.calculated_fields.is_some()
         // TODO adjust scrolling after resize
+    }
+
+    fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
+        let (available_width, available_height) = state.terminal_size();
+        if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
+            return None;
+        }
+        let height = cmp::min(available_height, self.get_max_height());
+        let width = cmp::min(available_width, self.get_max_width());
+        let include_title = height >= Self::MIN_HEIGHT_FOR_TITLE;
+
+        let top = if include_title { 3 } else { 1 };
+        let left = 13;
+        if pt.0 >= left && pt.0 < width && pt.1 >= top && pt.1 < height {
+            let y = (pt.1 - top) / 2;
+            let x = (pt.0 - left) / 3;
+            if state
+                .game_state()
+                .node()
+                .unwrap()
+                .bounds()
+                .contains_pt((x, y))
+            {
+                Some(NodeCt::Grid((x, y)).into())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
