@@ -148,21 +148,23 @@ impl SuperState {
 
         log::debug!("NodeUI state {:?}", node_ui);
 
-        node_ui
-            .as_mut()
-            .zip(game.node_mut())
-            .map(|(node_ui, node)| node_ui.apply_action(node, layout, ui_action.clone()))
-            .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
-
         match &ui_action {
             UiAction::SetTerminalSize(bounds) => {
-                self.layout.resize(*bounds);
+                layout.resize(*bounds);
             }
             UiAction::Quit => {
                 panic!("Thanks for playing")
             }
             _ => {}
         }
+
+        node_ui
+            .as_mut()
+            .zip(game.node_mut())
+            .map(|(node_ui, node)| node_ui.apply_action(node, &ui_action))
+            .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
+
+        layout.apply_action(&ui_action, node_ui.as_ref());
         Ok(())
     }
 }
@@ -174,7 +176,7 @@ pub enum UiAction {
     ChangeSelection,
     ConfirmSelection,
     ChangeSelectedMenuItem(Direction),
-    MoveSelectedSquare { direction: Direction, speed: usize },
+    MoveSelectedSquare { direction: Direction, speed: usize }, // Do we really need this too when we have "SetSelectedSquare"?
     SetSelectedSquare(Point),
     GameAction(GameAction),
     SetTerminalSize(Bounds),

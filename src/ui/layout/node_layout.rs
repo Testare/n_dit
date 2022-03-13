@@ -1,4 +1,4 @@
-use super::super::{render, ClickTarget, NodeCt, SuperState, UiAction, Window};
+use super::super::{render, ClickTarget, NodeCt, SuperState, UiAction, Window, NodeUiState};
 use super::SubLayout;
 use crate::{Bounds, Direction, Point};
 use crossterm::queue;
@@ -16,8 +16,8 @@ pub enum NodeLayout {
 }
 
 impl SubLayout for NodeLayout {
-    unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
-        self.layout().action_for_char_pt(state, pt)
+    fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
+        self.layout_mut().apply_action(ui_action, node_ui)
     }
 
     fn scroll_to_pt(&mut self, pt: Point) {
@@ -154,42 +154,18 @@ impl StandardNodeLayout {
 }
 
 impl SubLayout for StandardNodeLayout {
-    // TODO Should probably have node_ui determine UI actions for clicks as well, with help from
-    // the layout.
-    /// Unsafe: Only use when the state.game_state().node().is_some() is true, otherwise this
-    /// will panic
-    unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
-        // TODO change logic for eager layout math and adjust for scrolling
-        let (available_width, available_height) = state.terminal_size();
-        if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
-            return None;
-        }
-        let height = cmp::min(available_height, self.get_max_height());
-        let width = cmp::min(available_width, self.get_max_width());
-        let include_title = height >= Self::MIN_HEIGHT_FOR_TITLE;
-
-        let top = if include_title { 3 } else { 1 };
-        let left = 13;
-        if pt.0 >= left && pt.0 < width && pt.1 >= top && pt.1 < height {
-            let (sx, sy) = self.scroll;
-            let y = (pt.1 + sy - top) / 2;
-            let x = (pt.0 + sx - left) / 3;
-            if state
-                .game_state()
-                .node()
-                .unwrap()
-                .bounds()
-                .contains_pt((x, y))
-            {
-                Some(UiAction::set_selected_square((x, y)))
-            } else {
-                None
-            }
-        } else {
-            None
+    fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
+        let scroll_to_pt = match ui_action {
+            UiAction::MoveSelectedSquare{..} => {
+                Some(node_ui.expect("Node UI should exist if we're using Node Layout").selected_square())
+            },
+            UiAction::SetSelectedSquare(pt) => Some(*pt),
+            _ => None
+        };
+        if let Some(pt) = scroll_to_pt {
+            self.scroll_to_pt(pt);
         }
     }
-
     /// If the square in the node at this point isn't fully rendered, scroll until it is
     fn scroll_to_pt(&mut self, pt: Point) {
         if let Some(fields) = self.calculated_fields {

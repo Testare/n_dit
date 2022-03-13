@@ -1,5 +1,5 @@
 use super::super::{Bounds, GameState, Point};
-use super::{ClickTarget, SuperState, UiAction, UiView};
+use super::{ClickTarget, SuperState, UiAction, UiView, NodeUiState};
 
 mod node_layout;
 
@@ -9,9 +9,9 @@ use node_layout::{NodeLayout, StandardNodeLayout};
 // TODO DrawConfiguration determines NodeLayout used?
 
 trait SubLayout {
+    fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>);
     unsafe fn render(&self, state: &SuperState) -> std::io::Result<bool>;
     fn scroll_to_pt(&mut self, pt: Point);
-    unsafe fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction>;
     fn resize(&mut self, terminal_size: Bounds) -> bool;
     fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget>;
     // fn can_be_rendered
@@ -29,6 +29,11 @@ pub struct Layout {
 }
 
 impl Layout {
+
+    pub fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
+        self.node_layout.apply_action(ui_action, node_ui);
+    }
+
     pub fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
         if state.game.node().is_some() {
             self.node_layout.click_target(state, pt)
@@ -68,15 +73,6 @@ impl Layout {
         }
     }
 
-    pub fn action_for_char_pt(&self, state: &SuperState, pt: Point) -> Option<UiAction> {
-        if state.game.node().is_some() {
-            // It should be safe, we have verified a node exists
-            unsafe { self.node_layout.action_for_char_pt(state, pt) }
-        } else {
-            unimplemented!("TODO World map not implemented")
-        }
-    }
-
     pub fn resize(&mut self, bounds: Bounds) {
         self.node_layout.resize(bounds);
     }
@@ -84,7 +80,7 @@ impl Layout {
 
 // Will likely be used later when I figure out how to handle multiple layouts.
 mod too_small_layout {
-    use super::{ClickTarget, SubLayout};
+    use super::{ClickTarget, SubLayout, NodeUiState};
     use crate::{Bounds, Point, SuperState, UiAction};
     use crossterm::execute;
     use std::io::stdout;
@@ -108,9 +104,6 @@ mod too_small_layout {
         }
 
         fn scroll_to_pt(&mut self, _pt: Point) {}
-        unsafe fn action_for_char_pt(&self, _state: &SuperState, _pt: Point) -> Option<UiAction> {
-            None
-        }
 
         fn resize(&mut self, terminal_size: Bounds) -> bool {
             self.0 = terminal_size;
@@ -120,5 +113,7 @@ mod too_small_layout {
         fn click_target(&self, _: &SuperState, _: Point) -> Option<ClickTarget> {
             None
         }
+
+        fn apply_action(&mut self, _: &UiAction, _: Option<&NodeUiState>) {}
     }
 }

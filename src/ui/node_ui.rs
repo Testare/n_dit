@@ -1,4 +1,3 @@
-use super::layout::Layout;
 use super::NodeCt;
 use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
@@ -63,7 +62,6 @@ impl NodeUiState {
         direction: Direction,
         speed: usize,
         range_limit: Option<PointSet>,
-        layout: &mut Layout, // TODO have layout have its own listener so we don't need this
     ) {
         let new_pt = direction.add_to_point(self.selected_square(), speed, node.bounds());
         if let Some(point_set) = range_limit {
@@ -72,7 +70,6 @@ impl NodeUiState {
             }
         }
         self.set_selected_square(new_pt, node);
-        layout.scroll_node_to_pt(new_pt);
     }
 
     pub fn ui_action_for_click_target(
@@ -207,8 +204,7 @@ impl NodeUiState {
     pub fn apply_action(
         &mut self,
         node: &Node,
-        layout: &mut Layout,
-        ui_action: UiAction,
+        ui_action: &UiAction,
     ) -> Result<(), String> {
         match ui_action {
             UiAction::ConfirmSelection => {
@@ -318,11 +314,11 @@ impl NodeUiState {
                         node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
                     });
                 debug!("Moving selected square {:?} by {}", direction, speed);
-                self.move_selected_square(node, direction, speed, range_limit, layout);
+                self.move_selected_square(node, *direction, *speed, range_limit);
                 Ok(())
             }
             UiAction::SetSelectedSquare(pt) => {
-                self.set_selected_square(pt, node);
+                self.set_selected_square(*pt, node);
                 Ok(())
             }
             UiAction::GameAction(GameAction::ActivateSprite(_sprite_key)) => {
