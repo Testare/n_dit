@@ -1,4 +1,4 @@
-use super::{DrawConfiguration, Layout, NodeUiState, UserInput};
+use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
 use crate::{Bounds, Direction, GameAction, GameState, Node, Point};
 use getset::{CopyGetters, Getters};
 
@@ -53,12 +53,20 @@ impl SuperState {
         }
     }
 
-    pub fn action_for_char_pt(&self, pt: Point, in_animation: bool) -> Option<UiAction> {
-        let ct = self.layout.click_target(self, pt);
+    pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Option<UiAction> {
+        let ct = self.layout.click_target(self, pt)?;
         log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
-        self.layout
-            .action_for_char_pt(self, pt)
-            .filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)
+        let ui_action = match ct {
+            ClickTarget::Node(node_ct) => self.node_ui().unwrap().ui_action_for_click_target(
+                self.game
+                    .node()
+                    .expect("Node click target whe nnode is not present"),
+                node_ct,
+                alt,
+            ),
+            _ => None,
+        };
+        ui_action.filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)
     }
 
     pub fn draw_config(&self) -> &DrawConfiguration {
@@ -108,7 +116,8 @@ impl SuperState {
             UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
-            UserInput::Click(pt) => self.action_for_char_pt(pt, in_animation),
+            UserInput::Click(pt) => self.action_for_char_pt(pt, false, in_animation),
+            UserInput::AltClick(pt) => self.action_for_char_pt(pt, true, in_animation),
             UserInput::Next => Some(UiAction::next()).filter(|_| in_animation),
             _ => {
                 if !in_animation {
@@ -124,6 +133,7 @@ impl SuperState {
     }
 
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
+        log::info!("Performing UiAction {:?}", ui_action);
         if let UiAction::GameAction(game_action) = &ui_action {
             self.game.apply_action(game_action)?;
         }
@@ -135,6 +145,8 @@ impl SuperState {
             layout,
             ..
         } = self;
+
+        log::debug!("NodeUI state {:?}", node_ui);
 
         node_ui
             .as_mut()

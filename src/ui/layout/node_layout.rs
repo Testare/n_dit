@@ -171,8 +171,9 @@ impl SubLayout for StandardNodeLayout {
         let top = if include_title { 3 } else { 1 };
         let left = 13;
         if pt.0 >= left && pt.0 < width && pt.1 >= top && pt.1 < height {
-            let y = (pt.1 - top) / 2;
-            let x = (pt.0 - left) / 3;
+            let (sx, sy) = self.scroll;
+            let y = (pt.1 + sy - top) / 2;
+            let x = (pt.0 + sx - left) / 3;
             if state
                 .game_state()
                 .node()
@@ -312,6 +313,7 @@ impl SubLayout for StandardNodeLayout {
     }
 
     fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
+        // TODO change logic for eager layout math
         let (available_width, available_height) = state.terminal_size();
         if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
             return None;
@@ -322,17 +324,30 @@ impl SubLayout for StandardNodeLayout {
 
         let top = if include_title { 3 } else { 1 };
         let left = 13;
-        if pt.0 >= left && pt.0 < width && pt.1 >= top && pt.1 < height {
-            let y = (pt.1 - top) / 2;
-            let x = (pt.0 - left) / 3;
-            if state
-                .game_state()
-                .node()
-                .unwrap()
-                .bounds()
-                .contains_pt((x, y))
-            {
-                Some(NodeCt::Grid((x, y)).into())
+        if pt.1 >= top && pt.1 < height {
+            if pt.0 > 0 && pt.0 < left {
+                Some(NodeCt::ActionMenu(pt.1 - top).into())
+            } else if pt.0 < width {
+                let (sx, sy) = self.scroll;
+                let y = (pt.1 + sy - top) / 2;
+                let x = (pt.0 + sx - left) / 3;
+                log::debug!(
+                    "Scroll: {:?} / pt: {:?} / calculated grid_pt: {:?}",
+                    self.scroll,
+                    pt,
+                    (x, y)
+                );
+                if state
+                    .game_state()
+                    .node()
+                    .unwrap()
+                    .bounds()
+                    .contains_pt((x, y))
+                {
+                    Some(NodeCt::Grid((x, y)).into())
+                } else {
+                    None
+                }
             } else {
                 None
             }

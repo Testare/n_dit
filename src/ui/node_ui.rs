@@ -1,4 +1,5 @@
 use super::layout::Layout;
+use super::NodeCt;
 use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
@@ -9,7 +10,6 @@ pub struct NodeUiState {
     focus: NodeFocus,
     phase: NodePhase,
     #[get_copy = "pub"]
-    #[set = "pub(super)"]
     selected_square: Point,
 }
 
@@ -46,13 +46,24 @@ enum NodePhase {
 }
 
 impl NodeUiState {
+    fn set_selected_square(&mut self, pt: Point, node: &Node) {
+        self.selected_square = pt;
+
+        if let NodePhase::FreeSelect {
+            selected_sprite_key,
+            ..
+        } = &mut self.phase
+        {
+            *selected_sprite_key = node.with_sprite_at(pt, |sprite| sprite.key());
+        }
+    }
     fn move_selected_square(
         &mut self,
         node: &Node,
         direction: Direction,
         speed: usize,
         range_limit: Option<PointSet>,
-        layout: &mut Layout,
+        layout: &mut Layout, // TODO have layout have its own listener so we don't need this
     ) {
         let new_pt = direction.add_to_point(self.selected_square(), speed, node.bounds());
         if let Some(point_set) = range_limit {
@@ -60,16 +71,71 @@ impl NodeUiState {
                 return;
             }
         }
-        self.set_selected_square(new_pt);
-
-        if let NodePhase::FreeSelect {
-            selected_sprite_key,
-            ..
-        } = &mut self.phase
-        {
-            *selected_sprite_key = node.with_sprite_at(new_pt, |sprite| sprite.key());
-        }
+        self.set_selected_square(new_pt, node);
         layout.scroll_node_to_pt(new_pt);
+    }
+
+    pub fn ui_action_for_click_target(
+        &self,
+        node: &Node,
+        click_target: NodeCt,
+        alt: bool,
+    ) -> Option<UiAction> {
+        match click_target {
+            NodeCt::Grid(pt) => {
+                match self.phase {
+                    NodePhase::FreeSelect { .. } => {
+                        if alt {
+                            let sprite_key_opt: Option<usize> = node.with_sprite_at(pt, |sprite| {
+                                if sprite.team() == node.active_team() {
+                                    Some(sprite.key())
+                                } else {
+                                    None
+                                }
+                            });
+
+                            if let Some(sprite_key) = sprite_key_opt {
+                                return Some(UiAction::activate_sprite(sprite_key));
+                            }
+                        }
+                        Some(UiAction::set_selected_square(pt))
+                    }
+                    NodePhase::MoveSprite { .. } => {
+                        // Calculate the directions necessary
+                        // TODO Rethink logic for if the square clicked on is too far away.
+                        // Options:
+                        // * Pathfinding to square?
+                        // * Move one square, but do conditional checked for blocked paths (I.E. If you click NW, and North is blocked, go West)
+
+                        let sprite_head = node
+                            .with_active_sprite(|sprite| sprite.head())
+                            .expect("Move sprite state without active sprite");
+                        let dirs = if sprite_head.1 > pt.1 {
+                            vec![Direction::North]
+                        } else if sprite_head.0 < pt.0 {
+                            vec![Direction::East]
+                        } else if sprite_head.1 < pt.1 {
+                            vec![Direction::South]
+                        } else if sprite_head.0 > pt.0 {
+                            vec![Direction::West]
+                        } else {
+                            return None;
+                        };
+                        Some(UiAction::GameAction(GameAction::move_active_sprite(dirs)))
+                    }
+                    NodePhase::SpriteAction {
+                        selected_action_index,
+                        ..
+                    } => Some(UiAction::perform_sprite_action(selected_action_index, pt)),
+                }
+            }
+            NodeCt::ActionMenu(_row) => {
+                unimplemented!("Action menu interface not yet implemented")
+            }
+            _ => {
+                unimplemented!("Node click target not implemented yet")
+            }
+        }
     }
 
     pub fn ui_action_for_input(&self, node: &Node, user_input: UserInput) -> Option<UiAction> {
@@ -225,7 +291,7 @@ impl NodeUiState {
                                     .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?;
                                 if moves != 0 {
                                     self.phase.transition_to_move_sprite(node)?;
-                                    self.set_selected_square(head_pt);
+                                    self.set_selected_square(head_pt, node);
                                     self.clear_selected_action_index();
                                 }
                             }
@@ -256,7 +322,7 @@ impl NodeUiState {
                 Ok(())
             }
             UiAction::SetSelectedSquare(pt) => {
-                self.set_selected_square(pt);
+                self.set_selected_square(pt, node);
                 Ok(())
             }
             UiAction::GameAction(GameAction::ActivateSprite(_sprite_key)) => {
@@ -264,11 +330,10 @@ impl NodeUiState {
                 // This means if we try to activate unsuccessfully, selected square will go to
                 // active sprite
                 // ...But is this a bug or a feature?
-
                 if let Some((moves, actions, head)) = node.with_active_sprite(|sprite| {
                     (sprite.moves(), sprite.actions().len(), sprite.head())
                 }) {
-                    self.set_selected_square(head);
+                    self.set_selected_square(head, node);
                     if moves != 0 {
                         self.phase.transition_to_move_sprite(node)?;
                     } else if actions != 0 {
@@ -289,7 +354,7 @@ impl NodeUiState {
                 if let Some((remaining_moves, head, is_tapped)) = node
                     .with_active_sprite(|sprite| (sprite.moves(), sprite.head(), sprite.tapped()))
                 {
-                    self.set_selected_square(head);
+                    self.set_selected_square(head, node);
                     if remaining_moves == 0 && !is_tapped && self.selected_action_index().is_none()
                     {
                         // Sprite is still active, must still have some moves
@@ -412,10 +477,10 @@ impl NodePhase {
             *self = match self {
                 NodePhase::FreeSelect {
                     selected_action_index,
-                    selected_sprite_key: Some(selected_sprite_key),
+                    ..
                 } => Ok::<_, String>(NodePhase::MoveSprite {
                     selected_action_index: *selected_action_index,
-                    selected_sprite_key: *selected_sprite_key,
+                    selected_sprite_key: node.active_sprite_key().unwrap(),
                     undo_state: Rc::new(node.create_restore_point()),
                 }),
                 NodePhase::SpriteAction {
@@ -427,7 +492,9 @@ impl NodePhase {
                     selected_action_index: None,
                     undo_state: undo_state.clone(),
                 }),
-                _ => unimplemented!("Implement!"),
+                _ => panic!(
+                    "Unreachable arm case hit when transitioning to MoveSprite phase in NodeUi"
+                ),
             }?;
             Ok(())
         }
