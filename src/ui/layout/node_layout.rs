@@ -1,4 +1,4 @@
-use super::super::{render, ClickTarget, NodeCt, SuperState, UiAction, Window, NodeUiState};
+use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
 use super::SubLayout;
 use crate::{Bounds, Direction, Point};
 use crossterm::queue;
@@ -156,11 +156,13 @@ impl StandardNodeLayout {
 impl SubLayout for StandardNodeLayout {
     fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
         let scroll_to_pt = match ui_action {
-            UiAction::MoveSelectedSquare{..} => {
-                Some(node_ui.expect("Node UI should exist if we're using Node Layout").selected_square())
-            },
+            UiAction::MoveSelectedSquare { .. } => Some(
+                node_ui
+                    .expect("Node UI should exist if we're using Node Layout")
+                    .selected_square(),
+            ),
             UiAction::SetSelectedSquare(pt) => Some(*pt),
-            _ => None
+            _ => None,
         };
         if let Some(pt) = scroll_to_pt {
             self.scroll_to_pt(pt);

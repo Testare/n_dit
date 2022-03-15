@@ -5,11 +5,11 @@
 //! * [grid_map] contains the GridMap struct, which is a generic collection type struct, that is
 //! built with a specific purpose in mind.
 //! * [game] contains the core game logic: How the player's moves affect the world, the different
-//! states, the map, etc. 
+//! states, the map, etc.
 //! * [ui] is the package that contains logic for how the player interfaces with the game. We plan
 //! of there being several options here (CLI and terminal at least, and potentially GUI later).
 //! Should contain absolutely no logic for how the game state is mutated.
-//! 
+//!
 //! In the future, some of these will probably be separated into specific crates to avoid
 //! unintentional coupling. As the code is updated, this decoupling should be ensured as much as
 //! possible. The [ui] mod might also be separated into different crates for different interfaces.
@@ -27,7 +27,6 @@
 //!
 //! [\[1\]]: https://github.com/rust-lang/rust/issues/5472
 //! [mermaid.js]: https://mermaid-js.github.io/
-
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
 ///
@@ -50,8 +49,7 @@
 ///     ui->>user: Displays results to user
 ///```
 ///
-pub mod hld {
-}
+pub mod hld {}
 
 #[macro_use]
 extern crate lazy_static;

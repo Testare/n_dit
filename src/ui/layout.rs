@@ -1,5 +1,5 @@
 use super::super::{Bounds, GameState, Point};
-use super::{ClickTarget, SuperState, UiAction, UiView, NodeUiState};
+use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView};
 
 mod node_layout;
 
@@ -29,7 +29,6 @@ pub struct Layout {
 }
 
 impl Layout {
-
     pub fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
         self.node_layout.apply_action(ui_action, node_ui);
     }
@@ -80,7 +79,7 @@ impl Layout {
 
 // Will likely be used later when I figure out how to handle multiple layouts.
 mod too_small_layout {
-    use super::{ClickTarget, SubLayout, NodeUiState};
+    use super::{ClickTarget, NodeUiState, SubLayout};
     use crate::{Bounds, Point, SuperState, UiAction};
     use crossterm::execute;
     use std::io::stdout;

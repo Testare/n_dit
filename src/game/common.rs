@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::collections::HashSet;
-use std::ops::BitOr;
+use std::ops::{Add, BitOr};
 
 pub type Point = (usize, usize);
 
@@ -128,6 +128,19 @@ impl Direction {
                     (point.0 - speed, point.1)
                 }
             }
+        }
+    }
+}
+
+impl Add<Direction> for Point {
+    type Output = Option<Point>;
+
+    fn add(self: Point, rhs: Direction) -> Self::Output {
+        match rhs {
+            Direction::North => self.1.checked_sub(1).map(|y| (self.0, y)),
+            Direction::East => Some((self.0 + 1, self.1)),
+            Direction::South => Some((self.0, self.1 + 1)),
+            Direction::West => self.0.checked_sub(1).map(|x| (x, self.1)),
         }
     }
 }

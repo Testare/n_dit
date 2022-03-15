@@ -26,8 +26,6 @@ enum NodePhase {
         selected_sprite_index: usize,
         selected_action_index: Option<usize>,
     }, */
-    /* TODO Enemy Turn?
-    EnemyTurn,*/
     FreeSelect {
         selected_sprite_key: Option<usize>,
         selected_action_index: Option<usize>,
@@ -107,18 +105,31 @@ impl NodeUiState {
                         let sprite_head = node
                             .with_active_sprite(|sprite| sprite.head())
                             .expect("Move sprite state without active sprite");
-                        let dirs = if sprite_head.1 > pt.1 {
-                            vec![Direction::North]
-                        } else if sprite_head.0 < pt.0 {
-                            vec![Direction::East]
-                        } else if sprite_head.1 < pt.1 {
-                            vec![Direction::South]
-                        } else if sprite_head.0 > pt.0 {
-                            vec![Direction::West]
-                        } else {
-                            return None;
-                        };
-                        Some(UiAction::GameAction(GameAction::move_active_sprite(dirs)))
+                        let mut dirs = Vec::new();
+                        if sprite_head.1 > pt.1 {
+                            dirs.push(Direction::North);
+                        }
+                        if sprite_head.0 < pt.0 {
+                            dirs.push(Direction::East);
+                        }
+                        if sprite_head.1 < pt.1 {
+                            dirs.push(Direction::South);
+                        }
+                        if sprite_head.0 > pt.0 {
+                            dirs.push(Direction::West);
+                        }
+                        dirs.into_iter().find_map(|dir| {
+                            if node
+                                .with_active_sprite(|sprite| sprite.can_move(dir))
+                                .unwrap()
+                            {
+                                Some(UiAction::GameAction(GameAction::move_active_sprite(vec![
+                                    dir,
+                                ])))
+                            } else {
+                                None
+                            }
+                        })
                     }
                     NodePhase::SpriteAction {
                         selected_action_index,
@@ -201,11 +212,7 @@ impl NodeUiState {
         }
     }
 
-    pub fn apply_action(
-        &mut self,
-        node: &Node,
-        ui_action: &UiAction,
-    ) -> Result<(), String> {
+    pub fn apply_action(&mut self, node: &Node, ui_action: &UiAction) -> Result<(), String> {
         match ui_action {
             UiAction::ConfirmSelection => {
                 if self.focus == NodeFocus::ActionMenu {

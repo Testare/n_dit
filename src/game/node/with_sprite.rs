@@ -161,6 +161,23 @@ impl<'a> WithSpriteMut<'a> {
 }
 
 impl<'a> WithSprite<'a> {
+    pub fn can_move(self, dir: Direction) -> bool {
+        if let Some(next_pt) = self.head() + dir {
+            let grid = self.node.grid();
+            if grid.square_is_free(next_pt) {
+                return true;
+            }
+            if grid.item_key_at(next_pt) == Some(self.sprite_key) {
+                return true;
+            }
+            // Might involve more involved checks in the future
+            if matches!(grid.item_at(next_pt), Some(Piece::Pickup(_))) {
+                return true;
+            }
+        }
+        false
+    }
+
     // NOTE maybe this shouldn't be public?
     pub fn actions(&self) -> &Vec<StandardSpriteAction> {
         if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
