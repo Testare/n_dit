@@ -29,6 +29,10 @@ pub struct Layout {
 }
 
 impl Layout {
+
+    pub fn terminal_size(&self) -> Bounds {
+       self.node_layout.terminal_size()
+    }
     pub fn apply_action(&mut self, ui_action: &UiAction, node_ui: Option<&NodeUiState>) {
         self.node_layout.apply_action(ui_action, node_ui);
     }

@@ -38,11 +38,13 @@ impl SubLayout for NodeLayout {
 }
 
 impl NodeLayout {
-    /**
-     * Returns Result(false) if something went wrong displaying the result, such as the terminal is too small
-     * Returns Err(_) if something is wrong with crossterm
-     * Returns Result(true) if successfully rendered
-     */
+
+    pub fn terminal_size(&self) -> Bounds {
+        match self {
+            NodeLayout::Standard(standard_node_layout) => standard_node_layout.terminal_bounds,
+            _ => unimplemented!("Only standard layout has been implemented"),
+        }
+    }
 
     fn layout(&self) -> &dyn SubLayout {
         match self {
@@ -83,9 +85,9 @@ struct StandardNodeLayoutCalculatedFields {
 impl StandardNodeLayout {
     const SQUARE_WIDTH: usize = 3;
     const SQUARE_HEIGHT: usize = 2;
-    const MIN_HEIGHT: usize = 8;
-    const MIN_HEIGHT_FOR_TITLE: usize = 10;
-    const MIN_WIDTH: usize = 18;
+    const MIN_HEIGHT: usize = 10;
+    const MIN_HEIGHT_FOR_TITLE: usize = 12;
+    const MIN_WIDTH: usize = 30;
 
     fn get_max_width(&self) -> usize {
         self.max_width.map(|nzu| nzu.get()).unwrap_or(120) // TODO one place for defaults
@@ -100,6 +102,7 @@ impl StandardNodeLayout {
             || self.terminal_bounds.height() < Self::MIN_HEIGHT
         {
             self.calculated_fields = None;
+            return;
         }
 
         let width = cmp::min(self.terminal_bounds.width(), self.get_max_width());
@@ -109,8 +112,8 @@ impl StandardNodeLayout {
         let map_width = width - menu_width - 5;
         let map_menu_height = height - if include_title { 4 } else { 2 };
         let mut map_window = Window::of(
-            NonZeroUsize::new(map_width).unwrap(), // TODO BUG: Panicked here
-            NonZeroUsize::new(map_menu_height).unwrap(), // TODO BUG: Panicked here
+            NonZeroUsize::new(map_width).unwrap(),
+            NonZeroUsize::new(map_menu_height).unwrap(),
         );
         map_window.scroll_x = self.scroll.0;
         map_window.scroll_y = self.scroll.1;
@@ -123,7 +126,7 @@ impl StandardNodeLayout {
             map_window,
             menu_width,
             width,
-        })
+        });
     }
 
     pub fn new(
@@ -192,6 +195,11 @@ impl SubLayout for StandardNodeLayout {
         }
     }
 
+    /**
+     * Returns Result(false) if something went wrong displaying the result, such as the terminal is too small
+     * Returns Err(_) if something is wrong with crossterm
+     * Returns Result(true) if successfully rendered
+     */
     /// ## Safety
     ///
     /// Assumes game_state.node().is_some()
@@ -292,7 +300,7 @@ impl SubLayout for StandardNodeLayout {
 
     fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
         // TODO change logic for eager layout math
-        let (available_width, available_height) = state.terminal_size();
+        let Bounds(available_width, available_height) = state.terminal_size();
         if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
             return None;
         }

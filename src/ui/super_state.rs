@@ -8,7 +8,6 @@ pub struct SuperState {
     pub game: GameState,
     layout: Layout,
     draw_config: DrawConfiguration,
-    terminal_size: (usize, usize),
     #[get_copy = "pub"]
     view: UiView,
     node_ui: Option<NodeUiState>,
@@ -48,7 +47,6 @@ impl SuperState {
             game: GameState::from(node),
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
-            terminal_size: (t_width.into(), t_height.into()), // TODO Is this used?
             view: UiView::Node,
         }
     }
@@ -74,13 +72,9 @@ impl SuperState {
     }
 
     // TODO remove from SuperState when Layout can handle it by itself
-    pub fn terminal_size(&self) -> (usize, usize) {
-        self.terminal_size
-    }
-
-    pub fn set_terminal_size(&mut self, bounds: (usize, usize)) {
-        // TODO use Layout, trigger recalculations, or use UiAction
-        self.terminal_size = bounds;
+    pub fn terminal_size(&self) -> Bounds {
+        // self.terminal_size
+        self.layout.terminal_size()
     }
 
     pub fn selected_square(&self) -> Point {
@@ -138,7 +132,6 @@ impl SuperState {
             self.game.apply_action(game_action)?;
         }
 
-        // TODO after ui action is refactored to properly separate game actions, move this below the match statement and remove clone
         let SuperState {
             game,
             node_ui,

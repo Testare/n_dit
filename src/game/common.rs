@@ -62,7 +62,7 @@ impl PointSet {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Bounds(usize, usize);
+pub struct Bounds(pub usize, pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Direction {
