@@ -38,7 +38,6 @@ impl SubLayout for NodeLayout {
 }
 
 impl NodeLayout {
-
     pub fn terminal_size(&self) -> Bounds {
         match self {
             NodeLayout::Standard(standard_node_layout) => standard_node_layout.terminal_bounds,

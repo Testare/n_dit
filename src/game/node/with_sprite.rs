@@ -1,77 +1,34 @@
 use super::Node;
 use crate::{Direction, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
-use std::{cmp, num::NonZeroUsize};
+use std::{cmp, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
 const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
 
-pub struct WithSpriteMut<'a> {
-    node: &'a mut Node,
+pub struct WithSpriteGeneric<N: Deref<Target = Node>> {
+    node: N,
     sprite_key: usize,
 }
 
-pub struct WithSprite<'a> {
-    node: &'a Node,
-    sprite_key: usize,
-}
+pub type WithSprite<'a> = WithSpriteGeneric<&'a Node>;
+pub type WithSpriteMut<'a> = WithSpriteGeneric<&'a mut Node>;
 
-impl<'a> WithSpriteMut<'a> {
-    pub fn head(&self) -> Point {
-        self.node
+impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
+    /// Returns internal sprite data struct
+    fn sprite(&self) -> &Sprite {
+        if let Piece::Program(sprite) = self
+            .node
             .grid()
-            .head(self.sprite_key)
+            .item(self.sprite_key)
             .expect(SPRITE_KEY_IS_VALID)
-    }
-
-    pub fn size(&self) -> usize {
-        self.node.grid().len_of(self.sprite_key)
-    }
-
-    pub fn moves(&self) -> usize {
-        self.with_sprite(|sprite| sprite.moves())
-    }
-
-    pub fn moves_taken(&self) -> usize {
-        self.with_sprite(|sprite| sprite.moves_taken())
-    }
-
-    pub fn max_size(&self) -> usize {
-        self.with_sprite(|sprite| sprite.max_size())
-    }
-
-    pub fn increase_max_size(&mut self, increase: usize, bound: Option<NonZeroUsize>) -> usize {
-        self.with_sprite_mut(|sprite| {
-            // TODO test this logic
-            let increased_max_size = sprite.max_size() + increase;
-            let bounded_max_size = bound
-                .map(|bnd| cmp::min(increased_max_size, bnd.get()))
-                .unwrap_or(increased_max_size);
-            let final_max_size = cmp::max(bounded_max_size, sprite.max_size());
-
-            sprite.set_max_size(final_max_size);
-            final_max_size
-        })
-    }
-
-    pub fn tapped(&self) -> bool {
-        self.with_sprite(|sprite| sprite.tapped())
-    }
-
-    pub fn tap(&mut self) {
-        self.with_sprite_mut(|sprite| sprite.tap());
-        if self.node.active_sprite_key() == Some(self.sprite_key) {
-            self.node.drop_active_sprite(); // deactivate_sprite();
+        {
+            sprite
+        } else {
+            panic!("{}", SPRITE_KEY_IS_VALID);
         }
     }
 
-    pub fn untap(&mut self) {
-        self.with_sprite_mut(|sprite| sprite.untap());
-    }
-
-    pub fn team(&mut self) -> Team {
-        self.with_sprite(Sprite::team)
-    }
-
     // NOTE maybe this shouldn't be public?
+    /// List of actions the sprite can take
     pub fn actions(&self) -> &Vec<StandardSpriteAction> {
         if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
             sprite.actions()
@@ -80,12 +37,130 @@ impl<'a> WithSpriteMut<'a> {
         }
     }
 
+    /// Tests if the sprite can go in the specified direction, if it is a legal move.
+    ///
+    /// Does not check if the sprite has moves left or is tapped.
+    pub fn can_move(self, dir: Direction) -> bool {
+        if let Some(next_pt) = self.head() + dir {
+            let grid = self.node.grid();
+            if grid.square_is_free(next_pt) {
+                return true;
+            }
+            if grid.item_key_at(next_pt) == Some(self.sprite_key) {
+                return true;
+            }
+            // Might involve more involved checks in the future
+            if matches!(grid.item_at(next_pt), Some(Piece::Pickup(_))) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn size(&self) -> usize {
+        self.node.grid().len_of(self.sprite_key)
+    }
+
+    pub fn max_size(&self) -> usize {
+        self.sprite().max_size()
+    }
+
+    pub fn head(&self) -> Point {
+        self.node
+            .grid()
+            .head(self.sprite_key)
+            .expect(SPRITE_KEY_IS_VALID)
+    }
+
+    pub fn moves(&self) -> usize {
+        self.sprite().moves()
+    }
+
+    pub fn key(&self) -> usize {
+        self.sprite_key
+    }
+
+    pub fn tapped(&self) -> bool {
+        self.sprite().tapped()
+    }
+
+    pub fn untapped(&self) -> bool {
+        self.sprite().untapped()
+    }
+
+    pub fn team(&self) -> Team {
+        self.sprite().team()
+    }
+
+    pub fn range_of_action(&self, action_index: usize) -> Option<PointSet> {
+        let pt = self.head();
+        let bounds = self.node.bounds();
+        let range = self
+            .sprite()
+            .actions()
+            .get(action_index)?
+            .unwrap()
+            .range()?
+            .get();
+        Some(PointSet::range_of_pt(pt, range, bounds))
+        // TODO remove closed squares unless they're a target.
+        /* TODO Perhaps changes PointSet to "TargetSet", with difference
+        // treatment of different points. For example, actions that target enemies
+        // should highlight enemies, or actions that target closed squares. This would probably be best done after we have
+        caching for the action range. In the case of actions that target closed squares, we might
+        even need to draw square borders. A lot of complication might arise here.
+
+        This actually sounds a lot like UI specific action, perhaps "target_points" should be
+        a separate function.*/
+    }
+}
+
+impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
+    /// Internal function to get mutable access to the sprite data
+    fn sprite_mut(&mut self) -> &mut Sprite {
+        if let Some(Piece::Program(sprite)) = self.node.grid_mut().item_mut(self.sprite_key) {
+            sprite
+        } else {
+            panic!("{}", SPRITE_KEY_IS_VALID)
+        }
+    }
+
+    /// Number of moves the sprite has taken since it was last untapped.
+    pub fn moves_taken(&self) -> usize {
+        self.sprite().moves_taken()
+    }
+
+    /// Increases the max size of the sprite
+    pub fn increase_max_size(&mut self, increase: usize, bound: Option<NonZeroUsize>) -> usize {
+        let sprite = self.sprite_mut();
+        // TODO test this logic
+        let increased_max_size = sprite.max_size() + increase;
+        let bounded_max_size = bound
+            .map(|bnd| cmp::min(increased_max_size, bnd.get()))
+            .unwrap_or(increased_max_size);
+        let final_max_size = cmp::max(bounded_max_size, sprite.max_size());
+        sprite.set_max_size(final_max_size);
+        final_max_size
+    }
+
+    /// The sprite finishes its action for this turn.
+    pub fn tap(&mut self) {
+        self.sprite_mut().tap();
+        if self.node.active_sprite_key() == Some(self.sprite_key) {
+            self.node.drop_active_sprite(); // deactivate_sprite();
+        }
+    }
+
+    /// Makes the sprite able to take a turn again (move and take action)
+    pub fn untap(&mut self) {
+        self.sprite_mut().untap();
+    }
+
     /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
-    pub fn take_damage(self, dmg: usize) -> Option<Piece> {
+    pub fn take_damage(mut self, dmg: usize) -> Option<Piece> {
         self.node.grid_mut().pop_back_n(self.sprite_key, dmg)
     }
 
-    // TODO evaluate if we should no longer return remaining moves. Only if we don't return anything from GameState::apply_action
     /// Returns remaining moves
     pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>, String> {
         if self.moves() == 0 || self.tapped() {
@@ -121,10 +196,9 @@ impl<'a> WithSpriteMut<'a> {
             }
             let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);
             if sucessful_movement {
-                remaining_moves = self.with_sprite_mut(|sprite| {
-                    sprite.took_a_move();
-                    sprite.moves()
-                })
+                let sprite = self.sprite_mut();
+                sprite.took_a_move();
+                remaining_moves = sprite.moves();
             }
             if remaining_moves == 0 {
                 break;
@@ -141,120 +215,6 @@ impl<'a> WithSpriteMut<'a> {
             .pop_back_n(self.sprite_key, size.saturating_sub(max_size));
 
         Ok(results)
-    }
-
-    fn with_sprite<R, F: FnOnce(&Sprite) -> R>(&self, sprite_op: F) -> R {
-        if let Some(Piece::Program(sprite)) = self.node.grid().item(self.sprite_key) {
-            sprite_op(sprite)
-        } else {
-            panic!("{}", SPRITE_KEY_IS_VALID)
-        }
-    }
-
-    fn with_sprite_mut<R, F: FnOnce(&mut Sprite) -> R>(&mut self, sprite_op: F) -> R {
-        if let Some(Piece::Program(sprite)) = self.node.grid_mut().item_mut(self.sprite_key) {
-            sprite_op(sprite)
-        } else {
-            panic!("{}", SPRITE_KEY_IS_VALID)
-        }
-    }
-}
-
-impl<'a> WithSprite<'a> {
-    pub fn can_move(self, dir: Direction) -> bool {
-        if let Some(next_pt) = self.head() + dir {
-            let grid = self.node.grid();
-            if grid.square_is_free(next_pt) {
-                return true;
-            }
-            if grid.item_key_at(next_pt) == Some(self.sprite_key) {
-                return true;
-            }
-            // Might involve more involved checks in the future
-            if matches!(grid.item_at(next_pt), Some(Piece::Pickup(_))) {
-                return true;
-            }
-        }
-        false
-    }
-
-    // NOTE maybe this shouldn't be public?
-    pub fn actions(&self) -> &Vec<StandardSpriteAction> {
-        if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
-            sprite.actions()
-        } else {
-            panic!("{}", SPRITE_KEY_IS_VALID);
-        }
-    }
-
-    pub fn size(&self) -> usize {
-        self.node.grid().len_of(self.sprite_key)
-    }
-
-    pub fn max_size(&self) -> usize {
-        self.sprite().max_size()
-    }
-
-    pub fn head(&self) -> Point {
-        self.node
-            .grid()
-            .head(self.sprite_key)
-            .expect(SPRITE_KEY_IS_VALID)
-    }
-
-    pub fn moves(&self) -> usize {
-        self.sprite().moves()
-    }
-
-    pub fn key(&self) -> usize {
-        self.sprite_key
-    }
-
-    fn sprite(&self) -> &Sprite {
-        if let Piece::Program(sprite) = self
-            .node
-            .grid()
-            .item(self.sprite_key)
-            .expect(SPRITE_KEY_IS_VALID)
-        {
-            sprite
-        } else {
-            panic!("{}", SPRITE_KEY_IS_VALID);
-        }
-    }
-
-    pub fn tapped(&self) -> bool {
-        self.sprite().tapped()
-    }
-
-    pub fn untapped(&self) -> bool {
-        self.sprite().untapped()
-    }
-
-    pub fn team(&self) -> Team {
-        self.sprite().team()
-    }
-
-    pub fn range_of_action(&self, action_index: usize) -> Option<PointSet> {
-        let pt = self.head();
-        let bounds = self.node.bounds();
-        let range = self
-            .sprite()
-            .actions()
-            .get(action_index)?
-            .unwrap()
-            .range()?
-            .get();
-        Some(PointSet::range_of_pt(pt, range, bounds))
-        // TODO remove closed squares unless they're a target.
-        /* TODO Perhaps changes PointSet to "TargetSet", with difference
-        // treatment of different points. For example, actions that target enemies
-        // should highlight enemies, or actions that target closed squares. This would probably be best done after we have
-        caching for the action range. In the case of actions that target closed squares, we might
-        even need to draw square borders. A lot of complication might arise here.
-
-        This actually sounds a lot like UI specific action, perhaps "target_points" should be
-        a separate function.*/
     }
 }
 
