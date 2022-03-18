@@ -772,37 +772,37 @@ mod test {
         map.open_square(occupied_square);
         map.put_item(occupied_square, "test");
 
-        assert_eq!(false, map.square_is_open(closed_square));
-        assert_eq!(true, map.square_is_open(free_square));
-        assert_eq!(true, map.square_is_open(occupied_square));
+        assert!(!map.square_is_open(closed_square));
+        assert!(map.square_is_open(free_square));
+        assert!(map.square_is_open(occupied_square));
 
-        assert_eq!(true, map.square_is_closed(closed_square));
-        assert_eq!(false, map.square_is_closed(free_square));
-        assert_eq!(false, map.square_is_closed(occupied_square));
+        assert!(map.square_is_closed(closed_square));
+        assert!(!map.square_is_closed(free_square));
+        assert!(!map.square_is_closed(occupied_square));
 
-        assert_eq!(false, map.square_is_free(closed_square));
-        assert_eq!(true, map.square_is_free(free_square));
-        assert_eq!(false, map.square_is_free(occupied_square));
+        assert!(!map.square_is_free(closed_square));
+        assert!(map.square_is_free(free_square));
+        assert!(!map.square_is_free(occupied_square));
 
-        assert_eq!(true, map.square_is_blocked(closed_square));
-        assert_eq!(false, map.square_is_blocked(free_square));
-        assert_eq!(true, map.square_is_blocked(occupied_square));
+        assert!(map.square_is_blocked(closed_square));
+        assert!(!map.square_is_blocked(free_square));
+        assert!(map.square_is_blocked(occupied_square));
 
-        assert_eq!(true, map.square_is_empty(closed_square));
-        assert_eq!(true, map.square_is_empty(free_square));
-        assert_eq!(false, map.square_is_empty(occupied_square));
+        assert!(map.square_is_empty(closed_square));
+        assert!(map.square_is_empty(free_square));
+        assert!(!map.square_is_empty(occupied_square));
 
-        assert_eq!(false, map.square_is_occupied(closed_square));
-        assert_eq!(false, map.square_is_occupied(free_square));
-        assert_eq!(true, map.square_is_occupied(occupied_square));
+        assert!(!map.square_is_occupied(closed_square));
+        assert!(!map.square_is_occupied(free_square));
+        assert!(map.square_is_occupied(occupied_square));
 
         // Out of bounds is always false
-        assert_eq!(false, map.square_is_open(out_of_bounds));
-        assert_eq!(false, map.square_is_closed(out_of_bounds));
-        assert_eq!(false, map.square_is_free(out_of_bounds));
-        assert_eq!(false, map.square_is_blocked(out_of_bounds));
-        assert_eq!(false, map.square_is_empty(out_of_bounds));
-        assert_eq!(false, map.square_is_occupied(out_of_bounds));
+        assert!(!map.square_is_open(out_of_bounds));
+        assert!(!map.square_is_closed(out_of_bounds));
+        assert!(!map.square_is_free(out_of_bounds));
+        assert!(!map.square_is_blocked(out_of_bounds));
+        assert!(!map.square_is_empty(out_of_bounds));
+        assert!(!map.square_is_occupied(out_of_bounds));
     }
 
     #[test]
@@ -1085,10 +1085,10 @@ mod test {
     fn from_bit_map() {
         let map = GridMap::<String>::from(vec![vec![false, true], vec![false, true]]);
 
-        assert_eq!(true, map.square_is_closed((0, 0)));
-        assert_eq!(true, map.square_is_closed((1, 0)));
-        assert_eq!(true, map.square_is_open((0, 1)));
-        assert_eq!(true, map.square_is_open((1, 1)));
+        assert!(map.square_is_closed((0, 0)));
+        assert!(map.square_is_closed((1, 0)));
+        assert!(map.square_is_open((0, 1)));
+        assert!(map.square_is_open((1, 1)));
     }
 
     #[test]
