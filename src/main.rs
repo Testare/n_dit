@@ -156,17 +156,16 @@ fn load_state() -> SuperState {
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;
-    let mut last_action = Instant::now();
-    state.render()?;
+    let mut last_action;
+    // state.render()?;
     while keep_going {
-        if let Some(action) = get_next_action(&state, last_action)? {
+        last_action = Instant::now();
+        state.render()?;
+        for action in get_next_actions(&state, last_action)? {
             if action.is_quit() {
                 keep_going = false;
             } else {
-                state.apply_action(action).unwrap();
-                //layout.render(&state)?;
-                state.render()?;
-                last_action = Instant::now();
+                state.apply_action(action).unwrap(); // TODO handle this better?
             }
         }
     }
@@ -178,10 +177,7 @@ const MINIMUM_POLLING: Duration = Duration::from_millis(50);
 
 // TODO Could be implemented as an Iterator<Item=Result<UiAction>>, where no-ops are ignored
 // instead of returning None
-fn get_next_action(
-    state: &SuperState,
-    last_update: Instant,
-) -> crossterm::Result<Option<UiAction>> {
+fn get_next_actions(state: &SuperState, last_update: Instant) -> crossterm::Result<Vec<UiAction>> {
     let event = if state.game_state().waiting_on_player_input() {
         // TODO better handling for when keys are held down/ clearing input queue
         crossterm::event::read()?
@@ -192,10 +188,13 @@ fn get_next_action(
         if now + MINIMUM_POLLING < update_time && crossterm::event::poll(update_time - now)? {
             crossterm::event::read()?
         } else {
-            return Ok(Some(UiAction::next()));
+            return Ok(vec![UiAction::next()]);
         }
     };
-    Ok(UserInput::from_event(event).and_then(|user_input| state.ui_action_for_input(user_input)))
+    Ok(UserInput::from_event(event)
+        .into_iter()
+        .flat_map(|user_input| state.ui_actions_for_input(user_input).into_iter())
+        .collect())
 }
 
 // Can set up more advanced CLI support in the future with clap

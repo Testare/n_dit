@@ -70,14 +70,64 @@ impl NodeUiState {
         self.set_selected_square(new_pt, node);
     }
 
-    pub fn ui_action_for_click_target(
+    fn change_focus(&mut self, node: &Node) -> Result<(), String> {
+        match self.focus {
+            NodeFocus::ActionMenu => {
+                match self.phase {
+                    NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
+                    NodePhase::MoveSprite {
+                        selected_sprite_key,
+                        ..
+                    } => {
+                        // TODO To consider: What if the selected square is over another sprite and not the active sprite?
+                        if node
+                            .with_sprite(selected_sprite_key, |sprite| sprite.moves() != 0)
+                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?
+                        {
+                            self.clear_selected_action_index();
+                        }
+                    }
+                    NodePhase::SpriteAction {
+                        selected_sprite_key,
+                        ..
+                    } => {
+                        let (moves, head_pt) = node
+                            .with_sprite(selected_sprite_key, |sprite| (sprite.moves(), sprite.head()))
+                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?;
+                        if moves != 0 {
+                            self.phase.transition_to_move_sprite(node)?;
+                            self.set_selected_square(head_pt, node);
+                            self.clear_selected_action_index();
+                        }
+                    }
+                }
+                self.focus = NodeFocus::Grid;
+            }
+            NodeFocus::Grid => {
+                let selected_sprite_key = node.active_sprite_key().or_else(|| {
+                    node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
+                });
+                if selected_sprite_key.is_some() {
+                    if self.selected_action_index() == None {
+                        self.set_default_selected_action();
+                    }
+                    self.focus = NodeFocus::ActionMenu;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn ui_actions_for_click_target(
         &self,
         node: &Node,
         click_target: NodeCt,
         alt: bool,
-    ) -> Option<UiAction> {
+    ) -> Vec<UiAction> {
         match click_target {
             NodeCt::Grid(pt) => {
+                // TODO If NodeFocus is not on the grid, change it to the grid
+                // TODO If there is a selected action index, clicking on a square should use that action in NodeMove phase
                 match self.phase {
                     NodePhase::FreeSelect { .. } => {
                         if alt {
@@ -90,10 +140,10 @@ impl NodeUiState {
                             });
 
                             if let Some(sprite_key) = sprite_key_opt {
-                                return Some(UiAction::activate_sprite(sprite_key));
+                                return vec![UiAction::activate_sprite(sprite_key)];
                             }
                         }
-                        Some(UiAction::set_selected_square(pt))
+                        vec![UiAction::set_selected_square(pt)]
                     }
                     NodePhase::MoveSprite { .. } => {
                         // Calculate the directions necessary
@@ -118,27 +168,31 @@ impl NodeUiState {
                         if sprite_head.0 > pt.0 {
                             dirs.push(Direction::West);
                         }
-                        dirs.into_iter().find_map(|dir| {
-                            if node
-                                .with_active_sprite(|sprite| sprite.can_move(dir))
-                                .unwrap()
-                            {
-                                Some(UiAction::GameAction(GameAction::move_active_sprite(vec![
-                                    dir,
-                                ])))
-                            } else {
-                                None
-                            }
-                        })
+                        dirs.into_iter()
+                            .find_map(|dir| {
+                                if node
+                                    .with_active_sprite(|sprite| sprite.can_move(dir))
+                                    .unwrap()
+                                {
+                                    Some(UiAction::GameAction(GameAction::move_active_sprite(
+                                        vec![dir],
+                                    )))
+                                } else {
+                                    None
+                                }
+                            })
+                            .into_iter()
+                            .collect()
                     }
                     NodePhase::SpriteAction {
                         selected_action_index,
                         ..
-                    } => Some(UiAction::perform_sprite_action(selected_action_index, pt)),
+                    } => vec![UiAction::perform_sprite_action(selected_action_index, pt)],
                 }
             }
-            NodeCt::ActionMenu(_row) => {
-                unimplemented!("Action menu interface not yet implemented")
+            NodeCt::SpriteActionMenu(sprite_action_index) => {
+                // TODO alt click -> Potentially activate sprite
+                vec![UiAction::set_selected_menu_item(sprite_action_index)]
             }
             _ => {
                 unimplemented!("Node click target not implemented yet")
@@ -146,49 +200,60 @@ impl NodeUiState {
         }
     }
 
-    pub fn ui_action_for_input(&self, node: &Node, user_input: UserInput) -> Option<UiAction> {
+    pub fn ui_action_for_input(&self, node: &Node, user_input: UserInput) -> Vec<UiAction> {
         // TODO Undo
         // TODO Not sure why we don't have node state passed in here
         match self.focus {
             NodeFocus::ActionMenu => {
                 match user_input {
-                    UserInput::Activate => Some(UiAction::confirm_selection()),
+                    UserInput::Activate => match self.phase {
+                        NodePhase::FreeSelect {
+                            selected_sprite_key,
+                            ..
+                        } => {
+                            vec!(
+                                    UiAction::activate_sprite(selected_sprite_key.expect("How do we confirm selection when there is no selected sprite key?")),
+                                    UiAction::confirm_selection(None),
+                                )
+                        }
+                        _ => vec![UiAction::confirm_selection(None)],
+                    },
                     UserInput::Dir(dir) => {
                         if dir.matches(Direction::North | Direction::South) {
-                            Some(UiAction::change_selected_menu_item(dir))
+                            vec![UiAction::change_selected_menu_item(dir)]
                         } else {
-                            None
+                            UiAction::none()
                         }
                     }
-                    UserInput::AltDir(dir) => Some(UiAction::move_selected_square(dir, 1)),
-                    UserInput::Select | UserInput::Back => Some(UiAction::change_selection()),
-                    _ => None, // TODO Undo
+                    UserInput::AltDir(dir) => vec![UiAction::move_selected_square(dir, 1)],
+                    UserInput::Select | UserInput::Back => vec![UiAction::change_selection()],
+                    _ => UiAction::none(), // TODO Undo
                 }
             }
             NodeFocus::Grid => {
                 match user_input {
                     UserInput::Dir(dir) => match self.phase {
-                        NodePhase::MoveSprite { .. } => Some(UiAction::move_active_sprite(dir)),
-                        _ => Some(UiAction::move_selected_square(dir, 1)),
+                        NodePhase::MoveSprite { .. } => vec![UiAction::move_active_sprite(dir)],
+                        _ => vec![UiAction::move_selected_square(dir, 1)],
                     },
                     UserInput::AltDir(dir) => {
                         match self.phase {
                             // When moving, alt will move the selected square
                             NodePhase::MoveSprite { .. } => {
-                                Some(UiAction::move_selected_square(dir, 1))
+                                vec![UiAction::move_selected_square(dir, 1)]
                             }
                             // Otherwise, just increase movement speed
-                            _ => Some(UiAction::move_selected_square(dir, 2)),
+                            _ => vec![UiAction::move_selected_square(dir, 2)],
                         }
                     }
                     UserInput::Activate => match self.phase {
                         NodePhase::SpriteAction {
                             selected_action_index,
                             ..
-                        } => Some(UiAction::perform_sprite_action(
+                        } => vec![UiAction::perform_sprite_action(
                             selected_action_index,
                             self.selected_square(),
-                        )),
+                        )],
                         NodePhase::FreeSelect {
                             selected_sprite_key: Some(sprite_key),
                             ..
@@ -197,16 +262,16 @@ impl NodeUiState {
                                 .with_sprite(sprite_key, |sprite| sprite.untapped())
                                 .unwrap_or(false)
                             {
-                                Some(UiAction::activate_sprite(sprite_key))
+                                vec![UiAction::activate_sprite(sprite_key)]
                             } else {
-                                None
+                                UiAction::none()
                             }
                         }
-                        NodePhase::MoveSprite { .. } => Some(UiAction::deactivate_sprite()), // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
-                        _ => None,
+                        NodePhase::MoveSprite { .. } => vec![UiAction::deactivate_sprite()], // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
+                        _ => UiAction::none(),
                     },
-                    UserInput::Select => Some(UiAction::change_selection()),
-                    _ => None,
+                    UserInput::Select => vec![UiAction::change_selection()],
+                    _ => UiAction::none(),
                 }
             }
         }
@@ -214,14 +279,15 @@ impl NodeUiState {
 
     pub fn apply_action(&mut self, node: &Node, ui_action: &UiAction) -> Result<(), String> {
         match ui_action {
-            UiAction::ConfirmSelection => {
+            UiAction::ConfirmSelection(_index_opt) => {
                 if self.focus == NodeFocus::ActionMenu {
                     match &mut self.phase {
                         NodePhase::FreeSelect {
                             selected_action_index: Some(selected_action_index),
                             selected_sprite_key: Some(selected_sprite_key),
                         } => {
-                            // Need to active the sprite
+                            debug!("HERE");
+                            // FIXME Need to active the sprite
                             self.phase = NodePhase::SpriteAction {
                                 selected_action_index: *selected_action_index,
                                 selected_sprite_key: *selected_sprite_key,
@@ -247,6 +313,25 @@ impl NodeUiState {
                     Err("Confirm what selection?".to_string())
                 }
             }
+            UiAction::SetSelectedMenuItem(idx) => {
+                if self.focus != NodeFocus::ActionMenu
+                    && matches!(self.phase, NodePhase::SpriteAction { .. })
+                {
+                    self.change_focus(node)?
+                }
+                // Might need to think more on this behavior if we're in move/action phase and we're highlighting another piece
+                let selected_sprite_key = node
+                    .active_sprite_key()
+                    .or_else(|| node.with_sprite_at(self.selected_square(), |sprite| sprite.key()))
+                    .unwrap();
+                let num_actions = node
+                    .with_sprite(selected_sprite_key, |sprite| sprite.actions().len()) // TODO method to count actions
+                    .unwrap();
+                if *idx < num_actions {
+                    self.set_selected_action_index(*idx);
+                }
+                Ok(())
+            }
             UiAction::ChangeSelectedMenuItem(dir) => {
                 if self.focus == NodeFocus::ActionMenu {
                     let selected_sprite_key = node
@@ -268,53 +353,7 @@ impl NodeUiState {
                 }
                 Ok(())
             }
-            UiAction::ChangeSelection => {
-                match self.focus {
-                    NodeFocus::ActionMenu => {
-                        match self.phase {
-                            NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
-                            NodePhase::MoveSprite {
-                                selected_sprite_key,
-                                ..
-                            } => {
-                                // TODO To consider: What if the selected square is over another sprite and not the active sprite?
-                                if node
-                                    .with_sprite(selected_sprite_key, |sprite| sprite.moves() != 0)
-                                    .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?
-                                {
-                                    self.clear_selected_action_index();
-                                }
-                            }
-                            NodePhase::SpriteAction {
-                                selected_sprite_key,
-                                ..
-                            } => {
-                                let (moves, head_pt) = node
-                                    .with_sprite(selected_sprite_key, |sprite| (sprite.moves(), sprite.head()))
-                                    .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?;
-                                if moves != 0 {
-                                    self.phase.transition_to_move_sprite(node)?;
-                                    self.set_selected_square(head_pt, node);
-                                    self.clear_selected_action_index();
-                                }
-                            }
-                        }
-                        self.focus = NodeFocus::Grid;
-                    }
-                    NodeFocus::Grid => {
-                        let selected_sprite_key = node.active_sprite_key().or_else(|| {
-                            node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
-                        });
-                        if selected_sprite_key.is_some() {
-                            if self.selected_action_index() == None {
-                                self.set_default_selected_action();
-                            }
-                            self.focus = NodeFocus::ActionMenu;
-                        }
-                    }
-                }
-                Ok(())
-            }
+            UiAction::ChangeSelection => self.change_focus(node),
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit: Option<PointSet> =
                     self.selected_action_index().and_then(|action_index| {

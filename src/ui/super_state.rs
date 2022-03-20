@@ -51,20 +51,25 @@ impl SuperState {
         }
     }
 
-    pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Option<UiAction> {
-        let ct = self.layout.click_target(self, pt)?;
+    pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Vec<UiAction> {
+        let ct = self.layout.click_target(self, pt);
         log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
-        let ui_action = match ct {
-            ClickTarget::Node(node_ct) => self.node_ui().unwrap().ui_action_for_click_target(
-                self.game
-                    .node()
-                    .expect("Node click target whe nnode is not present"),
-                node_ct,
-                alt,
-            ),
-            _ => None,
+        let ui_actions = match ct {
+            Some(ClickTarget::Node(node_ct)) => {
+                self.node_ui().unwrap().ui_actions_for_click_target(
+                    self.game
+                        .node()
+                        .expect("Node click target whe nnode is not present"),
+                    node_ct,
+                    alt,
+                )
+            }
+            _ => Vec::default(),
         };
-        ui_action.filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)
+        ui_actions
+            .into_iter()
+            .filter(|ui_action| !in_animation || *ui_action == UiAction::Quit)
+            .collect()
     }
 
     pub fn draw_config(&self) -> &DrawConfiguration {
@@ -102,25 +107,32 @@ impl SuperState {
         &self.game
     }
 
-    pub fn ui_action_for_input(&self, user_input: UserInput) -> Option<UiAction> {
+    pub fn ui_actions_for_input(&self, user_input: UserInput) -> Vec<UiAction> {
         // TODO Perhaps have a method "is_animation_safe" property to indicate UI actions that can
         // apply even during animations
         let in_animation = self.game.animation().is_some();
         match user_input {
-            UserInput::Quit => Some(UiAction::quit()), // Might be able to just return None here
+            UserInput::Quit => vec![UiAction::quit()], // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
-            UserInput::Resize(bounds) => Some(UiAction::set_terminal_size(bounds)),
+            UserInput::Resize(bounds) => vec![UiAction::set_terminal_size(bounds)],
             UserInput::Click(pt) => self.action_for_char_pt(pt, false, in_animation),
             UserInput::AltClick(pt) => self.action_for_char_pt(pt, true, in_animation),
-            UserInput::Next => Some(UiAction::next()).filter(|_| in_animation),
+            UserInput::Next => {
+                if in_animation {
+                    Vec::new()
+                } else {
+                    vec![UiAction::next()]
+                }
+            }
             _ => {
                 if !in_animation {
                     self.node_ui
                         .as_ref()
                         .zip(self.game.node())
-                        .and_then(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input))
+                        .map(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input))
+                        .unwrap_or_else(UiAction::none)
                 } else {
-                    None
+                    Vec::new()
                 }
             }
         }
@@ -167,14 +179,21 @@ impl SuperState {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum UiAction {
     ChangeSelection,
-    ConfirmSelection,
+    ConfirmSelection(Option<usize>),
+    #[deprecated]
     ChangeSelectedMenuItem(Direction),
-    MoveSelectedSquare { direction: Direction, speed: usize }, // Do we really need this too when we have "SetSelectedSquare"?
+    MoveSelectedSquare {
+        direction: Direction,
+        speed: usize,
+    }, // Do we really need this too when we have "SetSelectedSquare"?
     SetSelectedSquare(Point),
+    SetSelectedMenuItem(usize),
     GameAction(GameAction),
     SetTerminalSize(Bounds),
     Quit,
 }
+
+type UiActions = Vec<UiAction>;
 
 impl UiAction {
     pub fn perform_sprite_action(action_index: usize, pnt: Point) -> UiAction {
@@ -217,15 +236,24 @@ impl UiAction {
         UiAction::GameAction(GameAction::move_active_sprite(vec![dir]))
     }
 
+    #[deprecated]
     pub fn change_selected_menu_item(dir: Direction) -> UiAction {
         UiAction::ChangeSelectedMenuItem(dir)
     }
 
-    pub fn confirm_selection() -> UiAction {
-        UiAction::ConfirmSelection
+    pub fn set_selected_menu_item(index: usize) -> UiAction {
+        UiAction::SetSelectedMenuItem(index)
+    }
+
+    pub fn confirm_selection(index: Option<usize>) -> UiAction {
+        UiAction::ConfirmSelection(index)
     }
 
     pub fn change_selection() -> UiAction {
         UiAction::ChangeSelection
+    }
+
+    pub fn none() -> UiActions {
+        Vec::new()
     }
 }
