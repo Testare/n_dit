@@ -10,6 +10,7 @@ pub enum PointSet {
     Pts(HashSet<Point>),
 }
 
+
 impl PointSet {
     pub fn range_of_pt(pt: Point, range: usize, bounds: Bounds) -> Self {
         PointSet::Range(pt, range, bounds)

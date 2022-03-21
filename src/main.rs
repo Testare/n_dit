@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    game::{Card, Node, Pickup, Piece, Sprite},
+    game::{Card, Node, Pickup, Piece, Sprite, StandardSpriteAction},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
     Team,
@@ -134,6 +134,7 @@ fn load_state() -> SuperState {
             .team(Team::EnemyTeam)
             .display("骨")
             .name("Jackson")
+            .action(StandardSpriteAction::Bite)
             .max_size(4)
             .movement_speed(1)
             .build()

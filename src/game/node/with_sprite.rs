@@ -57,6 +57,7 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
         false
     }
 
+
     pub fn size(&self) -> usize {
         self.node.grid().len_of(self.sprite_key)
     }

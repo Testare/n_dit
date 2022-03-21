@@ -16,9 +16,7 @@ impl GameState {
 
     fn state_check_after_player_action(&mut self) {
         if let Some(node) = self.node_mut() {
-            let enemy_sprites_remaining = node
-                .filtered_sprite_keys(|_, sprite| sprite.team() == Team::EnemyTeam)
-                .len();
+            let enemy_sprites_remaining = node.sprite_keys_for_team(Team::EnemyTeam).len();
             if enemy_sprites_remaining == 0 {
                 panic!("No enemies remain! You win!")
             }

@@ -13,6 +13,7 @@ impl Animation {
                 "next was called for animation, but there is no animation to be called".to_owned(),
             ),
             Some(Animation::EnemyActions(enemy_actions_vec)) => {
+                // TODO Apply Enemy Actions should not be in the animation logic: At very least, in the AI logic
                 let mut enemy_actions_vec_clone = enemy_actions_vec.clone();
                 let node = game.node_mut().ok_or_else(|| {
                     "Enemy AI animation shouldn't occur when there is no Node".to_owned()

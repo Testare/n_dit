@@ -75,7 +75,7 @@ impl SACondition {
 }
 
 // TODO enumset?
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Target {
     Ally = 0,
     // Area,
@@ -126,6 +126,10 @@ impl SpriteAction<'_> {
         } else {
             Err(SpriteActionError::InvalidTarget)
         }
+    }
+
+    pub fn can_target_enemy(&self) -> bool {
+        self.targets.contains(&Target::Enemy)
     }
 }
 

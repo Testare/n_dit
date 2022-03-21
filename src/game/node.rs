@@ -1,9 +1,11 @@
+mod with_sprite;
+
 use super::{EnemyAi, Pickup, Sprite};
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use log::debug;
 use std::collections::HashSet;
 
-mod with_sprite;
+use with_sprite::WithSprite;
 
 #[derive(Debug)]
 
@@ -227,11 +229,9 @@ impl Node {
             Team::PlayerTeam => Team::EnemyTeam,
         };
         self.active_team = active_team;
-        for sprite_key in self
-            .filtered_sprite_keys(|_, sprite| sprite.team() == active_team)
-            .iter()
+        for sprite_key in self.sprite_keys_for_team(active_team)
         {
-            self.with_sprite_mut(*sprite_key, |mut sprite| sprite.untap());
+            self.with_sprite_mut(sprite_key, |mut sprite| sprite.untap());
         }
     }
 
@@ -243,13 +243,14 @@ impl Node {
         self.grid().entries()
     }
 
-    pub fn filtered_sprite_keys<P: Fn(usize, &Sprite) -> bool>(&self, predicate: P) -> Vec<usize> {
-        self.grid.filtered_keys(|key, piece| {
-            if let Piece::Program(sprite) = piece {
-                predicate(key, sprite)
-            } else {
-                false
-            }
+    pub fn sprite_keys_for_team(&self, team: Team) -> Vec<usize> {
+        self.filtered_sprite_keys(|_, sprite|sprite.team() == team)
+    }
+
+    // TODO Make specialized "get sprites for team" function, since that it the primary use case here
+    pub fn filtered_sprite_keys<P: Fn(usize, WithSprite) -> bool>(&self, predicate: P) -> Vec<usize> {
+        self.grid.filtered_keys(|key, _| {
+            self.with_sprite(key, |sprite| predicate(key, sprite)).unwrap_or(false)
         })
     }
 }
