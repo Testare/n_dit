@@ -1,6 +1,6 @@
 use super::Node;
-use crate::{Direction, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
-use std::{cmp, num::NonZeroUsize, ops::Deref, ops::DerefMut};
+use crate::{GridMap, Bounds, Direction, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
+use std::{cmp, num::NonZeroUsize, ops::Deref, ops::DerefMut, collections::HashSet};
 
 const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
 
@@ -114,6 +114,55 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
         This actually sounds a lot like UI specific action, perhaps "target_points" should be
         a separate function.*/
     }
+
+    // TODO move to WithSprite
+    // TODO Take pick-ups into account
+    pub fn possible_moves(&self) -> PointSet {
+        let sprite = self.sprite();
+        if sprite.moves() == 0 || sprite.tapped() {
+            return PointSet::default();
+        }
+        let bounds = self.node.bounds();
+        fn possible_moves_recur(
+            point: Point,
+            hash_set: HashSet<Point>,
+            moves: usize,
+            bounds: &Bounds,
+            sprite_key: usize,
+            grid: &GridMap<Piece>,
+        ) -> HashSet<Point> {
+            if moves == 0 {
+                hash_set
+            } else {
+                Direction::EVERY_DIRECTION
+                    .iter()
+                    .fold(hash_set, |mut set, dir| {
+                        let next_pt = dir.add_to_point(point, 1, *bounds);
+                        if grid.square_is_free(next_pt)
+                            || grid.item_key_at(next_pt) == Some(sprite_key)
+                        {
+                            set.insert(next_pt);
+                            possible_moves_recur(
+                                next_pt,
+                                set,
+                                moves - 1,
+                                bounds,
+                                sprite_key,
+                                grid,
+                            )
+                        } else {
+                            set
+                        }
+                    })
+            }
+        }
+        let head = self.head();
+        let moves = self.moves();
+        let mut point_set = HashSet::new();
+        point_set.insert(head);
+        PointSet::Pts(possible_moves_recur(head, point_set, moves, &bounds, self.sprite_key, self.node.grid()))
+    }
+
 }
 
 impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {

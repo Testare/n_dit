@@ -268,8 +268,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
 
     if available_moves.is_none() {
         action_type = 0;
-        let selected_piece = grid.item_key_at(state.selected_square());
-        available_moves = selected_piece.map(|piece_key| node.possible_moves(piece_key))
+        available_moves = node.with_sprite_at(state.selected_square(),  |sprite| sprite.possible_moves().into_set());
     }
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
