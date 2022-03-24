@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::collections::HashSet;
-use std::ops::{Add, BitOr};
+use std::ops::{Add, BitAnd, BitOr};
 
 pub type Point = (usize, usize);
 
@@ -9,7 +9,6 @@ pub enum PointSet {
     Range(Point, usize, Bounds),
     Pts(HashSet<Point>),
 }
-
 
 impl PointSet {
     pub fn range_of_pt(pt: Point, range: usize, bounds: Bounds) -> Self {
@@ -59,6 +58,23 @@ impl PointSet {
                 set
             }
         }
+    }
+
+    pub fn merge(point_sets: Vec<PointSet>) -> PointSet {
+        PointSet::Pts(
+            point_sets
+                .into_iter()
+                .fold(HashSet::<Point>::new(), |acm, point_set| {
+                    &acm | &point_set.into_set()
+                }),
+        )
+    }
+}
+
+impl BitAnd<PointSet> for PointSet {
+    type Output = PointSet;
+    fn bitand(self, rhs: PointSet) -> PointSet {
+        PointSet::Pts(&self.into_set() & &rhs.into_set())
     }
 }
 

@@ -33,6 +33,20 @@ impl Animation {
 
                             node.activate_sprite(sprite_key);
                         }
+                        EnemyAiAction::PerformAction(action_index, pt) => {
+                            debug!(
+                                "Performing sprite action {:?} (index {:?}) on point {:?}",
+                                node.with_active_sprite::<_, &str, _>(|sprite| {
+                                    sprite
+                                        .actions()
+                                        .get(action_index)
+                                        .map(|action| *(*action).name())
+                                }),
+                                action_index,
+                                pt
+                            );
+                            node.perform_sprite_action(action_index, pt);
+                        }
                         _ => {
                             unimplemented!(
                                 "Enemy action {:?} has not been implemented yet",

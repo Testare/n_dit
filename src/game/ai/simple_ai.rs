@@ -1,5 +1,5 @@
-use super::super::{Direction, Node, PointSet, Team};
-use super::{EnemyAiAction};
+use super::super::{Direction, Node, Point, PointSet, Team};
+use super::EnemyAiAction;
 
 use std::num::NonZeroUsize;
 
@@ -34,32 +34,78 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
     */
 
     node.with_sprite(sprite_key, |sprite| {
-        if let Some((action_index, preferred_action)) = sprite.actions()
+        if let Some((action_index, preferred_action)) = sprite
+            .actions()
             .iter()
             .enumerate()
-            .filter(|(_, action)|action.can_target_enemy())
-            .max_by_key(|(_, action)|action.range()) {
-
+            .filter(|(_, action)| action.can_target_enemy() && action.range().is_some())
+            .max_by_key(|(_, action)| action.range())
+        {
+            let range = preferred_action
+                .range()
+                .expect("Actions with no range should've been filtered")
+                .get();
 
             // In the future, might be able to get a more accurate point set
-            let pt_set = PointSet::range_of_pt(sprite.head(), preferred_action.range().map_or(0, NonZeroUsize::get) + sprite.moves() , node.bounds());
+            let possible_moves = node.with_sprite(sprite_key, |sprite|sprite.possible_moves()).unwrap();
+            let strike_spaces = get_points_within_x_of_enemy_team(node, range) & possible_moves;
 
+            // For now just take whatever one is first
+            if let Some(target) = strike_spaces.into_set().iter().next() {
+                let mut enemy_actions = move_to_target(sprite_key, *target, node);
+                let strike_range = PointSet::range_of_pt(*target, range, node.bounds());
+                let sprite_target_keys = node.filtered_sprite_keys(|_, sprite| {
+                    sprite.team() == Team::PlayerTeam && strike_range.contains(sprite.head())
+                });
+                // For now just pick the first one
+                let chosen_target = *sprite_target_keys
+                    .get(0)
+                    .expect("Weird if there are no sprites within range of the calculated target");
+                let chosen_target_pt = node
+                    .with_sprite(chosen_target, |sprite| sprite.head()) // FIXME The head is not the only targetable piece of the player
+                    .expect("Chosen target should have a head");
+                enemy_actions.push(EnemyAiAction::PerformAction(action_index, chosen_target_pt));
 
-            let first_round_elimination = node.filtered_sprite_keys(|_, sprite| {
-                sprite.team() != Team::EnemyTeam && pt_set.contains(sprite.head())
-            });
-            let mut actions = Vec::new();
-            actions.push(EnemyAiAction::PerformNoAction);
-            actions.push(EnemyAiAction::MoveSprite(Direction::East));
-            actions.push(EnemyAiAction::ActivateSprite(sprite_key));
-
-            actions
+                enemy_actions.into_iter().rev().collect()
+            } else {
+                // For now, do nothing. In the future, we might:
+                // Pathfind towards /closest/ enemy
+                // Pathfind towards where the access points were defined
+                // Patrol?
+                // Maybe I'll add metadata to each file to add hints for the AI.
+                // AI will probably be massively configurable per node
+                do_nothing(sprite_key)
+            }
         } else {
-            // I don't have any attacks. I guess do nothing for now.
-            vec![
-                EnemyAiAction::PerformNoAction,
-                EnemyAiAction::ActivateSprite(sprite_key),
-            ]
+            do_nothing(sprite_key)
         }
-    }).expect("Somehow we got called with an invalid sprite key")
+    })
+    .expect("Somehow we got called with an invalid sprite key")
+}
+
+fn get_points_within_x_of_enemy_team(node: &Node, range: usize) -> PointSet {
+    // TODO Bugfix: The head is not the only targetable piece of the player
+    let bounds = node.bounds();
+    let pts: Vec<_> = node
+        .sprite_keys_for_team(Team::PlayerTeam)
+        .iter()
+        .map(|key| {
+            let head = node.with_sprite(*key, |sprite| sprite.head()).expect(
+                "An immutable node reference just provided these keys, they should be valid",
+            );
+            PointSet::range_of_pt(head, range, bounds)
+        })
+        .collect();
+    PointSet::merge(pts)
+}
+
+fn do_nothing(sprite_key: usize) -> Vec<EnemyAiAction> {
+    vec![
+        EnemyAiAction::PerformNoAction,
+        EnemyAiAction::ActivateSprite(sprite_key),
+    ]
+}
+
+fn move_to_target(sprite_key: usize, target: Point, node: &Node) -> Vec<EnemyAiAction> {
+    vec![EnemyAiAction::ActivateSprite(sprite_key)]
 }

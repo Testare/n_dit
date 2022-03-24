@@ -151,8 +151,6 @@ impl SuperState {
             ..
         } = self;
 
-        log::debug!("NodeUI state {:?}", node_ui);
-
         match &ui_action {
             UiAction::SetTerminalSize(bounds) => {
                 layout.resize(*bounds);
