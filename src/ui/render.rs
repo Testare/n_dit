@@ -268,7 +268,9 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
 
     if available_moves.is_none() {
         action_type = 0;
-        available_moves = node.with_sprite_at(state.selected_square(),  |sprite| sprite.possible_moves().into_set());
+        available_moves = node.with_sprite_at(state.selected_square(), |sprite| {
+            sprite.possible_moves().into_set()
+        });
     }
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)

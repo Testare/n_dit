@@ -82,7 +82,6 @@ impl Default for PointSet {
     fn default() -> Self {
         PointSet::Pts(HashSet::default())
     }
-
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

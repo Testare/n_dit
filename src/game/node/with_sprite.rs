@@ -1,6 +1,8 @@
 use super::Node;
-use crate::{GridMap, Bounds, Direction, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team};
-use std::{cmp, num::NonZeroUsize, ops::Deref, ops::DerefMut, collections::HashSet};
+use crate::{
+    Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team,
+};
+use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
 const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
 
@@ -56,7 +58,6 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
         }
         false
     }
-
 
     pub fn size(&self) -> usize {
         self.node.grid().len_of(self.sprite_key)
@@ -142,14 +143,7 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
                             || grid.item_key_at(next_pt) == Some(sprite_key)
                         {
                             set.insert(next_pt);
-                            possible_moves_recur(
-                                next_pt,
-                                set,
-                                moves - 1,
-                                bounds,
-                                sprite_key,
-                                grid,
-                            )
+                            possible_moves_recur(next_pt, set, moves - 1, bounds, sprite_key, grid)
                         } else {
                             set
                         }
@@ -160,9 +154,15 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
         let moves = self.moves();
         let mut point_set = HashSet::new();
         point_set.insert(head);
-        PointSet::Pts(possible_moves_recur(head, point_set, moves, &bounds, self.sprite_key, self.node.grid()))
+        PointSet::Pts(possible_moves_recur(
+            head,
+            point_set,
+            moves,
+            &bounds,
+            self.sprite_key,
+            self.node.grid(),
+        ))
     }
-
 }
 
 impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {

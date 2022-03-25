@@ -163,7 +163,6 @@ impl Node {
         self.grid.item_key_at(pt)
     }
 
-
     pub fn piece_len(&self, piece_key: usize) -> usize {
         self.grid.len_of(piece_key)
     }
@@ -178,8 +177,7 @@ impl Node {
             Team::PlayerTeam => Team::EnemyTeam,
         };
         self.active_team = active_team;
-        for sprite_key in self.sprite_keys_for_team(active_team)
-        {
+        for sprite_key in self.sprite_keys_for_team(active_team) {
             self.with_sprite_mut(sprite_key, |mut sprite| sprite.untap());
         }
     }
@@ -193,13 +191,17 @@ impl Node {
     }
 
     pub fn sprite_keys_for_team(&self, team: Team) -> Vec<usize> {
-        self.filtered_sprite_keys(|_, sprite|sprite.team() == team)
+        self.filtered_sprite_keys(|_, sprite| sprite.team() == team)
     }
 
     // TODO Make specialized "get sprites for team" function, since that it the primary use case here
-    pub fn filtered_sprite_keys<P: Fn(usize, WithSprite) -> bool>(&self, predicate: P) -> Vec<usize> {
+    pub fn filtered_sprite_keys<P: Fn(usize, WithSprite) -> bool>(
+        &self,
+        predicate: P,
+    ) -> Vec<usize> {
         self.grid.filtered_keys(|key, _| {
-            self.with_sprite(key, |sprite| predicate(key, sprite)).unwrap_or(false)
+            self.with_sprite(key, |sprite| predicate(key, sprite))
+                .unwrap_or(false)
         })
     }
 }
