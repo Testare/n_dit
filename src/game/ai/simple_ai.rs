@@ -1,4 +1,5 @@
 use super::super::{Direction, Node, Point, PointSet, Team};
+use super::pathfinding;
 use super::EnemyAiAction;
 
 use std::num::NonZeroUsize;
@@ -47,7 +48,9 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
                 .get();
 
             // In the future, might be able to get a more accurate point set
-            let possible_moves = node.with_sprite(sprite_key, |sprite|sprite.possible_moves()).unwrap();
+            let possible_moves = node
+                .with_sprite(sprite_key, |sprite| sprite.possible_moves())
+                .unwrap();
             let strike_spaces = get_points_within_x_of_enemy_team(node, range) & possible_moves;
 
             // For now just take whatever one is first
@@ -107,5 +110,10 @@ fn do_nothing(sprite_key: usize) -> Vec<EnemyAiAction> {
 }
 
 fn move_to_target(sprite_key: usize, target: Point, node: &Node) -> Vec<EnemyAiAction> {
-    vec![EnemyAiAction::ActivateSprite(sprite_key)]
+    let mut enemy_actions = vec![EnemyAiAction::ActivateSprite(sprite_key)];
+    let movements = pathfinding::find_any_path_to_point(sprite_key, target, node)
+        .into_iter()
+        .map(|dir| EnemyAiAction::MoveSprite(dir));
+    enemy_actions.extend(movements);
+    enemy_actions
 }

@@ -1,5 +1,6 @@
 use super::{Animation, Direction, Node, Point, Team};
 
+mod pathfinding;
 mod simple_ai;
 
 #[derive(Clone, Debug)]
@@ -19,9 +20,10 @@ impl EnemyAi {
     fn generate_enemy_ai_actions(&self, node: &Node) -> Vec<EnemyAiAction> {
         let node_destructible = node.clone();
         match node.enemy_ai() {
-            EnemyAi::Simple => {
-                simple_ai::generate_enemy_ai_actions(node_destructible, node.sprite_keys_for_team(Team::EnemyTeam))
-            }
+            EnemyAi::Simple => simple_ai::generate_enemy_ai_actions(
+                node_destructible,
+                node.sprite_keys_for_team(Team::EnemyTeam),
+            ),
         }
     }
 
