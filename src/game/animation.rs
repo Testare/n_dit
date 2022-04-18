@@ -47,12 +47,6 @@ impl Animation {
                             );
                             node.perform_sprite_action(action_index, pt);
                         }
-                        _ => {
-                            unimplemented!(
-                                "Enemy action {:?} has not been implemented yet",
-                                enemy_action
-                            );
-                        }
                     }
                     game.set_animation(Animation::EnemyActions(enemy_actions_vec_clone))
                 } else {

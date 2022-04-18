@@ -136,7 +136,7 @@ fn load_state() -> SuperState {
             .name("Jackson")
             .action(StandardSpriteAction::Bite)
             .max_size(4)
-            .movement_speed(1)
+            .movement_speed(7)
             .build()
             .unwrap(),
         vec![(14, 4)],

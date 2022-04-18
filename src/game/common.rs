@@ -117,6 +117,32 @@ impl Direction {
         Direction::West,
     ];
 
+    pub fn vertical(&self) -> bool {
+        matches!(self, Direction::North | Direction::South)
+    }
+
+    pub fn horizontal(&self) -> bool {
+        matches!(self, Direction::East | Direction::West)
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::South,
+            Direction::South => Direction::West,
+            Direction::West => Direction::South,
+        }
+    }
+
+    pub fn flip(&self) -> Direction {
+        match self {
+            Direction::North => Direction::South,
+            Direction::East => Direction::West,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+        }
+    }
+
     pub fn matches(&self, directions: u8) -> bool {
         ((*self as u8) & directions) != 0
     }

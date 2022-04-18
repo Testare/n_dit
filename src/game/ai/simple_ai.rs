@@ -1,8 +1,6 @@
-use super::super::{Direction, Node, Point, PointSet, Team};
+use super::super::{Node, Point, PointSet, Team};
 use super::pathfinding;
 use super::EnemyAiAction;
-
-use std::num::NonZeroUsize;
 
 pub(super) fn generate_enemy_ai_actions(
     node: Node,
@@ -112,8 +110,9 @@ fn do_nothing(sprite_key: usize) -> Vec<EnemyAiAction> {
 fn move_to_target(sprite_key: usize, target: Point, node: &Node) -> Vec<EnemyAiAction> {
     let mut enemy_actions = vec![EnemyAiAction::ActivateSprite(sprite_key)];
     let movements = pathfinding::find_any_path_to_point(sprite_key, target, node)
+        .expect("TODO What if pathfinding fails?") // TODO It shouldn't... But what then?
         .into_iter()
-        .map(|dir| EnemyAiAction::MoveSprite(dir));
+        .map(EnemyAiAction::MoveSprite);
     enemy_actions.extend(movements);
     enemy_actions
 }

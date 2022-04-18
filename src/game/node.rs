@@ -3,7 +3,6 @@ mod with_sprite;
 use super::{EnemyAi, Pickup, Sprite};
 use crate::{Bounds, Direction, GridMap, Point, Team};
 use log::debug;
-use std::collections::HashSet;
 
 use with_sprite::WithSprite;
 
