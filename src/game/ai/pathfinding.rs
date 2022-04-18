@@ -1,6 +1,7 @@
 //! Utility module for helping with pathfinding for AI
 
 use crate::{Direction, Node, Point};
+use std::cmp::Ordering::{Equal, Greater, Less};
 use std::collections::VecDeque;
 
 /// Highly unoptimized and potentially buggy algorithm, significant slow down at speeds around 12.
@@ -17,8 +18,9 @@ pub fn find_any_path_to_point(
         }
         let mut visited = vec![vec![0; node.height()]; node.width()];
         visited[head.0][head.1] = sprite.moves();
-        // TODO Intelligently determine starter direction
-        for dir in Direction::EVERY_DIRECTION {
+        let first_dir = prime_direction_between_points(head, target);
+        let dir_iter = std::iter::successors(first_dir, |dir| Some(dir.clockwise())).take(4);
+        for dir in dir_iter {
             if let Some(path) = find_any_path_to_point_biased(
                 sprite_key,
                 head,
@@ -92,4 +94,16 @@ fn find_any_path_to_point_biased(
         }
     }
     None
+}
+
+// Chooses a direction so that we move in a given direction based on what sector the target is in
+// TODO Use something like this for click-based movement as well
+fn prime_direction_between_points(src: Point, target: Point) -> Option<Direction> {
+    match [target.0.cmp(&src.0), target.1.cmp(&src.1)] {
+        [Equal, Less] | [Greater, Less] => Some(Direction::North),
+        [Greater, Equal] | [Greater, Greater] => Some(Direction::East),
+        [Equal, Greater] | [Less, Greater] => Some(Direction::South),
+        [Less, Equal] | [Less, Less] => Some(Direction::West),
+        [Equal, Equal] => None,
+    }
 }

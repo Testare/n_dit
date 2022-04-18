@@ -18,6 +18,14 @@ pub(super) fn generate_enemy_ai_actions(
 
 pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction> {
     /*
+
+    Current limitations:
+        * Not fast, really
+        * Frontloaded
+        * Pathfinding might take long routes
+        * Only does attack actions
+        * Does not move if not in range to attack
+
     Algorithm:
         let attack = Get sprite actions, find the highest range one that targets enemies. Damage doesn't matter.
         For each sprite on the enemy team, find any that are within (movement + attack.range)
