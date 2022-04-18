@@ -37,7 +37,7 @@ impl Layout {
     }
 
     pub fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
-        if state.game.node().is_some() {
+        if state.game_state().node().is_some() {
             self.node_layout.click_target(state, pt)
         } else {
             None

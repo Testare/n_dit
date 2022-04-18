@@ -220,10 +220,10 @@ impl SubLayout for StandardNodeLayout {
             }
             return Ok(false);
         }
-        let mon = super_state.game.player_mon();
+        let mon = super_state.game_state().player_mon();
         let fields = self.calculated_fields.unwrap(); // TODO change to an if let
         let border = '\\';
-        let node = super_state.game.node().unwrap();
+        let node = super_state.game_state().node().unwrap();
         queue!(
             stdout,
             crossterm::style::Print("\\".repeat(fields.width)),
@@ -312,7 +312,7 @@ impl SubLayout for StandardNodeLayout {
         let left = 13;
         if pt.1 >= top && pt.1 < height {
             if pt.0 > 0 && pt.0 < left {
-                let node = state.game.node().unwrap();
+                let node = state.game_state().node().unwrap();
                 // Action Menus
                 (pt.1 - top)
                     .checked_sub(Self::SPRITE_ACTION_Y)

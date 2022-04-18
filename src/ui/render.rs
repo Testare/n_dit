@@ -82,7 +82,7 @@ impl Piece {
 pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
     // TODO height checking + scrolling + etc
     // TODO render_menu when there is no node
-    let node = state.game.node().expect("TODO what if there is no node?");
+    let node = state.game_state().node().expect("TODO what if there is no node?");
     let piece_opt = node
         .active_sprite_key()
         .and_then(|key| node.piece(key))

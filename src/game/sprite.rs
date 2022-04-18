@@ -83,3 +83,9 @@ impl Sprite {
         self.moves_taken += 1;
     }
 }
+
+impl Team {
+    pub fn is_ai(&self) -> bool {
+        matches!(self, Team::EnemyTeam)
+    }
+}

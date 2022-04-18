@@ -123,7 +123,15 @@ fn load_state() -> SuperState {
         ],
     ]));
 
-    node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
+    // node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
+    node.add_sprite(Sprite::builder()
+        .display("あ")
+        .name("Horus")
+        .action(StandardSpriteAction::Bite)
+        .max_size(3)
+        .movement_speed(2)
+        .build()
+        .unwrap(), vec![(1, 6), (2, 6), (3, 6)])
         .unwrap();
     node.add_sprite(Sprite::new("死"), vec![(4, 6), (5, 6), (5, 7)])
         .unwrap();

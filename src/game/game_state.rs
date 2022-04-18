@@ -20,22 +20,15 @@ impl GameState {
             if enemy_sprites_remaining == 0 {
                 panic!("No enemies remain! You win!")
             }
+            // if node.active_team() == Team::PlayerTeam {
+            let untapped_player_sprites_remaining = node
+                .filtered_sprite_keys(|_, sprite| {
+                    sprite.team() == node.active_team() && !sprite.tapped()
+                })
+                .len();
 
-            if node.active_team() == Team::PlayerTeam {
-                let untapped_player_sprites_remaining = node
-                    .filtered_sprite_keys(|_, sprite| {
-                        sprite.team() == Team::PlayerTeam && !sprite.tapped()
-                    })
-                    .len();
-
-                if untapped_player_sprites_remaining == 0 {
-                    node.change_active_team();
-                    if node.active_team() == Team::EnemyTeam {
-                        // This check in pla
-                        let enemy_ai_actions = node.enemy_ai().generate_animation(node);
-                        self.set_animation(enemy_ai_actions);
-                    }
-                }
+            if untapped_player_sprites_remaining == 0 {
+                node.change_active_team();
             }
         }
     }
@@ -48,18 +41,8 @@ impl GameState {
         self.node.as_ref()
     }
 
-    pub fn node_mut(&mut self) -> Option<&mut Node> {
+    pub(super) fn node_mut(&mut self) -> Option<&mut Node> {
         self.node.as_mut()
-    }
-
-    pub fn deactivate_sprite(&mut self) -> bool {
-        self.node
-            .as_mut()
-            .map(|node| {
-                node.deactivate_sprite();
-                true
-            })
-            .unwrap_or(false)
     }
 
     pub fn active_sprite_key(&self) -> Option<usize> {
@@ -77,55 +60,51 @@ impl GameState {
     }
 
     pub fn waiting_on_player_input(&self) -> bool {
-        self.animation.is_none()
+        self.animation.is_none() && self.node().map(|node|node.active_team() == Team::PlayerTeam).unwrap_or(true)
     }
 
-    pub fn set_animation<A: Into<Option<Animation>>>(&mut self, animation: A) {
+    pub(super) fn set_animation<A: Into<Option<Animation>>>(&mut self, animation: A) {
         self.animation = animation.into();
     }
 
-    pub fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
-        if self.waiting_on_player_input() {
-            debug!("Game action called: {:#?}", game_action);
-            match game_action {
-                GameAction::Next => Err(String::from("Waiting for player input")),
-                GameAction::ActivateSprite(sprite_key) => {
-                    if self.node_action(|node| node.activate_sprite(*sprite_key))? {
-                        Ok(())
-                    } else {
-                        Err("Sprite does not exist".to_string())
-                    }
-                }
-                GameAction::DeactivateSprite => {
-                    self.node_action(|node| {
-                        node.deactivate_sprite();
-                    })?;
-                    self.state_check_after_player_action();
+    // This should be the only method that takes a mutable reference and 
+    // is public outside of the game module
+    pub(super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
+        debug!("Game action called: {:#?}", game_action);
+        match game_action {
+            GameAction::Next => Err(String::from("Waiting for player input")),
+            GameAction::ActivateSprite(sprite_key) => {
+                if self.node_action(|node| node.activate_sprite(*sprite_key))? {
                     Ok(())
-                }
-                GameAction::TakeSpriteAction(action_index, pt) => {
-                    self.node_action(|node| {
-                        node.perform_sprite_action(*action_index, *pt);
-                    })?;
-                    self.state_check_after_player_action();
-                    Ok(())
-                }
-                GameAction::MoveActiveSprite(directions) => {
-                    let pickups =
-                        self.node_action(|node| node.move_active_sprite(directions))??;
-                    for pickup in pickups {
-                        self.inventory.pick_up(pickup);
-                    }
-                    Ok(())
+                } else {
+                    Err("Sprite does not exist".to_string())
                 }
             }
-        } else if let GameAction::Next = game_action {
-            // TODO Check lose conditions for Node
-            Animation::next(self)
-        } else {
-            Err(String::from(
-                "Cannot accept player actions right now, next action must be 'Next'",
-            ))
+            GameAction::DeactivateSprite => {
+                self.node_action(|node| {
+                    node.deactivate_sprite();
+                })?;
+                self.state_check_after_player_action();
+                Ok(())
+            }
+            GameAction::TakeSpriteAction(action_index, pt) => {
+                self.node_action(|node| {
+                    node.perform_sprite_action(*action_index, *pt);
+                })?;
+                self.state_check_after_player_action();
+                Ok(())
+            }
+            GameAction::MoveActiveSprite(directions) => {
+                let pickups =
+                    self.node_action(|node| node.move_active_sprite(directions))??;
+                for pickup in pickups {
+                    self.inventory.pick_up(pickup);
+                }
+                Ok(())
+            }
+            GameAction::Next => {
+                Animation::next(self)
+            }
         }
     }
 

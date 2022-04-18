@@ -1,11 +1,11 @@
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{Bounds, Direction, GameAction, GameState, Node, Point};
+use crate::{AuthorityGameMaster, Bounds, Direction, GameAction, GameState, Node, Point, GameCommand};
 use getset::{CopyGetters, Getters};
 
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug, Getters, CopyGetters)]
 pub struct SuperState {
-    pub game: GameState,
+    gm: Box<AuthorityGameMaster>,
     layout: Layout,
     draw_config: DrawConfiguration,
     #[get_copy = "pub"]
@@ -36,6 +36,7 @@ pub enum UiView {
 }
 
 impl SuperState {
+
     pub fn from(node: Option<Node>) -> Self {
         // TODO This should be more safe, probably not an actual trait for UiState
         let (t_width, t_height) =
@@ -44,7 +45,7 @@ impl SuperState {
         SuperState {
             node_ui: node.as_ref().map(NodeUiState::from),
             world_ui: WorldUiState::new(),
-            game: GameState::from(node),
+            gm: Box::new(GameState::from(node).into()),
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
             view: UiView::Node,
@@ -57,7 +58,7 @@ impl SuperState {
         let ui_actions = match ct {
             Some(ClickTarget::Node(node_ct)) => {
                 self.node_ui().unwrap().ui_actions_for_click_target(
-                    self.game
+                    self.game_state()
                         .node()
                         .expect("Node click target whe nnode is not present"),
                     node_ct,
@@ -104,13 +105,13 @@ impl SuperState {
     }
 
     pub fn game_state(&self) -> &GameState {
-        &self.game
+        &self.gm.state()
     }
 
     pub fn ui_actions_for_input(&self, user_input: UserInput) -> Vec<UiAction> {
         // TODO Perhaps have a method "is_animation_safe" property to indicate UI actions that can
         // apply even during animations
-        let in_animation = self.game.animation().is_some();
+        let in_animation = self.game_state().animation().is_some();
         match user_input {
             UserInput::Quit => vec![UiAction::quit()], // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
@@ -128,7 +129,7 @@ impl SuperState {
                 if !in_animation {
                     self.node_ui
                         .as_ref()
-                        .zip(self.game.node())
+                        .zip(self.game_state().node())
                         .map(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input))
                         .unwrap_or_else(UiAction::none)
                 } else {
@@ -140,12 +141,12 @@ impl SuperState {
 
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         log::info!("Performing UiAction {:?}", ui_action);
-        if let UiAction::GameAction(game_action) = &ui_action {
-            self.game.apply_action(game_action)?;
+        if let UiAction::GameCommand(game_command) = &ui_action {
+            self.gm.apply_command(game_command.clone()).map_err(|err|err.to_string())?;
         }
 
         let SuperState {
-            game,
+            gm,
             node_ui,
             layout,
             ..
@@ -163,7 +164,7 @@ impl SuperState {
 
         node_ui
             .as_mut()
-            .zip(game.node_mut())
+            .zip(gm.state().node())
             .map(|(node_ui, node)| node_ui.apply_action(node, &ui_action))
             .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
 
@@ -186,7 +187,7 @@ pub enum UiAction {
     }, // Do we really need this too when we have "SetSelectedSquare"?
     SetSelectedSquare(Point),
     SetSelectedMenuItem(usize),
-    GameAction(GameAction),
+    GameCommand(GameCommand),
     SetTerminalSize(Bounds),
     Quit,
 }
@@ -195,15 +196,15 @@ type UiActions = Vec<UiAction>;
 
 impl UiAction {
     pub fn perform_sprite_action(action_index: usize, pnt: Point) -> UiAction {
-        UiAction::GameAction(GameAction::take_sprite_action(action_index, pnt))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::take_sprite_action(action_index, pnt)))
     }
 
     pub fn activate_sprite(sprite_key: usize) -> UiAction {
-        UiAction::GameAction(GameAction::activate_sprite(sprite_key))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::activate_sprite(sprite_key)))
     }
 
     pub fn deactivate_sprite() -> UiAction {
-        UiAction::GameAction(GameAction::deactivate_sprite())
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::deactivate_sprite()))
     }
 
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
@@ -219,7 +220,7 @@ impl UiAction {
     }
 
     pub fn next() -> UiAction {
-        UiAction::GameAction(GameAction::next())
+        UiAction::GameCommand(GameCommand::Next)
     }
 
     pub fn quit() -> UiAction {
@@ -231,7 +232,7 @@ impl UiAction {
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::GameAction(GameAction::move_active_sprite(vec![dir]))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::move_active_sprite(vec![dir])))
     }
 
     #[deprecated]

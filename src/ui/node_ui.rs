@@ -1,5 +1,5 @@
 use super::NodeCt;
-use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput};
+use crate::{Direction, GameAction, Node, NodeRestorePoint, Point, PointSet, UiAction, UserInput, GameCommand};
 use getset::{CopyGetters, Setters};
 use log::debug;
 use std::rc::Rc;
@@ -174,9 +174,10 @@ impl NodeUiState {
                                     .with_active_sprite(|sprite| sprite.can_move(dir))
                                     .unwrap()
                                 {
-                                    Some(UiAction::GameAction(GameAction::move_active_sprite(
+                                    // TODO this is probably not the right pattern
+                                    Some(UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::move_active_sprite(
                                         vec![dir],
-                                    )))
+                                    ))))
                                 } else {
                                     None
                                 }
@@ -367,7 +368,7 @@ impl NodeUiState {
                 self.set_selected_square(*pt, node);
                 Ok(())
             }
-            UiAction::GameAction(GameAction::ActivateSprite(_sprite_key)) => {
+            UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::ActivateSprite(_sprite_key))) => {
                 // TODO We don't know if this action was successful?
                 // This means if we try to activate unsuccessfully, selected square will go to
                 // active sprite
@@ -387,12 +388,12 @@ impl NodeUiState {
                 }
                 Ok(())
             }
-            UiAction::GameAction(GameAction::DeactivateSprite) => {
+            UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::DeactivateSprite)) => {
                 self.phase
                     .transition_to_free_select(self.selected_square, node);
                 Ok(())
             }
-            UiAction::GameAction(GameAction::MoveActiveSprite(_directions)) => {
+            UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::MoveActiveSprite(_directions))) => {
                 if let Some((remaining_moves, head, is_tapped)) = node
                     .with_active_sprite(|sprite| (sprite.moves(), sprite.head(), sprite.tapped()))
                 {
@@ -412,7 +413,7 @@ impl NodeUiState {
 
                 Ok(())
             }
-            UiAction::GameAction(GameAction::TakeSpriteAction(_, _)) => {
+            UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::TakeSpriteAction(_, _))) => {
                 if node.active_sprite_key().is_none() {
                     self.phase
                         .transition_to_free_select(self.selected_square, node);

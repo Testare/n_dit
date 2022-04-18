@@ -2,21 +2,23 @@ use super::super::{Node, Point, PointSet, Team};
 use super::pathfinding;
 use super::EnemyAiAction;
 
-pub(super) fn generate_enemy_ai_actions(
+pub(super) fn generate_enemy_ai_actions<C: FnMut(EnemyAiAction)>(
     node: Node,
     team_sprites: Vec<usize>,
-) -> Vec<EnemyAiAction> {
+    mut collect: C
+) {
+    // TODO handle partial states
     // Currently just move all sprites to the right
-    let mut actions = Vec::new();
     for sprite_key in team_sprites {
-        let mut new_actions = simple_greedy_attack(sprite_key, &node);
+        simple_greedy_attack(sprite_key, &node, |action|{
+            log::debug!("CALLED COLLECT {:?}", action);
+            collect(action)
+        });
         // TODO apply new_actions to Node so multiple sprite keys can interop
-        actions.append(&mut new_actions);
     }
-    actions
 }
 
-pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction> {
+pub fn simple_greedy_attack<C: FnMut(EnemyAiAction)> (sprite_key: usize, node: &Node, mut collect: C) {
     /*
 
     Current limitations:
@@ -41,6 +43,8 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
     */
 
     node.with_sprite(sprite_key, |sprite| {
+        collect(EnemyAiAction::ActivateSprite(sprite_key));
+
         if let Some((action_index, preferred_action)) = sprite
             .actions()
             .iter()
@@ -48,6 +52,7 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
             .filter(|(_, action)| action.can_target_enemy() && action.range().is_some())
             .max_by_key(|(_, action)| action.range())
         {
+
             let range = preferred_action
                 .range()
                 .expect("Actions with no range should've been filtered")
@@ -61,7 +66,9 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
 
             // For now just take whatever one is first
             if let Some(target) = strike_spaces.into_set().iter().next() {
-                let mut enemy_actions = move_to_target(sprite_key, *target, node);
+                for enemy_action in move_to_target(sprite_key, *target, node) {
+                    collect(enemy_action);
+                }
                 let strike_range = PointSet::range_of_pt(*target, range, node.bounds());
                 let sprite_target_keys = node.filtered_sprite_keys(|_, sprite| {
                     sprite.team() == Team::PlayerTeam && strike_range.contains(sprite.head())
@@ -73,9 +80,8 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
                 let chosen_target_pt = node
                     .with_sprite(chosen_target, |sprite| sprite.head()) // FIXME The head is not the only targetable piece of the player
                     .expect("Chosen target should have a head");
-                enemy_actions.push(EnemyAiAction::PerformAction(action_index, chosen_target_pt));
 
-                enemy_actions.into_iter().rev().collect()
+                collect(EnemyAiAction::PerformAction(action_index, chosen_target_pt));
             } else {
                 // For now, do nothing. In the future, we might:
                 // Pathfind towards /closest/ enemy
@@ -83,10 +89,10 @@ pub fn simple_greedy_attack(sprite_key: usize, node: &Node) -> Vec<EnemyAiAction
                 // Patrol?
                 // Maybe I'll add metadata to each file to add hints for the AI.
                 // AI will probably be massively configurable per node
-                do_nothing(sprite_key)
+                collect(EnemyAiAction::PerformNoAction);
             }
         } else {
-            do_nothing(sprite_key)
+            collect(EnemyAiAction::PerformNoAction);
         }
     })
     .expect("Somehow we got called with an invalid sprite key")
@@ -108,19 +114,10 @@ fn get_points_within_x_of_enemy_team(node: &Node, range: usize) -> PointSet {
     PointSet::merge(pts)
 }
 
-fn do_nothing(sprite_key: usize) -> Vec<EnemyAiAction> {
-    vec![
-        EnemyAiAction::PerformNoAction,
-        EnemyAiAction::ActivateSprite(sprite_key),
-    ]
-}
-
 fn move_to_target(sprite_key: usize, target: Point, node: &Node) -> Vec<EnemyAiAction> {
-    let mut enemy_actions = vec![EnemyAiAction::ActivateSprite(sprite_key)];
-    let movements = pathfinding::find_any_path_to_point(sprite_key, target, node)
+    pathfinding::find_any_path_to_point(sprite_key, target, node)
         .expect("TODO What if pathfinding fails?") // TODO It shouldn't... But what then?
         .into_iter()
-        .map(EnemyAiAction::MoveSprite);
-    enemy_actions.extend(movements);
-    enemy_actions
+        .map(EnemyAiAction::MoveSprite)
+        .collect()
 }
