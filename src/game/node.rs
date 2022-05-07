@@ -1,7 +1,7 @@
 mod with_sprite;
 
 use super::{EnemyAi, Pickup, Sprite};
-use crate::{Bounds, Direction, GridMap, Point, Team};
+use crate::{Bounds, Direction, GridMap, Point, Team, GameAction};
 use log::debug;
 
 use with_sprite::WithSprite;
@@ -41,6 +41,37 @@ impl Node {
 
     fn drop_active_sprite(&mut self) {
         self.active_sprite = None;
+    }
+
+    // TODO This function is incomplete
+    // This function should return some sort of indicator of results
+    // For instance, a player movement could include adding something to inventory
+    // Then again, perhaps pickups should be in the node inventory until node
+    // node success.
+    pub(super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
+        match game_action {
+            GameAction::ActivateSprite(sprite_key) => {
+                self.activate_sprite(*sprite_key);
+                Ok(())
+            }
+            GameAction::DeactivateSprite => {
+                self.deactivate_sprite();
+                Ok(())
+            }
+            GameAction::TakeSpriteAction(action_index, pt) => {
+                self.perform_sprite_action(*action_index, *pt);
+                Ok(())
+            }
+            GameAction::MoveActiveSprite(directions) => {
+                let pickups = self.move_active_sprite(directions);
+                // TODO return type that includes pickups
+                /*for pickup in pickups {
+                    self.inventory.pick_up(pickup);
+                }*/
+                Ok(())
+            }
+            GameAction::Next => Ok(())
+        }
     }
 
     pub fn perform_sprite_action(

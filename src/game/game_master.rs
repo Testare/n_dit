@@ -1,5 +1,5 @@
-use super::{GameState, GameAction, EnemyAiAction, EnemyAi};
-use std::sync::mpsc::{channel,Receiver, Sender};
+use super::{GameState, GameAction, EnemyAi};
+use std::sync::mpsc::{channel,Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
 // * Behavior of AI players, including the rendering of incomplete-but-finalized
@@ -16,7 +16,7 @@ use std::sync::mpsc::{channel,Receiver, Sender};
 #[derive(Debug)]
 pub struct AuthorityGameMaster {
     state: GameState,
-    ai_action_receiver: Option<Receiver<EnemyAiAction>>
+    ai_action_receiver: Option<Receiver<GameAction>>
     // events: List of events
     // caching of advance-states
 }
@@ -43,6 +43,7 @@ impl AuthorityGameMaster {
                     })
                 });
             } else if self.ai_action_receiver.is_some() && !node.active_team().is_ai() {
+                // This might cause some bugs if this method isn't run between enemy turns
                 self.ai_action_receiver = None;
             }
         }
@@ -53,13 +54,7 @@ impl AuthorityGameMaster {
         match command {
             GameCommand::Next => {
                 if let Some(rx) = &self.ai_action_receiver {
-                    let aiaction = rx.recv().unwrap();
-                    let action = match aiaction {
-                        EnemyAiAction::ActivateSprite(sprite_key) => GameAction::activate_sprite(sprite_key),
-                        EnemyAiAction::MoveSprite(dir) => GameAction::move_active_sprite(vec![dir]),
-                        EnemyAiAction::PerformNoAction => GameAction::deactivate_sprite(),
-                        EnemyAiAction::PerformAction(action_index, pt) => GameAction::take_sprite_action(action_index, pt)
-                    };
+                    let action = rx.recv().unwrap();
                     
                     self.state.apply_action(&action)
                         .map_err(|s|CommandError::NodeActionError(s))?;

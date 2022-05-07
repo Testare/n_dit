@@ -18,5 +18,5 @@ pub use sprite_action::{SpriteAction, StandardSpriteAction};
 pub use world_map::WorldMap;
 pub use game_master::{AuthorityGameMaster, GameCommand};
 
-use ai::{EnemyAi, EnemyAiAction};
+use ai::{EnemyAi};
 use animation::Animation;
