@@ -1,4 +1,4 @@
-use super::{GameState};
+use super::GameState;
 
 #[derive(Debug, Clone)]
 pub enum Animation {

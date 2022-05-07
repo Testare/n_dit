@@ -1,12 +1,12 @@
-use super::{GameState, GameAction, EnemyAi};
-use std::sync::mpsc::{channel,Receiver};
+use super::{EnemyAi, GameAction, GameState};
+use std::sync::mpsc::{channel, Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
 // * Behavior of AI players, including the rendering of incomplete-but-finalized
 // AI behavior so we don't have to wait for the AI to complete thinking before
 // start rendering.
 // * Caching and advance-calculating of animated states
-// * Event listening/Registering UI Handlers 
+// * Event listening/Registering UI Handlers
 // * Behavior with controllers over a network.
 // * Translation of player/system input "commands" to "events"
 //
@@ -16,9 +16,8 @@ use std::sync::mpsc::{channel,Receiver};
 #[derive(Debug)]
 pub struct AuthorityGameMaster {
     state: GameState,
-    ai_action_receiver: Option<Receiver<GameAction>>
-    // events: List of events
-    // caching of advance-states
+    ai_action_receiver: Option<Receiver<GameAction>>, // events: List of events
+                                                      // caching of advance-states
 }
 
 impl AuthorityGameMaster {
@@ -27,7 +26,7 @@ impl AuthorityGameMaster {
     #[deprecated]
     pub fn apply_node_action(&mut self, action: GameAction) -> Result<(), String> {
         self.apply_command(GameCommand::PlayerNodeAction(action))
-            .map_err(|_|"Node action failure".to_string())
+            .map_err(|_| "Node action failure".to_string())
     }
 
     fn check_to_run_ai(&mut self) {
@@ -55,25 +54,28 @@ impl AuthorityGameMaster {
             GameCommand::Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
-                    
-                    self.state.apply_action(&action)
-                        .map_err(|s|CommandError::NodeActionError(s))?;
+
+                    self.state
+                        .apply_action(&action)
+                        .map_err(CommandError::NodeActionError)?;
                     self.check_to_run_ai();
                     Ok(())
                 } else {
-                    self.state.apply_action(&GameAction::next())
-                        .map_err(|s|CommandError::NodeActionError(s))
+                    self.state
+                        .apply_action(&GameAction::next())
+                        .map_err(CommandError::NodeActionError)
                 }
-            },
+            }
             GameCommand::Skip => {
                 unimplemented!("Skip action not yet implemented");
-            },
+            }
             GameCommand::PlayerNodeAction(action) => {
-                self.state.apply_action(&action)
-                    .map_err(|s|CommandError::NodeActionError(s))?;
+                self.state
+                    .apply_action(&action)
+                    .map_err(CommandError::NodeActionError)?;
                 self.check_to_run_ai();
                 Ok(())
-            },
+            }
         }
         // Record events
         // Trigger event listeners
@@ -89,7 +91,7 @@ impl From<GameState> for AuthorityGameMaster {
     fn from(state: GameState) -> AuthorityGameMaster {
         AuthorityGameMaster {
             state,
-            ai_action_receiver: None
+            ai_action_receiver: None,
         }
     }
 }
@@ -98,23 +100,20 @@ impl From<GameState> for AuthorityGameMaster {
 pub enum GameCommand {
     Next,
     Skip,
-    PlayerNodeAction(GameAction)
+    PlayerNodeAction(GameAction),
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum CommandError {
-    NodeActionError(String)
+    NodeActionError(String),
 }
 
 impl ToString for CommandError {
     fn to_string(&self) -> String {
         match self {
-            CommandError::NodeActionError(str) => str.to_owned()
+            CommandError::NodeActionError(str) => str.to_owned(),
         }
     }
 }
 
-
-trait EventListener {
-
-}
+trait EventListener {}

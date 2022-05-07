@@ -60,19 +60,22 @@ impl GameState {
     }
 
     pub fn waiting_on_player_input(&self) -> bool {
-        self.animation.is_none() && self.node().map(|node|node.active_team() == Team::PlayerTeam).unwrap_or(true)
+        self.animation.is_none()
+            && self
+                .node()
+                .map(|node| node.active_team() == Team::PlayerTeam)
+                .unwrap_or(true)
     }
 
     pub(super) fn set_animation<A: Into<Option<Animation>>>(&mut self, animation: A) {
         self.animation = animation.into();
     }
 
-    // This should be the only method that takes a mutable reference and 
+    // This should be the only method that takes a mutable reference and
     // is public outside of the game module
     pub(super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
         debug!("Game action called: {:#?}", game_action);
         match game_action {
-            GameAction::Next => Err(String::from("Waiting for player input")),
             GameAction::ActivateSprite(sprite_key) => {
                 if self.node_action(|node| node.activate_sprite(*sprite_key))? {
                     Ok(())
@@ -95,16 +98,13 @@ impl GameState {
                 Ok(())
             }
             GameAction::MoveActiveSprite(directions) => {
-                let pickups =
-                    self.node_action(|node| node.move_active_sprite(directions))??;
+                let pickups = self.node_action(|node| node.move_active_sprite(directions))??;
                 for pickup in pickups {
                     self.inventory.pick_up(pickup);
                 }
                 Ok(())
             }
-            GameAction::Next => {
-                Animation::next(self)
-            }
+            GameAction::Next => Animation::next(self),
         }
     }
 

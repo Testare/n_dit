@@ -1,5 +1,7 @@
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{AuthorityGameMaster, Bounds, Direction, GameAction, GameState, Node, Point, GameCommand};
+use crate::{
+    AuthorityGameMaster, Bounds, Direction, GameAction, GameCommand, GameState, Node, Point,
+};
 use getset::{CopyGetters, Getters};
 
 // TODO Might be best to represent soem of this state as an enum state machine
@@ -36,7 +38,6 @@ pub enum UiView {
 }
 
 impl SuperState {
-
     pub fn from(node: Option<Node>) -> Self {
         // TODO This should be more safe, probably not an actual trait for UiState
         let (t_width, t_height) =
@@ -105,7 +106,7 @@ impl SuperState {
     }
 
     pub fn game_state(&self) -> &GameState {
-        &self.gm.state()
+        self.gm.state()
     }
 
     pub fn ui_actions_for_input(&self, user_input: UserInput) -> Vec<UiAction> {
@@ -142,7 +143,9 @@ impl SuperState {
     pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
         log::info!("Performing UiAction {:?}", ui_action);
         if let UiAction::GameCommand(game_command) = &ui_action {
-            self.gm.apply_command(game_command.clone()).map_err(|err|err.to_string())?;
+            self.gm
+                .apply_command(game_command.clone())
+                .map_err(|err| err.to_string())?;
         }
 
         let SuperState {
@@ -196,15 +199,21 @@ type UiActions = Vec<UiAction>;
 
 impl UiAction {
     pub fn perform_sprite_action(action_index: usize, pnt: Point) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::take_sprite_action(action_index, pnt)))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(
+            GameAction::take_sprite_action(action_index, pnt),
+        ))
     }
 
     pub fn activate_sprite(sprite_key: usize) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::activate_sprite(sprite_key)))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::activate_sprite(
+            sprite_key,
+        )))
     }
 
     pub fn deactivate_sprite() -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::deactivate_sprite()))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(
+            GameAction::deactivate_sprite(),
+        ))
     }
 
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
@@ -232,7 +241,9 @@ impl UiAction {
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::move_active_sprite(vec![dir])))
+        UiAction::GameCommand(GameCommand::PlayerNodeAction(
+            GameAction::move_active_sprite(vec![dir]),
+        ))
     }
 
     #[deprecated]

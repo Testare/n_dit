@@ -1,10 +1,10 @@
-use super::super::{Node, Point, PointSet, Team, GameAction};
+use super::super::{GameAction, Node, Point, PointSet, Team};
 use super::pathfinding;
 
 pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
     mut node: Node,
     team_sprites: Vec<usize>,
-    mut collect: C
+    mut collect: C,
 ) {
     // TODO handle partial states
     // Currently just move all sprites to the right
@@ -16,7 +16,8 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
             (&mut game_actions).push(action);
         });
         for action in game_actions.iter() {
-            node.apply_action(action).expect("Unexpected error applying generated action");
+            node.apply_action(action)
+                .expect("Unexpected error applying generated action");
         }
         game_actions.clear();
 
@@ -24,7 +25,7 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
     }
 }
 
-pub fn simple_greedy_attack<C: FnMut(GameAction)> (sprite_key: usize, node: &Node, mut collect: C) {
+pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node, mut collect: C) {
     /*
 
     Current limitations:
@@ -58,7 +59,6 @@ pub fn simple_greedy_attack<C: FnMut(GameAction)> (sprite_key: usize, node: &Nod
             .filter(|(_, action)| action.can_target_enemy() && action.range().is_some())
             .max_by_key(|(_, action)| action.range())
         {
-
             let range = preferred_action
                 .range()
                 .expect("Actions with no range should've been filtered")
@@ -85,7 +85,10 @@ pub fn simple_greedy_attack<C: FnMut(GameAction)> (sprite_key: usize, node: &Nod
                     .with_sprite(chosen_target, |sprite| sprite.head()) // FIXME The head is not the only targetable piece of the player
                     .expect("Chosen target should have a head");
 
-                collect(GameAction::take_sprite_action(action_index, chosen_target_pt));
+                collect(GameAction::take_sprite_action(
+                    action_index,
+                    chosen_target_pt,
+                ));
             } else {
                 // For now, do nothing. In the future, we might:
                 // Pathfind towards /closest/ enemy
@@ -118,10 +121,16 @@ fn get_points_within_x_of_enemy_team(node: &Node, range: usize) -> PointSet {
     PointSet::merge(pts)
 }
 
-fn move_to_target<C: FnMut(GameAction)>(sprite_key: usize, target: Point, node: &Node, mut collect: C) {
+fn move_to_target<C: FnMut(GameAction)>(
+    sprite_key: usize,
+    target: Point,
+    node: &Node,
+    mut collect: C,
+) {
     for dir in pathfinding::find_any_path_to_point(sprite_key, target, node)
         .expect("TODO What if pathfinding fails?") // TODO It shouldn't... But what then?
-        .into_iter() {
+        .into_iter()
+    {
         collect(GameAction::move_active_sprite(vec![dir]));
-        }
+    }
 }

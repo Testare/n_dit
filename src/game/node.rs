@@ -1,7 +1,7 @@
 mod with_sprite;
 
 use super::{EnemyAi, Pickup, Sprite};
-use crate::{Bounds, Direction, GridMap, Point, Team, GameAction};
+use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};
 use log::debug;
 
 use with_sprite::WithSprite;
@@ -70,7 +70,7 @@ impl Node {
                 }*/
                 Ok(())
             }
-            GameAction::Next => Ok(())
+            GameAction::Next => Ok(()),
         }
     }
 
