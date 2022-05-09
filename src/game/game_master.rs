@@ -75,6 +75,9 @@ impl AuthorityGameMaster {
                     .map_err(CommandError::NodeActionError)?;
                 self.check_to_run_ai();
                 Ok(())
+            },
+            GameCommand::Undo => {
+                unimplemented!("Skip action not yet implemented");
             }
         }
         // Record events
@@ -101,6 +104,7 @@ pub enum GameCommand {
     Next,
     Skip,
     PlayerNodeAction(GameAction),
+    Undo,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
