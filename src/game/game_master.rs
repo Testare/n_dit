@@ -105,7 +105,11 @@ pub enum GameCommand {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum CommandError {
+    #[deprecated]
     NodeActionError(String),
+    /*InvalidCommand(String),
+    ImpossibleCommand(String),
+    FailedCommand(String)*/
 }
 
 impl ToString for CommandError {
@@ -115,5 +119,3 @@ impl ToString for CommandError {
         }
     }
 }
-
-trait EventListener {}

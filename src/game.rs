@@ -1,6 +1,7 @@
 mod ai;
 mod animation;
 mod common;
+mod event;
 mod game_master;
 mod game_state;
 mod inventory;
