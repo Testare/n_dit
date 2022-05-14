@@ -11,6 +11,7 @@ mod sprite_action;
 mod world_map;
 
 pub use common::{Bounds, Direction, Point, PointSet};
+use event::{Event, GameEvent, NodeEvent, EventSubtype};
 pub use game_master::{AuthorityGameMaster, GameCommand};
 pub use game_state::{GameAction, GameState};
 pub use inventory::{Card, Inventory, Item, Pickup};

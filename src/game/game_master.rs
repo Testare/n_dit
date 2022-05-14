@@ -1,4 +1,4 @@
-use super::{EnemyAi, GameAction, GameState};
+use super::{EnemyAi, GameAction, GameState, NodeEvent, EventSubtype};
 use std::sync::mpsc::{channel, Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
@@ -51,6 +51,18 @@ impl AuthorityGameMaster {
     // TODO should return event?
     pub fn apply_command(&mut self, command: GameCommand) -> Result<(), CommandError> {
         match command {
+            GameCommand::PlayerNodeAction(GameAction::ActivateSprite(sprite_index)) => {
+                let ne = NodeEvent::ActivateSprite(sprite_index);
+                match ne.apply_gs(&mut self.state) {
+                    Ok(_event) => {
+                        // Trigger listeners in more generic results
+                        Ok(())
+                    },
+                    Err(_event_err) => {
+                        Err(CommandError::NodeActionError("activate_error".to_string()))
+                    }
+                }
+            },
             GameCommand::Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
