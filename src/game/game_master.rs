@@ -1,4 +1,4 @@
-use super::{EnemyAi, GameAction, GameState, NodeEvent, EventSubtype};
+use super::{event::EventSubtype, EnemyAi, GameAction, GameState, NodeEvent};
 use std::sync::mpsc::{channel, Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
@@ -6,7 +6,6 @@ use std::sync::mpsc::{channel, Receiver};
 // AI behavior so we don't have to wait for the AI to complete thinking before
 // start rendering.
 // * Caching and advance-calculating of animated states
-// * Event listening/Registering UI Handlers
 // * Behavior with controllers over a network.
 // * Translation of player/system input "commands" to "events"
 //
@@ -57,12 +56,12 @@ impl AuthorityGameMaster {
                     Ok(_event) => {
                         // Trigger listeners in more generic results
                         Ok(())
-                    },
+                    }
                     Err(_event_err) => {
                         Err(CommandError::NodeActionError("activate_error".to_string()))
                     }
                 }
-            },
+            }
             GameCommand::Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
@@ -87,7 +86,7 @@ impl AuthorityGameMaster {
                     .map_err(CommandError::NodeActionError)?;
                 self.check_to_run_ai();
                 Ok(())
-            },
+            }
             GameCommand::Undo => {
                 unimplemented!("Skip action not yet implemented");
             }

@@ -1,4 +1,7 @@
+mod node_event;
 mod with_sprite;
+
+pub use node_event::NodeEvent;
 
 use super::{EnemyAi, Pickup, Sprite};
 use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};

@@ -1,3 +1,7 @@
+mod game_event;
+
+pub use game_event::GameEvent;
+
 use super::{Animation, Direction, Inventory, Node, Point, Team, WorldMap};
 use log::debug;
 
