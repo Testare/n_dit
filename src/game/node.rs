@@ -1,7 +1,7 @@
-mod node_event;
+mod node_change;
 mod with_sprite;
 
-pub use node_event::NodeEvent;
+pub use node_change::NodeChange;
 
 use super::{EnemyAi, Pickup, Sprite};
 use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};
@@ -45,6 +45,19 @@ impl Node {
     fn drop_active_sprite(&mut self) {
         self.active_sprite = None;
     }
+
+    pub fn untapped_sprites_on_active_team(&self) -> usize {
+        let enemy_sprites_remaining = self.sprite_keys_for_team(Team::EnemyTeam).len();
+        if enemy_sprites_remaining == 0 {
+            panic!("No enemies remain! You win!")
+        }
+
+        self.filtered_sprite_keys(|_, sprite| {
+                sprite.team() == self.active_team() && !sprite.tapped()
+            })
+            .len()
+    }
+
 
     // TODO This function is incomplete
     // This function should return some sort of indicator of results

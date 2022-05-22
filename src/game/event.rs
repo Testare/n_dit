@@ -1,55 +1,72 @@
-use super::{GameEvent, GameState, NodeEvent};
+use super::{GameChange, GameState, NodeChange, ChangeErr, StateChange};
 
+// For now this will just be an alias.
+// Perhaps in the future, we will replace with a catch-all "GameError"
+pub type EventErr = ChangeErr;
+
+#[derive(Debug, Clone)]
 pub enum Event {
-    G(EventRecord<GameEvent>),
-    N(EventRecord<NodeEvent>),
+    G(usize, GameChange, <GameChange as StateChange>::Metadata),
+    N(usize, NodeChange, <NodeChange as StateChange>::Metadata),
 }
 
-pub struct EventRecord<E: EventSubtype> {
-    event: E,
-    metadata: E::Metadata,
+/// Used to help with converting a StateChange trait object into an Event, which can be serialized/deserialized/managed/etc
+#[derive(Debug, Clone, Copy)]
+pub enum Change {
+    G(GameChange),
+    N(NodeChange),
 }
 
-pub enum EventErr {
-    FailedEvent,
-    NoRelevantState,
-}
-
-pub type EventConstructor<T> = fn(EventRecord<T>) -> Event;
-
-pub trait EventSubtype: Sized {
-    type Metadata;
-    type State;
-
-    const CONSTRUCTOR: EventConstructor<Self>;
-
-    fn apply(&self, state: &mut Self::State) -> Result<Self::Metadata, EventErr>;
-    // fn unapply(&self, metadata: Self::Metadata, state: &mut Self::State);
-    fn is_durable(&self, metadata: Self::Metadata) -> bool;
-    fn state_from_game_state(state: &mut GameState) -> Option<&mut Self::State>;
-    // fn to_event(event_record: EventRecord<Self>) -> Event;
-
-    fn apply_gs(self, game_state: &mut GameState) -> Result<Event, EventErr> {
-        if let Some(state) = Self::state_from_game_state(game_state) {
-            let metadata = self.apply(state)?;
-            Ok(Self::CONSTRUCTOR(EventRecord {
-                event: self,
-                metadata,
-            }))
+impl Change {
+    fn apply_change<C:StateChange>(e: &C, game_state: &mut GameState) -> Result<C::Metadata, EventErr> {
+        if let Some(state) = C::state_from_game_state(game_state) {
+            e.apply(state)
         } else {
             Err(EventErr::NoRelevantState)
         }
     }
+
+    pub(super) fn apply(self, id: usize, game_state: &mut GameState) -> Result<Event, EventErr> {
+        match self {
+            Self::G(ge) => {
+                let ge_meta: <GameChange as StateChange>::Metadata = Self::apply_change(&ge, game_state)?;
+                Ok(Event::G(id, ge, ge_meta))
+            },
+            Self::N(ne) => {
+                let ne_meta: <NodeChange as StateChange>::Metadata = Self::apply_change(&ne, game_state)?;
+                Ok(Event::N(id, ne, ne_meta))
+            }
+        }
+    }
 }
 
-trait GameEventListener {
-    fn apply(&mut self, event: Event) {
+pub struct EventRecord<E: StateChange> {
+    event: E,
+    metadata: E::Metadata,
+}
+
+/*
+trait GameChangeListener {
+    fn apply(&mut self, event: Eevent) {
         match event {
-            Event::N(e) => self.node_event(e),
-            Event::G(e) => self.game_event(e),
+            Eevent::N(e) => self.node_event(e),
+            Eevent::G(e) => self.game_event(e),
         }
     }
 
-    fn node_event(&mut self, e: EventRecord<NodeEvent>) {}
-    fn game_event(&mut self, g: EventRecord<GameEvent>) {}
+    fn node_event(&mut self, e: EventRecord<NodeChange>) {}
+    fn game_event(&mut self, g: EventRecord<GameChange>) {}
+}
+*/
+
+impl From<NodeChange> for Change {
+    fn from(node_change: NodeChange) -> Self {
+        Change::N(node_change)
+    }
+}
+
+impl From<GameChange> for Change {
+    fn from(game_change: GameChange) -> Self {
+        Change::G(game_change)
+    }
 }

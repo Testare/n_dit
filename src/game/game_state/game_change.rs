@@ -1,24 +1,28 @@
-use super::super::event::*;
+use super::super::{StateChange, event::EventErr};
 use crate::GameState;
+use super::super::animation::Animation;
 
-pub enum GameEvent {
+#[derive(Debug, Clone, Copy)]
+pub enum GameChange {
     NextPage,
     CloseNode,
     OpenNode,
 }
 
-impl EventSubtype for GameEvent {
+impl StateChange for GameChange {
     type Metadata = ();
     type State = GameState;
 
-    const CONSTRUCTOR: EventConstructor<Self> = Event::G;
-
     fn apply(&self, state: &mut GameState) -> Result<Self::Metadata, EventErr> {
-        Ok(())
+        use GameChange::*;
+        match self {
+            NextPage => Animation::next(state).map_err(|_|EventErr::FailedEvent),
+            _ => unimplemented!("Game changes have not been implemented yet")
+        }
     }
 
     fn is_durable(&self, _: ()) -> bool {
-        use GameEvent::*;
+        use GameChange::*;
         match self {
             NextPage => false,
             CloseNode | OpenNode => true,

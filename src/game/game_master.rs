@@ -1,4 +1,4 @@
-use super::{event::EventSubtype, EnemyAi, GameAction, GameState, NodeEvent};
+use super::{event::{Event, Change, EventErr}, EnemyAi, GameAction, GameState, NodeChange, GameChange};
 use std::sync::mpsc::{channel, Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
@@ -17,15 +17,21 @@ pub struct AuthorityGameMaster {
     state: GameState,
     ai_action_receiver: Option<Receiver<GameAction>>, // events: List of events
                                                       // caching of advance-states
+    last_event_id: usize
 }
 
 impl AuthorityGameMaster {
-    /// Utility method while refactoring to ease transition to Commands
-    /// TODO remove
-    #[deprecated]
-    pub fn apply_node_action(&mut self, action: GameAction) -> Result<(), String> {
-        self.apply_command(GameCommand::PlayerNodeAction(action))
-            .map_err(|_| "Node action failure".to_string())
+    pub fn apply<C: Into<Change>>(&mut self, change: C) -> Result<(), CommandError> {
+        let new_event_id = self.last_event_id + 1;
+        let wrapped_change = change.into();
+        let result = wrapped_change.apply(new_event_id, &mut self.state); // Add event number and record
+        log::debug!("Event result: {:?}", result);
+        if let Err(err) = result {
+            Err(CommandError::NodeActionError(format!("{:?} error occurred while performing change {:?}", err, wrapped_change)))
+        } else {
+            self.last_event_id = new_event_id;
+            Ok(())
+        }
     }
 
     fn check_to_run_ai(&mut self) {
@@ -47,45 +53,59 @@ impl AuthorityGameMaster {
         }
     }
 
+    // Util to ease transition to command
+    // Should be easy to replace "GameAction" with "GameCommand"
+    fn apply_game_action(&mut self, action: GameAction) -> Result<(), CommandError> {
+        match action {
+            GameAction::ActivateSprite(sprite_key) => {
+                self.apply(NodeChange::ActivateSprite(sprite_key))?;
+            }
+            GameAction::DeactivateSprite => {
+                self.apply(NodeChange::DeactivateSprite)?;
+                let node = self.state.node()
+                    .expect("How could this not exist if DeactivateSprite successful?");
+
+                if node.untapped_sprites_on_active_team() == 0 {
+                    self.apply(NodeChange::FinishTurn)?;
+                    self.check_to_run_ai();
+                }
+            }
+            GameAction::TakeSpriteAction(action_index, pt) => {
+                self.apply(NodeChange::TakeSpriteAction(action_index, pt))?;
+                let node = self.state.node()
+                    .expect("How could this not exist if TakeSpriteAction successful?");
+
+                if node.untapped_sprites_on_active_team() == 0 {
+                    self.apply(NodeChange::FinishTurn)?;
+                    self.check_to_run_ai();
+                }
+            }
+            GameAction::MoveActiveSprite(directions) => {
+                self.apply(NodeChange::MoveActiveSprite(directions[0]))?;
+            }
+            GameAction::Next => {
+                unimplemented!("Should not implement: Is already handled as GameCommand")
+            }
+        }
+        Ok(())
+
+    }
+
     // TODO should return event?
     pub fn apply_command(&mut self, command: GameCommand) -> Result<(), CommandError> {
         match command {
-            GameCommand::PlayerNodeAction(GameAction::ActivateSprite(sprite_index)) => {
-                let ne = NodeEvent::ActivateSprite(sprite_index);
-                match ne.apply_gs(&mut self.state) {
-                    Ok(_event) => {
-                        // Trigger listeners in more generic results
-                        Ok(())
-                    }
-                    Err(_event_err) => {
-                        Err(CommandError::NodeActionError("activate_error".to_string()))
-                    }
-                }
-            }
+            GameCommand::PlayerNodeAction(action) => self.apply_game_action(action),
             GameCommand::Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
 
-                    self.state
-                        .apply_action(&action)
-                        .map_err(CommandError::NodeActionError)?;
-                    self.check_to_run_ai();
-                    Ok(())
+                    self.apply_game_action(action)
                 } else {
-                    self.state
-                        .apply_action(&GameAction::next())
-                        .map_err(CommandError::NodeActionError)
+                    self.apply(GameChange::NextPage)
                 }
             }
             GameCommand::Skip => {
                 unimplemented!("Skip action not yet implemented");
-            }
-            GameCommand::PlayerNodeAction(action) => {
-                self.state
-                    .apply_action(&action)
-                    .map_err(CommandError::NodeActionError)?;
-                self.check_to_run_ai();
-                Ok(())
             }
             GameCommand::Undo => {
                 unimplemented!("Skip action not yet implemented");
@@ -106,6 +126,7 @@ impl From<GameState> for AuthorityGameMaster {
         AuthorityGameMaster {
             state,
             ai_action_receiver: None,
+            last_event_id: 0,
         }
     }
 }

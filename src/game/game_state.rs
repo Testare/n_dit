@@ -1,6 +1,6 @@
-mod game_event;
+mod game_change;
 
-pub use game_event::GameEvent;
+pub use game_change::GameChange;
 
 use super::{Animation, Direction, Inventory, Node, Point, Team, WorldMap};
 use log::debug;
