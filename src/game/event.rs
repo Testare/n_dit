@@ -40,25 +40,6 @@ impl Change {
     }
 }
 
-pub struct EventRecord<E: StateChange> {
-    event: E,
-    metadata: E::Metadata,
-}
-
-/*
-trait GameChangeListener {
-    fn apply(&mut self, event: Eevent) {
-        match event {
-            Eevent::N(e) => self.node_event(e),
-            Eevent::G(e) => self.game_event(e),
-        }
-    }
-
-    fn node_event(&mut self, e: EventRecord<NodeChange>) {}
-    fn game_event(&mut self, g: EventRecord<GameChange>) {}
-}
-*/
-
 impl From<NodeChange> for Change {
     fn from(node_change: NodeChange) -> Self {
         Change::N(node_change)

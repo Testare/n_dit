@@ -6,7 +6,6 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
     team_sprites: Vec<usize>,
     mut collect: C,
 ) {
-    // TODO handle partial states
     // Currently just move all sprites to the right
     let mut game_actions: Vec<GameAction> = Vec::new();
     for sprite_key in team_sprites {
@@ -20,9 +19,8 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
                 .expect("Unexpected error applying generated action");
         }
         game_actions.clear();
-
-        // TODO apply new_actions to Node so multiple sprite keys can interop
     }
+    // TODO add FinishTurn
 }
 
 pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node, mut collect: C) {
