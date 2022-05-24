@@ -1,4 +1,4 @@
-use super::super::{StateChange, event::EventErr};
+use super::super::super::{StateChange, ChangeErr};
 use crate::GameState;
 use super::super::animation::Animation;
 
@@ -13,10 +13,10 @@ impl StateChange for GameChange {
     type Metadata = ();
     type State = GameState;
 
-    fn apply(&self, state: &mut GameState) -> Result<Self::Metadata, EventErr> {
+    fn apply(&self, state: &mut GameState) -> Result<Self::Metadata, ChangeErr> {
         use GameChange::*;
         match self {
-            NextPage => Animation::next(state).map_err(|_|EventErr::FailedEvent),
+            NextPage => Animation::next(state).map_err(|_|ChangeErr::FailedEvent),
             _ => unimplemented!("Game changes have not been implemented yet")
         }
     }

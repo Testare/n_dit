@@ -2,7 +2,8 @@ mod game_change;
 
 pub use game_change::GameChange;
 
-use super::{Animation, Direction, Inventory, Node, Point, Team, WorldMap};
+use super::animation::Animation;
+use super::super::{Direction, Inventory, Node, Point, Team, WorldMap};
 use log::debug;
 
 #[derive(Debug)]

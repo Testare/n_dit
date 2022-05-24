@@ -1,5 +1,4 @@
-use super::super::event::*;
-use super::super::StateChange;
+use super::super::super::{StateChange, ChangeErr};
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
 #[derive(Debug, Clone, Copy)]
@@ -11,7 +10,7 @@ pub enum NodeChange {
     TakeSpriteAction(usize, Point),
 }
 
-type NodeChangeResult = Result<NodeChangeMetadata, EventErr>;
+type NodeChangeResult = Result<NodeChangeMetadata, ChangeErr>;
 
 impl Node {
     fn check_victory_conditions(&mut self) {
@@ -35,7 +34,7 @@ impl Node {
         if self.activate_sprite(sprite_index) {
             Ok(NodeChangeMetadata::for_team(self.active_team()))
         } else {
-            Err(EventErr::FailedEvent)
+            Err(ChangeErr::FailedEvent)
         }
     }
 
@@ -45,7 +44,7 @@ impl Node {
     }
     
     fn move_active_sprite_event(&mut self, direction: Direction) -> NodeChangeResult {
-        let mut pickups: Vec<Pickup> = self.move_active_sprite(&[direction]).map_err(|_|EventErr::FailedEvent)?;
+        let mut pickups: Vec<Pickup> = self.move_active_sprite(&[direction]).map_err(|_|ChangeErr::FailedEvent)?;
         let pickup = pickups.pop();
         // TODO add pickups to node inventory
         Ok(NodeChangeMetadata::for_team(self.active_team()).with_pickup(pickup))
@@ -62,7 +61,7 @@ impl StateChange for NodeChange {
     type Metadata = NodeChangeMetadata;
     type State = Node;
 
-    fn apply(&self, node: &mut Self::State) -> Result<Self::Metadata, EventErr> {
+    fn apply(&self, node: &mut Self::State) -> Result<Self::Metadata, ChangeErr> {
         use NodeChange::*;
         match self {
             ActivateSprite(sprite_index) => node.activate_sprite_event(*sprite_index),

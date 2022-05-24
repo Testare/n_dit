@@ -1,4 +1,5 @@
-use super::{event::{Event, Change, EventErr}, EnemyAi, GameAction, GameState, NodeChange, GameChange};
+use crate::Direction;
+use super::{event::{Event, Change}, EnemyAi, GameAction, GameState, NodeChange, GameChange};
 use std::sync::mpsc::{channel, Receiver};
 use std::collections::HashMap;
 
@@ -17,28 +18,24 @@ use std::collections::HashMap;
 pub struct AuthorityGameMaster {
     state: GameState,
     ai_action_receiver: Option<Receiver<GameAction>>, // caching of advance-states
-    last_event_id: usize,
     event_log: EventLog,
     event_publishers: EventPublisherManager,
 }
 
 impl AuthorityGameMaster {
     pub fn apply<C: Into<Change>>(&mut self, change: C) -> Result<(), CommandError> {
-        let new_event_id = self.last_event_id + 1;
+        let new_event_id = self.event_log.last_event_id() + 1;
         let wrapped_change = change.into();
         let result = wrapped_change.apply(new_event_id, &mut self.state); // Add event number and record
         log::debug!("Event result: {:?}", result);
         match result {
             Err(err) => {
-                self.event_publishers.fail();
                 // Revert state from the previous commands?
                 Err(CommandError::NodeActionError(format!("{:?} error occurred while performing change {:?}", err, wrapped_change)))
             }
             Ok(event) => {
-                // TODO last_event_id should be in the event_log
                 self.event_publishers.collect(&event, &self.state);
                 self.event_log.push_event(event);
-                self.last_event_id = new_event_id;
                 Ok(())
             }
         }
@@ -108,26 +105,39 @@ impl AuthorityGameMaster {
         self.event_publishers.remove_publisher(key);
     }
 
-    pub fn apply_command(&mut self, command: GameCommand) -> Result<(), CommandError> {
+    fn apply_command_dispatch(&mut self, command: GameCommand) -> Result<(), CommandError> {
+        use GameCommand::*;
         match command {
-            GameCommand::PlayerNodeAction(action) => self.apply_game_action(action),
-            GameCommand::Next => {
+            PlayerNodeAction(action) => self.apply_game_action(action),
+            Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
-                    self.apply_game_action(action)                    
+                    self.apply_game_action(action)
                 } else {
                     self.apply(GameChange::NextPage)
                 }
             }
-            GameCommand::Skip => {
+            Skip => {
                 unimplemented!("Skip action not yet implemented");
             }
-            GameCommand::Undo => {
+            Undo => {
                 unimplemented!("Skip action not yet implemented");
+            }
+            _ => {
+                unimplemented!("Many actions not yet implemented");
             }
         }
-        // Record events
-        // Trigger event listeners
+
+    }
+
+    pub fn apply_command(&mut self, command: GameCommand) -> Result<(), CommandError> {
+        let result = self.apply_command_dispatch(command);
+        match &result {
+            Ok(_) => self.event_publishers.publish(),
+            // Failing here instead of in apply in case the command wants to modify the error message a little.
+            Err(error) => self.event_publishers.fail(error), 
+        }
+        result
     }
 
     // TEMPORARY
@@ -141,19 +151,37 @@ impl From<GameState> for AuthorityGameMaster {
         AuthorityGameMaster {
             state,
             ai_action_receiver: None,
-            last_event_id: 0,
             event_log: EventLog::default(),
             event_publishers: EventPublisherManager::default(),
         }
     }
 }
 
+/**
+ * These commands are to be the sole method outside of the game crate
+ * of changing the internal state.
+ * 
+ * For this reason it is marked as non_exhaustive, as new commands might
+ * be added in the future, including new versions of the command.
+ * 
+ * In the future we might introduce command versioning, so that different
+ * implementations of commands can be implemented safely.
+ * 
+ * Note that once we have a stable release, commands should not be
+ * removed from this enum. Rather, we can mark them deprecated, and 
+ * eventually stop supporting them in later versions.
+ * 
+ * This should definitely be refactored out to its own module.
+ */
+#[non_exhaustive]
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum GameCommand {
     Next,
     Skip,
     PlayerNodeAction(GameAction),
     Undo,
+    InterfaceEdition(usize),
+    NodeMoveActiveSprite(Direction),
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -175,7 +203,7 @@ impl ToString for CommandError {
 
 pub trait EventPublisher: std::fmt::Debug {
     fn collect(&mut self, event: &Event, game_state: &GameState);
-    fn fail(&mut self);
+    fn fail(&mut self, error: &CommandError);
     fn publish(&mut self);
 }
 
@@ -200,9 +228,9 @@ impl EventPublisherManager {
         }
     }
 
-    fn fail(&mut self) {
+    fn fail(&mut self, error: &CommandError) {
         for publisher in self.publishers.values_mut() {
-            publisher.fail();
+            publisher.fail(error);
         }
     }
 
@@ -219,5 +247,9 @@ struct EventLog(Vec<Event>);
 impl EventLog {
     fn push_event(&mut self, event: Event) {
         self.0.push(event);
+    }
+
+    fn last_event_id(&self) -> usize {
+        self.0.last().map(Event::id).unwrap_or(0)
     }
 }

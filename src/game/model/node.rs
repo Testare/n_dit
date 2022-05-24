@@ -3,7 +3,10 @@ mod with_sprite;
 
 pub use node_change::NodeChange;
 
-use super::{EnemyAi, Pickup, Sprite};
+// TODO Use some abstraction for EnemyAi, so we don't depend on that
+use super::super::ai::EnemyAi; 
+use super::sprite::Sprite;
+use super::inventory::Pickup;
 use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};
 use log::debug;
 
@@ -59,12 +62,9 @@ impl Node {
     }
 
 
-    // TODO This function is incomplete
-    // This function should return some sort of indicator of results
-    // For instance, a player movement could include adding something to inventory
-    // Then again, perhaps pickups should be in the node inventory until node
-    // node success.
-    pub(super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
+    // Deprecated: Use NodeChange::apply instead.
+    #[deprecated]
+    pub(in super::super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
         match game_action {
             GameAction::ActivateSprite(sprite_key) => {
                 self.activate_sprite(*sprite_key);

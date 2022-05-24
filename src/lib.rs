@@ -49,6 +49,47 @@
 ///     ui->>user: Displays results to user
 ///```
 ///
+/// Game Module heirarchy, ideally modules will only use modules they can link 
+/// to, directly or indirectly.
+/// 
+/// ```mermaid
+/// flowchart RL
+///     subgraph level0
+///     common
+///     end
+///     subgraph level1
+///     abstractions
+///     end
+///     subgraph level2
+///     model
+///     end
+///     subgraph level3
+///     changes
+///     end
+///     subgraph level4
+///     ai
+///     event
+///     end
+///     subgraph level5
+///     command
+///     end
+///     subgraph level6
+///     game_master
+///     end
+///     
+///     abstractions --> common
+///     model --> abstractions
+///     changes --> model
+///     ai --> changes
+///     event --> changes
+///     command --> event
+///     game_master --> command
+///     game_master --> ai
+///     
+///     
+/// 
+/// ```
+/// 
 pub mod hld {}
 
 #[macro_use]

@@ -2,12 +2,29 @@ use super::{GameChange, GameState, NodeChange, ChangeErr, StateChange};
 
 // For now this will just be an alias.
 // Perhaps in the future, we will replace with a catch-all "GameError"
-pub type EventErr = ChangeErr;
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    G(usize, GameChange, <GameChange as StateChange>::Metadata),
-    N(usize, NodeChange, <NodeChange as StateChange>::Metadata),
+    G {
+        id: usize, 
+        change: GameChange, 
+        metadata: <GameChange as StateChange>::Metadata,
+    },
+    N {
+        id: usize, 
+        change: NodeChange,
+        metadata: <NodeChange as StateChange>::Metadata,
+    }
+}
+
+impl Event {
+    pub fn id(&self) -> usize {
+        match self {
+            Event::G{id,..} => *id,
+            Event::N{id,..} => *id,
+        }
+    }
+
 }
 
 /// Used to help with converting a StateChange trait object into an Event, which can be serialized/deserialized/managed/etc
@@ -18,23 +35,23 @@ pub enum Change {
 }
 
 impl Change {
-    fn apply_change<C:StateChange>(e: &C, game_state: &mut GameState) -> Result<C::Metadata, EventErr> {
+    fn apply_change<C:StateChange>(e: &C, game_state: &mut GameState) -> Result<C::Metadata, ChangeErr> {
         if let Some(state) = C::state_from_game_state(game_state) {
             e.apply(state)
         } else {
-            Err(EventErr::NoRelevantState)
+            Err(ChangeErr::NoRelevantState)
         }
     }
 
-    pub(super) fn apply(self, id: usize, game_state: &mut GameState) -> Result<Event, EventErr> {
+    pub(super) fn apply(self, id: usize, game_state: &mut GameState) -> Result<Event, ChangeErr> {
         match self {
-            Self::G(ge) => {
-                let ge_meta: <GameChange as StateChange>::Metadata = Self::apply_change(&ge, game_state)?;
-                Ok(Event::G(id, ge, ge_meta))
+            Self::G(change) => {
+                let metadata: <GameChange as StateChange>::Metadata = Self::apply_change(&change, game_state)?;
+                Ok(Event::G{id, change, metadata})
             },
-            Self::N(ne) => {
-                let ne_meta: <NodeChange as StateChange>::Metadata = Self::apply_change(&ne, game_state)?;
-                Ok(Event::N(id, ne, ne_meta))
+            Self::N(change) => {
+                let metadata: <NodeChange as StateChange>::Metadata = Self::apply_change(&change, game_state)?;
+                Ok(Event::N{id, change, metadata})
             }
         }
     }

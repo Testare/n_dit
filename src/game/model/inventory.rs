@@ -1,4 +1,4 @@
-use super::Piece;
+use crate::Piece;
 use getset::{CopyGetters, Getters};
 use std::{cmp::min, fmt};
 
