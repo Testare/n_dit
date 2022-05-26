@@ -61,67 +61,6 @@ impl Node {
         .len()
     }
 
-    // Deprecated: Use NodeChange::apply instead.
-    #[deprecated]
-    pub(in super::super) fn apply_action(
-        &mut self,
-        game_action: &GameAction,
-    ) -> Result<(), String> {
-        match game_action {
-            GameAction::ActivateSprite(sprite_key) => {
-                self.activate_sprite(*sprite_key);
-                Ok(())
-            }
-            GameAction::DeactivateSprite => {
-                self.deactivate_sprite();
-                Ok(())
-            }
-            GameAction::TakeSpriteAction(action_index, pt) => {
-                self.perform_sprite_action(*action_index, *pt);
-                Ok(())
-            }
-            GameAction::MoveActiveSprite(directions) => {
-                let pickups = self.move_active_sprite(directions);
-                // TODO return type that includes pickups
-                /*for pickup in pickups {
-                    self.inventory.pick_up(pickup);
-                }*/
-                Ok(())
-            }
-            GameAction::Next => Ok(()),
-        }
-    }
-
-    pub fn perform_sprite_action(
-        &mut self,
-        sprite_action_index: usize,
-        target_pt: Point,
-    ) -> Option<()> {
-        let active_sprite_key = self.active_sprite_key()?;
-        let action = self
-            .with_sprite(active_sprite_key, |sprite| {
-                sprite
-                    .actions()
-                    .get(sprite_action_index)
-                    .map(|action| action.unwrap())
-            })
-            .flatten()?;
-        let result = action.apply(self, active_sprite_key, target_pt);
-        match result {
-            Ok(()) => {
-                self.deactivate_sprite();
-                Some(())
-            }
-            _ => None,
-        }
-    }
-
-    /// Returns remaining moves
-    pub fn move_active_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>, String> {
-        self.with_active_sprite_mut(|mut sprite| sprite.move_sprite(directions))
-            .unwrap_or_else(|| Err("No active sprite".to_string()))
-    }
-
     pub fn active_sprite_key(&self) -> Option<usize> {
         self.active_sprite
     }

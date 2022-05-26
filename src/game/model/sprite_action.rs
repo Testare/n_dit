@@ -1,6 +1,7 @@
 use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
+use super::super::error::{ErrorMsg as _, Result};
 
 mod standard_sprite_actions;
 
@@ -94,7 +95,7 @@ impl SpriteAction<'_> {
         node: &mut Node,
         sprite_key: usize,
         target_pt: Point,
-    ) -> Result<(), SpriteActionError> {
+    ) -> Result<()> {
         if let Some(_target_type) = self
             .targets
             .iter()
@@ -109,22 +110,22 @@ impl SpriteAction<'_> {
                     SAEffect::DealDamage(dmg) => {
                         let _: Option<Piece> = node
                             .with_sprite_at_mut(target_pt, |target| target.take_damage(dmg))
-                            .ok_or(SpriteActionError::SpriteSpecificEffectOnNonSpriteTarget)?;
+                            .ok_or("Invalid target for damage: Target must be a sprite".fail_reversible_msg())?;
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_sprite_at_mut(target_pt, |mut target| {
                             target.increase_max_size(amount, bound)
                         })
-                        .ok_or(SpriteActionError::SpriteSpecificEffectOnNonSpriteTarget)?;
+                        .ok_or("Invalid target for increase size: Target must be a sprite".fail_reversible_msg())?;
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
                 Ok(())
             } else {
-                Err(SpriteActionError::ConditionNotMet)
+                "Conditions not met".invalid()
             }
         } else {
-            Err(SpriteActionError::InvalidTarget)
+            "Invalid target for action".invalid()
         }
     }
 

@@ -37,3 +37,34 @@ impl ToString for Error {
         }
     }
 }
+
+pub trait ErrorMsg {
+    fn invalid<T>(&self) -> Result<T>;
+    fn fail_reversible<T>(&self) -> Result<T>;
+    fn fail_critical<T>(&self) -> Result<T>;
+    fn invalid_msg(&self) -> Error;
+    fn fail_reversible_msg(&self) -> Error;
+    fn fail_critical_msg(&self) -> Error;
+}
+
+impl ErrorMsg for str {
+    fn invalid<T>(&self) -> Result<T> {
+        Err(Error::NotPossibleForState(self.to_string()))
+    }
+    fn fail_reversible<T>(&self) -> Result<T> {
+        Err(Error::FailureReversible(self.to_string()))
+    }
+    fn fail_critical<T>(&self) -> Result<T> {
+        Err(Error::FailureCritical(self.to_string()))
+    }
+    fn invalid_msg(&self) -> Error {
+        Error::NotPossibleForState(self.to_string())
+    }
+    fn fail_reversible_msg(&self) -> Error {
+        Error::FailureReversible(self.to_string())
+    }
+    fn fail_critical_msg(&self) -> Error {
+        Error::FailureCritical(self.to_string())
+    }
+
+}

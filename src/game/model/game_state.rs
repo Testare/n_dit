@@ -103,10 +103,11 @@ impl GameState {
                 Ok(())
             }
             GameAction::MoveActiveSprite(directions) => {
-                let pickups = self.node_action(|node| node.move_active_sprite(directions))??;
+                // let pickups = self.node_action(|node| node.move_active_sprite(directions))??;
+                /*
                 for pickup in pickups {
                     self.inventory.pick_up(pickup);
-                }
+                }*/
                 Ok(())
             }
             GameAction::Next => Animation::next(self),

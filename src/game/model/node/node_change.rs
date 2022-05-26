@@ -1,4 +1,4 @@
-use super::super::super::error::{Error, Result};
+use super::super::super::error::{Error, Result, ErrorMsg as _};
 use super::super::super::StateChange;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
@@ -35,9 +35,7 @@ impl Node {
         if self.activate_sprite(sprite_index) {
             Ok(NodeChangeMetadata::for_team(self.active_team()))
         } else {
-            Err(Error::NotPossibleForState(
-                "Unable to activate that sprite".to_string(),
-            ))
+            "Unable to activate that sprite".invalid()
         }
     }
 
@@ -46,10 +44,10 @@ impl Node {
         Ok(NodeChangeMetadata::for_team(self.active_team()))
     }
 
-    fn move_active_sprite_event(&mut self, direction: Direction) -> NodeChangeResult {
-        let mut pickups: Vec<Pickup> = self
-            .move_active_sprite(&[direction])
-            .map_err(Error::NotPossibleForState)?;
+    fn move_active_sprite(&mut self, direction: Direction) -> NodeChangeResult {
+        let mut pickups = self.with_active_sprite_mut(|mut sprite| {
+            sprite.move_sprite(&[direction])
+        }).unwrap_or_else(|| "There is no active sprite".invalid())?;
         let pickup = pickups.pop();
         // TODO add pickups to node inventory
         Ok(NodeChangeMetadata::for_team(self.active_team()).with_pickup(pickup))
@@ -60,7 +58,18 @@ impl Node {
         sprite_action_index: usize,
         pt: Point,
     ) -> NodeChangeResult {
-        self.perform_sprite_action(sprite_action_index, pt);
+        let active_sprite_key = self.active_sprite_key()
+            .ok_or_else(||"invalid_state".invalid_msg())?;
+        let action = self
+            .with_sprite(active_sprite_key, |sprite| {
+                sprite
+                    .actions()
+                    .get(sprite_action_index)
+                    .map(|action| action.unwrap())
+                    .ok_or_else(||format!("Cannot find action {} in sprite", sprite_action_index).invalid_msg())
+            }).ok_or_else(||"Active sprite key is not an actual sprite".fail_critical_msg())??;
+        action.apply(self, active_sprite_key, pt)?;
+        self.deactivate_sprite();
         self.check_victory_conditions();
         Ok(NodeChangeMetadata::for_team(self.active_team()))
     }
@@ -78,7 +87,7 @@ impl StateChange for NodeChange {
             ActivateSprite(sprite_index) => node.activate_sprite_event(*sprite_index),
             DeactivateSprite => node.deactivate_sprite_event(),
             FinishTurn => node.finish_turn_event(),
-            MoveActiveSprite(dir) => node.move_active_sprite_event(*dir),
+            MoveActiveSprite(dir) => node.move_active_sprite(*dir),
             TakeSpriteAction(sprite_action_index, pt) => {
                 node.take_sprite_action_event(*sprite_action_index, *pt)
             }
