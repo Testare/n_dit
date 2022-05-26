@@ -1,6 +1,7 @@
-use super::super::super::{StateChange, ChangeErr};
-use crate::GameState;
+use super::super::super::abstractions::StateChange;
+use super::super::super::error::{Error, Result};
 use super::super::animation::Animation;
+use crate::GameState;
 
 #[derive(Debug, Clone, Copy)]
 pub enum GameChange {
@@ -13,11 +14,13 @@ impl StateChange for GameChange {
     type Metadata = ();
     type State = GameState;
 
-    fn apply(&self, state: &mut GameState) -> Result<Self::Metadata, ChangeErr> {
+    const STATE_NAME: &'static str = "GAME";
+
+    fn apply(&self, state: &mut GameState) -> Result<Self::Metadata> {
         use GameChange::*;
         match self {
-            NextPage => Animation::next(state).map_err(|_|ChangeErr::FailedEvent),
-            _ => unimplemented!("Game changes have not been implemented yet")
+            NextPage => Animation::next(state).map_err(Error::NotPossibleForState),
+            _ => unimplemented!("Game changes have not been implemented yet"),
         }
     }
 

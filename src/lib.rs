@@ -49,9 +49,9 @@
 ///     ui->>user: Displays results to user
 ///```
 ///
-/// Game Module heirarchy, ideally modules will only use modules they can link 
+/// Game Module heirarchy, ideally modules will only use modules they can link
 /// to, directly or indirectly.
-/// 
+///
 /// ```mermaid
 /// flowchart RL
 ///     subgraph level0
@@ -87,9 +87,9 @@
 ///     game_master --> ai
 ///     
 ///     
-/// 
+///
 /// ```
-/// 
+///
 pub mod hld {}
 
 #[macro_use]

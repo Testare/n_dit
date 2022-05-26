@@ -1,7 +1,11 @@
+use super::error::{Error, Result};
+use super::{
+    event::{Change, Event},
+    EnemyAi, GameAction, GameChange, GameState, NodeChange,
+};
 use crate::Direction;
-use super::{event::{Event, Change}, EnemyAi, GameAction, GameState, NodeChange, GameChange};
-use std::sync::mpsc::{channel, Receiver};
 use std::collections::HashMap;
+use std::sync::mpsc::{channel, Receiver};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
 // * Behavior of AI players, including the rendering of incomplete-but-finalized
@@ -23,16 +27,13 @@ pub struct AuthorityGameMaster {
 }
 
 impl AuthorityGameMaster {
-    pub fn apply<C: Into<Change>>(&mut self, change: C) -> Result<(), CommandError> {
+    pub fn apply<C: Into<Change>>(&mut self, change: C) -> Result<()> {
         let new_event_id = self.event_log.last_event_id() + 1;
         let wrapped_change = change.into();
         let result = wrapped_change.apply(new_event_id, &mut self.state); // Add event number and record
         log::debug!("Event result: {:?}", result);
         match result {
-            Err(err) => {
-                // Revert state from the previous commands?
-                Err(CommandError::NodeActionError(format!("{:?} error occurred while performing change {:?}", err, wrapped_change)))
-            }
+            Err(err) => Err(err),
             Ok(event) => {
                 self.event_publishers.collect(&event, &self.state);
                 self.event_log.push_event(event);
@@ -62,14 +63,16 @@ impl AuthorityGameMaster {
 
     // Util to ease transition to command
     // Should be easy to replace "GameAction" with "GameCommand"
-    fn apply_game_action(&mut self, action: GameAction) -> Result<(), CommandError> {
+    fn apply_game_action(&mut self, action: &GameAction) -> Result<()> {
         match action {
             GameAction::ActivateSprite(sprite_key) => {
-                self.apply(NodeChange::ActivateSprite(sprite_key))?;
+                self.apply(NodeChange::ActivateSprite(*sprite_key))?;
             }
             GameAction::DeactivateSprite => {
                 self.apply(NodeChange::DeactivateSprite)?;
-                let node = self.state.node()
+                let node = self
+                    .state
+                    .node()
                     .expect("How could this not exist if DeactivateSprite successful?");
 
                 if node.untapped_sprites_on_active_team() == 0 {
@@ -78,8 +81,10 @@ impl AuthorityGameMaster {
                 }
             }
             GameAction::TakeSpriteAction(action_index, pt) => {
-                self.apply(NodeChange::TakeSpriteAction(action_index, pt))?;
-                let node = self.state.node()
+                self.apply(NodeChange::TakeSpriteAction(*action_index, *pt))?;
+                let node = self
+                    .state
+                    .node()
                     .expect("How could this not exist if TakeSpriteAction successful?");
 
                 if node.untapped_sprites_on_active_team() == 0 {
@@ -105,14 +110,14 @@ impl AuthorityGameMaster {
         self.event_publishers.remove_publisher(key);
     }
 
-    fn apply_command_dispatch(&mut self, command: GameCommand) -> Result<(), CommandError> {
+    fn apply_command_dispatch(&mut self, command: &GameCommand) -> Result<()> {
         use GameCommand::*;
         match command {
             PlayerNodeAction(action) => self.apply_game_action(action),
             Next => {
                 if let Some(rx) = &self.ai_action_receiver {
                     let action = rx.recv().unwrap();
-                    self.apply_game_action(action)
+                    self.apply_game_action(&action)
                 } else {
                     self.apply(GameChange::NextPage)
                 }
@@ -127,15 +132,14 @@ impl AuthorityGameMaster {
                 unimplemented!("Many actions not yet implemented");
             }
         }
-
     }
 
-    pub fn apply_command(&mut self, command: GameCommand) -> Result<(), CommandError> {
-        let result = self.apply_command_dispatch(command);
+    pub fn apply_command(&mut self, command: GameCommand) -> Result<()> {
+        let result = self.apply_command_dispatch(&command);
         match &result {
-            Ok(_) => self.event_publishers.publish(),
+            Ok(_) => self.event_publishers.publish(&command),
             // Failing here instead of in apply in case the command wants to modify the error message a little.
-            Err(error) => self.event_publishers.fail(error), 
+            Err(error) => self.event_publishers.fail(error, &command),
         }
         result
     }
@@ -160,17 +164,17 @@ impl From<GameState> for AuthorityGameMaster {
 /**
  * These commands are to be the sole method outside of the game crate
  * of changing the internal state.
- * 
+ *
  * For this reason it is marked as non_exhaustive, as new commands might
  * be added in the future, including new versions of the command.
- * 
+ *
  * In the future we might introduce command versioning, so that different
  * implementations of commands can be implemented safely.
- * 
+ *
  * Note that once we have a stable release, commands should not be
- * removed from this enum. Rather, we can mark them deprecated, and 
+ * removed from this enum. Rather, we can mark them deprecated, and
  * eventually stop supporting them in later versions.
- * 
+ *
  * This should definitely be refactored out to its own module.
  */
 #[non_exhaustive]
@@ -184,59 +188,46 @@ pub enum GameCommand {
     NodeMoveActiveSprite(Direction),
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub enum CommandError {
-    #[deprecated]
-    NodeActionError(String),
-    /*InvalidCommand(String),
-    ImpossibleCommand(String),
-    FailedCommand(String)*/
-}
-
-impl ToString for CommandError {
-    fn to_string(&self) -> String {
-        match self {
-            CommandError::NodeActionError(str) => str.to_owned(),
-        }
-    }
-}
-
 pub trait EventPublisher: std::fmt::Debug {
     fn collect(&mut self, event: &Event, game_state: &GameState);
-    fn fail(&mut self, error: &CommandError);
-    fn publish(&mut self);
+    fn fail(&mut self, error: &Error, command: &GameCommand);
+    fn publish(&mut self, command: &GameCommand);
+    // fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog);
 }
 
 #[derive(Debug, Default)]
 struct EventPublisherManager {
-    publishers: HashMap<String, Box<dyn EventPublisher>>
+    publishers: HashMap<String, Box<dyn EventPublisher>>,
 }
 
 impl EventPublisherManager {
-
-    fn add_publisher<P: EventPublisher + 'static>(&mut self,key: String, publisher: P) -> Option<Box<dyn EventPublisher>> {
+    fn add_publisher<P: EventPublisher + 'static>(
+        &mut self,
+        key: String,
+        publisher: P,
+    ) -> Option<Box<dyn EventPublisher>> {
         self.publishers.insert(key, Box::new(publisher))
     }
 
-    fn remove_publisher(&mut self,key: String) -> Option<Box<dyn EventPublisher>> {
+    fn remove_publisher(&mut self, key: String) -> Option<Box<dyn EventPublisher>> {
         self.publishers.remove(&key)
     }
-    
+
     fn collect(&mut self, event: &Event, game_state: &GameState) {
         for publisher in self.publishers.values_mut() {
             publisher.collect(event, game_state);
         }
     }
 
-    fn fail(&mut self, error: &CommandError) {
+    fn fail(&mut self, error: &Error, command: &GameCommand) {
         for publisher in self.publishers.values_mut() {
-            publisher.fail(error);
+            publisher.fail(error, &command);
         }
     }
 
-    fn publish(&mut self) {
+    fn publish(&mut self, command: &GameCommand) {
         for publisher in self.publishers.values_mut() {
-            publisher.publish();
+            publisher.publish(&command);
         }
     }
 }

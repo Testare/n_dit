@@ -4,9 +4,9 @@ mod with_sprite;
 pub use node_change::NodeChange;
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
-use super::super::ai::EnemyAi; 
-use super::sprite::Sprite;
+use super::super::ai::EnemyAi;
 use super::inventory::Pickup;
+use super::sprite::Sprite;
 use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};
 use log::debug;
 
@@ -56,15 +56,17 @@ impl Node {
         }
 
         self.filtered_sprite_keys(|_, sprite| {
-                sprite.team() == self.active_team() && !sprite.tapped()
-            })
-            .len()
+            sprite.team() == self.active_team() && !sprite.tapped()
+        })
+        .len()
     }
-
 
     // Deprecated: Use NodeChange::apply instead.
     #[deprecated]
-    pub(in super::super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
+    pub(in super::super) fn apply_action(
+        &mut self,
+        game_action: &GameAction,
+    ) -> Result<(), String> {
         match game_action {
             GameAction::ActivateSprite(sprite_key) => {
                 self.activate_sprite(*sprite_key);
