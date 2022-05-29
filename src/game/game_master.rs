@@ -21,7 +21,7 @@ use std::sync::mpsc::{channel, Receiver};
 #[derive(Debug)]
 pub struct AuthorityGameMaster {
     state: GameState,
-    ai_action_receiver: Option<Receiver<GameAction>>, // caching of advance-states
+    ai_action_receiver: Option<Receiver<Change>>, // caching of advance-states
     event_log: EventLog,
     event_publishers: EventPublisherManager,
 }
@@ -50,8 +50,8 @@ impl AuthorityGameMaster {
                 let node_destructble = node.clone();
                 std::thread::spawn(move || {
                     let ai: EnemyAi = *node_destructble.enemy_ai();
-                    ai.generate_enemy_ai_actions(node_destructble, |action| {
-                        tx.send(action).unwrap()
+                    ai.generate_enemy_ai_actions(node_destructble, |change| {
+                        tx.send(change.into()).unwrap()
                     })
                 });
             } else if self.ai_action_receiver.is_some() && !node.active_team().is_ai() {
@@ -113,11 +113,16 @@ impl AuthorityGameMaster {
     fn apply_command_dispatch(&mut self, command: &GameCommand) -> Result<()> {
         use GameCommand::*;
         match command {
+            NodeMoveActiveSprite(dir) => {
+                self.apply(NodeChange::MoveActiveSprite(*dir))
+            }
             PlayerNodeAction(action) => self.apply_game_action(action),
             Next => {
                 if let Some(rx) = &self.ai_action_receiver {
-                    let action = rx.recv().unwrap();
-                    self.apply_game_action(&action)
+                    let change = rx.recv().unwrap();
+                    let result = self.apply(change);
+                    self.check_to_run_ai(); // If we changed turns, delete the AI.
+                    result
                 } else {
                     self.apply(GameChange::NextPage)
                 }
@@ -221,13 +226,13 @@ impl EventPublisherManager {
 
     fn fail(&mut self, error: &Error, command: &GameCommand) {
         for publisher in self.publishers.values_mut() {
-            publisher.fail(error, &command);
+            publisher.fail(error, command);
         }
     }
 
     fn publish(&mut self, command: &GameCommand) {
         for publisher in self.publishers.values_mut() {
-            publisher.publish(&command);
+            publisher.publish(command);
         }
     }
 }

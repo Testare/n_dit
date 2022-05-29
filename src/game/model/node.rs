@@ -7,15 +7,10 @@ pub use node_change::NodeChange;
 use super::super::ai::EnemyAi;
 use super::inventory::Pickup;
 use super::sprite::Sprite;
-use crate::{Bounds, Direction, GameAction, GridMap, Point, Team};
+use crate::{Bounds, Direction, GridMap, Point, Team};
 use log::debug;
 
 use with_sprite::WithSprite;
-
-#[derive(Debug)]
-
-//pub struct NodeRestorePoint(GridMap<Piece>);
-pub struct NodeRestorePoint();
 
 type NodeConstructionError = String;
 
@@ -36,10 +31,6 @@ pub enum Piece {
 }
 
 impl Node {
-    // TODO Node undo states
-    pub fn create_restore_point(&self) -> NodeRestorePoint {
-        NodeRestorePoint()
-    }
 
     fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid

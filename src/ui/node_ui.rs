@@ -1,6 +1,6 @@
 use super::NodeCt;
 use crate::{
-    Direction, GameAction, GameCommand, Node, NodeRestorePoint, Point, PointSet, UiAction,
+    Direction, GameAction, GameCommand, Node, Point, PointSet, UiAction,
     UserInput,
 };
 use getset::{CopyGetters, Setters};
@@ -34,12 +34,10 @@ enum NodePhase {
         selected_action_index: Option<usize>,
     },
     MoveSprite {
-        undo_state: Rc<NodeRestorePoint>,
         selected_sprite_key: usize,
         selected_action_index: Option<usize>,
     },
     SpriteAction {
-        undo_state: Rc<NodeRestorePoint>,
         selected_sprite_key: usize,
         selected_action_index: usize,
     },
@@ -178,9 +176,7 @@ impl NodeUiState {
                                     .unwrap()
                                 {
                                     // TODO this is probably not the right pattern
-                                    Some(UiAction::GameCommand(GameCommand::PlayerNodeAction(
-                                        GameAction::move_active_sprite(vec![dir]),
-                                    )))
+                                    Some(UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(dir)))
                                 } else {
                                     None
                                 }
@@ -290,23 +286,19 @@ impl NodeUiState {
                             selected_action_index: Some(selected_action_index),
                             selected_sprite_key: Some(selected_sprite_key),
                         } => {
-                            debug!("HERE");
                             // FIXME Need to active the sprite
                             self.phase = NodePhase::SpriteAction {
                                 selected_action_index: *selected_action_index,
                                 selected_sprite_key: *selected_sprite_key,
-                                undo_state: Rc::new(node.create_restore_point()),
                             };
                         }
                         NodePhase::MoveSprite {
                             selected_action_index: Some(selected_action_index),
                             selected_sprite_key,
-                            undo_state,
                         } => {
                             self.phase = NodePhase::SpriteAction {
                                 selected_action_index: *selected_action_index,
                                 selected_sprite_key: *selected_sprite_key,
-                                undo_state: undo_state.clone(),
                             };
                         }
                         _ => {}
@@ -398,9 +390,9 @@ impl NodeUiState {
                     .transition_to_free_select(self.selected_square, node);
                 Ok(())
             }
-            UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::MoveActiveSprite(
+            UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(
                 _directions,
-            ))) => {
+            )) => {
                 if let Some((remaining_moves, head, is_tapped)) = node
                     .with_active_sprite(|sprite| (sprite.moves(), sprite.head(), sprite.tapped()))
                 {
@@ -526,16 +518,13 @@ impl NodePhase {
                 } => Ok::<_, String>(NodePhase::MoveSprite {
                     selected_action_index: *selected_action_index,
                     selected_sprite_key: node.active_sprite_key().unwrap(),
-                    undo_state: Rc::new(node.create_restore_point()),
                 }),
                 NodePhase::SpriteAction {
                     selected_sprite_key,
-                    undo_state,
                     ..
                 } => Ok::<_, String>(NodePhase::MoveSprite {
                     selected_sprite_key: *selected_sprite_key,
                     selected_action_index: None,
-                    undo_state: undo_state.clone(),
                 }),
                 _ => panic!(
                     "Unreachable arm case hit when transitioning to MoveSprite phase in NodeUi"
@@ -553,18 +542,15 @@ impl NodePhase {
             } => Ok::<_, String>(NodePhase::SpriteAction {
                 selected_action_index: *selected_action_index,
                 selected_sprite_key: *selected_sprite_key,
-                undo_state: Rc::new(node.create_restore_point()),
             }),
             NodePhase::MoveSprite {
                 selected_sprite_key,
                 selected_action_index,
-                undo_state,
             } => {
                 // TODO check if sprite has actions available, else go to
                 Ok::<_, String>(NodePhase::SpriteAction {
                     selected_sprite_key: *selected_sprite_key,
                     selected_action_index: selected_action_index.unwrap_or(0),
-                    undo_state: undo_state.clone(),
                 })
             }
             _ => unimplemented!("Implement!"),

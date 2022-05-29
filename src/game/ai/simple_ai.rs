@@ -1,29 +1,30 @@
-use super::super::{GameAction, Node, Point, PointSet, Team};
+use super::super::{NodeChange, Node, Point, PointSet, Team};
 use super::pathfinding;
 
-pub(super) fn generate_enemy_ai_actions<C: FnMut(GameAction)>(
+pub(super) fn generate_enemy_ai_actions<C: FnMut(NodeChange)>(
     mut node: Node,
     team_sprites: Vec<usize>,
     mut collect: C,
 ) {
     // Currently just move all sprites to the right
-    let mut game_actions: Vec<GameAction> = Vec::new();
+    let mut changes: Vec<NodeChange> = Vec::new();
     for sprite_key in team_sprites {
-        simple_greedy_attack(sprite_key, &node, |action| {
-            log::debug!("CALLED COLLECT {:?}", action);
-            collect(action.clone());
-            (&mut game_actions).push(action);
+        simple_greedy_attack(sprite_key, &node, |change| {
+            log::debug!("CALLED COLLECT {:?}", change);
+            collect(change.clone());
+            (&mut changes).push(change);
         });
-        for action in game_actions.iter() {
-            node.apply_action(action)
+        for change in changes.iter() {
+            change.apply(&mut node)
                 .expect("Unexpected error applying generated action");
         }
-        game_actions.clear();
+        changes.clear();
     }
+    collect(NodeChange::FinishTurn)
     // TODO add FinishTurn
 }
 
-pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node, mut collect: C) {
+pub fn simple_greedy_attack<C: FnMut(NodeChange)>(sprite_key: usize, node: &Node, mut collect: C) {
     /*
 
     Current limitations:
@@ -48,7 +49,7 @@ pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node
     */
 
     node.with_sprite(sprite_key, |sprite| {
-        collect(GameAction::activate_sprite(sprite_key));
+        collect(NodeChange::ActivateSprite(sprite_key));
 
         if let Some((action_index, preferred_action)) = sprite
             .actions()
@@ -83,7 +84,7 @@ pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node
                     .with_sprite(chosen_target, |sprite| sprite.head()) // FIXME The head is not the only targetable piece of the player
                     .expect("Chosen target should have a head");
 
-                collect(GameAction::take_sprite_action(
+                collect(NodeChange::TakeSpriteAction(
                     action_index,
                     chosen_target_pt,
                 ));
@@ -94,10 +95,10 @@ pub fn simple_greedy_attack<C: FnMut(GameAction)>(sprite_key: usize, node: &Node
                 // Patrol?
                 // Maybe I'll add metadata to each file to add hints for the AI.
                 // AI will probably be massively configurable per node
-                collect(GameAction::deactivate_sprite());
+                collect(NodeChange::DeactivateSprite);
             }
         } else {
-            collect(GameAction::deactivate_sprite());
+            collect(NodeChange::DeactivateSprite);
         }
     })
     .expect("Somehow we got called with an invalid sprite key")
@@ -119,7 +120,7 @@ fn get_points_within_x_of_enemy_team(node: &Node, range: usize) -> PointSet {
     PointSet::merge(pts)
 }
 
-fn move_to_target<C: FnMut(GameAction)>(
+fn move_to_target<C: FnMut(NodeChange)>(
     sprite_key: usize,
     target: Point,
     node: &Node,
@@ -129,6 +130,6 @@ fn move_to_target<C: FnMut(GameAction)>(
         .expect("TODO What if pathfinding fails?") // TODO It shouldn't... But what then?
         .into_iter()
     {
-        collect(GameAction::move_active_sprite(vec![dir]));
+        collect(NodeChange::MoveActiveSprite(dir));
     }
 }

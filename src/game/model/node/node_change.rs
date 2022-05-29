@@ -14,6 +14,8 @@ pub enum NodeChange {
 type NodeChangeResult = Result<NodeChangeMetadata>;
 
 impl Node {
+
+
     fn check_victory_conditions(&mut self) {
         let enemy_sprites_remaining = self.sprite_keys_for_team(Team::EnemyTeam).len();
         let player_sprites_remaining = self.sprite_keys_for_team(Team::PlayerTeam).len();
@@ -137,5 +139,13 @@ impl NodeChangeMetadata {
     fn with_dropped_squares(mut self, dropped_squares: Vec<Point>) -> NodeChangeMetadata {
         self.dropped_squares = dropped_squares;
         self
+    }
+}
+
+
+impl NodeChange {
+    /// Helper method so StateChange trait doesn't have to be imported
+    pub fn apply(&self, node: &mut Node) -> Result<NodeChangeMetadata> {
+        <Self as StateChange>::apply(self, node)
     }
 }

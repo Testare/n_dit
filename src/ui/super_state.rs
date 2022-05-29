@@ -241,9 +241,7 @@ impl UiAction {
     }
 
     pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(
-            GameAction::move_active_sprite(vec![dir]),
-        ))
+        UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(dir))
     }
 
     #[deprecated]

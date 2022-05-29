@@ -76,44 +76,6 @@ impl GameState {
         self.animation = animation.into();
     }
 
-    // This should be the only method that takes a mutable reference and
-    // is public outside of the game module
-    pub(super) fn apply_action(&mut self, game_action: &GameAction) -> Result<(), String> {
-        debug!("Game action called: {:#?}", game_action);
-        match game_action {
-            GameAction::ActivateSprite(sprite_key) => {
-                if self.node_action(|node| node.activate_sprite(*sprite_key))? {
-                    Ok(())
-                } else {
-                    Err("Sprite does not exist".to_string())
-                }
-            }
-            GameAction::DeactivateSprite => {
-                self.node_action(|node| {
-                    node.deactivate_sprite();
-                })?;
-                self.state_check_after_player_action();
-                Ok(())
-            }
-            GameAction::TakeSpriteAction(action_index, pt) => {
-                self.node_action(|node| {
-                    node.perform_sprite_action(*action_index, *pt);
-                })?;
-                self.state_check_after_player_action();
-                Ok(())
-            }
-            GameAction::MoveActiveSprite(directions) => {
-                // let pickups = self.node_action(|node| node.move_active_sprite(directions))??;
-                /*
-                for pickup in pickups {
-                    self.inventory.pick_up(pickup);
-                }*/
-                Ok(())
-            }
-            GameAction::Next => Animation::next(self),
-        }
-    }
-
     fn node_action<R, F: FnOnce(&mut Node) -> R>(&mut self, action: F) -> Result<R, String> {
         self.node
             .as_mut()
