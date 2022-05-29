@@ -7,7 +7,7 @@ pub use node_change::NodeChange;
 use super::super::ai::EnemyAi;
 use super::inventory::Pickup;
 use super::sprite::Sprite;
-use crate::{Bounds, Direction, GridMap, Point, Team};
+use crate::{Bounds, GridMap, Point, Team};
 use log::debug;
 
 use with_sprite::WithSprite;

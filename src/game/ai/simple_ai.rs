@@ -11,7 +11,7 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(NodeChange)>(
     for sprite_key in team_sprites {
         simple_greedy_attack(sprite_key, &node, |change| {
             log::debug!("CALLED COLLECT {:?}", change);
-            collect(change.clone());
+            collect(change);
             (&mut changes).push(change);
         });
         for change in changes.iter() {

@@ -1,5 +1,3 @@
-pub struct Help;
-
 pub mod animation;
 pub mod game_state;
 pub mod inventory;

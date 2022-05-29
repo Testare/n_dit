@@ -105,19 +105,19 @@ impl SpriteAction<'_> {
                     SAEffect::DealDamage(dmg) => {
                         let _: Option<Piece> = node
                             .with_sprite_at_mut(target_pt, |target| target.take_damage(dmg))
-                            .ok_or(
+                            .ok_or_else(|| {
                                 "Invalid target for damage: Target must be a sprite"
-                                    .fail_reversible_msg(),
-                            )?;
+                                    .fail_reversible_msg()
+                            })?;
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_sprite_at_mut(target_pt, |mut target| {
                             target.increase_max_size(amount, bound)
                         })
-                        .ok_or(
+                        .ok_or_else(|| {
                             "Invalid target for increase size: Target must be a sprite"
-                                .fail_reversible_msg(),
-                        )?;
+                                .fail_reversible_msg()
+                        })?;
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }

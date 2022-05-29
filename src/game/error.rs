@@ -5,9 +5,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    #[deprecated]
-    NodeActionError(String),
-
     /// For low-level failures, like the player accidentally tries to move a
     /// piece into a wall.
     ///
@@ -31,9 +28,13 @@ pub enum Error {
 
 impl ToString for Error {
     fn to_string(&self) -> String {
+        use Error::*;
         match self {
-            Error::NodeActionError(str) => str.to_owned(),
-            _ => unimplemented!(""),
+            CommandNotSuccessful => "Command unsucessful".to_string(),
+            InvalidForContext(msg) => format!("Command not possible, requires context [{}]", msg),
+            NotPossibleForState(msg) => format!("Command not currently possible [{}]", msg),
+            FailureReversible(msg) => format!("Programmer error detected, aborting [{}]", msg),
+            FailureCritical(msg) => format!("Programmer error detected, crashing [{}]", msg),
         }
     }
 }

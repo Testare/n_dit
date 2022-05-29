@@ -3,7 +3,7 @@ mod game_command;
 use super::error::{Error, Result};
 use super::{
     event::{Change, Event},
-    EnemyAi, GameChange, GameState, NodeChange,
+    EnemyAi, GameState,
 };
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver};

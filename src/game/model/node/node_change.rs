@@ -1,4 +1,4 @@
-use super::super::super::error::{Error, ErrorMsg as _, Result};
+use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::StateChange;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
