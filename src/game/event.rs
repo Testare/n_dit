@@ -19,7 +19,11 @@ pub enum Event {
 }
 
 impl Event {
-    fn undo_change<C: StateChange>(change: &C, metadata: &C::Metadata, game_state: &mut GameState) -> Result<()> {
+    fn undo_change<C: StateChange>(
+        change: &C,
+        metadata: &C::Metadata,
+        game_state: &mut GameState,
+    ) -> Result<()> {
         if let Some(state) = C::state_from_game_state(game_state) {
             change.unapply(metadata, state)
         } else {
@@ -36,17 +40,24 @@ impl Event {
 
     pub fn is_durable(&self) -> bool {
         match self {
-            Event::G { change, metadata, .. } => change.is_durable(metadata),
-            Event::N { change, metadata, .. } => change.is_durable(metadata),
+            Event::G {
+                change, metadata, ..
+            } => change.is_durable(metadata),
+            Event::N {
+                change, metadata, ..
+            } => change.is_durable(metadata),
         }
     }
 
     pub(super) fn undo(&self, game_state: &mut GameState) -> Result<()> {
         match self {
-            Event::G { change, metadata, .. } => Self::undo_change(change, metadata, game_state),
-            Event::N { change, metadata, .. } => Self::undo_change(change, metadata, game_state),
+            Event::G {
+                change, metadata, ..
+            } => Self::undo_change(change, metadata, game_state),
+            Event::N {
+                change, metadata, ..
+            } => Self::undo_change(change, metadata, game_state),
         }
-
     }
 }
 

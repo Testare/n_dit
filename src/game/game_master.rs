@@ -49,8 +49,10 @@ impl AuthorityGameMaster {
     fn undo(&mut self) -> Result<()> {
         let event_opt = self.event_log.pop_event();
         if let Some(event) = event_opt {
+            log::debug!("Undoing event {:?}", &event);
             event.undo(&mut self.state)?;
-            self.event_publishers.collect_undo(&event, &self.state, &self.event_log);
+            self.event_publishers
+                .collect_undo(&event, &self.state, &self.event_log);
             Ok(())
         } else {
             "Nothing to undo".invalid()
@@ -187,6 +189,5 @@ impl EventLog {
 
     fn is_durable(&self) -> bool {
         self.0.last().map(Event::is_durable).unwrap_or(true)
-
     }
 }

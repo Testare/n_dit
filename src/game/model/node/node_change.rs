@@ -31,17 +31,51 @@ impl Node {
         Ok(NodeChangeMetadata::for_team(team))
     }
 
-    fn activate_sprite_event(&mut self, sprite_index: usize) -> NodeChangeResult {
+    fn activate_sprite_change(&mut self, sprite_index: usize) -> NodeChangeResult {
+        let metadata = NodeChangeMetadata::for_team(self.active_team())
+            .with_previous_active_sprite_id(self.active_sprite_key());
         if self.activate_sprite(sprite_index) {
-            Ok(NodeChangeMetadata::for_team(self.active_team()))
+            Ok(metadata)
         } else {
             "Unable to activate that sprite".invalid()
         }
     }
 
-    fn deactivate_sprite_event(&mut self) -> NodeChangeResult {
-        self.deactivate_sprite();
-        Ok(NodeChangeMetadata::for_team(self.active_team()))
+    fn activate_sprite_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
+        let previous_sprite_id = metadata.previous_active_sprite_id;
+        // If there was a previously active sprite when this one was activated, untap it and make it active
+        if let Some(sprite_id) = previous_sprite_id {
+            let sprite_exists = self.with_sprite_mut(sprite_id, |mut sprite| sprite.untap());
+            if sprite_exists.is_none() {
+                return format!(
+                    "Undo activate sprite {}, preivously active sprite does not exist",
+                    sprite_id
+                )
+                .fail_critical();
+            }
+        }
+        self.set_active_sprite(previous_sprite_id);
+        Ok(())
+    }
+
+    fn deactivate_sprite_change(&mut self) -> NodeChangeResult {
+        if let Some(sprite_key) = self.active_sprite_key() {
+            self.deactivate_sprite();
+            Ok(NodeChangeMetadata::for_team(self.active_team())
+                .with_previous_active_sprite_id(sprite_key))
+        } else {
+            "No active sprite to deactivate".invalid()
+        }
+    }
+
+    fn deactivate_sprite_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
+        let sprite_id = metadata.expect_previous_active_sprite_id()?;
+        let sprite_exists = self.with_sprite_mut(sprite_id, |mut sprite| sprite.untap());
+        if sprite_exists.is_none() {
+            return "Deactivate sprite does not exist".fail_critical();
+        }
+        self.set_active_sprite(Some(sprite_id));
+        Ok(())
     }
 
     fn move_active_sprite(&mut self, direction: Direction) -> NodeChangeResult {
@@ -89,8 +123,8 @@ impl StateChange for NodeChange {
     fn apply(&self, node: &mut Self::State) -> Result<Self::Metadata> {
         use NodeChange::*;
         match self {
-            ActivateSprite(sprite_index) => node.activate_sprite_event(*sprite_index),
-            DeactivateSprite => node.deactivate_sprite_event(),
+            ActivateSprite(sprite_index) => node.activate_sprite_change(*sprite_index),
+            DeactivateSprite => node.deactivate_sprite_change(),
             FinishTurn => node.finish_turn_event(),
             MoveActiveSprite(dir) => node.move_active_sprite(*dir),
             TakeSpriteAction(sprite_action_index, pt) => {
@@ -102,7 +136,12 @@ impl StateChange for NodeChange {
     fn unapply(&self, metadata: &NodeChangeMetadata, node: &mut Self::State) -> Result<()> {
         use NodeChange::*;
         match self {
-            ActivateSprite(_) => node.deactivate_sprite(),
+            ActivateSprite(sprite_id) => {
+                node.activate_sprite_undo(metadata)?;
+            }
+            DeactivateSprite => {
+                node.deactivate_sprite_undo(metadata)?;
+            }
             _ => {}
         }
         Ok(())
@@ -131,6 +170,7 @@ pub struct NodeChangeMetadata {
     dropped_squares: Vec<Point>,
     // An item was picked up during movement
     pickup: Option<Pickup>,
+    previous_active_sprite_id: Option<usize>,
     team: Team,
 }
 
@@ -140,7 +180,22 @@ impl NodeChangeMetadata {
             team,
             pickup: None,
             dropped_squares: Vec::new(),
+            previous_active_sprite_id: None,
         }
+    }
+
+    fn expect_previous_active_sprite_id(&self) -> Result<usize> {
+        self.previous_active_sprite_id.ok_or_else(|| {
+            "Missing metadata field previous_active_sprite_id required for undo".fail_critical_msg()
+        })
+    }
+
+    fn with_previous_active_sprite_id<S: Into<Option<usize>>>(
+        mut self,
+        sprite_id: S,
+    ) -> NodeChangeMetadata {
+        self.previous_active_sprite_id = sprite_id.into();
+        self
     }
 
     fn with_pickup<P: Into<Option<Pickup>>>(mut self, pickup: P) -> NodeChangeMetadata {

@@ -1,4 +1,4 @@
-use super::error::{Result};
+use super::error::Result;
 use super::GameState;
 
 // Not quite sure where this should live yet, so for now it gets its own file

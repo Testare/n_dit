@@ -60,6 +60,10 @@ impl Node {
         self.active_sprite = None;
     }
 
+    fn set_active_sprite(&mut self, sprite_key: Option<usize>) {
+        self.active_sprite = sprite_key
+    }
+
     pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
         let can_activate = self
             .with_sprite(sprite_key, |sprite| {
