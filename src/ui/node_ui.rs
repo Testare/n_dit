@@ -2,7 +2,6 @@ use super::NodeCt;
 use crate::{Direction, GameCommand, Node, Point, PointSet, UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, CopyGetters, Setters)]
 pub struct NodeUiState {
@@ -270,6 +269,7 @@ impl NodeUiState {
                         _ => UiAction::none(),
                     },
                     UserInput::Select => vec![UiAction::change_selection()],
+                    UserInput::Back => vec![UiAction::undo()],
                     _ => UiAction::none(),
                 }
             }
@@ -374,7 +374,7 @@ impl NodeUiState {
                     if moves != 0 {
                         self.phase.transition_to_move_sprite(node)?;
                     } else if actions != 0 {
-                        self.phase.transition_to_sprite_action(node)?;
+                        self.phase.transition_to_sprite_action()?;
                     } else {
                         // TODO guard against this in game, perhaps never untap these sprites
                         panic!("How do we have a sprite with no actions or moves?")
@@ -396,7 +396,7 @@ impl NodeUiState {
                     {
                         // Sprite is still active, must still have some moves
                         self.set_default_selected_action();
-                        self.phase.transition_to_sprite_action(node)?;
+                        self.phase.transition_to_sprite_action()?;
                     }
                 } else {
                     // TODO fix this bug hat applies to sprites without actions
@@ -526,7 +526,7 @@ impl NodePhase {
         }
     }
 
-    fn transition_to_sprite_action(&mut self, node: &Node) -> Result<(), String> {
+    fn transition_to_sprite_action(&mut self) -> Result<(), String> {
         *self = match self {
             NodePhase::FreeSelect {
                 selected_action_index: Some(selected_action_index),

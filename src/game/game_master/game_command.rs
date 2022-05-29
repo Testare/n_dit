@@ -88,7 +88,7 @@ pub(super) fn apply_command_dispatch(
             unimplemented!("Skip action not yet implemented");
         }
         Undo => {
-            unimplemented!("Skip action not yet implemented");
+            gm.undo_until_last_durable_event()
         }
         _ => {
             unimplemented!("Many actions not yet implemented");

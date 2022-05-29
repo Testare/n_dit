@@ -1,6 +1,6 @@
 mod game_command;
 
-use super::error::{Error, Result};
+use super::error::{Error, ErrorMsg as _, Result};
 use super::{
     event::{Change, Event},
     EnemyAi, GameState,
@@ -44,6 +44,25 @@ impl AuthorityGameMaster {
                 Ok(())
             }
         }
+    }
+
+    fn undo(&mut self) -> Result<()> {
+        let event_opt = self.event_log.pop_event();
+        if let Some(event) = event_opt {
+            event.undo(&mut self.state)?;
+            self.event_publishers.collect_undo(&event, &self.state, &self.event_log);
+            Ok(())
+        } else {
+            "Nothing to undo".invalid()
+        }
+    }
+
+    fn undo_until_last_durable_event(&mut self) -> Result<()> {
+        self.undo()?;
+        while !self.event_log.is_durable() {
+            self.undo()?;
+        }
+        Ok(())
     }
 
     fn check_to_run_ai(&mut self) {
@@ -104,7 +123,7 @@ pub trait EventPublisher: std::fmt::Debug {
     fn collect(&mut self, event: &Event, game_state: &GameState);
     fn fail(&mut self, error: &Error, command: &GameCommand);
     fn publish(&mut self, command: &GameCommand);
-    // fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog);
+    fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog);
 }
 
 #[derive(Debug, Default)]
@@ -131,6 +150,12 @@ impl EventPublisherManager {
         }
     }
 
+    fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
+        for publisher in self.publishers.values_mut() {
+            publisher.collect_undo(event, game_state, event_log);
+        }
+    }
+
     fn fail(&mut self, error: &Error, command: &GameCommand) {
         for publisher in self.publishers.values_mut() {
             publisher.fail(error, command);
@@ -145,14 +170,23 @@ impl EventPublisherManager {
 }
 
 #[derive(Debug, Default, Clone)]
-struct EventLog(Vec<Event>);
+pub struct EventLog(Vec<Event>);
 
 impl EventLog {
+    fn pop_event(&mut self) -> Option<Event> {
+        self.0.pop()
+    }
+
     fn push_event(&mut self, event: Event) {
         self.0.push(event);
     }
 
     fn last_event_id(&self) -> usize {
         self.0.last().map(Event::id).unwrap_or(0)
+    }
+
+    fn is_durable(&self) -> bool {
+        self.0.last().map(Event::is_durable).unwrap_or(true)
+
     }
 }

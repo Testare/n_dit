@@ -24,7 +24,11 @@ impl StateChange for GameChange {
         }
     }
 
-    fn is_durable(&self, _: ()) -> bool {
+    fn unapply(&self, _: &(), _state: &mut GameState) -> Result<()> {
+        unimplemented!("No undo game actions implemented, though it might be good for animations")
+    }
+
+    fn is_durable(&self, _: &()) -> bool {
         use GameChange::*;
         match self {
             NextPage => false,

@@ -99,7 +99,16 @@ impl StateChange for NodeChange {
         }
     }
 
-    fn is_durable(&self, metadata: NodeChangeMetadata) -> bool {
+    fn unapply(&self, metadata: &NodeChangeMetadata, node: &mut Self::State) -> Result<()> {
+        use NodeChange::*;
+        match self {
+            ActivateSprite(_) => node.deactivate_sprite(),
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn is_durable(&self, metadata: &NodeChangeMetadata) -> bool {
         use NodeChange::*;
         if metadata.team.is_ai() {
             return matches!(self, FinishTurn); // Finish turn is the only durable event

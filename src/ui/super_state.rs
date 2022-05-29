@@ -231,6 +231,10 @@ impl UiAction {
         UiAction::Quit
     }
 
+    pub fn undo() -> UiAction {
+        UiAction::GameCommand(GameCommand::Undo)
+    }
+
     pub fn is_quit(&self) -> bool {
         matches!(self, UiAction::Quit)
     }
