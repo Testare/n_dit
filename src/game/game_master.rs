@@ -1,11 +1,14 @@
+mod game_command;
+
 use super::error::{Error, Result};
 use super::{
     event::{Change, Event},
-    EnemyAi, GameAction, GameChange, GameState, NodeChange,
+    EnemyAi, GameChange, GameState, NodeChange,
 };
-use crate::Direction;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver};
+
+pub use game_command::GameCommand;
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
 // * Behavior of AI players, including the rendering of incomplete-but-finalized
@@ -27,7 +30,8 @@ pub struct AuthorityGameMaster {
 }
 
 impl AuthorityGameMaster {
-    pub fn apply<C: Into<Change>>(&mut self, change: C) -> Result<()> {
+    // Used in GameCommand
+    fn apply<C: Into<Change>>(&mut self, change: C) -> Result<()> {
         let new_event_id = self.event_log.last_event_id() + 1;
         let wrapped_change = change.into();
         let result = wrapped_change.apply(new_event_id, &mut self.state); // Add event number and record
@@ -61,47 +65,6 @@ impl AuthorityGameMaster {
         }
     }
 
-    // Util to ease transition to command
-    // Should be easy to replace "GameAction" with "GameCommand"
-    fn apply_game_action(&mut self, action: &GameAction) -> Result<()> {
-        match action {
-            GameAction::ActivateSprite(sprite_key) => {
-                self.apply(NodeChange::ActivateSprite(*sprite_key))?;
-            }
-            GameAction::DeactivateSprite => {
-                self.apply(NodeChange::DeactivateSprite)?;
-                let node = self
-                    .state
-                    .node()
-                    .expect("How could this not exist if DeactivateSprite successful?");
-
-                if node.untapped_sprites_on_active_team() == 0 {
-                    self.apply(NodeChange::FinishTurn)?;
-                    self.check_to_run_ai();
-                }
-            }
-            GameAction::TakeSpriteAction(action_index, pt) => {
-                self.apply(NodeChange::TakeSpriteAction(*action_index, *pt))?;
-                let node = self
-                    .state
-                    .node()
-                    .expect("How could this not exist if TakeSpriteAction successful?");
-
-                if node.untapped_sprites_on_active_team() == 0 {
-                    self.apply(NodeChange::FinishTurn)?;
-                    self.check_to_run_ai();
-                }
-            }
-            GameAction::MoveActiveSprite(directions) => {
-                self.apply(NodeChange::MoveActiveSprite(directions[0]))?;
-            }
-            GameAction::Next => {
-                unimplemented!("Should not implement: Is already handled as GameCommand")
-            }
-        }
-        Ok(())
-    }
-
     pub fn add_publisher<P: EventPublisher + 'static>(&mut self, key: String, publisher: P) {
         self.event_publishers.add_publisher(key, publisher);
     }
@@ -110,37 +73,8 @@ impl AuthorityGameMaster {
         self.event_publishers.remove_publisher(key);
     }
 
-    fn apply_command_dispatch(&mut self, command: &GameCommand) -> Result<()> {
-        use GameCommand::*;
-        match command {
-            NodeMoveActiveSprite(dir) => {
-                self.apply(NodeChange::MoveActiveSprite(*dir))
-            }
-            PlayerNodeAction(action) => self.apply_game_action(action),
-            Next => {
-                if let Some(rx) = &self.ai_action_receiver {
-                    let change = rx.recv().unwrap();
-                    let result = self.apply(change);
-                    self.check_to_run_ai(); // If we changed turns, delete the AI.
-                    result
-                } else {
-                    self.apply(GameChange::NextPage)
-                }
-            }
-            Skip => {
-                unimplemented!("Skip action not yet implemented");
-            }
-            Undo => {
-                unimplemented!("Skip action not yet implemented");
-            }
-            _ => {
-                unimplemented!("Many actions not yet implemented");
-            }
-        }
-    }
-
     pub fn apply_command(&mut self, command: GameCommand) -> Result<()> {
-        let result = self.apply_command_dispatch(&command);
+        let result = game_command::apply_command_dispatch(self, &command);
         match &result {
             Ok(_) => self.event_publishers.publish(&command),
             // Failing here instead of in apply in case the command wants to modify the error message a little.
@@ -164,33 +98,6 @@ impl From<GameState> for AuthorityGameMaster {
             event_publishers: EventPublisherManager::default(),
         }
     }
-}
-
-/**
- * These commands are to be the sole method outside of the game crate
- * of changing the internal state.
- *
- * For this reason it is marked as non_exhaustive, as new commands might
- * be added in the future, including new versions of the command.
- *
- * In the future we might introduce command versioning, so that different
- * implementations of commands can be implemented safely.
- *
- * Note that once we have a stable release, commands should not be
- * removed from this enum. Rather, we can mark them deprecated, and
- * eventually stop supporting them in later versions.
- *
- * This should definitely be refactored out to its own module.
- */
-#[non_exhaustive]
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub enum GameCommand {
-    Next,
-    Skip,
-    PlayerNodeAction(GameAction),
-    Undo,
-    InterfaceEdition(usize),
-    NodeMoveActiveSprite(Direction),
 }
 
 pub trait EventPublisher: std::fmt::Debug {

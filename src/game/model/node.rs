@@ -31,7 +31,6 @@ pub enum Piece {
 }
 
 impl Node {
-
     fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
     }

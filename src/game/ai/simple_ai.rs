@@ -1,4 +1,4 @@
-use super::super::{NodeChange, Node, Point, PointSet, Team};
+use super::super::{Node, NodeChange, Point, PointSet, Team};
 use super::pathfinding;
 
 pub(super) fn generate_enemy_ai_actions<C: FnMut(NodeChange)>(
@@ -15,7 +15,8 @@ pub(super) fn generate_enemy_ai_actions<C: FnMut(NodeChange)>(
             (&mut changes).push(change);
         });
         for change in changes.iter() {
-            change.apply(&mut node)
+            change
+                .apply(&mut node)
                 .expect("Unexpected error applying generated action");
         }
         changes.clear();
@@ -84,10 +85,7 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(sprite_key: usize, node: &Node
                     .with_sprite(chosen_target, |sprite| sprite.head()) // FIXME The head is not the only targetable piece of the player
                     .expect("Chosen target should have a head");
 
-                collect(NodeChange::TakeSpriteAction(
-                    action_index,
-                    chosen_target_pt,
-                ));
+                collect(NodeChange::TakeSpriteAction(action_index, chosen_target_pt));
             } else {
                 // For now, do nothing. In the future, we might:
                 // Pathfind towards /closest/ enemy

@@ -1,8 +1,8 @@
+use super::super::super::error::{ErrorMsg as _, Result};
 use super::Node;
 use crate::{
     Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team,
 };
-use super::super::super::{error::{ErrorMsg as _, Result}};
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
 const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
@@ -215,7 +215,7 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     /// Returns remaining moves
     pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>> {
         if self.moves() == 0 || self.tapped() {
-            return "Sprite cannot move".invalid()
+            return "Sprite cannot move".invalid();
         }
         let bounds = self.node.bounds();
         let mut remaining_moves = self.moves();
@@ -242,7 +242,7 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
                         next_pt,
                         key
                     );
-                    return "Error picking up pickup".fail_critical()
+                    return "Error picking up pickup".fail_critical();
                 }
             }
             let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);

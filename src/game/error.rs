@@ -66,5 +66,4 @@ impl ErrorMsg for str {
     fn fail_critical_msg(&self) -> Error {
         Error::FailureCritical(self.to_string())
     }
-
 }

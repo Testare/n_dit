@@ -1,4 +1,4 @@
-use super::super::super::error::{Error, Result, ErrorMsg as _};
+use super::super::super::error::{Error, ErrorMsg as _, Result};
 use super::super::super::StateChange;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
@@ -14,8 +14,6 @@ pub enum NodeChange {
 type NodeChangeResult = Result<NodeChangeMetadata>;
 
 impl Node {
-
-
     fn check_victory_conditions(&mut self) {
         let enemy_sprites_remaining = self.sprite_keys_for_team(Team::EnemyTeam).len();
         let player_sprites_remaining = self.sprite_keys_for_team(Team::PlayerTeam).len();
@@ -47,9 +45,9 @@ impl Node {
     }
 
     fn move_active_sprite(&mut self, direction: Direction) -> NodeChangeResult {
-        let mut pickups = self.with_active_sprite_mut(|mut sprite| {
-            sprite.move_sprite(&[direction])
-        }).unwrap_or_else(|| "There is no active sprite".invalid())?;
+        let mut pickups = self
+            .with_active_sprite_mut(|mut sprite| sprite.move_sprite(&[direction]))
+            .unwrap_or_else(|| "There is no active sprite".invalid())?;
         let pickup = pickups.pop();
         // TODO add pickups to node inventory
         Ok(NodeChangeMetadata::for_team(self.active_team()).with_pickup(pickup))
@@ -60,16 +58,21 @@ impl Node {
         sprite_action_index: usize,
         pt: Point,
     ) -> NodeChangeResult {
-        let active_sprite_key = self.active_sprite_key()
-            .ok_or_else(||"invalid_state".invalid_msg())?;
+        let active_sprite_key = self
+            .active_sprite_key()
+            .ok_or_else(|| "invalid_state".invalid_msg())?;
         let action = self
             .with_sprite(active_sprite_key, |sprite| {
                 sprite
                     .actions()
                     .get(sprite_action_index)
                     .map(|action| action.unwrap())
-                    .ok_or_else(||format!("Cannot find action {} in sprite", sprite_action_index).invalid_msg())
-            }).ok_or_else(||"Active sprite key is not an actual sprite".fail_critical_msg())??;
+                    .ok_or_else(|| {
+                        format!("Cannot find action {} in sprite", sprite_action_index)
+                            .invalid_msg()
+                    })
+            })
+            .ok_or_else(|| "Active sprite key is not an actual sprite".fail_critical_msg())??;
         action.apply(self, active_sprite_key, pt)?;
         self.deactivate_sprite();
         self.check_victory_conditions();
@@ -141,7 +144,6 @@ impl NodeChangeMetadata {
         self
     }
 }
-
 
 impl NodeChange {
     /// Helper method so StateChange trait doesn't have to be imported

@@ -1,4 +1,4 @@
-use super::{NodeChange, Node, Team};
+use super::{Node, NodeChange, Team};
 
 mod pathfinding;
 mod simple_ai;

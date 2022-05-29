@@ -1,7 +1,5 @@
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{
-    AuthorityGameMaster, Bounds, Direction, GameAction, GameCommand, GameState, Node, Point,
-};
+use crate::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, Node, Point};
 use getset::{CopyGetters, Getters};
 
 // TODO Might be best to represent soem of this state as an enum state machine
@@ -198,22 +196,19 @@ pub enum UiAction {
 type UiActions = Vec<UiAction>;
 
 impl UiAction {
-    pub fn perform_sprite_action(action_index: usize, pnt: Point) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(
-            GameAction::take_sprite_action(action_index, pnt),
-        ))
+    pub fn perform_sprite_action(sprite_action_id: usize, target: Point) -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeTakeAction {
+            sprite_action_id,
+            target,
+        })
     }
 
-    pub fn activate_sprite(sprite_key: usize) -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(GameAction::activate_sprite(
-            sprite_key,
-        )))
+    pub fn activate_sprite(sprite_id: usize) -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeActivateSprite { sprite_id })
     }
 
     pub fn deactivate_sprite() -> UiAction {
-        UiAction::GameCommand(GameCommand::PlayerNodeAction(
-            GameAction::deactivate_sprite(),
-        ))
+        UiAction::GameCommand(GameCommand::NodeDeactivateSprite)
     }
 
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
