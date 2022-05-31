@@ -480,7 +480,7 @@ impl<T> GridMap<T> {
     /// Adds a new entries to the GridMap. Takes the point in the grid to add the item to, and the
     /// Item to be added.
     ///
-    /// Returns
+    /// Returns item key if successful
     pub fn put_item(&mut self, pt: Point, item: T) -> Option<usize> {
         let id = self.next_id;
         if let Some(square) = self.square_mut(pt) {
@@ -496,6 +496,27 @@ impl<T> GridMap<T> {
             None
         }
     }
+
+    /// Used to add an item back to the map with its original key. 
+    /// 
+    /// ### SAFETY
+    /// Unexpected /// behavior can happen if used to add an item with a new key, 
+    /// 
+    pub unsafe fn return_item_with_key(&mut self, id: usize, pt: Point, item: T) -> Option<usize> {
+        if let Some(square) = self.square_mut(pt) {
+            if square.item == None {
+                square.item = Some(id);
+                self.entries.insert(id, (item, pt));
+                Some(id)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+
 
     /// Adds many entries to the GridMap. Takes an iterable of tuples of (T, Points) where Points
     /// is an iterable of [`Point`].

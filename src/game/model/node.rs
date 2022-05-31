@@ -35,6 +35,13 @@ pub enum Piece {
 }
 
 impl Node {
+    /// ### SAFETY
+    /// Unsafe to return pieces with new keys
+    /// See grid_map return_item_with_key
+    pub(super) unsafe fn return_piece_with_key(&mut self, key: usize, pt: Point, piece: Piece) -> Option<usize> {
+        self.grid_mut().return_item_with_key(key, pt, piece)
+    }
+
     fn grid_mut(&mut self) -> &mut GridMap<Piece> {
         &mut self.grid
     }
