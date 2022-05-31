@@ -46,7 +46,7 @@ pub(super) fn apply_command_dispatch(
         NodeMoveActiveSprite(dir) => {
             gm.apply(NodeChange::MoveActiveSprite(*dir))?;
             node_check_turn_end(gm)
-        },
+        }
         NodeDeactivateSprite => {
             gm.apply(NodeChange::DeactivateSprite)?;
             node_check_turn_end(gm)
@@ -77,7 +77,6 @@ pub(super) fn apply_command_dispatch(
         }
     }
 }
-
 
 fn node_check_turn_end(gm: &mut AuthorityGameMaster) -> Result<()> {
     let node = gm

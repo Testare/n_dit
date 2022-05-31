@@ -1,8 +1,8 @@
-use getset::{Getters};
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::StateChange;
+use super::Piece;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
-use super::{Piece};
+use getset::Getters;
 
 #[derive(Debug, Clone, Copy)]
 pub enum NodeChange {
@@ -77,7 +77,9 @@ impl Node {
 
     fn deactivate_sprite_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
         let sprite_id = metadata.expect_previous_active_sprite_id()?;
-        let sprite_not_found = self.with_sprite_mut(sprite_id, |mut sprite| sprite.untap()).is_none();
+        let sprite_not_found = self
+            .with_sprite_mut(sprite_id, |mut sprite| sprite.untap())
+            .is_none();
         if sprite_not_found {
             return "Deactivate sprite does not exist".fail_critical();
         }
@@ -86,24 +88,28 @@ impl Node {
     }
 
     fn move_active_sprite(&mut self, direction: Direction) -> NodeChangeResult {
-        self.with_active_sprite_mut(|mut sprite|sprite.go(direction)).unwrap_or_else(||"No active sprite".invalid())
+        self.with_active_sprite_mut(|mut sprite| sprite.go(direction))
+            .unwrap_or_else(|| "No active sprite".invalid())
     }
 
     fn move_active_sprite_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
-        let head_pt = self.with_active_sprite_mut(|mut sprite| {
-            let head_pt = sprite.head();
-            for dropped_square in metadata.dropped_squares() {
-                if dropped_square.0 == sprite.key() {
-                    sprite.grow_back(dropped_square.1);
+        let head_pt = self
+            .with_active_sprite_mut(|mut sprite| {
+                let head_pt = sprite.head();
+                for dropped_square in metadata.dropped_squares() {
+                    if dropped_square.0 == sprite.key() {
+                        sprite.grow_back(dropped_square.1);
+                    }
                 }
-            }
-            sprite.drop_front();
-            Ok(head_pt)
-        }).unwrap_or_else(||"No active sprite".fail_critical())?;
+                sprite.drop_front();
+                Ok(head_pt)
+            })
+            .unwrap_or_else(|| "No active sprite".fail_critical())?;
 
         if let Some(pickup) = metadata.pickup() {
             self.inventory.remove(pickup);
-            self.grid_mut().put_item(head_pt, Piece::Pickup(pickup.clone()));
+            self.grid_mut()
+                .put_item(head_pt, Piece::Pickup(pickup.clone()));
         }
         Ok(())
     }
@@ -135,9 +141,16 @@ impl Node {
         Ok(metadata.with_previous_active_sprite_id(active_sprite_key))
     }
 
-    fn take_sprite_action_undo(&mut self, action_index: usize, target: Point, metadata: &NodeChangeMetadata) -> Result<()> {
+    fn take_sprite_action_undo(
+        &mut self,
+        action_index: usize,
+        target: Point,
+        metadata: &NodeChangeMetadata,
+    ) -> Result<()> {
         let active_sprite_key = metadata.expect_previous_active_sprite_id()?;
-        let sprite_not_found = self.with_sprite_mut(active_sprite_key, |mut sprite| sprite.untap()).is_none();
+        let sprite_not_found = self
+            .with_sprite_mut(active_sprite_key, |mut sprite| sprite.untap())
+            .is_none();
         if sprite_not_found {
             return "Take sprite action sprite does not exist".fail_critical();
         }
@@ -148,19 +161,25 @@ impl Node {
                     .get(action_index)
                     .map(|action| action.unwrap())
                     .ok_or_else(|| {
-                        format!("Cannot find action {} in sprite", action_index)
-                            .fail_critical_msg()
+                        format!("Cannot find action {} in sprite", action_index).fail_critical_msg()
                     })
             })
             .ok_or_else(|| "Active sprite key is not an actual sprite".fail_critical_msg())??;
-            // TODO This logic will likely be more complex
+        // TODO This logic will likely be more complex
 
         self.set_active_sprite(Some(active_sprite_key));
         action.unapply(self, active_sprite_key, target, metadata)?;
         for dropped_square in metadata.dropped_squares() {
             self.with_sprite_mut(dropped_square.0, |mut sprite| {
                 sprite.grow_back(dropped_square.1);
-            }).ok_or_else(||format!("Could not find sprite to undo dropped square {:?}", dropped_square).fail_critical_msg())?;
+            })
+            .ok_or_else(|| {
+                format!(
+                    "Could not find sprite to undo dropped square {:?}",
+                    dropped_square
+                )
+                .fail_critical_msg()
+            })?;
         }
         Ok(())
     }
@@ -241,8 +260,7 @@ pub struct NodeChangeMetadata {
     #[get = "pub"]
     team: Team,
     #[get = "pub"]
-    deleted_piece: Option<(usize, Piece)>
-    
+    deleted_piece: Option<(usize, Piece)>,
 }
 
 impl NodeChangeMetadata {
@@ -275,12 +293,18 @@ impl NodeChangeMetadata {
         self
     }
 
-    pub(crate) fn with_dropped_squares(mut self, dropped_squares: Vec<DroppedSquare>) -> NodeChangeMetadata {
+    pub(crate) fn with_dropped_squares(
+        mut self,
+        dropped_squares: Vec<DroppedSquare>,
+    ) -> NodeChangeMetadata {
         self.dropped_squares = dropped_squares;
         self
     }
 
-    pub(crate) fn with_deleted_piece<P: Into<Option<(usize, Piece)>>>(mut self, deleted_piece: P) -> NodeChangeMetadata {
+    pub(crate) fn with_deleted_piece<P: Into<Option<(usize, Piece)>>>(
+        mut self,
+        deleted_piece: P,
+    ) -> NodeChangeMetadata {
         self.deleted_piece = deleted_piece.into();
         self
     }

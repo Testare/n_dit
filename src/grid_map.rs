@@ -134,9 +134,7 @@ impl<T> GridMap<T> {
 
     /// Returns the back point where the given item is in the grid
     pub fn back(&self, item_key: usize) -> Option<Point> {
-        self.square_iter(item_key)
-            .map(|sqr| sqr.location())
-            .last()
+        self.square_iter(item_key).map(|sqr| sqr.location()).last()
     }
 
     /// Returns the height of the map
@@ -497,11 +495,11 @@ impl<T> GridMap<T> {
         }
     }
 
-    /// Used to add an item back to the map with its original key. 
-    /// 
+    /// Used to add an item back to the map with its original key.
+    ///
     /// ### SAFETY
-    /// Unexpected /// behavior can happen if used to add an item with a new key, 
-    /// 
+    /// Unexpected /// behavior can happen if used to add an item with a new key,
+    ///
     pub unsafe fn return_item_with_key(&mut self, id: usize, pt: Point, item: T) -> Option<usize> {
         if let Some(square) = self.square_mut(pt) {
             if square.item == None {
@@ -515,8 +513,6 @@ impl<T> GridMap<T> {
             None
         }
     }
-
-
 
     /// Adds many entries to the GridMap. Takes an iterable of tuples of (T, Points) where Points
     /// is an iterable of [`Point`].

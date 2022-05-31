@@ -18,7 +18,6 @@ pub enum Pickup {
 }
 
 impl Inventory {
-
     pub fn remove(&mut self, pickup: &Pickup) {
         match pickup {
             Pickup::Mon(mon) => {

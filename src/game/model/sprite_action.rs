@@ -1,5 +1,5 @@
 use super::super::error::{ErrorMsg as _, Result};
-use super::super::{NodeChangeMetadata};
+use super::super::NodeChangeMetadata;
 use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
@@ -88,18 +88,36 @@ pub enum Target {
 }
 
 impl SpriteAction<'_> {
-    pub fn unapply(&self, node: &mut Node, sprite_key: usize, target_pt: Point, metadata: &NodeChangeMetadata) -> Result<()> {
+    pub fn unapply(
+        &self,
+        node: &mut Node,
+        sprite_key: usize,
+        target_pt: Point,
+        metadata: &NodeChangeMetadata,
+    ) -> Result<()> {
         if let Some((key, Piece::Program(spr))) = metadata.deleted_piece() {
-            let head = metadata.dropped_squares().iter().find(|dropped_square|dropped_square.0 == *key)
-            .map(|dropped_square|Ok(dropped_square.1))
-            .unwrap_or_else(||"Unable to restore deleted piece, no squares were dropped from it?".fail_critical())?;
-            unsafe { // I am just returning an item that was removed
+            let head = metadata
+                .dropped_squares()
+                .iter()
+                .find(|dropped_square| dropped_square.0 == *key)
+                .map(|dropped_square| Ok(dropped_square.1))
+                .unwrap_or_else(|| {
+                    "Unable to restore deleted piece, no squares were dropped from it?"
+                        .fail_critical()
+                })?;
+            unsafe {
+                // I am just returning an item that was removed
                 node.return_piece_with_key(*key, head, Piece::Program(spr.clone()));
             }
         }
         Ok(())
     }
-    pub fn apply(&self, node: &mut Node, sprite_key: usize, target_pt: Point) -> Result<NodeChangeMetadata> {
+    pub fn apply(
+        &self,
+        node: &mut Node,
+        sprite_key: usize,
+        target_pt: Point,
+    ) -> Result<NodeChangeMetadata> {
         if let Some(_target_type) = self
             .targets
             .iter()
@@ -115,7 +133,9 @@ impl SpriteAction<'_> {
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
                         let (key, (dropped_pts, deleted_sprite)) = node
-                            .with_sprite_at_mut(target_pt, |target| (target.key(), target.take_damage(dmg)))
+                            .with_sprite_at_mut(target_pt, |target| {
+                                (target.key(), target.take_damage(dmg))
+                            })
                             .ok_or_else(|| {
                                 "Invalid target for damage: Target must be a sprite"
                                     .fail_reversible_msg()

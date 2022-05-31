@@ -1,5 +1,5 @@
-use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::super::super::error::{ErrorMsg as _, Result};
+use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::Node;
 use crate::{
     Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team,
@@ -209,13 +209,14 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     }
 
     /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
-    
+
     pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Piece>) {
         let grid_mut = self.node.grid_mut();
         let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
-        let dropped_squares: Vec<DroppedSquare> = grid_mut.square_iter(self.sprite_key)
+        let dropped_squares: Vec<DroppedSquare> = grid_mut
+            .square_iter(self.sprite_key)
             .skip(remaining_square_len)
-            .map(|sqr|DroppedSquare(self.sprite_key, sqr.location()))
+            .map(|sqr| DroppedSquare(self.sprite_key, sqr.location()))
             .collect();
         (dropped_squares, grid_mut.pop_back_n(self.sprite_key, dmg))
     }
@@ -223,7 +224,11 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     pub fn take_damage_old(mut self, dmg: usize) -> Option<Piece> {
         let grid_mut = self.node.grid_mut();
         let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
-        let dropped_square_pnts: Vec<Point> = grid_mut.square_iter(self.sprite_key).skip(remaining_square_len).map(|sqr|sqr.location()).collect();
+        let dropped_square_pnts: Vec<Point> = grid_mut
+            .square_iter(self.sprite_key)
+            .skip(remaining_square_len)
+            .map(|sqr| sqr.location())
+            .collect();
         grid_mut.pop_back_n(self.sprite_key, dmg)
     }
 
@@ -245,7 +250,8 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
                     metadata = metadata.with_pickup(pickup);
                     Ok(())
                 } else {
-                    "Something weird happened, is pop-up taking more than one location?".fail_critical()
+                    "Something weird happened, is pop-up taking more than one location?"
+                        .fail_critical()
                 }
             }
             Some(Piece::Program(_)) => {
@@ -255,9 +261,8 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
                 } else {
                     Ok(())
                 }
-
             }
-            _ => Ok(())
+            _ => Ok(()),
         }?;
 
         let grid_mut = self.node.grid_mut();
@@ -265,7 +270,10 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
         let sucessful_movement = grid_mut.push_front(next_pt, self.sprite_key);
         if sucessful_movement {
             if at_max_size {
-                metadata = metadata.with_dropped_squares(vec![DroppedSquare(self.sprite_key, grid_mut.back(self.sprite_key).unwrap())]);
+                metadata = metadata.with_dropped_squares(vec![DroppedSquare(
+                    self.sprite_key,
+                    grid_mut.back(self.sprite_key).unwrap(),
+                )]);
                 grid_mut.pop_back(self.sprite_key);
             }
             let sprite = self.sprite_mut();
@@ -274,7 +282,6 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
         } else {
             format!("Unable to move sprite {:?}", direction).invalid()
         }
-
     }
 
     pub(super) fn grow_back(&mut self, pt: Point) -> bool {
@@ -282,12 +289,8 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     }
 
     pub(super) fn drop_front(&mut self) -> bool {
-        self.node
-            .grid_mut()
-            .pop_front(self.sprite_key)
-            .is_some()
+        self.node.grid_mut().pop_front(self.sprite_key).is_some()
     }
-
 }
 
 impl Node {
