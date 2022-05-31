@@ -1,6 +1,7 @@
 // Level 0
 mod common;
 mod error;
+mod metadata;
 // Level 1
 mod abstractions;
 // Level 2
