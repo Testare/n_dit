@@ -132,6 +132,13 @@ impl<T> GridMap<T> {
         self.entries.get(&item_key).map(|(_, head)| *head)
     }
 
+    /// Returns the back point where the given item is in the grid
+    pub fn back(&self, item_key: usize) -> Option<Point> {
+        self.square_iter(item_key)
+            .map(|sqr| sqr.location())
+            .last()
+    }
+
     /// Returns the height of the map
     pub fn height(&self) -> usize {
         self.height

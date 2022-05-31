@@ -81,6 +81,9 @@ impl Sprite {
 
     pub fn took_a_move(&mut self) {
         self.moves_taken += 1;
+        if self.actions.is_empty() && self.moves_taken == self.movement_speed {
+            self.tap()
+        }
     }
 }
 

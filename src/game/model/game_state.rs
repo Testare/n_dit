@@ -15,7 +15,8 @@ pub struct GameState {
 
 impl GameState {
     pub fn player_mon(&self) -> usize {
-        self.inventory.wallet()
+        self.node().map(|node| node.inventory().wallet()).unwrap_or(0)
+        + self.inventory.wallet()
     }
 
     pub fn animation(&self) -> Option<&Animation> {

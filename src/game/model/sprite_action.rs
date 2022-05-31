@@ -1,4 +1,5 @@
 use super::super::error::{ErrorMsg as _, Result};
+use super::super::{NodeChangeMetadata};
 use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
@@ -87,10 +88,10 @@ pub enum Target {
 }
 
 impl SpriteAction<'_> {
-    // Unsafe: Assumes NODE exists
-    // In the future, require a GameState with a verified node?
-    // Or perhaps just Node
-    pub fn apply(&self, node: &mut Node, sprite_key: usize, target_pt: Point) -> Result<()> {
+    pub fn unapply(&self, node: &mut Node, sprite_key: usize, target_pt: Point, metadata: &NodeChangeMetadata) {
+
+    }
+    pub fn apply(&self, node: &mut Node, sprite_key: usize, target_pt: Point) -> Result<NodeChangeMetadata> {
         if let Some(_target_type) = self
             .targets
             .iter()
@@ -101,14 +102,19 @@ impl SpriteAction<'_> {
                 .iter()
                 .all(|condition| condition.met(node, sprite_key, target_pt))
             {
+                let mut metadata = NodeChangeMetadata::for_team(node.active_team());
+
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
-                        let _: Option<Piece> = node
+                        let (dropped_pts, deleted_sprite) = node
                             .with_sprite_at_mut(target_pt, |target| target.take_damage(dmg))
                             .ok_or_else(|| {
                                 "Invalid target for damage: Target must be a sprite"
                                     .fail_reversible_msg()
                             })?;
+                        metadata = metadata
+                            .with_dropped_squares(dropped_pts)
+                            .with_deleted_piece(deleted_sprite)
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_sprite_at_mut(target_pt, |mut target| {
@@ -121,7 +127,7 @@ impl SpriteAction<'_> {
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
-                Ok(())
+                Ok(metadata)
             } else {
                 "Conditions not met".invalid()
             }

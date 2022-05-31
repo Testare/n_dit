@@ -20,6 +20,7 @@ pub use game_master::{AuthorityGameMaster, EventPublisher, GameCommand};
 pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Piece};
+use model::node::{NodeChangeMetadata};
 pub use model::sprite::{Sprite, Team};
 pub use model::sprite_action::{SpriteAction, StandardSpriteAction};
 pub use model::world_map::WorldMap;

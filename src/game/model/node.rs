@@ -1,11 +1,13 @@
+use getset::{Getters};
 mod node_change;
 mod with_sprite;
 
 pub use node_change::NodeChange;
+pub use node_change::NodeChangeMetadata;
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
-use super::inventory::Pickup;
+use super::inventory::{Inventory, Pickup};
 use super::sprite::Sprite;
 use crate::{Bounds, GridMap, Point, Team};
 use log::debug;
@@ -14,13 +16,15 @@ use with_sprite::WithSprite;
 
 type NodeConstructionError = String;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Getters)]
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
     active_sprite: Option<usize>,
     enemy_ai: EnemyAi,
     active_team: Team,
+    #[get = "pub"]
+    inventory: Inventory,
 }
 
 #[derive(Clone, Debug)]
@@ -152,6 +156,10 @@ impl Node {
         self.active_team
     }
 
+    fn set_active_team(&mut self, team: Team) {
+        self.active_team = team;
+    }
+
     pub fn change_active_team(&mut self) {
         let active_team = match self.active_team {
             Team::EnemyTeam => Team::PlayerTeam,
@@ -201,6 +209,7 @@ impl From<GridMap<Piece>> for Node {
             enemy_ai: EnemyAi::Simple,
             grid,
             name: String::from("Node"),
+            inventory: Inventory::default(),
         }
     }
 }
@@ -213,6 +222,7 @@ impl From<(String, GridMap<Piece>)> for Node {
             enemy_ai: EnemyAi::Simple,
             grid,
             name,
+            inventory: Inventory::default(),
         }
     }
 }
@@ -225,6 +235,7 @@ impl From<(String, GridMap<Piece>, EnemyAi)> for Node {
             enemy_ai,
             grid,
             name,
+            inventory: Inventory::default(),
         }
     }
 }

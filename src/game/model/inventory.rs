@@ -2,8 +2,6 @@ use crate::Piece;
 use getset::{CopyGetters, Getters};
 use std::{cmp::min, fmt};
 
-const MAX_WALLET_SIZE: usize = 99999;
-
 #[derive(Clone, Debug, Default, Getters, CopyGetters)]
 pub struct Inventory {
     bag: Vec<Item>,
@@ -12,7 +10,7 @@ pub struct Inventory {
     wallet: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Pickup {
     Mon(usize),
     Item(Item),
@@ -20,14 +18,27 @@ pub enum Pickup {
 }
 
 impl Inventory {
-    pub fn max_wallet_size(&self) -> usize {
-        MAX_WALLET_SIZE
+
+    pub fn remove(&mut self, pickup: &Pickup) {
+        match pickup {
+            Pickup::Mon(mon) => {
+                self.wallet = self.wallet - mon;
+            }
+            Pickup::Item(item) => {
+                // Will obviously need more complex logic if we have "stackable" items
+                self.bag.retain(|iter_item| item != iter_item);
+            }
+            Pickup::Card(card) => {
+                // Will obviously need more complex logic if we have "stackable" cards
+                self.deck.retain(|iter_card| card != iter_card);
+            }
+        }
     }
 
     pub fn pick_up(&mut self, pickup: Pickup) {
         match pickup {
             Pickup::Mon(mon) => {
-                self.wallet = min(self.wallet + mon, self.max_wallet_size());
+                self.wallet = self.wallet + mon;
             }
             Pickup::Item(item) => {
                 // Will obviously need more complex logic if we have "stackable" items
@@ -83,14 +94,14 @@ impl fmt::Display for Pickup {
     }
 }
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Eq, PartialEq, Getters)]
 /// Not sure if we'll make use of this much
 pub struct Item {
     #[get = "pub"]
     name: String,
 }
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Eq, PartialEq, Getters)]
 /// A card that can be turned into playable sprite in a game
 /// Might want to have separate "type" and "name" fields, so cards
 /// can have their own unique names

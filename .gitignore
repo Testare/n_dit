@@ -1,4 +1,4 @@
 /target
 /flamegraph.svg
-/perf.data
-debug*.log
+/perf.data*
+debug*.log*

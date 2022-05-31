@@ -1,3 +1,4 @@
+use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::Node;
 use crate::{
@@ -208,65 +209,85 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     }
 
     /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
-    pub fn take_damage(mut self, dmg: usize) -> Option<Piece> {
-        self.node.grid_mut().pop_back_n(self.sprite_key, dmg)
+    
+    pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Piece>) {
+        let grid_mut = self.node.grid_mut();
+        let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
+        let dropped_squares: Vec<DroppedSquare> = grid_mut.square_iter(self.sprite_key)
+            .skip(remaining_square_len)
+            .map(|sqr|DroppedSquare(self.sprite_key, sqr.location()))
+            .collect();
+        (dropped_squares, grid_mut.pop_back_n(self.sprite_key, dmg))
     }
 
-    /// Returns remaining moves
-    pub fn move_sprite(&mut self, directions: &[Direction]) -> Result<Vec<Pickup>> {
+    pub fn take_damage_old(mut self, dmg: usize) -> Option<Piece> {
+        let grid_mut = self.node.grid_mut();
+        let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
+        let dropped_square_pnts: Vec<Point> = grid_mut.square_iter(self.sprite_key).skip(remaining_square_len).map(|sqr|sqr.location()).collect();
+        grid_mut.pop_back_n(self.sprite_key, dmg)
+    }
+
+    pub fn go(&mut self, direction: Direction) -> Result<NodeChangeMetadata> {
         if self.moves() == 0 || self.tapped() {
             return "Sprite cannot move".invalid();
         }
-        let bounds = self.node.bounds();
-        let mut remaining_moves = self.moves();
-        let max_size = self.max_size();
-        let has_no_actions = self.actions().is_empty();
-        let mut results = Vec::new();
+        let mut metadata = NodeChangeMetadata::for_team(self.node.active_team());
+        let at_max_size = self.size() >= self.max_size();
+        let next_pt = direction.add_to_point(self.head(), 1, self.node.bounds());
+        let grid_mut = self.node.grid_mut();
 
-        for dir in directions {
-            let head = self.head();
-            let next_pt = dir.add_to_point(head, 1, bounds);
-            let grid_mut = self.node.grid_mut();
-            if grid_mut
-                .item_at(next_pt)
-                .map(|piece| piece.is_pickup())
-                .unwrap_or(false)
-            {
+        match grid_mut.item_at(next_pt) {
+            Some(Piece::AccessPoint) => "Move sprite collision with access point".fail_critical(),
+            Some(Piece::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if let Some(Piece::Pickup(pickup)) = grid_mut.pop_front(key) {
-                    results.push(pickup);
+                    self.node.inventory.pick_up(pickup.clone());
+                    metadata = metadata.with_pickup(pickup);
+                    Ok(())
                 } else {
-                    log::error!("Error when moving sprite [{:?}] from [{:?}] to [{:?}], trying to pick up [{:?}]", 
-                        self.sprite_key,
-                        head,
-                        next_pt,
-                        key
-                    );
-                    return "Error picking up pickup".fail_critical();
+                    "Something weird happened, is pop-up taking more than one location?".fail_critical()
                 }
             }
-            let sucessful_movement = self.node.grid_mut().push_front(next_pt, self.sprite_key);
-            if sucessful_movement {
-                let sprite = self.sprite_mut();
-                sprite.took_a_move();
-                remaining_moves = sprite.moves();
+            Some(Piece::Program(_)) => {
+                let key = grid_mut.item_key_at(next_pt).unwrap();
+                if key != self.sprite_key {
+                    "Cannot move sprite into another sprite".invalid()
+                } else {
+                    Ok(())
+                }
+
             }
-            if remaining_moves == 0 {
-                break;
+            _ => Ok(())
+        }?;
+
+        let grid_mut = self.node.grid_mut();
+
+        let sucessful_movement = grid_mut.push_front(next_pt, self.sprite_key);
+        if sucessful_movement {
+            if at_max_size {
+                metadata = metadata.with_dropped_squares(vec![DroppedSquare(self.sprite_key, grid_mut.back(self.sprite_key).unwrap())]);
+                grid_mut.pop_back(self.sprite_key);
             }
+            let sprite = self.sprite_mut();
+            sprite.took_a_move();
+            Ok(metadata)
+        } else {
+            format!("Unable to move sprite {:?}", direction).invalid()
         }
 
-        let size = self.size();
-        // Tap if there are no remaining moves or actions
-        if has_no_actions {
-            self.tap();
-        }
+    }
+
+    pub(super) fn grow_back(&mut self, pt: Point) -> bool {
+        self.node.grid_mut().push_back(pt, self.sprite_key)
+    }
+
+    pub(super) fn drop_front(&mut self) -> bool {
         self.node
             .grid_mut()
-            .pop_back_n(self.sprite_key, size.saturating_sub(max_size));
-
-        Ok(results)
+            .pop_front(self.sprite_key)
+            .is_some()
     }
+
 }
 
 impl Node {
@@ -279,7 +300,7 @@ impl Node {
             .and_then(|key| self.with_sprite(key, f))
     }
 
-    pub fn with_active_sprite_mut<F, R, O>(&mut self, f: F) -> Option<R>
+    pub(crate) fn with_active_sprite_mut<F, R, O>(&mut self, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
         O: Into<Option<R>>,
@@ -304,7 +325,7 @@ impl Node {
         }
     }
 
-    pub fn with_sprite_mut<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
+    pub(crate) fn with_sprite_mut<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
         O: Into<Option<R>>,
@@ -329,7 +350,7 @@ impl Node {
         self.with_sprite(sprite_key, f)
     }
 
-    pub fn with_sprite_at_mut<F, R, O>(&mut self, pt: Point, f: F) -> Option<R>
+    pub(crate) fn with_sprite_at_mut<F, R, O>(&mut self, pt: Point, f: F) -> Option<R>
     where
         for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
         O: Into<Option<R>>,

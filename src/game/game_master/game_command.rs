@@ -43,36 +43,20 @@ pub(super) fn apply_command_dispatch(
     use GameCommand::*;
     match command {
         NodeActivateSprite { sprite_id } => gm.apply(NodeChange::ActivateSprite(*sprite_id)),
-        NodeMoveActiveSprite(dir) => gm.apply(NodeChange::MoveActiveSprite(*dir)),
+        NodeMoveActiveSprite(dir) => {
+            gm.apply(NodeChange::MoveActiveSprite(*dir))?;
+            node_check_turn_end(gm)
+        },
         NodeDeactivateSprite => {
             gm.apply(NodeChange::DeactivateSprite)?;
-            let node = gm
-                .state
-                .node()
-                .expect("How could this not exist if DeactivateSprite successful?");
-
-            if node.untapped_sprites_on_active_team() == 0 {
-                // TODO Configurable
-                gm.apply(NodeChange::FinishTurn)?;
-                gm.check_to_run_ai();
-            }
-            Ok(())
+            node_check_turn_end(gm)
         }
         NodeTakeAction {
             sprite_action_id,
             target,
         } => {
             gm.apply(NodeChange::TakeSpriteAction(*sprite_action_id, *target))?;
-            let node = gm
-                .state
-                .node()
-                .expect("How could this not exist if TakeSpriteAction successful?");
-
-            if node.untapped_sprites_on_active_team() == 0 {
-                gm.apply(NodeChange::FinishTurn)?;
-                gm.check_to_run_ai();
-            }
-            Ok(())
+            node_check_turn_end(gm)
         }
         Next => {
             if let Some(rx) = &gm.ai_action_receiver {
@@ -92,4 +76,19 @@ pub(super) fn apply_command_dispatch(
             unimplemented!("Many actions not yet implemented");
         }
     }
+}
+
+
+fn node_check_turn_end(gm: &mut AuthorityGameMaster) -> Result<()> {
+    let node = gm
+        .state
+        .node()
+        .expect("How could this not exist if DeactivateSprite successful?");
+
+    if node.untapped_sprites_on_active_team() == 0 {
+        // TODO Configurable
+        gm.apply(NodeChange::FinishTurn)?;
+        gm.check_to_run_ai();
+    }
+    Ok(())
 }
