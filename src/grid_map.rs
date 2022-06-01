@@ -1148,6 +1148,31 @@ mod test {
     }
 
     #[test]
+    fn return_item_with_key() {
+        let mut map = open_vertical_map(3);
+
+        let key = map
+            .put_item((0, 0), TEST_VALUE)
+            .expect("Error putting item");
+        let key2 = map.put_item((0, 1), "Item 2");
+
+        let pop_result = map.pop_front(key);
+
+        assert_eq!(map.len(), 1);
+        assert_ne!(pop_result, None);
+        assert_square_eq(&map, (0, 0), None, None);
+        assert_square_eq(&map, (0, 1), key2, None);
+
+        unsafe {
+            let return_result = map.return_item_with_key(key, (0, 0), TEST_VALUE);
+            assert_eq!(return_result, Some(key));
+        }
+        assert_eq!(map.len(), 2);
+        assert_square_eq(&map, (0, 0), Some(key), None);
+        assert_square_eq(&map, (0, 1), key2, None);
+    }
+
+    #[test]
     fn number_map() {
         let mut map = GridMap::from(vec![vec![false, true], vec![false, true]]);
 
