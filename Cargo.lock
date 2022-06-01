@@ -189,6 +189,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simplelog",
+ "typed_key",
  "unicode-width",
 ]
 
@@ -425,6 +426,12 @@ dependencies = [
  "wasi",
  "winapi",
 ]
+
+[[package]]
+name = "typed_key"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fd2a157aa3cb71c31a68bfd3cd4561736e4d676b082c35d05ed56bcf360fd27"
 
 [[package]]
 name = "unicode-ident"
