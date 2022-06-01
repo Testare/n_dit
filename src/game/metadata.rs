@@ -4,9 +4,19 @@ use typed_key::{Key};
 use super::error::{ErrorMsg as _, Result};
 
 #[derive(Serialize, Deserialize)]
-struct Metadata(HashMap<String, String>);
+pub struct Metadata(HashMap<String, String>);
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata(HashMap::new())
+    }
+}
 
 impl Metadata {
+
+    pub fn new() -> Self {
+        Metadata::default()
+    }
 
     fn get<'a, T: Deserialize<'a>>(&'a mut self, key: &Key<T>) -> Result<Option<T>> {
         self.0.get(&key.name().to_string()).map(|data|{

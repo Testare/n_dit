@@ -1,10 +1,13 @@
 use super::super::error::{ErrorMsg as _, Result};
-use super::super::NodeChangeMetadata;
+use super::super::{NodeChangeMetadata, DroppedSquare, Metadata};
 use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
+use typed_key::{typed_key, Key};
 
 mod standard_sprite_actions;
+
+const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
 
 pub use standard_sprite_actions::StandardSpriteAction;
 
@@ -129,6 +132,7 @@ impl SpriteAction<'_> {
                 .all(|condition| condition.met(node, sprite_key, target_pt))
             {
                 let mut metadata = NodeChangeMetadata::for_team(node.active_team());
+                let mut metadata2 = Metadata::new();
 
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {

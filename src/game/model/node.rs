@@ -4,6 +4,7 @@ mod with_sprite;
 
 pub use node_change::NodeChange;
 pub use node_change::NodeChangeMetadata;
+pub use node_change::DroppedSquare;
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
