@@ -1,8 +1,9 @@
+use serde::{Serialize, Deserialize};
 use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
 use std::num::NonZeroUsize;
 use std::ops::Deref;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum StandardSpriteAction {
     Brutus,

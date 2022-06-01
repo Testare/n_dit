@@ -144,9 +144,11 @@ impl SpriteAction<'_> {
                                 "Invalid target for damage: Target must be a sprite"
                                     .fail_reversible_msg()
                             })?;
+                        metadata2.put(&DROPPED_SQUARES, &dropped_pts)?;
                         metadata = metadata
                             .with_dropped_squares(dropped_pts)
-                            .with_deleted_piece(Some(key).zip(deleted_sprite))
+                            .with_deleted_piece(Some(key).zip(deleted_sprite));
+
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_sprite_at_mut(target_pt, |mut target| {

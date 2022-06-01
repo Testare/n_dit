@@ -1,10 +1,13 @@
-use getset::Getters;
 mod node_change;
 mod with_sprite;
+
 
 pub use node_change::NodeChange;
 pub use node_change::NodeChangeMetadata;
 pub use node_change::DroppedSquare;
+
+use getset::Getters;
+use serde::{Serialize, Deserialize};
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
@@ -17,7 +20,7 @@ use with_sprite::WithSprite;
 
 type NodeConstructionError = String;
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
@@ -28,7 +31,7 @@ pub struct Node {
     inventory: Inventory,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Piece {
     AccessPoint,
     Program(Sprite),

@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use std::cmp::min;
 use std::collections::HashSet;
 use std::ops::{Add, BitAnd, BitOr};
@@ -87,7 +88,7 @@ impl Default for PointSet {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Bounds(pub usize, pub usize);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Direction {
     North = 0b1,
     East = 0b10,

@@ -1,8 +1,10 @@
-use crate::Piece;
+use serde::{Serialize, Deserialize};
 use getset::{CopyGetters, Getters};
+
+use crate::Piece;
 use std::{cmp::min, fmt};
 
-#[derive(Clone, Debug, Default, Getters, CopyGetters)]
+#[derive(Clone, Debug, Default, Getters, CopyGetters, Serialize, Deserialize)]
 pub struct Inventory {
     bag: Vec<Item>,
     deck: Vec<Card>,
@@ -10,7 +12,7 @@ pub struct Inventory {
     wallet: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Pickup {
     Mon(usize),
     Item(Item),
@@ -93,14 +95,14 @@ impl fmt::Display for Pickup {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Getters)]
+#[derive(Clone, Debug, Eq, PartialEq, Getters, Serialize, Deserialize)]
 /// Not sure if we'll make use of this much
 pub struct Item {
     #[get = "pub"]
     name: String,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Getters)]
+#[derive(Clone, Debug, Eq, PartialEq, Getters, Serialize, Deserialize)]
 /// A card that can be turned into playable sprite in a game
 /// Might want to have separate "type" and "name" fields, so cards
 /// can have their own unique names

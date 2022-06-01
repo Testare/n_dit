@@ -1,9 +1,10 @@
+use serde::{Serialize, Deserialize};
 use super::{Node, NodeChange, Team};
 
 mod pathfinding;
 mod simple_ai;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum EnemyAi {
     Simple,
 }

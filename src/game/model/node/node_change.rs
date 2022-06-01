@@ -1,10 +1,13 @@
-use super::super::super::error::{ErrorMsg as _, Result};
-use super::super::super::StateChange;
-use super::Piece;
-use crate::{Direction, GameState, Node, Pickup, Point, Team};
 use getset::Getters;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Copy)]
+use super::super::super::error::{ErrorMsg as _, Result};
+use super::super::super::{StateChange, Metadata};
+use crate::{Direction, GameState, Node, Pickup, Point, Team};
+use super::Piece;
+
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum NodeChange {
     ActivateSprite(usize), // Starts using a unit.
     DeactivateSprite,      // Finishes using a unit
@@ -243,8 +246,21 @@ impl StateChange for NodeChange {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DroppedSquare(pub usize, pub Point);
+
+mod metadata_key {
+    use crate::{Team, Pickup, Piece};
+    use typed_key::{Key, typed_key};
+    use super::DroppedSquare;
+
+    pub const TEAM: Key<Team> = typed_key!("team");
+    pub const PICKUP: Key<Pickup> = typed_key!("pickup");
+    pub const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
+    pub const PREVIOUS_ACTIVE_SPRITE: Key<usize> = typed_key!("previousActiveSprite");
+    pub const DELETED_PIECE: &Key<(usize, Piece)> = &typed_key!("deletedPiece");
+
+}
 
 #[derive(Debug, Clone, Getters)]
 pub struct NodeChangeMetadata {
@@ -264,6 +280,24 @@ pub struct NodeChangeMetadata {
 }
 
 impl NodeChangeMetadata {
+
+    pub fn from(metadata: Metadata) -> Result<NodeChangeMetadata> {
+        let team = metadata.expect(&metadata_key::TEAM)?;
+        let dropped_squares = metadata.get(&metadata_key::DROPPED_SQUARES)?.unwrap_or_default();
+        let pickup = metadata.get(&metadata_key::PICKUP)?;
+        let previous_active_sprite_id = metadata.get(&metadata_key::PREVIOUS_ACTIVE_SPRITE)?;
+        let deleted_piece = metadata.get(metadata_key::DELETED_PIECE)?;
+        Ok(NodeChangeMetadata {
+            team,
+            pickup,
+            dropped_squares,
+            previous_active_sprite_id,
+            deleted_piece
+        })
+
+    }
+
+
     pub(crate) fn for_team(team: Team) -> NodeChangeMetadata {
         NodeChangeMetadata {
             team,

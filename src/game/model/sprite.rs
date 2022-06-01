@@ -1,16 +1,18 @@
 mod sprite_builder;
 
-use super::sprite_action::StandardSpriteAction;
 use getset::{CopyGetters, Getters, Setters};
+use serde::{Serialize, Deserialize};
+
+use super::sprite_action::StandardSpriteAction;
 use sprite_builder::SpriteBuilder;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Team {
     PlayerTeam = 0,
     EnemyTeam = 1,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Getters, CopyGetters, Setters)]
+#[derive(Clone, Debug, PartialEq, Eq, Getters, CopyGetters, Setters, Serialize, Deserialize)]
 pub struct Sprite {
     display: String,
     #[get_copy = "pub"]

@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use super::Point;
 use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 
@@ -20,7 +21,7 @@ use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 /// * A reference to its location on the map
 /// * An id for an item in the containing GridMap, if the square is occupied.
 /// * A reference to the next square occupied by the item, if any.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Square {
     item: Option<usize>,
     next: Option<Point>,
@@ -31,7 +32,7 @@ pub struct Square {
 /// have at least one square of representation in the grid, possibly more. These squares are
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GridMap<T> {
     width: usize,
     height: usize,
