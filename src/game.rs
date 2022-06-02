@@ -18,13 +18,13 @@ pub use common::{Bounds, Direction, Point, PointSet};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
 use abstractions::StateChange;
 pub use game_master::{AuthorityGameMaster, EventPublisher, GameCommand};
+pub use metadata::Metadata;
 pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
-use model::node::{NodeChangeMetadata, DroppedSquare};
+use model::node::{DroppedSquare, NodeChangeMetadata};
 pub use model::node::{Node, NodeChange, Piece};
 pub use model::sprite::{Sprite, Team};
 pub use model::sprite_action::{SpriteAction, StandardSpriteAction};
 pub use model::world_map::WorldMap;
-pub use metadata::Metadata;
 
 use ai::EnemyAi;

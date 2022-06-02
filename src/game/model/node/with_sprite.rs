@@ -1,4 +1,5 @@
 use super::super::super::error::{ErrorMsg as _, Result};
+use super::super::super::Metadata;
 use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::Node;
 use crate::{
@@ -209,7 +210,6 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
     }
 
     /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
-
     pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Piece>) {
         let grid_mut = self.node.grid_mut();
         let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
@@ -221,18 +221,7 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
         (dropped_squares, grid_mut.pop_back_n(self.sprite_key, dmg))
     }
 
-    pub fn take_damage_old(mut self, dmg: usize) -> Option<Piece> {
-        let grid_mut = self.node.grid_mut();
-        let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
-        let dropped_square_pnts: Vec<Point> = grid_mut
-            .square_iter(self.sprite_key)
-            .skip(remaining_square_len)
-            .map(|sqr| sqr.location())
-            .collect();
-        grid_mut.pop_back_n(self.sprite_key, dmg)
-    }
-
-    pub fn go(&mut self, direction: Direction) -> Result<NodeChangeMetadata> {
+    pub fn go(&mut self, direction: Direction) -> Result<Metadata> {
         if self.moves() == 0 || self.tapped() {
             return "Sprite cannot move".invalid();
         }
@@ -278,7 +267,7 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
             }
             let sprite = self.sprite_mut();
             sprite.took_a_move();
-            Ok(metadata)
+            metadata.to_metadata()
         } else {
             format!("Unable to move sprite {:?}", direction).invalid()
         }

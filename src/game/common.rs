@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::collections::HashSet;
 use std::ops::{Add, BitAnd, BitOr};

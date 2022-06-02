@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use getset::{CopyGetters, Getters};
+use serde::{Deserialize, Serialize};
 
 use crate::Piece;
 use std::{cmp::min, fmt};

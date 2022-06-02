@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
+use serde::{Deserialize, Serialize};
 use std::num::NonZeroUsize;
 use std::ops::Deref;
 

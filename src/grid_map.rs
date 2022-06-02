@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use super::Point;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 
 // Potential future developments:

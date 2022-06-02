@@ -1,13 +1,13 @@
 mod node_change;
 mod with_sprite;
 
-
+pub use node_change::keys as node_change_keys;
+pub use node_change::DroppedSquare;
 pub use node_change::NodeChange;
 pub use node_change::NodeChangeMetadata;
-pub use node_change::DroppedSquare;
 
 use getset::Getters;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;

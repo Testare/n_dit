@@ -1,7 +1,7 @@
 mod sprite_builder;
 
 use getset::{CopyGetters, Getters, Setters};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::sprite_action::StandardSpriteAction;
 use sprite_builder::SpriteBuilder;

@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use super::{Node, NodeChange, Team};
+use serde::{Deserialize, Serialize};
 
 mod pathfinding;
 mod simple_ai;

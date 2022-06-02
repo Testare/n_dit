@@ -1,11 +1,10 @@
 use getset::Getters;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
-use super::super::super::{StateChange, Metadata};
-use crate::{Direction, GameState, Node, Pickup, Point, Team};
+use super::super::super::{Metadata, StateChange};
 use super::Piece;
-
+use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum NodeChange {
@@ -91,8 +90,10 @@ impl Node {
     }
 
     fn move_active_sprite(&mut self, direction: Direction) -> NodeChangeResult {
-        self.with_active_sprite_mut(|mut sprite| sprite.go(direction))
-            .unwrap_or_else(|| "No active sprite".invalid())
+        let metadata: Metadata = self
+            .with_active_sprite_mut(|mut sprite| sprite.go(direction))
+            .unwrap_or_else(|| "No active sprite".invalid())?;
+        NodeChangeMetadata::from(&metadata)
     }
 
     fn move_active_sprite_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
@@ -137,7 +138,7 @@ impl Node {
                     })
             })
             .ok_or_else(|| "Active sprite key is not an actual sprite".fail_critical_msg())??;
-        let metadata = action.apply(self, active_sprite_key, pt)?;
+        let metadata = NodeChangeMetadata::from(&action.apply(self, active_sprite_key, pt)?)?;
         let active_sprite_key = self.active_sprite_key();
         self.deactivate_sprite();
         self.check_victory_conditions();
@@ -171,7 +172,7 @@ impl Node {
         // TODO This logic will likely be more complex
 
         self.set_active_sprite(Some(active_sprite_key));
-        action.unapply(self, active_sprite_key, target, metadata)?;
+        action.unapply(self, active_sprite_key, target, &metadata.to_metadata()?)?;
         for dropped_square in metadata.dropped_squares() {
             self.with_sprite_mut(dropped_square.0, |mut sprite| {
                 sprite.grow_back(dropped_square.1);
@@ -210,24 +211,14 @@ impl StateChange for NodeChange {
     fn unapply(&self, metadata: &NodeChangeMetadata, node: &mut Self::State) -> Result<()> {
         use NodeChange::*;
         match self {
-            ActivateSprite(_) => {
-                node.activate_sprite_undo(metadata)?;
-            }
-            DeactivateSprite => {
-                node.deactivate_sprite_undo(metadata)?;
-            }
-            FinishTurn => {
-                node.finish_turn_undo(metadata)?;
-            }
-            MoveActiveSprite(_) => {
-                node.move_active_sprite_undo(metadata)?;
-            }
+            ActivateSprite(_) => node.activate_sprite_undo(metadata),
+            DeactivateSprite => node.deactivate_sprite_undo(metadata),
+            FinishTurn => node.finish_turn_undo(metadata),
+            MoveActiveSprite(_) => node.move_active_sprite_undo(metadata),
             TakeSpriteAction(action_index, target) => {
-                node.take_sprite_action_undo(*action_index, *target, metadata)?;
+                node.take_sprite_action_undo(*action_index, *target, metadata)
             }
-            _ => {}
         }
-        Ok(())
     }
 
     fn is_durable(&self, metadata: &NodeChangeMetadata) -> bool {
@@ -249,17 +240,16 @@ impl StateChange for NodeChange {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DroppedSquare(pub usize, pub Point);
 
-mod metadata_key {
-    use crate::{Team, Pickup, Piece};
-    use typed_key::{Key, typed_key};
+pub mod keys {
     use super::DroppedSquare;
+    use crate::{Pickup, Piece, Team};
+    use typed_key::{typed_key, Key};
 
     pub const TEAM: Key<Team> = typed_key!("team");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
     pub const PREVIOUS_ACTIVE_SPRITE: Key<usize> = typed_key!("previousActiveSprite");
-    pub const DELETED_PIECE: &Key<(usize, Piece)> = &typed_key!("deletedPiece");
-
+    pub const DELETED_PIECE: Key<(usize, Piece)> = typed_key!("deletedPiece");
 }
 
 #[derive(Debug, Clone, Getters)]
@@ -280,23 +270,34 @@ pub struct NodeChangeMetadata {
 }
 
 impl NodeChangeMetadata {
+    /// Likely just temporary
+    pub fn to_metadata(&self) -> Result<Metadata> {
+        let mut metadata = Metadata::new();
+        use keys::*;
+        metadata.put(TEAM, &self.team)?;
+        metadata.put_nonempty(DROPPED_SQUARES, &self.dropped_squares)?;
+        metadata.put_optional(PICKUP, &self.pickup)?;
+        metadata.put_optional(PREVIOUS_ACTIVE_SPRITE, &self.previous_active_sprite_id)?;
+        metadata.put_optional(DELETED_PIECE, &self.deleted_piece)?;
+        Ok(metadata)
+    }
 
-    pub fn from(metadata: Metadata) -> Result<NodeChangeMetadata> {
-        let team = metadata.expect(&metadata_key::TEAM)?;
-        let dropped_squares = metadata.get(&metadata_key::DROPPED_SQUARES)?.unwrap_or_default();
-        let pickup = metadata.get(&metadata_key::PICKUP)?;
-        let previous_active_sprite_id = metadata.get(&metadata_key::PREVIOUS_ACTIVE_SPRITE)?;
-        let deleted_piece = metadata.get(metadata_key::DELETED_PIECE)?;
+    /// Likely just temporary
+    pub fn from(metadata: &Metadata) -> Result<NodeChangeMetadata> {
+        use keys::*;
+        let team = metadata.expect(TEAM)?;
+        let dropped_squares = metadata.get(DROPPED_SQUARES)?.unwrap_or_default();
+        let pickup = metadata.get(PICKUP)?;
+        let previous_active_sprite_id = metadata.get(PREVIOUS_ACTIVE_SPRITE)?;
+        let deleted_piece = metadata.get(DELETED_PIECE)?;
         Ok(NodeChangeMetadata {
             team,
             pickup,
             dropped_squares,
             previous_active_sprite_id,
-            deleted_piece
+            deleted_piece,
         })
-
     }
-
 
     pub(crate) fn for_team(team: Team) -> NodeChangeMetadata {
         NodeChangeMetadata {

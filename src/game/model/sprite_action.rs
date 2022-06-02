@@ -1,5 +1,6 @@
 use super::super::error::{ErrorMsg as _, Result};
-use super::super::{NodeChangeMetadata, DroppedSquare, Metadata};
+use super::super::{DroppedSquare, Metadata, NodeChangeMetadata};
+use super::node::node_change_keys;
 use crate::{Node, Piece, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
@@ -96,8 +97,9 @@ impl SpriteAction<'_> {
         node: &mut Node,
         sprite_key: usize,
         target_pt: Point,
-        metadata: &NodeChangeMetadata,
+        metadata: &Metadata,
     ) -> Result<()> {
+        let metadata = NodeChangeMetadata::from(metadata)?;
         if let Some((key, Piece::Program(spr))) = metadata.deleted_piece() {
             let head = metadata
                 .dropped_squares()
@@ -115,12 +117,7 @@ impl SpriteAction<'_> {
         }
         Ok(())
     }
-    pub fn apply(
-        &self,
-        node: &mut Node,
-        sprite_key: usize,
-        target_pt: Point,
-    ) -> Result<NodeChangeMetadata> {
+    pub fn apply(&self, node: &mut Node, sprite_key: usize, target_pt: Point) -> Result<Metadata> {
         if let Some(_target_type) = self
             .targets
             .iter()
@@ -144,11 +141,10 @@ impl SpriteAction<'_> {
                                 "Invalid target for damage: Target must be a sprite"
                                     .fail_reversible_msg()
                             })?;
-                        metadata2.put(&DROPPED_SQUARES, &dropped_pts)?;
+                        metadata2.put(DROPPED_SQUARES, &dropped_pts)?;
                         metadata = metadata
                             .with_dropped_squares(dropped_pts)
                             .with_deleted_piece(Some(key).zip(deleted_sprite));
-
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_sprite_at_mut(target_pt, |mut target| {
@@ -161,7 +157,7 @@ impl SpriteAction<'_> {
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
-                Ok(metadata)
+                metadata.to_metadata()
             } else {
                 "Conditions not met".invalid()
             }
