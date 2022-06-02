@@ -22,5 +22,7 @@ pub mod sprite_action_keys {
 
     pub const DAMAGES: Key<Vec<SpritePoint>> = typed_key!("damages");
     pub const DELETED_SPRITES: Key<Vec<(usize, Sprite)>> = typed_key!("deletedSprite");
+    pub const TARGET_CURIO: Key<usize> = typed_key!("targetCurio");
+    pub const MOVEMENT_SPEED_CHANGE: Key<(isize)> = typed_key!("movementSpeedChange");
 
 }
