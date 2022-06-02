@@ -1,8 +1,8 @@
 mod node_change;
 mod with_curio;
 
-pub use node_change::keys as node_change_keys;
-pub use node_change::DroppedSquare;
+pub use node_change::keys as node_change_keys; // TODO DELETE ME
+pub use node_change::{DroppedSquare, SpritePoint}; // TODO Move these to better location
 pub use node_change::NodeChange;
 pub use node_change::NodeChangeMetadata;
 

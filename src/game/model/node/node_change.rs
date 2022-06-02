@@ -2,6 +2,7 @@ use getset::Getters;
 use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
+pub use super::super::keys::node_change_keys as keys;
 use super::super::super::{Metadata, StateChange};
 use super::Sprite;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
@@ -240,17 +241,8 @@ impl StateChange for NodeChange {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DroppedSquare(pub usize, pub Point);
 
-pub mod keys {
-    use super::DroppedSquare;
-    use crate::{Pickup, Sprite, Team};
-    use typed_key::{typed_key, Key};
-
-    pub const TEAM: Key<Team> = typed_key!("team");
-    pub const PICKUP: Key<Pickup> = typed_key!("pickup");
-    pub const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
-    pub const PREVIOUS_ACTIVE_CURIO: Key<usize> = typed_key!("previousActiveCurio");
-    pub const DELETED_SPRITE: Key<(usize, Sprite)> = typed_key!("deletedSprite");
-}
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct SpritePoint(pub usize, pub Point);
 
 #[derive(Debug, Clone, Getters)]
 pub struct NodeChangeMetadata {
