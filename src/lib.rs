@@ -21,7 +21,7 @@
 //!
 //! | Module     | Responsibility                                                     |
 //! |------------|--------------------------------------------------------------------|
-//! | [game]     | Core logic of game, such as sprites, points, money, etc.           |
+//! | [game]     | Core logic of game, such as curios, points, money, etc.           |
 //! | [ui]       | Everything between the user and the game, might be broken up later |
 //! | [grid_map] | GridMap struct, a generic collection for use in game.              |
 //!

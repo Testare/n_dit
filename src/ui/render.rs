@@ -30,19 +30,19 @@ impl Piece {
                 .color_scheme()
                 .mon()
                 .apply(pickup.square_display()),
-            Piece::Program(sprite) => {
+            Piece::Program(curio) => {
                 if position == 0 {
-                    String::from(sprite.display())
+                    String::from(curio.display())
                 } else if false {
                     // Logic to format the last square differently if position + 1 == max_size and the
-                    // sprite is selected, so that you can tell that moving will not grow the sprite.
+                    // curio is selected, so that you can tell that moving will not grow the curio.
                     String::from("[]")
                 } else {
                     match configuration.tail_appearance() {
                         FillMethod::NoFill => String::from("  "),
                         FillMethod::Brackets => String::from("[]"),
                         FillMethod::DotFill => String::from(".."),
-                        FillMethod::HeadCopy => String::from(sprite.display()),
+                        FillMethod::HeadCopy => String::from(curio.display()),
                         FillMethod::Sequence => {
                             format!("{:02}", position)
                         }
@@ -63,11 +63,11 @@ impl Piece {
         match self {
             Piece::Pickup(_) => draw_config.color_scheme().mon(),
             Piece::AccessPoint => draw_config.color_scheme().access_point(),
-            Piece::Program(sprite) => match sprite.team() {
+            Piece::Program(curio) => match curio.team() {
                 Team::PlayerTeam => {
-                    if node.active_sprite_key() == Some(key) {
+                    if node.active_curio_key() == Some(key) {
                         draw_config.color_scheme().player_team_active()
-                    } else if sprite.tapped() && position == 0 {
+                    } else if curio.tapped() && position == 0 {
                         draw_config.color_scheme().player_team_tapped()
                     } else {
                         draw_config.color_scheme().player_team()
@@ -87,7 +87,7 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
         .node()
         .expect("TODO what if there is no node?");
     let piece_opt = node
-        .active_sprite_key()
+        .active_curio_key()
         .and_then(|key| node.piece(key))
         .or_else(|| {
             let pt: Point = state.selected_square();
@@ -117,16 +117,16 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
             Piece::AccessPoint => {
                 base_vec[2].push_str("Access Pnt");
             }
-            Piece::Program(sprite) => {
+            Piece::Program(curio) => {
                 base_vec[2].push_str("Program");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push('[');
-                base_vec[4].push_str(sprite.display());
+                base_vec[4].push_str(curio.display());
                 base_vec[4].push(']');
-                base_vec[5].push_str(sprite.name());
+                base_vec[5].push_str(curio.name());
                 base_vec[6] = "=".repeat(width);
                 let selected_action = state.selected_action_index();
-                for (i, action) in sprite.actions().iter().enumerate() {
+                for (i, action) in curio.actions().iter().enumerate() {
                     let mut action = action.unwrap().name().with_exact_width(width);
                     if Some(i) == selected_action {
                         action = color_scheme.selected_menu_item().apply(action);
@@ -262,17 +262,17 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     .unwrap_or(HashSet::default());*/
     let mut action_type = 1;
 
-    let mut available_moves: Option<HashSet<Point>> = node.with_active_sprite(|sprite| {
+    let mut available_moves: Option<HashSet<Point>> = node.with_active_curio(|curio| {
         state
             .selected_action_index()
-            .and_then(|action_index| sprite.range_of_action(action_index))
+            .and_then(|action_index| curio.range_of_action(action_index))
             .map(|point_set| point_set.into_set())
     });
 
     if available_moves.is_none() {
         action_type = 0;
-        available_moves = node.with_sprite_at(state.selected_square(), |sprite| {
-            sprite.possible_moves().into_set()
+        available_moves = node.with_curio_at(state.selected_square(), |curio| {
+            curio.possible_moves().into_set()
         });
     }
 

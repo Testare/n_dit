@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    game::{Card, Node, Pickup, Piece, Sprite, StandardSpriteAction},
+    game::{Card, Node, Pickup, Piece, Curio, StandardCurioAction},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
     Team,
@@ -123,12 +123,12 @@ fn load_state() -> SuperState {
         ],
     ]));
 
-    // node.add_sprite(Sprite::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
-    node.add_sprite(
-        Sprite::builder()
+    // node.add_curio(Curio::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
+    node.add_curio(
+        Curio::builder()
             .display("あ")
             .name("Horus")
-            .action(StandardSpriteAction::Bite)
+            .action(StandardCurioAction::Bite)
             .max_size(3)
             .movement_speed(2)
             .build()
@@ -136,16 +136,16 @@ fn load_state() -> SuperState {
         vec![(1, 6), (2, 6), (3, 6)],
     )
     .unwrap();
-    node.add_sprite(Sprite::new("死"), vec![(4, 6), (5, 6), (5, 7)])
+    node.add_curio(Curio::new("死"), vec![(4, 6), (5, 6), (5, 7)])
         .unwrap();
-    node.add_sprite(Sprite::new("8]"), vec![(3, 3), (3, 4)])
+    node.add_curio(Curio::new("8]"), vec![(3, 3), (3, 4)])
         .unwrap();
-    node.add_sprite(
-        Sprite::builder()
+    node.add_curio(
+        Curio::builder()
             .team(Team::EnemyTeam)
             .display("骨")
             .name("Jackson")
-            .action(StandardSpriteAction::Bite)
+            .action(StandardCurioAction::Bite)
             .max_size(4)
             .movement_speed(7)
             .build()
@@ -153,7 +153,7 @@ fn load_state() -> SuperState {
         vec![(14, 4)],
     )
     .unwrap();
-    node.add_sprite(Sprite::new("<>"), vec![(14, 6)]).unwrap();
+    node.add_curio(Curio::new("<>"), vec![(14, 6)]).unwrap();
     node.add_piece(
         (15, 7),
         Card {

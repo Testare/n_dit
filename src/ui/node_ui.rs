@@ -22,19 +22,19 @@ enum NodeFocus {
 enum NodePhase {
     /* TODO SetUp
     SetUp {
-        selected_sprite_index: usize,
+        selected_curio_index: usize,
         selected_action_index: Option<usize>,
     }, */
     FreeSelect {
-        selected_sprite_key: Option<usize>,
+        selected_curio_key: Option<usize>,
         selected_action_index: Option<usize>,
     },
-    MoveSprite {
-        selected_sprite_key: usize,
+    MoveCurio {
+        selected_curio_key: usize,
         selected_action_index: Option<usize>,
     },
-    SpriteAction {
-        selected_sprite_key: usize,
+    CurioAction {
+        selected_curio_key: usize,
         selected_action_index: usize,
     },
 }
@@ -44,11 +44,11 @@ impl NodeUiState {
         self.selected_square = pt;
 
         if let NodePhase::FreeSelect {
-            selected_sprite_key,
+            selected_curio_key,
             ..
         } = &mut self.phase
         {
-            *selected_sprite_key = node.with_sprite_at(pt, |sprite| sprite.key());
+            *selected_curio_key = node.with_curio_at(pt, |curio| curio.key());
         }
     }
     fn move_selected_square(
@@ -72,27 +72,27 @@ impl NodeUiState {
             NodeFocus::ActionMenu => {
                 match self.phase {
                     NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
-                    NodePhase::MoveSprite {
-                        selected_sprite_key,
+                    NodePhase::MoveCurio {
+                        selected_curio_key,
                         ..
                     } => {
-                        // TODO To consider: What if the selected square is over another sprite and not the active sprite?
+                        // TODO To consider: What if the selected square is over another curio and not the active curio?
                         if node
-                            .with_sprite(selected_sprite_key, |sprite| sprite.moves() != 0)
-                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?
+                            .with_curio(selected_curio_key, |curio| curio.moves() != 0)
+                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_curio_key is invalid".to_string())?
                         {
                             self.clear_selected_action_index();
                         }
                     }
-                    NodePhase::SpriteAction {
-                        selected_sprite_key,
+                    NodePhase::CurioAction {
+                        selected_curio_key,
                         ..
                     } => {
                         let (moves, head_pt) = node
-                            .with_sprite(selected_sprite_key, |sprite| (sprite.moves(), sprite.head()))
-                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_sprite_key is invalid".to_string())?;
+                            .with_curio(selected_curio_key, |curio| (curio.moves(), curio.head()))
+                            .ok_or_else(||"NodePhase is not FreeSelect while the selected_curio_key is invalid".to_string())?;
                         if moves != 0 {
-                            self.phase.transition_to_move_sprite(node)?;
+                            self.phase.transition_to_move_curio(node)?;
                             self.set_selected_square(head_pt, node);
                             self.clear_selected_action_index();
                         }
@@ -101,10 +101,10 @@ impl NodeUiState {
                 self.focus = NodeFocus::Grid;
             }
             NodeFocus::Grid => {
-                let selected_sprite_key = node.active_sprite_key().or_else(|| {
-                    node.with_sprite_at(self.selected_square(), |sprite| (sprite.key()))
+                let selected_curio_key = node.active_curio_key().or_else(|| {
+                    node.with_curio_at(self.selected_square(), |curio| (curio.key()))
                 });
-                if selected_sprite_key.is_some() {
+                if selected_curio_key.is_some() {
                     if self.selected_action_index() == None {
                         self.set_default_selected_action();
                     }
@@ -128,51 +128,51 @@ impl NodeUiState {
                 match self.phase {
                     NodePhase::FreeSelect { .. } => {
                         if alt {
-                            let sprite_key_opt: Option<usize> = node.with_sprite_at(pt, |sprite| {
-                                if sprite.team() == node.active_team() {
-                                    Some(sprite.key())
+                            let curio_key_opt: Option<usize> = node.with_curio_at(pt, |curio| {
+                                if curio.team() == node.active_team() {
+                                    Some(curio.key())
                                 } else {
                                     None
                                 }
                             });
 
-                            if let Some(sprite_key) = sprite_key_opt {
-                                return vec![UiAction::activate_sprite(sprite_key)];
+                            if let Some(curio_key) = curio_key_opt {
+                                return vec![UiAction::activate_curio(curio_key)];
                             }
                         }
                         vec![UiAction::set_selected_square(pt)]
                     }
-                    NodePhase::MoveSprite { .. } => {
+                    NodePhase::MoveCurio { .. } => {
                         // Calculate the directions necessary
                         // TODO Rethink logic for if the square clicked on is too far away.
                         // Options:
                         // * Pathfinding to square?
                         // * Move one square, but do conditional checked for blocked paths (I.E. If you click NW, and North is blocked, go West)
 
-                        let sprite_head = node
-                            .with_active_sprite(|sprite| sprite.head())
-                            .expect("Move sprite state without active sprite");
+                        let curio_head = node
+                            .with_active_curio(|curio| curio.head())
+                            .expect("Move curio state without active curio");
                         let mut dirs = Vec::new();
-                        if sprite_head.1 > pt.1 {
+                        if curio_head.1 > pt.1 {
                             dirs.push(Direction::North);
                         }
-                        if sprite_head.0 < pt.0 {
+                        if curio_head.0 < pt.0 {
                             dirs.push(Direction::East);
                         }
-                        if sprite_head.1 < pt.1 {
+                        if curio_head.1 < pt.1 {
                             dirs.push(Direction::South);
                         }
-                        if sprite_head.0 > pt.0 {
+                        if curio_head.0 > pt.0 {
                             dirs.push(Direction::West);
                         }
                         dirs.into_iter()
                             .find_map(|dir| {
                                 if node
-                                    .with_active_sprite(|sprite| sprite.can_move(dir))
+                                    .with_active_curio(|curio| curio.can_move(dir))
                                     .unwrap()
                                 {
                                     // TODO this is probably not the right pattern
-                                    Some(UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(
+                                    Some(UiAction::GameCommand(GameCommand::NodeMoveActiveCurio(
                                         dir,
                                     )))
                                 } else {
@@ -182,15 +182,15 @@ impl NodeUiState {
                             .into_iter()
                             .collect()
                     }
-                    NodePhase::SpriteAction {
+                    NodePhase::CurioAction {
                         selected_action_index,
                         ..
-                    } => vec![UiAction::perform_sprite_action(selected_action_index, pt)],
+                    } => vec![UiAction::perform_curio_action(selected_action_index, pt)],
                 }
             }
-            NodeCt::SpriteActionMenu(sprite_action_index) => {
-                // TODO alt click -> Potentially activate sprite
-                vec![UiAction::set_selected_menu_item(sprite_action_index)]
+            NodeCt::CurioActionMenu(curio_action_index) => {
+                // TODO alt click -> Potentially activate curio
+                vec![UiAction::set_selected_menu_item(curio_action_index)]
             }
             _ => {
                 unimplemented!("Node click target not implemented yet")
@@ -206,11 +206,11 @@ impl NodeUiState {
                 match user_input {
                     UserInput::Activate => match self.phase {
                         NodePhase::FreeSelect {
-                            selected_sprite_key,
+                            selected_curio_key,
                             ..
                         } => {
                             vec!(
-                                    UiAction::activate_sprite(selected_sprite_key.expect("How do we confirm selection when there is no selected sprite key?")),
+                                    UiAction::activate_curio(selected_curio_key.expect("How do we confirm selection when there is no selected curio key?")),
                                     UiAction::confirm_selection(None),
                                 )
                         }
@@ -231,13 +231,13 @@ impl NodeUiState {
             NodeFocus::Grid => {
                 match user_input {
                     UserInput::Dir(dir) => match self.phase {
-                        NodePhase::MoveSprite { .. } => vec![UiAction::move_active_sprite(dir)],
+                        NodePhase::MoveCurio { .. } => vec![UiAction::move_active_curio(dir)],
                         _ => vec![UiAction::move_selected_square(dir, 1)],
                     },
                     UserInput::AltDir(dir) => {
                         match self.phase {
                             // When moving, alt will move the selected square
-                            NodePhase::MoveSprite { .. } => {
+                            NodePhase::MoveCurio { .. } => {
                                 vec![UiAction::move_selected_square(dir, 1)]
                             }
                             // Otherwise, just increase movement speed
@@ -245,27 +245,27 @@ impl NodeUiState {
                         }
                     }
                     UserInput::Activate => match self.phase {
-                        NodePhase::SpriteAction {
+                        NodePhase::CurioAction {
                             selected_action_index,
                             ..
-                        } => vec![UiAction::perform_sprite_action(
+                        } => vec![UiAction::perform_curio_action(
                             selected_action_index,
                             self.selected_square(),
                         )],
                         NodePhase::FreeSelect {
-                            selected_sprite_key: Some(sprite_key),
+                            selected_curio_key: Some(curio_key),
                             ..
                         } => {
                             if node
-                                .with_sprite(sprite_key, |sprite| sprite.untapped())
+                                .with_curio(curio_key, |curio| curio.untapped())
                                 .unwrap_or(false)
                             {
-                                vec![UiAction::activate_sprite(sprite_key)]
+                                vec![UiAction::activate_curio(curio_key)]
                             } else {
                                 UiAction::none()
                             }
                         }
-                        NodePhase::MoveSprite { .. } => vec![UiAction::deactivate_sprite()], // TODO if node's sprite key at selected square is not selected_sprite_key, activate the new sprite key instead
+                        NodePhase::MoveCurio { .. } => vec![UiAction::deactivate_curio()], // TODO if node's curio key at selected square is not selected_curio_key, activate the new curio key instead
                         _ => UiAction::none(),
                     },
                     UserInput::Select => vec![UiAction::change_selection()],
@@ -283,21 +283,21 @@ impl NodeUiState {
                     match &mut self.phase {
                         NodePhase::FreeSelect {
                             selected_action_index: Some(selected_action_index),
-                            selected_sprite_key: Some(selected_sprite_key),
+                            selected_curio_key: Some(selected_curio_key),
                         } => {
-                            // FIXME Need to active the sprite
-                            self.phase = NodePhase::SpriteAction {
+                            // FIXME Need to active the curio
+                            self.phase = NodePhase::CurioAction {
                                 selected_action_index: *selected_action_index,
-                                selected_sprite_key: *selected_sprite_key,
+                                selected_curio_key: *selected_curio_key,
                             };
                         }
-                        NodePhase::MoveSprite {
+                        NodePhase::MoveCurio {
                             selected_action_index: Some(selected_action_index),
-                            selected_sprite_key,
+                            selected_curio_key,
                         } => {
-                            self.phase = NodePhase::SpriteAction {
+                            self.phase = NodePhase::CurioAction {
                                 selected_action_index: *selected_action_index,
-                                selected_sprite_key: *selected_sprite_key,
+                                selected_curio_key: *selected_curio_key,
                             };
                         }
                         _ => {}
@@ -310,17 +310,17 @@ impl NodeUiState {
             }
             UiAction::SetSelectedMenuItem(idx) => {
                 if self.focus != NodeFocus::ActionMenu
-                    && matches!(self.phase, NodePhase::SpriteAction { .. })
+                    && matches!(self.phase, NodePhase::CurioAction { .. })
                 {
                     self.change_focus(node)?
                 }
                 // Might need to think more on this behavior if we're in move/action phase and we're highlighting another piece
-                let selected_sprite_key = node
-                    .active_sprite_key()
-                    .or_else(|| node.with_sprite_at(self.selected_square(), |sprite| sprite.key()))
+                let selected_curio_key = node
+                    .active_curio_key()
+                    .or_else(|| node.with_curio_at(self.selected_square(), |curio| curio.key()))
                     .unwrap();
                 let num_actions = node
-                    .with_sprite(selected_sprite_key, |sprite| sprite.actions().len()) // TODO method to count actions
+                    .with_curio(selected_curio_key, |curio| curio.actions().len()) // TODO method to count actions
                     .unwrap();
                 if *idx < num_actions {
                     self.set_selected_action_index(*idx);
@@ -329,15 +329,15 @@ impl NodeUiState {
             }
             UiAction::ChangeSelectedMenuItem(dir) => {
                 if self.focus == NodeFocus::ActionMenu {
-                    let selected_sprite_key = node
-                        .active_sprite_key()
+                    let selected_curio_key = node
+                        .active_curio_key()
                         .or_else(|| {
-                            node.with_sprite_at(self.selected_square(), |sprite| sprite.key())
+                            node.with_curio_at(self.selected_square(), |curio| curio.key())
                         })
                         .unwrap();
                     if let Some(action_index) = self.selected_action_index() {
                         let num_actions = node
-                            .with_sprite(selected_sprite_key, |sprite| sprite.actions().len())
+                            .with_curio(selected_curio_key, |curio| curio.actions().len())
                             .unwrap();
                         self.set_selected_action_index(match dir {
                             Direction::North => (action_index + num_actions - 1) % num_actions,
@@ -352,7 +352,7 @@ impl NodeUiState {
             UiAction::MoveSelectedSquare { direction, speed } => {
                 let range_limit: Option<PointSet> =
                     self.selected_action_index().and_then(|action_index| {
-                        node.with_active_sprite(|sprite| sprite.range_of_action(action_index))
+                        node.with_active_curio(|curio| curio.range_of_action(action_index))
                     });
                 debug!("Moving selected square {:?} by {}", direction, speed);
                 self.move_selected_square(node, *direction, *speed, range_limit);
@@ -362,44 +362,44 @@ impl NodeUiState {
                 self.set_selected_square(*pt, node);
                 Ok(())
             }
-            UiAction::GameCommand(GameCommand::NodeActivateSprite { .. }) => {
+            UiAction::GameCommand(GameCommand::NodeActivateCurio { .. }) => {
                 // TODO We don't know if this action was successful?
                 // This means if we try to activate unsuccessfully, selected square will go to
-                // active sprite
+                // active curio
                 // ...But is this a bug or a feature?
-                if let Some((moves, actions, head)) = node.with_active_sprite(|sprite| {
-                    (sprite.moves(), sprite.actions().len(), sprite.head())
+                if let Some((moves, actions, head)) = node.with_active_curio(|curio| {
+                    (curio.moves(), curio.actions().len(), curio.head())
                 }) {
                     self.set_selected_square(head, node);
                     if moves != 0 {
-                        self.phase.transition_to_move_sprite(node)?;
+                        self.phase.transition_to_move_curio(node)?;
                     } else if actions != 0 {
-                        self.phase.transition_to_sprite_action()?;
+                        self.phase.transition_to_curio_action()?;
                     } else {
-                        // TODO guard against this in game, perhaps never untap these sprites
-                        panic!("How do we have a sprite with no actions or moves?")
+                        // TODO guard against this in game, perhaps never untap these curios
+                        panic!("How do we have a curio with no actions or moves?")
                     }
                 }
                 Ok(())
             }
-            UiAction::GameCommand(GameCommand::NodeDeactivateSprite) => {
+            UiAction::GameCommand(GameCommand::NodeDeactivateCurio) => {
                 self.phase
                     .transition_to_free_select(self.selected_square, node);
                 Ok(())
             }
-            UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(_direction)) => {
+            UiAction::GameCommand(GameCommand::NodeMoveActiveCurio(_direction)) => {
                 if let Some((remaining_moves, head, is_tapped)) = node
-                    .with_active_sprite(|sprite| (sprite.moves(), sprite.head(), sprite.tapped()))
+                    .with_active_curio(|curio| (curio.moves(), curio.head(), curio.tapped()))
                 {
                     self.set_selected_square(head, node);
                     if remaining_moves == 0 && !is_tapped && self.selected_action_index().is_none()
                     {
-                        // Sprite is still active, must still have some moves
+                        // Curio is still active, must still have some moves
                         self.set_default_selected_action();
-                        self.phase.transition_to_sprite_action()?;
+                        self.phase.transition_to_curio_action()?;
                     }
                 } else {
-                    // TODO fix this bug hat applies to sprites without actions
+                    // TODO fix this bug hat applies to curios without actions
                     // self.set_selected_square(self.selected_square() + directions);
                     self.phase
                         .transition_to_free_select(self.selected_square, node);
@@ -408,7 +408,7 @@ impl NodeUiState {
                 Ok(())
             }
             UiAction::GameCommand(GameCommand::NodeTakeAction { .. }) => {
-                if node.active_sprite_key().is_none() {
+                if node.active_curio_key().is_none() {
                     self.phase
                         .transition_to_free_select(self.selected_square, node);
                     self.clear_selected_action_index();
@@ -426,12 +426,12 @@ impl NodeUiState {
                 ..
             } => selected_action_index,
 
-            NodePhase::MoveSprite {
+            NodePhase::MoveCurio {
                 selected_action_index,
                 ..
             } => selected_action_index,
 
-            NodePhase::SpriteAction {
+            NodePhase::CurioAction {
                 selected_action_index,
                 ..
             } => Some(selected_action_index),
@@ -439,7 +439,7 @@ impl NodeUiState {
     }
 
     pub fn set_default_selected_action(&mut self) {
-        // TODO check sprite metadata for last selected action?
+        // TODO check curio metadata for last selected action?
         self.set_selected_action_index(0);
     }
 
@@ -449,12 +449,12 @@ impl NodeUiState {
                 selected_action_index,
                 ..
             } => *selected_action_index = None,
-            NodePhase::MoveSprite {
+            NodePhase::MoveCurio {
                 selected_action_index,
                 ..
             } => *selected_action_index = None,
-            NodePhase::SpriteAction { .. } => {
-                log::warn!("clear_selected_action_index() called while we were NodePhase::SpriteAction, which is a noop")
+            NodePhase::CurioAction { .. } => {
+                log::warn!("clear_selected_action_index() called while we were NodePhase::CurioAction, which is a noop")
             }
         }
     }
@@ -465,11 +465,11 @@ impl NodeUiState {
                 selected_action_index,
                 ..
             } => *selected_action_index = Some(idx),
-            NodePhase::MoveSprite {
+            NodePhase::MoveCurio {
                 selected_action_index,
                 ..
             } => *selected_action_index = Some(idx),
-            NodePhase::SpriteAction {
+            NodePhase::CurioAction {
                 selected_action_index,
                 ..
             } => *selected_action_index = idx,
@@ -482,7 +482,7 @@ impl From<&Node> for NodeUiState {
         NodeUiState {
             focus: NodeFocus::Grid,
             phase: NodePhase::FreeSelect {
-                selected_sprite_key: node.with_sprite_at((0, 0), |sprite| sprite.key()),
+                selected_curio_key: node.with_curio_at((0, 0), |curio| curio.key()),
                 selected_action_index: None,
             },
             selected_square: (0, 0),
@@ -492,56 +492,56 @@ impl From<&Node> for NodeUiState {
 
 impl NodePhase {
     fn transition_to_free_select(&mut self, selected_square: Point, node: &Node) {
-        let selected_sprite_key = node.with_sprite_at(selected_square, |sprite| sprite.key());
+        let selected_curio_key = node.with_curio_at(selected_square, |curio| curio.key());
         *self = NodePhase::FreeSelect {
-            selected_sprite_key,
+            selected_curio_key,
             selected_action_index: None,
         };
     }
 
-    fn transition_to_move_sprite(&mut self, node: &Node) -> Result<(), String> {
-        if matches!(self, NodePhase::MoveSprite { .. }) {
+    fn transition_to_move_curio(&mut self, node: &Node) -> Result<(), String> {
+        if matches!(self, NodePhase::MoveCurio { .. }) {
             Ok(())
         } else {
             *self = match self {
                 NodePhase::FreeSelect {
                     selected_action_index,
                     ..
-                } => Ok::<_, String>(NodePhase::MoveSprite {
+                } => Ok::<_, String>(NodePhase::MoveCurio {
                     selected_action_index: *selected_action_index,
-                    selected_sprite_key: node.active_sprite_key().unwrap(),
+                    selected_curio_key: node.active_curio_key().unwrap(),
                 }),
-                NodePhase::SpriteAction {
-                    selected_sprite_key,
+                NodePhase::CurioAction {
+                    selected_curio_key,
                     ..
-                } => Ok::<_, String>(NodePhase::MoveSprite {
-                    selected_sprite_key: *selected_sprite_key,
+                } => Ok::<_, String>(NodePhase::MoveCurio {
+                    selected_curio_key: *selected_curio_key,
                     selected_action_index: None,
                 }),
                 _ => panic!(
-                    "Unreachable arm case hit when transitioning to MoveSprite phase in NodeUi"
+                    "Unreachable arm case hit when transitioning to MoveCurio phase in NodeUi"
                 ),
             }?;
             Ok(())
         }
     }
 
-    fn transition_to_sprite_action(&mut self) -> Result<(), String> {
+    fn transition_to_curio_action(&mut self) -> Result<(), String> {
         *self = match self {
             NodePhase::FreeSelect {
                 selected_action_index: Some(selected_action_index),
-                selected_sprite_key: Some(selected_sprite_key),
-            } => Ok::<_, String>(NodePhase::SpriteAction {
+                selected_curio_key: Some(selected_curio_key),
+            } => Ok::<_, String>(NodePhase::CurioAction {
                 selected_action_index: *selected_action_index,
-                selected_sprite_key: *selected_sprite_key,
+                selected_curio_key: *selected_curio_key,
             }),
-            NodePhase::MoveSprite {
-                selected_sprite_key,
+            NodePhase::MoveCurio {
+                selected_curio_key,
                 selected_action_index,
             } => {
-                // TODO check if sprite has actions available, else go to
-                Ok::<_, String>(NodePhase::SpriteAction {
-                    selected_sprite_key: *selected_sprite_key,
+                // TODO check if curio has actions available, else go to
+                Ok::<_, String>(NodePhase::CurioAction {
+                    selected_curio_key: *selected_curio_key,
                     selected_action_index: selected_action_index.unwrap_or(0),
                 })
             }

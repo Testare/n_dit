@@ -23,8 +23,8 @@ pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 use model::node::{DroppedSquare, NodeChangeMetadata};
 pub use model::node::{Node, NodeChange, Piece};
-pub use model::sprite::{Sprite, Team};
-pub use model::sprite_action::{SpriteAction, StandardSpriteAction};
+pub use model::curio::{Curio, Team};
+pub use model::curio_action::{CurioAction, StandardCurioAction};
 pub use model::world_map::WorldMap;
 
 use ai::EnemyAi;

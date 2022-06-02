@@ -9,7 +9,7 @@ pub enum ClickTarget {
 #[derive(Debug, Clone, Copy)]
 pub enum NodeCt {
     Grid(Point),
-    SpriteActionMenu(usize),
+    CurioActionMenu(usize),
     _TitleButton(_TitleButtonCt),
 }
 

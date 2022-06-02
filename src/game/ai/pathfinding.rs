@@ -7,28 +7,28 @@ use std::collections::VecDeque;
 /// Highly unoptimized and potentially buggy algorithm, significant slow down at speeds around 12.
 /// ... But hey, it does what it says on the box.
 pub fn find_any_path_to_point(
-    sprite_key: usize,
+    curio_key: usize,
     target: Point,
     node: &Node,
 ) -> Option<Vec<Direction>> {
-    node.with_sprite(sprite_key, |sprite| {
-        let head = sprite.head();
+    node.with_curio(curio_key, |curio| {
+        let head = curio.head();
         if head == target {
             return Some(Vec::new());
         }
         let mut visited = vec![vec![0; node.height()]; node.width()];
-        visited[head.0][head.1] = sprite.moves();
+        visited[head.0][head.1] = curio.moves();
         let first_dir = prime_direction_between_points(head, target);
         let dir_iter = std::iter::successors(first_dir, |dir| Some(dir.clockwise())).take(4);
         for dir in dir_iter {
             if let Some(path) = find_any_path_to_point_biased(
-                sprite_key,
+                curio_key,
                 head,
                 target,
                 node,
                 dir,
                 &mut visited,
-                sprite.moves(),
+                curio.moves(),
             ) {
                 return Some(path.into_iter().rev().collect());
             }
@@ -38,7 +38,7 @@ pub fn find_any_path_to_point(
 }
 
 fn find_any_path_to_point_biased(
-    sprite_key: usize,
+    curio_key: usize,
     current_pt: Point,
     target: Point,
     node: &Node,
@@ -60,7 +60,7 @@ fn find_any_path_to_point_biased(
     } else if remaining_moves == 1 {
         return None;
     } else if node.grid().square_is_free(move_pt)
-        || node.grid().item_key_at(move_pt) == Some(sprite_key)
+        || node.grid().item_key_at(move_pt) == Some(curio_key)
     {
         let mut possible_dirs = VecDeque::from([dir, dir.clockwise(), dir.clockwise().flip()]); // Pointless to backtrack
                                                                                                 // If we lined up with our quary, try moving in that direction first.
@@ -80,7 +80,7 @@ fn find_any_path_to_point_biased(
 
         for new_dir in possible_dirs {
             if let Some(mut path_from_here) = find_any_path_to_point_biased(
-                sprite_key,
+                curio_key,
                 move_pt,
                 target,
                 node,

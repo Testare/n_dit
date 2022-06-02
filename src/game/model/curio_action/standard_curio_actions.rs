@@ -1,60 +1,60 @@
-use super::{SACondition, SAEffect, SpriteAction, SpriteActionGenre, Target};
+use super::{SACondition, SAEffect, CurioAction, CurioActionGenre, Target};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroUsize;
 use std::ops::Deref;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum StandardSpriteAction {
+pub enum StandardCurioAction {
     Brutus,
     Bite,
     Fiddle,
 }
 
-impl StandardSpriteAction {
-    pub fn unwrap(&self) -> &'static SpriteAction<'static> {
+impl StandardCurioAction {
+    pub fn unwrap(&self) -> &'static CurioAction<'static> {
         match self {
-            StandardSpriteAction::Brutus => &BRUTUS,
-            StandardSpriteAction::Bite => &BITE,
-            StandardSpriteAction::Fiddle => &FIDDLE,
+            StandardCurioAction::Brutus => &BRUTUS,
+            StandardCurioAction::Bite => &BITE,
+            StandardCurioAction::Fiddle => &FIDDLE,
         }
     }
 }
 
-impl Deref for StandardSpriteAction {
-    type Target = SpriteAction<'static>;
+impl Deref for StandardCurioAction {
+    type Target = CurioAction<'static>;
 
     fn deref(&self) -> &Self::Target {
         self.unwrap()
     }
 }
 
-impl From<StandardSpriteAction> for &'static SpriteAction<'static> {
-    fn from(standard_sprite_action: StandardSpriteAction) -> Self {
-        standard_sprite_action.unwrap()
+impl From<StandardCurioAction> for &'static CurioAction<'static> {
+    fn from(standard_curio_action: StandardCurioAction) -> Self {
+        standard_curio_action.unwrap()
     }
 }
 
 lazy_static! {
-    static ref BRUTUS: SpriteAction<'static> = SpriteAction {
+    static ref BRUTUS: CurioAction<'static> = CurioAction {
         name: "Brutus",
-        genre: SpriteActionGenre::Attack,
+        genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(2),
         effect: SAEffect::DealDamage(2),
         targets: vec![Target::Ally],
         conditions: Vec::new()
     };
-    static ref BITE: SpriteAction<'static> = SpriteAction {
+    static ref BITE: CurioAction<'static> = CurioAction {
         name: "Bite",
-        genre: SpriteActionGenre::Attack,
+        genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(1),
         effect: SAEffect::DealDamage(2),
         targets: vec![Target::Enemy],
         conditions: Vec::new()
     };
-    static ref FIDDLE: SpriteAction<'static> = SpriteAction {
+    static ref FIDDLE: CurioAction<'static> = CurioAction {
         name: "Fiddle",
-        genre: SpriteActionGenre::Support,
+        genre: CurioActionGenre::Support,
         range: NonZeroUsize::new(2),
         effect: SAEffect::IncreaseMaxSize {
             amount: 1,

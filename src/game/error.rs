@@ -12,9 +12,9 @@ pub enum Error {
     /// not send the command in this case. In the case of CLI commands,
     /// even moving into a wall unsuccessfully might require a message.
     CommandNotSuccessful,
-    /// For instance, MoveActiveSprite when there is no Node loaded
+    /// For instance, MoveActiveCurio when there is no Node loaded
     InvalidForContext(String),
-    /// For instance, MoveActiveSprite when there is no active sprite
+    /// For instance, MoveActiveCurio when there is no active curio
     NotPossibleForState(String),
     /// The program seems to be in an invalid state, but we can probably reverse
     /// to a stable state.

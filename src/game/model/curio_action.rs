@@ -6,19 +6,19 @@ use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 use typed_key::{typed_key, Key};
 
-mod standard_sprite_actions;
+mod standard_curio_actions;
 
 const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
 
-pub use standard_sprite_actions::StandardSpriteAction;
+pub use standard_curio_actions::StandardCurioAction;
 
 // TODO look into making this a trait instead?
 #[derive(Debug, CopyGetters, Getters)]
-pub struct SpriteAction<'a> {
+pub struct CurioAction<'a> {
     #[get = "pub"]
     name: &'a str,
     #[get_copy = "pub"]
-    genre: SpriteActionGenre,
+    genre: CurioActionGenre,
     #[get_copy = "pub"]
     range: Option<NonZeroUsize>,
     effect: SAEffect,
@@ -27,7 +27,7 @@ pub struct SpriteAction<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum SpriteActionGenre {
+pub enum CurioActionGenre {
     Attack = 0,
     Support = 1,
 }
@@ -66,14 +66,14 @@ pub enum SACondition {
 }
 
 impl SACondition {
-    fn met(&self, node: &Node, sprite_key: usize, target_pt: Point) -> bool {
+    fn met(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
         match self {
-            SACondition::Size(range) => range.contains(&node.piece_len(sprite_key)),
+            SACondition::Size(range) => range.contains(&node.piece_len(curio_key)),
             SACondition::TargetSize(range) => node
-                .with_sprite_at(target_pt, |target| range.contains(&target.size()))
+                .with_curio_at(target_pt, |target| range.contains(&target.size()))
                 .unwrap_or(false),
             SACondition::TargetMaxSize(range) => node
-                .with_sprite_at(target_pt, |target| range.contains(&target.max_size()))
+                .with_curio_at(target_pt, |target| range.contains(&target.max_size()))
                 .unwrap_or(false),
             _ => unimplemented!("TODO implement other conditions"),
         }
@@ -91,11 +91,11 @@ pub enum Target {
     _Itself,
 }
 
-impl SpriteAction<'_> {
+impl CurioAction<'_> {
     pub fn unapply(
         &self,
         node: &mut Node,
-        sprite_key: usize,
+        curio_key: usize,
         target_pt: Point,
         metadata: &Metadata,
     ) -> Result<()> {
@@ -117,41 +117,41 @@ impl SpriteAction<'_> {
         }
         Ok(())
     }
-    pub fn apply(&self, node: &mut Node, sprite_key: usize, target_pt: Point) -> Result<Metadata> {
+    pub fn apply(&self, node: &mut Node, curio_key: usize, target_pt: Point) -> Result<Metadata> {
         if let Some(_target_type) = self
             .targets
             .iter()
-            .find(|target| target.matches(node, sprite_key, target_pt))
+            .find(|target| target.matches(node, curio_key, target_pt))
         {
             if self
                 .conditions
                 .iter()
-                .all(|condition| condition.met(node, sprite_key, target_pt))
+                .all(|condition| condition.met(node, curio_key, target_pt))
             {
                 let mut metadata = NodeChangeMetadata::for_team(node.active_team());
                 let mut metadata2 = Metadata::new();
 
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
-                        let (key, (dropped_pts, deleted_sprite)) = node
-                            .with_sprite_at_mut(target_pt, |target| {
+                        let (key, (dropped_pts, deleted_curio)) = node
+                            .with_curio_at_mut(target_pt, |target| {
                                 (target.key(), target.take_damage(dmg))
                             })
                             .ok_or_else(|| {
-                                "Invalid target for damage: Target must be a sprite"
+                                "Invalid target for damage: Target must be a curio"
                                     .fail_reversible_msg()
                             })?;
                         metadata2.put(DROPPED_SQUARES, &dropped_pts)?;
                         metadata = metadata
                             .with_dropped_squares(dropped_pts)
-                            .with_deleted_piece(Some(key).zip(deleted_sprite));
+                            .with_deleted_piece(Some(key).zip(deleted_curio));
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
-                        node.with_sprite_at_mut(target_pt, |mut target| {
+                        node.with_curio_at_mut(target_pt, |mut target| {
                             target.increase_max_size(amount, bound)
                         })
                         .ok_or_else(|| {
-                            "Invalid target for increase size: Target must be a sprite"
+                            "Invalid target for increase size: Target must be a curio"
                                 .fail_reversible_msg()
                         })?;
                     }
@@ -172,17 +172,17 @@ impl SpriteAction<'_> {
 }
 
 impl Target {
-    fn matches(&self, node: &Node, sprite_key: usize, target_pt: Point) -> bool {
+    fn matches(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
         match self {
             Self::Enemy => {
-                let source_team = node.with_sprite(sprite_key, |sprite| sprite.team());
-                let target_team = node.with_sprite_at(target_pt, |sprite| sprite.team());
+                let source_team = node.with_curio(curio_key, |curio| curio.team());
+                let target_team = node.with_curio_at(target_pt, |curio| curio.team());
                 source_team.is_some() && target_team.is_some() && source_team != target_team
             }
             Self::Ally => {
                 // TODO shouldn't be able to target self.
-                let source_team = node.with_sprite(sprite_key, |sprite| sprite.team());
-                let target_team = node.with_sprite_at(target_pt, |sprite| sprite.team());
+                let source_team = node.with_curio(curio_key, |curio| curio.team());
+                let target_team = node.with_curio_at(target_pt, |curio| curio.team());
                 source_team.is_some() && target_team.is_some() && source_team == target_team
             }
             _ => unimplemented!("Target {:?} not implemented yet", self),
@@ -191,8 +191,8 @@ impl Target {
 }
 
 #[non_exhaustive]
-pub enum SpriteActionError {
+pub enum CurioActionError {
     InvalidTarget,
     ConditionNotMet,
-    SpriteSpecificEffectOnNonSpriteTarget,
+    CurioSpecificEffectOnNonCurioTarget,
 }

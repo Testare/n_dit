@@ -1,8 +1,8 @@
-use crate::{Sprite, StandardSpriteAction, Team};
+use crate::{Curio, StandardCurioAction, Team};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct SpriteBuilder {
-    actions: Vec<StandardSpriteAction>,
+pub struct CurioBuilder {
+    actions: Vec<StandardCurioAction>,
     display: Option<String>,
     max_size: Option<usize>,
     movement_speed: Option<usize>,
@@ -10,8 +10,8 @@ pub struct SpriteBuilder {
     team: Option<Team>,
 }
 
-impl SpriteBuilder {
-    pub fn action(&mut self, action: StandardSpriteAction) -> &mut Self {
+impl CurioBuilder {
+    pub fn action(&mut self, action: StandardCurioAction) -> &mut Self {
         self.actions.push(action);
         self
     }
@@ -43,7 +43,7 @@ impl SpriteBuilder {
     }
 
     pub fn new() -> Self {
-        SpriteBuilder {
+        CurioBuilder {
             display: None,
             max_size: None,
             movement_speed: None,
@@ -53,8 +53,8 @@ impl SpriteBuilder {
         }
     }
 
-    pub fn build(&self) -> Option<Sprite> {
-        Some(Sprite {
+    pub fn build(&self) -> Option<Curio> {
+        Some(Curio {
             display: self.display.as_ref()?.clone(),
             max_size: self.max_size?,
             movement_speed: self.movement_speed?,
@@ -67,8 +67,8 @@ impl SpriteBuilder {
     }
 }
 
-impl Default for SpriteBuilder {
+impl Default for CurioBuilder {
     fn default() -> Self {
-        SpriteBuilder::new()
+        CurioBuilder::new()
     }
 }

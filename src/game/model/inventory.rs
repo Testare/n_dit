@@ -103,7 +103,7 @@ pub struct Item {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Getters, Serialize, Deserialize)]
-/// A card that can be turned into playable sprite in a game
+/// A card that can be turned into playable curio in a game
 /// Might want to have separate "type" and "name" fields, so cards
 /// can have their own unique names
 // TODO Implement actual logic

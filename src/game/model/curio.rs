@@ -1,10 +1,10 @@
-mod sprite_builder;
+mod curio_builder;
 
 use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
-use super::sprite_action::StandardSpriteAction;
-use sprite_builder::SpriteBuilder;
+use super::curio_action::StandardCurioAction;
+use curio_builder::CurioBuilder;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Team {
@@ -13,7 +13,7 @@ pub enum Team {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Getters, CopyGetters, Setters, Serialize, Deserialize)]
-pub struct Sprite {
+pub struct Curio {
     display: String,
     #[get_copy = "pub"]
     #[set = "pub"]
@@ -27,16 +27,16 @@ pub struct Sprite {
     team: Team,
     tapped: bool,
     #[get = "pub"]
-    actions: Vec<StandardSpriteAction>, // Vec<Metadata>
+    actions: Vec<StandardCurioAction>, // Vec<Metadata>
 }
 
-impl Sprite {
-    pub fn builder() -> SpriteBuilder {
-        SpriteBuilder::new()
+impl Curio {
+    pub fn builder() -> CurioBuilder {
+        CurioBuilder::new()
     }
 
-    pub fn new(display: &str) -> Sprite {
-        Sprite {
+    pub fn new(display: &str) -> Curio {
+        Curio {
             display: String::from(display),
             max_size: 3,
             movement_speed: 3,
@@ -45,9 +45,9 @@ impl Sprite {
             team: Team::PlayerTeam,
             tapped: false,
             actions: vec![
-                StandardSpriteAction::Brutus,
-                StandardSpriteAction::Bite,
-                StandardSpriteAction::Fiddle,
+                StandardCurioAction::Brutus,
+                StandardCurioAction::Bite,
+                StandardCurioAction::Fiddle,
             ],
         }
     }

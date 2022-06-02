@@ -3,55 +3,55 @@ use super::super::super::Metadata;
 use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::Node;
 use crate::{
-    Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Sprite, StandardSpriteAction, Team,
+    Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Curio, StandardCurioAction, Team,
 };
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
-const SPRITE_KEY_IS_VALID: &str = "Sprite key is expected to be valid key for node grid";
+const CURIO_KEY_IS_VALID: &str = "Curio key is expected to be valid key for node grid";
 
-pub struct WithSpriteGeneric<N: Deref<Target = Node>> {
+pub struct WithCurioGeneric<N: Deref<Target = Node>> {
     node: N,
-    sprite_key: usize,
+    curio_key: usize,
 }
 
-pub type WithSprite<'a> = WithSpriteGeneric<&'a Node>;
-pub type WithSpriteMut<'a> = WithSpriteGeneric<&'a mut Node>;
+pub type WithCurio<'a> = WithCurioGeneric<&'a Node>;
+pub type WithCurioMut<'a> = WithCurioGeneric<&'a mut Node>;
 
-impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
-    /// Returns internal sprite data struct
-    fn sprite(&self) -> &Sprite {
-        if let Piece::Program(sprite) = self
+impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
+    /// Returns internal curio data struct
+    fn curio(&self) -> &Curio {
+        if let Piece::Program(curio) = self
             .node
             .grid()
-            .item(self.sprite_key)
-            .expect(SPRITE_KEY_IS_VALID)
+            .item(self.curio_key)
+            .expect(CURIO_KEY_IS_VALID)
         {
-            sprite
+            curio
         } else {
-            panic!("{}", SPRITE_KEY_IS_VALID);
+            panic!("{}", CURIO_KEY_IS_VALID);
         }
     }
 
     // NOTE maybe this shouldn't be public?
-    /// List of actions the sprite can take
-    pub fn actions(&self) -> &Vec<StandardSpriteAction> {
-        if let Piece::Program(sprite) = self.node.grid().item(self.sprite_key).unwrap() {
-            sprite.actions()
+    /// List of actions the curio can take
+    pub fn actions(&self) -> &Vec<StandardCurioAction> {
+        if let Piece::Program(curio) = self.node.grid().item(self.curio_key).unwrap() {
+            curio.actions()
         } else {
-            panic!("{}", SPRITE_KEY_IS_VALID);
+            panic!("{}", CURIO_KEY_IS_VALID);
         }
     }
 
-    /// Tests if the sprite can go in the specified direction, if it is a legal move.
+    /// Tests if the curio can go in the specified direction, if it is a legal move.
     ///
-    /// Does not check if the sprite has moves left or is tapped.
+    /// Does not check if the curio has moves left or is tapped.
     pub fn can_move(self, dir: Direction) -> bool {
         if let Some(next_pt) = self.head() + dir {
             let grid = self.node.grid();
             if grid.square_is_free(next_pt) {
                 return true;
             }
-            if grid.item_key_at(next_pt) == Some(self.sprite_key) {
+            if grid.item_key_at(next_pt) == Some(self.curio_key) {
                 return true;
             }
             // Might involve more involved checks in the future
@@ -63,45 +63,45 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
     }
 
     pub fn size(&self) -> usize {
-        self.node.grid().len_of(self.sprite_key)
+        self.node.grid().len_of(self.curio_key)
     }
 
     pub fn max_size(&self) -> usize {
-        self.sprite().max_size()
+        self.curio().max_size()
     }
 
     pub fn head(&self) -> Point {
         self.node
             .grid()
-            .head(self.sprite_key)
-            .expect(SPRITE_KEY_IS_VALID)
+            .head(self.curio_key)
+            .expect(CURIO_KEY_IS_VALID)
     }
 
     pub fn moves(&self) -> usize {
-        self.sprite().moves()
+        self.curio().moves()
     }
 
     pub fn key(&self) -> usize {
-        self.sprite_key
+        self.curio_key
     }
 
     pub fn tapped(&self) -> bool {
-        self.sprite().tapped()
+        self.curio().tapped()
     }
 
     pub fn untapped(&self) -> bool {
-        self.sprite().untapped()
+        self.curio().untapped()
     }
 
     pub fn team(&self) -> Team {
-        self.sprite().team()
+        self.curio().team()
     }
 
     pub fn range_of_action(&self, action_index: usize) -> Option<PointSet> {
         let pt = self.head();
         let bounds = self.node.bounds();
         let range = self
-            .sprite()
+            .curio()
             .actions()
             .get(action_index)?
             .unwrap()
@@ -119,11 +119,11 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
         a separate function.*/
     }
 
-    // TODO move to WithSprite
+    // TODO move to WithCurio
     // TODO Take pick-ups into account
     pub fn possible_moves(&self) -> PointSet {
-        let sprite = self.sprite();
-        if sprite.moves() == 0 || sprite.tapped() {
+        let curio = self.curio();
+        if curio.moves() == 0 || curio.tapped() {
             return PointSet::default();
         }
         let bounds = self.node.bounds();
@@ -132,7 +132,7 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
             hash_set: HashSet<Point>,
             moves: usize,
             bounds: &Bounds,
-            sprite_key: usize,
+            curio_key: usize,
             grid: &GridMap<Piece>,
         ) -> HashSet<Point> {
             if moves == 0 {
@@ -143,10 +143,10 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
                     .fold(hash_set, |mut set, dir| {
                         let next_pt = dir.add_to_point(point, 1, *bounds);
                         if grid.square_is_free(next_pt)
-                            || grid.item_key_at(next_pt) == Some(sprite_key)
+                            || grid.item_key_at(next_pt) == Some(curio_key)
                         {
                             set.insert(next_pt);
-                            possible_moves_recur(next_pt, set, moves - 1, bounds, sprite_key, grid)
+                            possible_moves_recur(next_pt, set, moves - 1, bounds, curio_key, grid)
                         } else {
                             set
                         }
@@ -162,68 +162,68 @@ impl<N: Deref<Target = Node>> WithSpriteGeneric<N> {
             point_set,
             moves,
             &bounds,
-            self.sprite_key,
+            self.curio_key,
             self.node.grid(),
         ))
     }
 }
 
-impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
-    /// Internal function to get mutable access to the sprite data
-    fn sprite_mut(&mut self) -> &mut Sprite {
-        if let Some(Piece::Program(sprite)) = self.node.grid_mut().item_mut(self.sprite_key) {
-            sprite
+impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
+    /// Internal function to get mutable access to the curio data
+    fn curio_mut(&mut self) -> &mut Curio {
+        if let Some(Piece::Program(curio)) = self.node.grid_mut().item_mut(self.curio_key) {
+            curio
         } else {
-            panic!("{}", SPRITE_KEY_IS_VALID)
+            panic!("{}", CURIO_KEY_IS_VALID)
         }
     }
 
-    /// Number of moves the sprite has taken since it was last untapped.
+    /// Number of moves the curio has taken since it was last untapped.
     pub fn moves_taken(&self) -> usize {
-        self.sprite().moves_taken()
+        self.curio().moves_taken()
     }
 
-    /// Increases the max size of the sprite
+    /// Increases the max size of the curio
     pub fn increase_max_size(&mut self, increase: usize, bound: Option<NonZeroUsize>) -> usize {
-        let sprite = self.sprite_mut();
+        let curio = self.curio_mut();
         // TODO test this logic
-        let increased_max_size = sprite.max_size() + increase;
+        let increased_max_size = curio.max_size() + increase;
         let bounded_max_size = bound
             .map(|bnd| cmp::min(increased_max_size, bnd.get()))
             .unwrap_or(increased_max_size);
-        let final_max_size = cmp::max(bounded_max_size, sprite.max_size());
-        sprite.set_max_size(final_max_size);
+        let final_max_size = cmp::max(bounded_max_size, curio.max_size());
+        curio.set_max_size(final_max_size);
         final_max_size
     }
 
-    /// The sprite finishes its action for this turn.
+    /// The curio finishes its action for this turn.
     pub fn tap(&mut self) {
-        self.sprite_mut().tap();
-        if self.node.active_sprite_key() == Some(self.sprite_key) {
-            self.node.drop_active_sprite(); // deactivate_sprite();
+        self.curio_mut().tap();
+        if self.node.active_curio_key() == Some(self.curio_key) {
+            self.node.drop_active_curio(); // deactivate_curio();
         }
     }
 
-    /// Makes the sprite able to take a turn again (move and take action)
+    /// Makes the curio able to take a turn again (move and take action)
     pub fn untap(&mut self) {
-        self.sprite_mut().untap();
+        self.curio_mut().untap();
     }
 
-    /// Consumes self since the sprite might be deleted, and thus the sprite key is no longer valid
+    /// Consumes self since the curio might be deleted, and thus the curio key is no longer valid
     pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Piece>) {
         let grid_mut = self.node.grid_mut();
-        let remaining_square_len = grid_mut.len_of(self.sprite_key).saturating_sub(dmg);
+        let remaining_square_len = grid_mut.len_of(self.curio_key).saturating_sub(dmg);
         let dropped_squares: Vec<DroppedSquare> = grid_mut
-            .square_iter(self.sprite_key)
+            .square_iter(self.curio_key)
             .skip(remaining_square_len)
-            .map(|sqr| DroppedSquare(self.sprite_key, sqr.location()))
+            .map(|sqr| DroppedSquare(self.curio_key, sqr.location()))
             .collect();
-        (dropped_squares, grid_mut.pop_back_n(self.sprite_key, dmg))
+        (dropped_squares, grid_mut.pop_back_n(self.curio_key, dmg))
     }
 
     pub fn go(&mut self, direction: Direction) -> Result<Metadata> {
         if self.moves() == 0 || self.tapped() {
-            return "Sprite cannot move".invalid();
+            return "Curio cannot move".invalid();
         }
         let mut metadata = NodeChangeMetadata::for_team(self.node.active_team());
         let at_max_size = self.size() >= self.max_size();
@@ -231,7 +231,7 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
         let grid_mut = self.node.grid_mut();
 
         match grid_mut.item_at(next_pt) {
-            Some(Piece::AccessPoint) => "Move sprite collision with access point".fail_critical(),
+            Some(Piece::AccessPoint) => "Move curio collision with access point".fail_critical(),
             Some(Piece::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if let Some(Piece::Pickup(pickup)) = grid_mut.pop_front(key) {
@@ -245,8 +245,8 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
             }
             Some(Piece::Program(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
-                if key != self.sprite_key {
-                    "Cannot move sprite into another sprite".invalid()
+                if key != self.curio_key {
+                    "Cannot move curio into another curio".invalid()
                 } else {
                     Ok(())
                 }
@@ -256,98 +256,98 @@ impl<N: DerefMut<Target = Node>> WithSpriteGeneric<N> {
 
         let grid_mut = self.node.grid_mut();
 
-        let sucessful_movement = grid_mut.push_front(next_pt, self.sprite_key);
+        let sucessful_movement = grid_mut.push_front(next_pt, self.curio_key);
         if sucessful_movement {
             if at_max_size {
                 metadata = metadata.with_dropped_squares(vec![DroppedSquare(
-                    self.sprite_key,
-                    grid_mut.back(self.sprite_key).unwrap(),
+                    self.curio_key,
+                    grid_mut.back(self.curio_key).unwrap(),
                 )]);
-                grid_mut.pop_back(self.sprite_key);
+                grid_mut.pop_back(self.curio_key);
             }
-            let sprite = self.sprite_mut();
-            sprite.took_a_move();
+            let curio = self.curio_mut();
+            curio.took_a_move();
             metadata.to_metadata()
         } else {
-            format!("Unable to move sprite {:?}", direction).invalid()
+            format!("Unable to move curio {:?}", direction).invalid()
         }
     }
 
     pub(super) fn grow_back(&mut self, pt: Point) -> bool {
-        self.node.grid_mut().push_back(pt, self.sprite_key)
+        self.node.grid_mut().push_back(pt, self.curio_key)
     }
 
     pub(super) fn drop_front(&mut self) -> bool {
-        self.node.grid_mut().pop_front(self.sprite_key).is_some()
+        self.node.grid_mut().pop_front(self.curio_key).is_some()
     }
 }
 
 impl Node {
-    pub fn with_active_sprite<F, R, O>(&self, f: F) -> Option<R>
+    pub fn with_active_curio<F, R, O>(&self, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurio<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        self.active_sprite_key()
-            .and_then(|key| self.with_sprite(key, f))
+        self.active_curio_key()
+            .and_then(|key| self.with_curio(key, f))
     }
 
-    pub(crate) fn with_active_sprite_mut<F, R, O>(&mut self, f: F) -> Option<R>
+    pub(crate) fn with_active_curio_mut<F, R, O>(&mut self, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurioMut<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        self.active_sprite_key()
-            .and_then(|key| self.with_sprite_mut(key, f))
+        self.active_curio_key()
+            .and_then(|key| self.with_curio_mut(key, f))
     }
 
-    pub fn with_sprite<F, R, O>(&self, sprite_key: usize, f: F) -> Option<R>
+    pub fn with_curio<F, R, O>(&self, curio_key: usize, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurio<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        if let Some(Piece::Program(..)) = self.grid().item(sprite_key) {
-            let with_sprite_mut = WithSprite {
+        if let Some(Piece::Program(..)) = self.grid().item(curio_key) {
+            let with_curio_mut = WithCurio {
                 node: self,
-                sprite_key,
+                curio_key,
             };
-            f(with_sprite_mut).into()
+            f(with_curio_mut).into()
         } else {
             None
         }
     }
 
-    pub(crate) fn with_sprite_mut<F, R, O>(&mut self, sprite_key: usize, f: F) -> Option<R>
+    pub(crate) fn with_curio_mut<F, R, O>(&mut self, curio_key: usize, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurioMut<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        if let Some(Piece::Program(..)) = self.grid().item(sprite_key) {
-            let with_sprite_mut = WithSpriteMut {
+        if let Some(Piece::Program(..)) = self.grid().item(curio_key) {
+            let with_curio_mut = WithCurioMut {
                 node: self,
-                sprite_key,
+                curio_key,
             };
-            f(with_sprite_mut).into()
+            f(with_curio_mut).into()
         } else {
             None
         }
     }
 
-    pub fn with_sprite_at<F, R, O>(&self, pt: Point, f: F) -> Option<R>
+    pub fn with_curio_at<F, R, O>(&self, pt: Point, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSprite<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurio<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        let sprite_key = self.grid().item_key_at(pt)?;
-        self.with_sprite(sprite_key, f)
+        let curio_key = self.grid().item_key_at(pt)?;
+        self.with_curio(curio_key, f)
     }
 
-    pub(crate) fn with_sprite_at_mut<F, R, O>(&mut self, pt: Point, f: F) -> Option<R>
+    pub(crate) fn with_curio_at_mut<F, R, O>(&mut self, pt: Point, f: F) -> Option<R>
     where
-        for<'brand> F: FnOnce(WithSpriteMut<'brand>) -> O,
+        for<'brand> F: FnOnce(WithCurioMut<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        let sprite_key = self.grid().item_key_at(pt)?;
-        self.with_sprite_mut(sprite_key, f)
+        let curio_key = self.grid().item_key_at(pt)?;
+        self.with_curio_mut(curio_key, f)
     }
 }

@@ -1,5 +1,5 @@
 mod node_change;
-mod with_sprite;
+mod with_curio;
 
 pub use node_change::keys as node_change_keys;
 pub use node_change::DroppedSquare;
@@ -12,11 +12,11 @@ use serde::{Deserialize, Serialize};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
 use super::inventory::{Inventory, Pickup};
-use super::sprite::Sprite;
+use super::curio::Curio;
 use crate::{Bounds, GridMap, Point, Team};
 use log::debug;
 
-use with_sprite::WithSprite;
+use with_curio::WithCurio;
 
 type NodeConstructionError = String;
 
@@ -24,7 +24,7 @@ type NodeConstructionError = String;
 pub struct Node {
     grid: GridMap<Piece>,
     name: String,
-    active_sprite: Option<usize>,
+    active_curio: Option<usize>,
     enemy_ai: EnemyAi,
     active_team: Team,
     #[get = "pub"]
@@ -34,7 +34,7 @@ pub struct Node {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Piece {
     AccessPoint,
-    Program(Sprite),
+    Program(Curio),
     Pickup(Pickup),
 }
 
@@ -55,49 +55,49 @@ impl Node {
         &mut self.grid
     }
 
-    fn drop_active_sprite(&mut self) {
-        self.active_sprite = None;
+    fn drop_active_curio(&mut self) {
+        self.active_curio = None;
     }
 
-    pub fn untapped_sprites_on_active_team(&self) -> usize {
-        let enemy_sprites_remaining = self.sprite_keys_for_team(Team::EnemyTeam).len();
-        if enemy_sprites_remaining == 0 {
+    pub fn untapped_curios_on_active_team(&self) -> usize {
+        let enemy_curios_remaining = self.curio_keys_for_team(Team::EnemyTeam).len();
+        if enemy_curios_remaining == 0 {
             panic!("No enemies remain! You win!")
         }
 
-        self.filtered_sprite_keys(|_, sprite| {
-            sprite.team() == self.active_team() && !sprite.tapped()
+        self.filtered_curio_keys(|_, curio| {
+            curio.team() == self.active_team() && !curio.tapped()
         })
         .len()
     }
 
-    pub fn active_sprite_key(&self) -> Option<usize> {
-        self.active_sprite
+    pub fn active_curio_key(&self) -> Option<usize> {
+        self.active_curio
     }
 
-    pub fn deactivate_sprite(&mut self) {
-        self.with_active_sprite_mut(|mut sprite| sprite.tap());
-        self.active_sprite = None;
+    pub fn deactivate_curio(&mut self) {
+        self.with_active_curio_mut(|mut curio| curio.tap());
+        self.active_curio = None;
     }
 
-    fn set_active_sprite(&mut self, sprite_key: Option<usize>) {
-        self.active_sprite = sprite_key
+    fn set_active_curio(&mut self, curio_key: Option<usize>) {
+        self.active_curio = curio_key
     }
 
-    pub fn activate_sprite(&mut self, sprite_key: usize) -> bool {
+    pub fn activate_curio(&mut self, curio_key: usize) -> bool {
         let can_activate = self
-            .with_sprite(sprite_key, |sprite| {
-                sprite.team() == self.active_team() && !sprite.tapped()
+            .with_curio(curio_key, |curio| {
+                curio.team() == self.active_team() && !curio.tapped()
             })
             .unwrap_or(false);
 
         if can_activate {
-            self.with_active_sprite_mut(|mut sprite|
-                if sprite.moves_taken() != 0 {
-                    debug!("Activating new sprite, old sprite had taken {:?} moves and so must be tapped", sprite.moves_taken());
-                    sprite.tap();
+            self.with_active_curio_mut(|mut curio|
+                if curio.moves_taken() != 0 {
+                    debug!("Activating new curio, old curio had taken {:?} moves and so must be tapped", curio.moves_taken());
+                    curio.tap();
                 });
-            self.active_sprite = Some(sprite_key);
+            self.active_curio = Some(curio_key);
         }
         can_activate
     }
@@ -106,23 +106,23 @@ impl Node {
         &self.grid
     }
 
-    pub fn add_sprite(
+    pub fn add_curio(
         &mut self,
-        spr: Sprite,
+        spr: Curio,
         pt_vec: Vec<Point>,
     ) -> Result<usize, NodeConstructionError> {
         // Could possibly be optimized with GridMap::put_entries
         let mut pts = pt_vec.into_iter();
-        let first_pt = pts.next().ok_or("Sprite needs at least one point!")?;
+        let first_pt = pts.next().ok_or("Curio needs at least one point!")?;
         let key = self
             .grid
             .put_item(first_pt, Piece::Program(spr))
             .ok_or_else::<NodeConstructionError, _>(|| {
-                "Could not add sprite to initial location".into()
+                "Could not add curio to initial location".into()
             })?;
         for pt in pts {
             if !self.grid.push_front(pt, key) {
-                return Err(format!("Could not add sprite to location {:?}", pt));
+                return Err(format!("Could not add curio to location {:?}", pt));
             }
         }
         Ok(key)
@@ -182,8 +182,8 @@ impl Node {
             Team::PlayerTeam => Team::EnemyTeam,
         };
         self.active_team = active_team;
-        for sprite_key in self.sprite_keys_for_team(active_team) {
-            self.with_sprite_mut(sprite_key, |mut sprite| sprite.untap());
+        for curio_key in self.curio_keys_for_team(active_team) {
+            self.with_curio_mut(curio_key, |mut curio| curio.untap());
         }
     }
 
@@ -195,17 +195,17 @@ impl Node {
         self.grid().entries()
     }
 
-    pub fn sprite_keys_for_team(&self, team: Team) -> Vec<usize> {
-        self.filtered_sprite_keys(|_, sprite| sprite.team() == team)
+    pub fn curio_keys_for_team(&self, team: Team) -> Vec<usize> {
+        self.filtered_curio_keys(|_, curio| curio.team() == team)
     }
 
-    // TODO Make specialized "get sprites for team" function, since that it the primary use case here
-    pub fn filtered_sprite_keys<P: Fn(usize, WithSprite) -> bool>(
+    // TODO Make specialized "get curios for team" function, since that it the primary use case here
+    pub fn filtered_curio_keys<P: Fn(usize, WithCurio) -> bool>(
         &self,
         predicate: P,
     ) -> Vec<usize> {
         self.grid.filtered_keys(|key, _| {
-            self.with_sprite(key, |sprite| predicate(key, sprite))
+            self.with_curio(key, |curio| predicate(key, curio))
                 .unwrap_or(false)
         })
     }
@@ -220,7 +220,7 @@ impl Piece {
 impl From<GridMap<Piece>> for Node {
     fn from(grid: GridMap<Piece>) -> Self {
         Node {
-            active_sprite: None,
+            active_curio: None,
             active_team: Team::PlayerTeam,
             enemy_ai: EnemyAi::Simple,
             grid,
@@ -233,7 +233,7 @@ impl From<GridMap<Piece>> for Node {
 impl From<(String, GridMap<Piece>)> for Node {
     fn from((name, grid): (String, GridMap<Piece>)) -> Self {
         Node {
-            active_sprite: None,
+            active_curio: None,
             active_team: Team::PlayerTeam,
             enemy_ai: EnemyAi::Simple,
             grid,
@@ -246,7 +246,7 @@ impl From<(String, GridMap<Piece>)> for Node {
 impl From<(String, GridMap<Piece>, EnemyAi)> for Node {
     fn from((name, grid, enemy_ai): (String, GridMap<Piece>, EnemyAi)) -> Self {
         Node {
-            active_sprite: None,
+            active_curio: None,
             active_team: Team::PlayerTeam,
             enemy_ai,
             grid,

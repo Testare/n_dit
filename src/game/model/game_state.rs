@@ -33,8 +33,8 @@ impl GameState {
         self.node.as_mut()
     }
 
-    pub fn active_sprite_key(&self) -> Option<usize> {
-        self.node().and_then(|node| node.active_sprite_key())
+    pub fn active_curio_key(&self) -> Option<usize> {
+        self.node().and_then(|node| node.active_curio_key())
     }
 
     // From trait?

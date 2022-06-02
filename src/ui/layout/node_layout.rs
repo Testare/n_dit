@@ -87,7 +87,7 @@ impl StandardNodeLayout {
     const MIN_HEIGHT: usize = 10;
     const MIN_HEIGHT_FOR_TITLE: usize = 12;
     const MIN_WIDTH: usize = 30;
-    const SPRITE_ACTION_Y: usize = 7;
+    const CURIO_ACTION_Y: usize = 7;
 
     fn get_max_width(&self) -> usize {
         self.max_width.map(|nzu| nzu.get()).unwrap_or(120) // TODO one place for defaults
@@ -315,13 +315,13 @@ impl SubLayout for StandardNodeLayout {
                 let node = state.game_state().node().unwrap();
                 // Action Menus
                 (pt.1 - top)
-                    .checked_sub(Self::SPRITE_ACTION_Y)
+                    .checked_sub(Self::CURIO_ACTION_Y)
                     .and_then(|index| {
-                        node.with_sprite_at(state.selected_square(), |sprite| {
-                            sprite.actions().len()
+                        node.with_curio_at(state.selected_square(), |curio| {
+                            curio.actions().len()
                         })
                         .filter(|available_action_total| *available_action_total > index)
-                        .map(|_| NodeCt::SpriteActionMenu(index).into())
+                        .map(|_| NodeCt::CurioActionMenu(index).into())
                     })
             } else if pt.0 < width {
                 let (sx, sy) = self.scroll;

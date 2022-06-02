@@ -196,19 +196,19 @@ pub enum UiAction {
 type UiActions = Vec<UiAction>;
 
 impl UiAction {
-    pub fn perform_sprite_action(sprite_action_id: usize, target: Point) -> UiAction {
+    pub fn perform_curio_action(curio_action_id: usize, target: Point) -> UiAction {
         UiAction::GameCommand(GameCommand::NodeTakeAction {
-            sprite_action_id,
+            curio_action_id,
             target,
         })
     }
 
-    pub fn activate_sprite(sprite_id: usize) -> UiAction {
-        UiAction::GameCommand(GameCommand::NodeActivateSprite { sprite_id })
+    pub fn activate_curio(curio_id: usize) -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeActivateCurio { curio_id })
     }
 
-    pub fn deactivate_sprite() -> UiAction {
-        UiAction::GameCommand(GameCommand::NodeDeactivateSprite)
+    pub fn deactivate_curio() -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeDeactivateCurio)
     }
 
     pub fn move_selected_square(direction: Direction, speed: usize) -> UiAction {
@@ -239,8 +239,8 @@ impl UiAction {
         matches!(self, UiAction::Quit)
     }
 
-    pub fn move_active_sprite(dir: Direction) -> UiAction {
-        UiAction::GameCommand(GameCommand::NodeMoveActiveSprite(dir))
+    pub fn move_active_curio(dir: Direction) -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeMoveActiveCurio(dir))
     }
 
     #[deprecated]

@@ -25,13 +25,13 @@ pub enum GameCommand {
     Skip,
     Undo,
     InterfaceEdition(usize),
-    NodeMoveActiveSprite(Direction),
-    NodeActivateSprite {
-        sprite_id: usize, // TODO Enum for usize, name, or point
+    NodeMoveActiveCurio(Direction),
+    NodeActivateCurio {
+        curio_id: usize, // TODO Enum for usize, name, or point
     },
-    NodeDeactivateSprite,
+    NodeDeactivateCurio,
     NodeTakeAction {
-        sprite_action_id: usize, // TODO Enum for usize, or name
+        curio_action_id: usize, // TODO Enum for usize, or name
         target: Point,
     },
 }
@@ -42,20 +42,20 @@ pub(super) fn apply_command_dispatch(
 ) -> Result<()> {
     use GameCommand::*;
     match command {
-        NodeActivateSprite { sprite_id } => gm.apply(NodeChange::ActivateSprite(*sprite_id)),
-        NodeMoveActiveSprite(dir) => {
-            gm.apply(NodeChange::MoveActiveSprite(*dir))?;
+        NodeActivateCurio { curio_id } => gm.apply(NodeChange::ActivateCurio(*curio_id)),
+        NodeMoveActiveCurio(dir) => {
+            gm.apply(NodeChange::MoveActiveCurio(*dir))?;
             node_check_turn_end(gm)
         }
-        NodeDeactivateSprite => {
-            gm.apply(NodeChange::DeactivateSprite)?;
+        NodeDeactivateCurio => {
+            gm.apply(NodeChange::DeactivateCurio)?;
             node_check_turn_end(gm)
         }
         NodeTakeAction {
-            sprite_action_id,
+            curio_action_id,
             target,
         } => {
-            gm.apply(NodeChange::TakeSpriteAction(*sprite_action_id, *target))?;
+            gm.apply(NodeChange::TakeCurioAction(*curio_action_id, *target))?;
             node_check_turn_end(gm)
         }
         Next => {
@@ -82,9 +82,9 @@ fn node_check_turn_end(gm: &mut AuthorityGameMaster) -> Result<()> {
     let node = gm
         .state
         .node()
-        .expect("How could this not exist if DeactivateSprite successful?");
+        .expect("How could this not exist if DeactivateCurio successful?");
 
-    if node.untapped_sprites_on_active_team() == 0 {
+    if node.untapped_curios_on_active_team() == 0 {
         // TODO Configurable
         gm.apply(NodeChange::FinishTurn)?;
         gm.check_to_run_ai();
