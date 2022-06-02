@@ -22,7 +22,7 @@ pub use metadata::Metadata;
 pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 use model::node::{DroppedSquare, NodeChangeMetadata};
-pub use model::node::{Node, NodeChange, Piece};
+pub use model::node::{Node, NodeChange, Sprite};
 pub use model::curio::{Curio, Team};
 pub use model::curio_action::{CurioAction, StandardCurioAction};
 pub use model::world_map::WorldMap;

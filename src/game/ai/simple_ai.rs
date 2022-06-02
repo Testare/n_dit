@@ -82,7 +82,7 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
                     .get(0)
                     .expect("Weird if there are no curios within range of the calculated target");
                 let chosen_target_pt = node
-                    .with_curio(chosen_target, |curio| curio.head()) // FIXME The head is not the only targetable piece of the player
+                    .with_curio(chosen_target, |curio| curio.head()) // FIXME The head is not the only targetable sprite of the player
                     .expect("Chosen target should have a head");
 
                 collect(NodeChange::TakeCurioAction(action_index, chosen_target_pt));
@@ -103,7 +103,7 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
 }
 
 fn get_points_within_x_of_enemy_team(node: &Node, range: usize) -> PointSet {
-    // TODO Bugfix: The head is not the only targetable piece of the player
+    // TODO Bugfix: The head is not the only targetable sprite of the player
     let bounds = node.bounds();
     let pts: Vec<_> = node
         .curio_keys_for_team(Team::PlayerTeam)

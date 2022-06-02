@@ -3,7 +3,7 @@ use super::super::super::Metadata;
 use super::node_change::{DroppedSquare, NodeChangeMetadata};
 use super::Node;
 use crate::{
-    Bounds, Direction, GridMap, Pickup, Piece, Point, PointSet, Curio, StandardCurioAction, Team,
+    Bounds, Direction, GridMap, Pickup, Sprite, Point, PointSet, Curio, StandardCurioAction, Team,
 };
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
@@ -20,7 +20,7 @@ pub type WithCurioMut<'a> = WithCurioGeneric<&'a mut Node>;
 impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
     /// Returns internal curio data struct
     fn curio(&self) -> &Curio {
-        if let Piece::Program(curio) = self
+        if let Sprite::Curio(curio) = self
             .node
             .grid()
             .item(self.curio_key)
@@ -35,7 +35,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
     // NOTE maybe this shouldn't be public?
     /// List of actions the curio can take
     pub fn actions(&self) -> &Vec<StandardCurioAction> {
-        if let Piece::Program(curio) = self.node.grid().item(self.curio_key).unwrap() {
+        if let Sprite::Curio(curio) = self.node.grid().item(self.curio_key).unwrap() {
             curio.actions()
         } else {
             panic!("{}", CURIO_KEY_IS_VALID);
@@ -55,7 +55,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
                 return true;
             }
             // Might involve more involved checks in the future
-            if matches!(grid.item_at(next_pt), Some(Piece::Pickup(_))) {
+            if matches!(grid.item_at(next_pt), Some(Sprite::Pickup(_))) {
                 return true;
             }
         }
@@ -133,7 +133,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
             moves: usize,
             bounds: &Bounds,
             curio_key: usize,
-            grid: &GridMap<Piece>,
+            grid: &GridMap<Sprite>,
         ) -> HashSet<Point> {
             if moves == 0 {
                 hash_set
@@ -171,7 +171,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
 impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
     /// Internal function to get mutable access to the curio data
     fn curio_mut(&mut self) -> &mut Curio {
-        if let Some(Piece::Program(curio)) = self.node.grid_mut().item_mut(self.curio_key) {
+        if let Some(Sprite::Curio(curio)) = self.node.grid_mut().item_mut(self.curio_key) {
             curio
         } else {
             panic!("{}", CURIO_KEY_IS_VALID)
@@ -210,7 +210,7 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
     }
 
     /// Consumes self since the curio might be deleted, and thus the curio key is no longer valid
-    pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Piece>) {
+    pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Sprite>) {
         let grid_mut = self.node.grid_mut();
         let remaining_square_len = grid_mut.len_of(self.curio_key).saturating_sub(dmg);
         let dropped_squares: Vec<DroppedSquare> = grid_mut
@@ -231,10 +231,10 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         let grid_mut = self.node.grid_mut();
 
         match grid_mut.item_at(next_pt) {
-            Some(Piece::AccessPoint) => "Move curio collision with access point".fail_critical(),
-            Some(Piece::Pickup(_)) => {
+            Some(Sprite::AccessPoint) => "Move curio collision with access point".fail_critical(),
+            Some(Sprite::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
-                if let Some(Piece::Pickup(pickup)) = grid_mut.pop_front(key) {
+                if let Some(Sprite::Pickup(pickup)) = grid_mut.pop_front(key) {
                     self.node.inventory.pick_up(pickup.clone());
                     metadata = metadata.with_pickup(pickup);
                     Ok(())
@@ -243,7 +243,7 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
                         .fail_critical()
                 }
             }
-            Some(Piece::Program(_)) => {
+            Some(Sprite::Curio(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if key != self.curio_key {
                     "Cannot move curio into another curio".invalid()
@@ -306,7 +306,7 @@ impl Node {
         for<'brand> F: FnOnce(WithCurio<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        if let Some(Piece::Program(..)) = self.grid().item(curio_key) {
+        if let Some(Sprite::Curio(..)) = self.grid().item(curio_key) {
             let with_curio_mut = WithCurio {
                 node: self,
                 curio_key,
@@ -322,7 +322,7 @@ impl Node {
         for<'brand> F: FnOnce(WithCurioMut<'brand>) -> O,
         O: Into<Option<R>>,
     {
-        if let Some(Piece::Program(..)) = self.grid().item(curio_key) {
+        if let Some(Sprite::Curio(..)) = self.grid().item(curio_key) {
             let with_curio_mut = WithCurioMut {
                 node: self,
                 curio_key,

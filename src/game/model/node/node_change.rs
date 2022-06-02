@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::{Metadata, StateChange};
-use super::Piece;
+use super::Sprite;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -113,7 +113,7 @@ impl Node {
         if let Some(pickup) = metadata.pickup() {
             self.inventory.remove(pickup);
             self.grid_mut()
-                .put_item(head_pt, Piece::Pickup(pickup.clone()));
+                .put_item(head_pt, Sprite::Pickup(pickup.clone()));
         }
         Ok(())
     }
@@ -242,14 +242,14 @@ pub struct DroppedSquare(pub usize, pub Point);
 
 pub mod keys {
     use super::DroppedSquare;
-    use crate::{Pickup, Piece, Team};
+    use crate::{Pickup, Sprite, Team};
     use typed_key::{typed_key, Key};
 
     pub const TEAM: Key<Team> = typed_key!("team");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
     pub const PREVIOUS_ACTIVE_CURIO: Key<usize> = typed_key!("previousActiveCurio");
-    pub const DELETED_PIECE: Key<(usize, Piece)> = typed_key!("deletedPiece");
+    pub const DELETED_SPRITE: Key<(usize, Sprite)> = typed_key!("deletedSprite");
 }
 
 #[derive(Debug, Clone, Getters)]
@@ -266,7 +266,7 @@ pub struct NodeChangeMetadata {
     #[get = "pub"]
     team: Team,
     #[get = "pub"]
-    deleted_piece: Option<(usize, Piece)>,
+    deleted_sprite: Option<(usize, Sprite)>,
 }
 
 impl NodeChangeMetadata {
@@ -278,7 +278,7 @@ impl NodeChangeMetadata {
         metadata.put_nonempty(DROPPED_SQUARES, &self.dropped_squares)?;
         metadata.put_optional(PICKUP, &self.pickup)?;
         metadata.put_optional(PREVIOUS_ACTIVE_CURIO, &self.previous_active_curio_id)?;
-        metadata.put_optional(DELETED_PIECE, &self.deleted_piece)?;
+        metadata.put_optional(DELETED_SPRITE, &self.deleted_sprite)?;
         Ok(metadata)
     }
 
@@ -289,13 +289,13 @@ impl NodeChangeMetadata {
         let dropped_squares = metadata.get(DROPPED_SQUARES)?.unwrap_or_default();
         let pickup = metadata.get(PICKUP)?;
         let previous_active_curio_id = metadata.get(PREVIOUS_ACTIVE_CURIO)?;
-        let deleted_piece = metadata.get(DELETED_PIECE)?;
+        let deleted_sprite = metadata.get(DELETED_SPRITE)?;
         Ok(NodeChangeMetadata {
             team,
             pickup,
             dropped_squares,
             previous_active_curio_id,
-            deleted_piece,
+            deleted_sprite,
         })
     }
 
@@ -305,7 +305,7 @@ impl NodeChangeMetadata {
             pickup: None,
             dropped_squares: Vec::new(),
             previous_active_curio_id: None,
-            deleted_piece: None,
+            deleted_sprite: None,
         }
     }
 
@@ -336,11 +336,11 @@ impl NodeChangeMetadata {
         self
     }
 
-    pub(crate) fn with_deleted_piece<P: Into<Option<(usize, Piece)>>>(
+    pub(crate) fn with_deleted_sprite<P: Into<Option<(usize, Sprite)>>>(
         mut self,
-        deleted_piece: P,
+        deleted_sprite: P,
     ) -> NodeChangeMetadata {
-        self.deleted_piece = deleted_piece.into();
+        self.deleted_sprite = deleted_sprite.into();
         self
     }
 }

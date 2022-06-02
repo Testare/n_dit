@@ -314,7 +314,7 @@ impl NodeUiState {
                 {
                     self.change_focus(node)?
                 }
-                // Might need to think more on this behavior if we're in move/action phase and we're highlighting another piece
+                // Might need to think more on this behavior if we're in move/action phase and we're highlighting another sprite
                 let selected_curio_key = node
                     .active_curio_key()
                     .or_else(|| node.with_curio_at(self.selected_square(), |curio| curio.key()))

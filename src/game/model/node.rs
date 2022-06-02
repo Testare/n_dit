@@ -22,7 +22,7 @@ type NodeConstructionError = String;
 
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct Node {
-    grid: GridMap<Piece>,
+    grid: GridMap<Sprite>,
     name: String,
     active_curio: Option<usize>,
     enemy_ai: EnemyAi,
@@ -32,26 +32,26 @@ pub struct Node {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Piece {
+pub enum Sprite {
     AccessPoint,
-    Program(Curio),
+    Curio(Curio),
     Pickup(Pickup),
 }
 
 impl Node {
     /// ### SAFETY
-    /// Unsafe to return pieces with new keys
+    /// Unsafe to return sprites with new keys
     /// See grid_map return_item_with_key
-    pub(super) unsafe fn return_piece_with_key(
+    pub(super) unsafe fn return_sprite_with_key(
         &mut self,
         key: usize,
         pt: Point,
-        piece: Piece,
+        sprite: Sprite,
     ) -> Option<usize> {
-        self.grid_mut().return_item_with_key(key, pt, piece)
+        self.grid_mut().return_item_with_key(key, pt, sprite)
     }
 
-    fn grid_mut(&mut self) -> &mut GridMap<Piece> {
+    fn grid_mut(&mut self) -> &mut GridMap<Sprite> {
         &mut self.grid
     }
 
@@ -102,7 +102,7 @@ impl Node {
         can_activate
     }
 
-    pub(crate) fn grid(&self) -> &GridMap<Piece> {
+    pub(crate) fn grid(&self) -> &GridMap<Sprite> {
         &self.grid
     }
 
@@ -116,7 +116,7 @@ impl Node {
         let first_pt = pts.next().ok_or("Curio needs at least one point!")?;
         let key = self
             .grid
-            .put_item(first_pt, Piece::Program(spr))
+            .put_item(first_pt, Sprite::Curio(spr))
             .ok_or_else::<NodeConstructionError, _>(|| {
                 "Could not add curio to initial location".into()
             })?;
@@ -128,12 +128,12 @@ impl Node {
         Ok(key)
     }
 
-    pub fn add_piece(&mut self, pt: Point, piece: Piece) -> Option<usize> {
-        self.grid.put_item(pt, piece)
+    pub fn add_sprite(&mut self, pt: Point, sprite: Sprite) -> Option<usize> {
+        self.grid.put_item(pt, sprite)
     }
 
     pub fn add_money(&mut self, pt: Point, amount: usize) -> Option<usize> {
-        self.grid.put_item(pt, Piece::Pickup(Pickup::Mon(amount)))
+        self.grid.put_item(pt, Sprite::Pickup(Pickup::Mon(amount)))
     }
 
     pub fn width(&self) -> usize {
@@ -152,20 +152,20 @@ impl Node {
         self.name.as_str()
     }
 
-    pub fn piece(&self, piece_key: usize) -> Option<&Piece> {
-        self.grid.item(piece_key)
+    pub fn sprite(&self, sprite_key: usize) -> Option<&Sprite> {
+        self.grid.item(sprite_key)
     }
 
-    pub fn piece_at(&self, pt: Point) -> Option<&Piece> {
+    pub fn sprite_at(&self, pt: Point) -> Option<&Sprite> {
         self.grid.item_at(pt)
     }
 
-    pub fn piece_key_at(&self, pt: Point) -> Option<usize> {
+    pub fn sprite_key_at(&self, pt: Point) -> Option<usize> {
         self.grid.item_key_at(pt)
     }
 
-    pub fn piece_len(&self, piece_key: usize) -> usize {
-        self.grid.len_of(piece_key)
+    pub fn sprite_len(&self, sprite_key: usize) -> usize {
+        self.grid.len_of(sprite_key)
     }
 
     pub fn active_team(&self) -> Team {
@@ -191,7 +191,7 @@ impl Node {
         &self.enemy_ai
     }
 
-    pub fn pieces(&self) -> Vec<&Piece> {
+    pub fn sprites(&self) -> Vec<&Sprite> {
         self.grid().entries()
     }
 
@@ -211,14 +211,14 @@ impl Node {
     }
 }
 
-impl Piece {
+impl Sprite {
     pub fn is_pickup(&self) -> bool {
-        matches!(self, Piece::Pickup(_))
+        matches!(self, Sprite::Pickup(_))
     }
 }
 
-impl From<GridMap<Piece>> for Node {
-    fn from(grid: GridMap<Piece>) -> Self {
+impl From<GridMap<Sprite>> for Node {
+    fn from(grid: GridMap<Sprite>) -> Self {
         Node {
             active_curio: None,
             active_team: Team::PlayerTeam,
@@ -230,8 +230,8 @@ impl From<GridMap<Piece>> for Node {
     }
 }
 
-impl From<(String, GridMap<Piece>)> for Node {
-    fn from((name, grid): (String, GridMap<Piece>)) -> Self {
+impl From<(String, GridMap<Sprite>)> for Node {
+    fn from((name, grid): (String, GridMap<Sprite>)) -> Self {
         Node {
             active_curio: None,
             active_team: Team::PlayerTeam,
@@ -243,8 +243,8 @@ impl From<(String, GridMap<Piece>)> for Node {
     }
 }
 
-impl From<(String, GridMap<Piece>, EnemyAi)> for Node {
-    fn from((name, grid, enemy_ai): (String, GridMap<Piece>, EnemyAi)) -> Self {
+impl From<(String, GridMap<Sprite>, EnemyAi)> for Node {
+    fn from((name, grid, enemy_ai): (String, GridMap<Sprite>, EnemyAi)) -> Self {
         Node {
             active_curio: None,
             active_team: Team::PlayerTeam,

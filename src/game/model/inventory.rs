@@ -1,7 +1,7 @@
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
-use crate::Piece;
+use crate::Sprite;
 use std::{cmp::min, fmt};
 
 #[derive(Clone, Debug, Default, Getters, CopyGetters, Serialize, Deserialize)]
@@ -74,14 +74,14 @@ impl Pickup {
         }
     }
 
-    pub fn to_piece(self) -> Piece {
-        Piece::Pickup(self)
+    pub fn to_sprite(self) -> Sprite {
+        Sprite::Pickup(self)
     }
 }
 
-impl From<Pickup> for Piece {
-    fn from(pickup: Pickup) -> Piece {
-        pickup.to_piece()
+impl From<Pickup> for Sprite {
+    fn from(pickup: Pickup) -> Sprite {
+        pickup.to_sprite()
     }
 }
 
@@ -118,8 +118,8 @@ impl From<Card> for Pickup {
     }
 }
 
-impl From<Card> for Piece {
-    fn from(card: Card) -> Piece {
-        Piece::from(Pickup::from(card))
+impl From<Card> for Sprite {
+    fn from(card: Card) -> Sprite {
+        Sprite::from(Pickup::from(card))
     }
 }

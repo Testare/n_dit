@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[non_exhaustive]
 pub enum Error {
     /// For low-level failures, like the player accidentally tries to move a
-    /// piece into a wall.
+    /// sprite into a wall.
     ///
     /// Might not be used: It might be better to expect the UI to
     /// not send the command in this case. In the case of CLI commands,
@@ -33,8 +33,8 @@ impl ToString for Error {
             CommandNotSuccessful => "Command unsucessful".to_string(),
             InvalidForContext(msg) => format!("Command not possible, requires context [{}]", msg),
             NotPossibleForState(msg) => format!("Command not currently possible [{}]", msg),
-            FailureReversible(msg) => format!("Programmer error detected, aborting [{}]", msg),
-            FailureCritical(msg) => format!("Programmer error detected, crashing [{}]", msg),
+            FailureReversible(msg) => format!("Curiomer error detected, aborting [{}]", msg),
+            FailureCritical(msg) => format!("Curiomer error detected, crashing [{}]", msg),
         }
     }
 }

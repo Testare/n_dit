@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    game::{Card, Node, Pickup, Piece, Curio, StandardCurioAction},
+    game::{Card, Node, Pickup, Sprite, Curio, StandardCurioAction},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
     Team,
@@ -154,15 +154,15 @@ fn load_state() -> SuperState {
     )
     .unwrap();
     node.add_curio(Curio::new("<>"), vec![(14, 6)]).unwrap();
-    node.add_piece(
+    node.add_sprite(
         (15, 7),
         Card {
             name: "Jeremy".to_string(),
         }
         .into(),
     );
-    node.add_piece((6, 1), Pickup::Mon(500).to_piece());
-    node.add_piece((6, 2), Piece::AccessPoint);
+    node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
+    node.add_sprite((6, 2), Sprite::AccessPoint);
     SuperState::from(Some(node))
 }
 

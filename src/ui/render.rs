@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Node, Pickup, Piece, Point, Team};
+use crate::{Node, Pickup, Sprite, Point, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
@@ -15,7 +15,7 @@ enum BorderType {
     Linked = 2,
 }
 
-impl Piece {
+impl Sprite {
     // Might want to change this to just accept a mutable Write reference to make more effecient.
     fn render_square(
         &self,
@@ -25,12 +25,12 @@ impl Piece {
         configuration: &DrawConfiguration,
     ) -> String {
         let string = match self {
-            Piece::AccessPoint => String::from("&&"),
-            Piece::Pickup(pickup) => configuration
+            Sprite::AccessPoint => String::from("&&"),
+            Sprite::Pickup(pickup) => configuration
                 .color_scheme()
                 .mon()
                 .apply(pickup.square_display()),
-            Piece::Program(curio) => {
+            Sprite::Curio(curio) => {
                 if position == 0 {
                     String::from(curio.display())
                 } else if false {
@@ -61,9 +61,9 @@ impl Piece {
         draw_config: &DrawConfiguration,
     ) -> UiFormat {
         match self {
-            Piece::Pickup(_) => draw_config.color_scheme().mon(),
-            Piece::AccessPoint => draw_config.color_scheme().access_point(),
-            Piece::Program(curio) => match curio.team() {
+            Sprite::Pickup(_) => draw_config.color_scheme().mon(),
+            Sprite::AccessPoint => draw_config.color_scheme().access_point(),
+            Sprite::Curio(curio) => match curio.team() {
                 Team::PlayerTeam => {
                     if node.active_curio_key() == Some(key) {
                         draw_config.color_scheme().player_team_active()
@@ -86,39 +86,39 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
         .game_state()
         .node()
         .expect("TODO what if there is no node?");
-    let piece_opt = node
+    let sprite_opt = node
         .active_curio_key()
-        .and_then(|key| node.piece(key))
+        .and_then(|key| node.sprite(key))
         .or_else(|| {
             let pt: Point = state.selected_square();
-            node.piece_at(pt)
+            node.sprite_at(pt)
         });
 
     let mut base_vec = vec![String::from(""); height];
     let color_scheme = state.draw_config().color_scheme();
-    if let Some(piece) = piece_opt {
-        match piece {
-            Piece::Pickup(Pickup::Mon(mon_val)) => {
+    if let Some(sprite) = sprite_opt {
+        match sprite {
+            Sprite::Pickup(Pickup::Mon(mon_val)) => {
                 base_vec[2].push_str("Money");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push('$');
                 base_vec[4].push_str(mon_val.to_string().as_str());
             }
-            Piece::Pickup(Pickup::Item(item)) => {
+            Sprite::Pickup(Pickup::Item(item)) => {
                 base_vec[2].push_str("Loose Item");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push_str(item.name());
             }
-            Piece::Pickup(Pickup::Card(card)) => {
+            Sprite::Pickup(Pickup::Card(card)) => {
                 base_vec[2].push_str("Loose Card");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push_str(card.name());
             }
-            Piece::AccessPoint => {
+            Sprite::AccessPoint => {
                 base_vec[2].push_str("Access Pnt");
             }
-            Piece::Program(curio) => {
-                base_vec[2].push_str("Program");
+            Sprite::Curio(curio) => {
+                base_vec[2].push_str("Curio");
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push('[');
                 base_vec[4].push_str(curio.display());
@@ -242,7 +242,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let height = grid.height();
     let grid_map = grid.number_map();
 
-    let piece_map = grid.point_map(|key, i, piece| piece.render_square(node, key, i, draw_config));
+    let sprite_map = grid.point_map(|key, i, sprite| sprite.render_square(node, key, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
@@ -257,8 +257,8 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let skip_y = window.scroll_y % 2;
     let keep_last_space = skip_y + window.height.get() % 2 == 0;
 
-    /*let mut available_moves = selected_piece
-    .map(|piece_key| node.possible_moves(piece_key))
+    /*let mut available_moves = selected_sprite
+    .map(|sprite_key| node.possible_moves(sprite_key))
     .unwrap_or(HashSet::default());*/
     let mut action_type = 1;
 
@@ -372,7 +372,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                             if include_space {
                                 let space_style = space_style_for(state, (x, y));
                                 let square =
-                                    piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                                    sprite_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                                 if square.chars().count() == 1 {
                                     space_line.push_str(
                                         space_style.apply(draw_config.half_char()).as_str(),
@@ -406,7 +406,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 }
                 if include_space {
                     let space_style = space_style_for(state, (x, y));
-                    let square = piece_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                    let square = sprite_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
                     // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                     space_line.push_str(space_style.apply(square).as_str());
                     if x == x_start && skip_x == 2 && square.chars().count() == 1 {

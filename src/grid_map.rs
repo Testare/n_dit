@@ -323,7 +323,7 @@ impl<T> GridMap<T> {
                 self.entries.remove(&item_key).map(|(item, _)| item)
             }
             (None, None) => None, // There are no points here, should we panic?
-            _ => panic!("Programmer error, this should not be possible"),
+            _ => panic!("Curiomer error, this should not be possible"),
         }
     }
 

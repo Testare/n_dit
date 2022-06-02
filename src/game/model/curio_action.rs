@@ -1,7 +1,7 @@
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::{DroppedSquare, Metadata, NodeChangeMetadata};
 use super::node::node_change_keys;
-use crate::{Node, Piece, Point};
+use crate::{Node, Sprite, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 use typed_key::{typed_key, Key};
@@ -49,7 +49,7 @@ pub enum SAEffect {
         bound: Option<NonZeroUsize>,
     },
     _Create {
-        piece: Piece,
+        sprite: Sprite,
     },
     _OpenSquare,
     _CloseSquare,
@@ -68,7 +68,7 @@ pub enum SACondition {
 impl SACondition {
     fn met(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
         match self {
-            SACondition::Size(range) => range.contains(&node.piece_len(curio_key)),
+            SACondition::Size(range) => range.contains(&node.sprite_len(curio_key)),
             SACondition::TargetSize(range) => node
                 .with_curio_at(target_pt, |target| range.contains(&target.size()))
                 .unwrap_or(false),
@@ -100,19 +100,19 @@ impl CurioAction<'_> {
         metadata: &Metadata,
     ) -> Result<()> {
         let metadata = NodeChangeMetadata::from(metadata)?;
-        if let Some((key, Piece::Program(spr))) = metadata.deleted_piece() {
+        if let Some((key, Sprite::Curio(spr))) = metadata.deleted_sprite() {
             let head = metadata
                 .dropped_squares()
                 .iter()
                 .find(|dropped_square| dropped_square.0 == *key)
                 .map(|dropped_square| Ok(dropped_square.1))
                 .unwrap_or_else(|| {
-                    "Unable to restore deleted piece, no squares were dropped from it?"
+                    "Unable to restore deleted sprite, no squares were dropped from it?"
                         .fail_critical()
                 })?;
             unsafe {
                 // I am just returning an item that was removed
-                node.return_piece_with_key(*key, head, Piece::Program(spr.clone()));
+                node.return_sprite_with_key(*key, head, Sprite::Curio(spr.clone()));
             }
         }
         Ok(())
@@ -144,7 +144,7 @@ impl CurioAction<'_> {
                         metadata2.put(DROPPED_SQUARES, &dropped_pts)?;
                         metadata = metadata
                             .with_dropped_squares(dropped_pts)
-                            .with_deleted_piece(Some(key).zip(deleted_curio));
+                            .with_deleted_sprite(Some(key).zip(deleted_curio));
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_curio_at_mut(target_pt, |mut target| {
