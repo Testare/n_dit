@@ -6,7 +6,7 @@ pub mod node_change_keys {
     pub const TEAM: Key<Team> = typed_key!("team");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_POINT: Key<Point> = typed_key!("droppedPoint");
-    pub const INTIIAL_ACTIVE_CURIO: Key<usize> = typed_key!("previousActiveCurio");
+    pub const INITIAL_ACTIVE_CURIO: Key<usize> = typed_key!("previousActiveCurio");
     pub const SPRITE_ACTION_METADATA: Key<Metadata> = typed_key!("actionMetadata");
 
     pub const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");

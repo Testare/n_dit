@@ -31,9 +31,10 @@ impl Node {
     }
 
     fn finish_turn_change(&mut self) -> NodeChangeResult {
+        let metadata = metadata_for_node(self)?;
         let team = self.active_team();
         self.change_active_team();
-        Ok(NodeChangeMetadata::for_team(team))
+        NodeChangeMetadata::from(&metadata)
     }
 
     fn finish_turn_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
@@ -43,10 +44,9 @@ impl Node {
     }
 
     fn activate_curio_change(&mut self, curio_index: usize) -> NodeChangeResult {
-        let metadata = NodeChangeMetadata::for_team(self.active_team())
-            .with_previous_active_curio_id(self.active_curio_key());
+        let metadata = metadata_for_node(self)?;
         if self.activate_curio(curio_index) {
-            Ok(metadata)
+            NodeChangeMetadata::from(&metadata)
         } else {
             "Unable to activate that curio".invalid()
         }
@@ -71,10 +71,10 @@ impl Node {
     }
 
     fn deactivate_curio_change(&mut self) -> NodeChangeResult {
-        if let Some(curio_key) = self.active_curio_key() {
+        let metadata = metadata_for_node(self)?;
+        if self.active_curio_key().is_some() {
             self.deactivate_curio();
-            Ok(NodeChangeMetadata::for_team(self.active_team())
-                .with_previous_active_curio_id(curio_key))
+            NodeChangeMetadata::from(&metadata)
         } else {
             "No active curio to deactivate".invalid()
         }
@@ -97,6 +97,7 @@ impl Node {
         let metadata: Metadata = self
             .with_active_curio_mut(|mut curio| curio.go(direction))
             .unwrap_or_else(|| "No active curio".invalid())?;
+        // TODO Include standard metadata fields
         NodeChangeMetadata::from(&metadata)
     }
 
@@ -143,11 +144,11 @@ impl Node {
                     })
             })
             .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
-        let metadata = NodeChangeMetadata::from(&action.apply(self, active_curio_key, pt)?)?;
-        let active_curio_key = self.active_curio_key();
+        let mut metadata = action.apply(self, active_curio_key, pt)?;
+        metadata.put_optional(keys::PREVIOUS_ACTIVE_CURIO, self.active_curio_key())?;
         self.deactivate_curio();
         self.check_victory_conditions();
-        Ok(metadata.with_previous_active_curio_id(active_curio_key))
+        NodeChangeMetadata::from(&metadata)
     }
 
     fn take_curio_action_undo(
@@ -346,4 +347,12 @@ impl NodeChange {
     pub fn apply(&self, node: &mut Node) -> Result<NodeChangeMetadata> {
         <Self as StateChange>::apply(self, node)
     }
+}
+
+fn metadata_for_node(node: &Node) -> Result<Metadata> {
+    let mut metadata = Metadata::new();
+    metadata.put(keys::TEAM, &node.active_team())?;
+    metadata.put_optional(keys::INITIAL_ACTIVE_CURIO, &node.active_curio_key())?;
+    metadata.put_optional(keys::PREVIOUS_ACTIVE_CURIO, &node.active_curio_key())?;
+    Ok(metadata)
 }
