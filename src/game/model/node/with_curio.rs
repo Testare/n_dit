@@ -1,6 +1,7 @@
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
-use super::node_change::{DroppedSquare, NodeChangeMetadata};
+use super::super::keys::node_change_keys as keys;
+use super::{SpritePoint, DroppedSquare};
 use super::Node;
 use crate::{
     Bounds, Direction, GridMap, Pickup, Sprite, Point, PointSet, Curio, StandardCurioAction, Team,
@@ -210,13 +211,13 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
     }
 
     /// Consumes self since the curio might be deleted, and thus the curio key is no longer valid
-    pub fn take_damage(mut self, dmg: usize) -> (Vec<DroppedSquare>, Option<Sprite>) {
+    pub fn take_damage(mut self, dmg: usize) -> (Vec<SpritePoint>, Option<Sprite>) {
         let grid_mut = self.node.grid_mut();
         let remaining_square_len = grid_mut.len_of(self.curio_key).saturating_sub(dmg);
-        let dropped_squares: Vec<DroppedSquare> = grid_mut
+        let dropped_squares: Vec<SpritePoint> = grid_mut
             .square_iter(self.curio_key)
             .skip(remaining_square_len)
-            .map(|sqr| DroppedSquare(self.curio_key, sqr.location()))
+            .map(|sqr| SpritePoint(self.curio_key, sqr.location()))
             .collect();
         (dropped_squares, grid_mut.pop_back_n(self.curio_key, dmg))
     }
@@ -225,7 +226,8 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         if self.moves() == 0 || self.tapped() {
             return "Curio cannot move".invalid();
         }
-        let mut metadata = NodeChangeMetadata::for_team(self.node.active_team());
+        let mut metadata = self.node.default_metadata()?;
+
         let at_max_size = self.size() >= self.max_size();
         let next_pt = direction.add_to_point(self.head(), 1, self.node.bounds());
         let grid_mut = self.node.grid_mut();
@@ -235,8 +237,8 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
             Some(Sprite::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if let Some(Sprite::Pickup(pickup)) = grid_mut.pop_front(key) {
-                    self.node.inventory.pick_up(pickup.clone());
-                    metadata = metadata.with_pickup(pickup);
+                    metadata.put(keys::PICKUP, &pickup)?;
+                    self.node.inventory.pick_up(pickup);
                     Ok(())
                 } else {
                     "Something weird happened, is pop-up taking more than one location?"
@@ -259,21 +261,22 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         let sucessful_movement = grid_mut.push_front(next_pt, self.curio_key);
         if sucessful_movement {
             if at_max_size {
-                metadata = metadata.with_dropped_squares(vec![DroppedSquare(
-                    self.curio_key,
-                    grid_mut.back(self.curio_key).unwrap(),
-                )]);
+                let dropped_point = grid_mut.back(self.curio_key).unwrap();
+                let dropped_square = DroppedSquare(self.curio_key, dropped_point);
+
+                metadata.put(keys::DROPPED_SQUARES, &vec![dropped_square])?;
+                metadata.put(keys::DROPPED_POINT, &dropped_point)?;
                 grid_mut.pop_back(self.curio_key);
             }
             let curio = self.curio_mut();
             curio.took_a_move();
-            metadata.to_metadata()
+            Ok(metadata)
         } else {
             format!("Unable to move curio {:?}", direction).invalid()
         }
     }
 
-    pub(super) fn grow_back(&mut self, pt: Point) -> bool {
+    pub(crate) fn grow_back(&mut self, pt: Point) -> bool {
         self.node.grid_mut().push_back(pt, self.curio_key)
     }
 

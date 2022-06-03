@@ -1,14 +1,13 @@
+use super::keys::curio_action_keys as keys;
 use super::super::error::{ErrorMsg as _, Result};
-use super::super::{DroppedSquare, Metadata, NodeChangeMetadata};
-use super::node::node_change_keys;
+use super::super::Metadata;
+use super::SpritePoint;
 use crate::{Node, Sprite, Point};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 use typed_key::{typed_key, Key};
 
 mod standard_curio_actions;
-
-const DROPPED_SQUARES: Key<Vec<DroppedSquare>> = typed_key!("droppedSquares");
 
 pub use standard_curio_actions::StandardCurioAction;
 
@@ -99,21 +98,39 @@ impl CurioAction<'_> {
         target_pt: Point,
         metadata: &Metadata,
     ) -> Result<()> {
-        let metadata = NodeChangeMetadata::from(metadata)?;
-        if let Some((key, Sprite::Curio(spr))) = metadata.deleted_sprite() {
-            let head = metadata
-                .dropped_squares()
+        let deleted_sprite = metadata.get(keys::DELETED_SPRITE)?;
+        let damages = metadata.get_or_default(keys::DAMAGES)?;
+        /*let deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
+        for (key, Sprite) in deleted_sprite.into_iter() {
+
+        }*/
+        if let Some((key, spr)) = deleted_sprite {
+            log::debug!("Tell me about things {}", key);
+            let head = damages
                 .iter()
-                .find(|dropped_square| dropped_square.0 == *key)
+                .find(|dropped_square| dropped_square.0 == key)
                 .map(|dropped_square| Ok(dropped_square.1))
                 .unwrap_or_else(|| {
                     "Unable to restore deleted sprite, no squares were dropped from it?"
                         .fail_critical()
                 })?;
             unsafe {
+                log::debug!("Tell me about things {}", key);
                 // I am just returning an item that was removed
-                node.return_sprite_with_key(*key, head, Sprite::Curio(spr.clone()));
+                node.return_sprite_with_key(key, head, spr);
             }
+        }
+        for dropped_square in damages.iter() {
+            node.with_curio_mut(dropped_square.0, |mut curio| {
+                curio.grow_back(dropped_square.1);
+            })
+            .ok_or_else(|| {
+                format!(
+                    "Could not find curio to undo dropped square {:?}",
+                    dropped_square
+                )
+                .fail_critical_msg()
+            })?;
         }
         Ok(())
     }
@@ -128,8 +145,7 @@ impl CurioAction<'_> {
                 .iter()
                 .all(|condition| condition.met(node, curio_key, target_pt))
             {
-                let mut metadata = NodeChangeMetadata::for_team(node.active_team());
-                let mut metadata2 = Metadata::new();
+                let mut metadata = Metadata::new();
 
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
@@ -141,10 +157,14 @@ impl CurioAction<'_> {
                                 "Invalid target for damage: Target must be a curio"
                                     .fail_reversible_msg()
                             })?;
-                        metadata2.put(DROPPED_SQUARES, &dropped_pts)?;
-                        metadata = metadata
-                            .with_dropped_squares(dropped_pts)
-                            .with_deleted_sprite(Some(key).zip(deleted_curio));
+                        metadata.put(keys::DAMAGES, &dropped_pts)?;
+                        let deleted_sprite_opt = Some(key).zip(deleted_curio);
+                        metadata.put_optional(keys::DELETED_SPRITE, &deleted_sprite_opt)?;
+                        if let Some(deleted_sprite) = deleted_sprite_opt {
+                            let mut deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
+                            deleted_sprites.push(deleted_sprite);
+                            metadata.put(keys::DELETED_SPRITES, &deleted_sprites)?;
+                        }
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
                         node.with_curio_at_mut(target_pt, |mut target| {
@@ -157,7 +177,7 @@ impl CurioAction<'_> {
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
-                metadata.to_metadata()
+                Ok(metadata)
             } else {
                 "Conditions not met".invalid()
             }

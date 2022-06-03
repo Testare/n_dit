@@ -5,7 +5,7 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use typed_key::Key;
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 

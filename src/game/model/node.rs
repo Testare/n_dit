@@ -1,7 +1,6 @@
 mod node_change;
 mod with_curio;
 
-pub use node_change::keys as node_change_keys; // TODO DELETE ME
 pub use node_change::{DroppedSquare, SpritePoint}; // TODO Move these to better location
 pub use node_change::NodeChange;
 pub use node_change::NodeChangeMetadata;
@@ -11,9 +10,11 @@ use serde::{Deserialize, Serialize};
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
+use super::keys::node_change_keys;
+use super::super::error::Result;
 use super::inventory::{Inventory, Pickup};
 use super::curio::Curio;
-use crate::{Bounds, GridMap, Point, Team};
+use crate::{Bounds, GridMap, Point, Team, Metadata};
 use log::debug;
 
 use with_curio::WithCurio;
@@ -110,7 +111,7 @@ impl Node {
         &mut self,
         spr: Curio,
         pt_vec: Vec<Point>,
-    ) -> Result<usize, NodeConstructionError> {
+    ) -> std::result::Result<usize, NodeConstructionError> {
         // Could possibly be optimized with GridMap::put_entries
         let mut pts = pt_vec.into_iter();
         let first_pt = pts.next().ok_or("Curio needs at least one point!")?;
@@ -208,6 +209,13 @@ impl Node {
             self.with_curio(key, |curio| predicate(key, curio))
                 .unwrap_or(false)
         })
+    }
+
+    fn default_metadata(&self) -> Result<Metadata> {
+        let mut metadata = Metadata::new();
+        metadata.put(node_change_keys::TEAM, &self.active_team())?;
+        metadata.put_optional(node_change_keys::PERFORMING_CURIO, self.active_curio_key())?;
+        Ok(metadata)
     }
 }
 
