@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Node, Pickup, Sprite, Point, Team};
+use crate::{Node, Pickup, Point, Sprite, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
@@ -242,7 +242,8 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let height = grid.height();
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|key, i, sprite| sprite.render_square(node, key, i, draw_config));
+    let sprite_map =
+        grid.point_map(|key, i, sprite| sprite.render_square(node, key, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;

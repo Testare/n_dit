@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossterm::{self, execute};
 use n_dit::{
-    game::{Card, Node, Pickup, Sprite, Curio, StandardCurioAction},
+    game::{Card, Curio, Node, Pickup, Sprite, StandardCurioAction},
     grid_map::GridMap,
     ui::{SuperState, UiAction, UserInput},
     Team,

@@ -2,8 +2,8 @@ use getset::Getters;
 use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
-pub use super::super::keys::node_change_keys as keys;
 use super::super::super::{Metadata, StateChange};
+pub use super::super::keys::node_change_keys as keys;
 use super::Sprite;
 use crate::{Direction, GameState, Node, Pickup, Point, Team};
 
@@ -52,7 +52,7 @@ impl Node {
     }
 
     fn activate_curio_undo(&mut self, metadata: &Metadata) -> Result<()> {
-        let previous_curio_id = metadata.get(keys::PREVIOUS_ACTIVE_CURIO)?;
+        let previous_curio_id = metadata.get(keys::PERFORMING_CURIO)?;
         // If there was a previously active curio when this one was activated, untap it and make it active
         if let Some(curio_id) = previous_curio_id {
             let curio_exists = self.with_curio_mut(curio_id, |mut curio| curio.untap());
@@ -79,7 +79,7 @@ impl Node {
     }
 
     fn deactivate_curio_undo(&mut self, metadata: &Metadata) -> Result<()> {
-        let curio_id = metadata.expect(keys::PREVIOUS_ACTIVE_CURIO)?;
+        let curio_id = metadata.expect(keys::PERFORMING_CURIO)?;
         let curio_not_found = self
             .with_curio_mut(curio_id, |mut curio| curio.untap())
             .is_none();
@@ -100,10 +100,8 @@ impl Node {
         let head_pt = self
             .with_active_curio_mut(|mut curio| {
                 let head_pt = curio.head();
-                for dropped_square in metadata.get_or_default(keys::DROPPED_SQUARES)? {
-                    if dropped_square.0 == curio.key() {
-                        curio.grow_back(dropped_square.1);
-                    }
+                if let Some(pt) = metadata.get(keys::DROPPED_POINT)? {
+                    curio.grow_back(pt);
                 }
                 curio.drop_front();
                 Ok(head_pt)
@@ -133,14 +131,12 @@ impl Node {
                     .get(curio_action_index)
                     .map(|action| action.unwrap())
                     .ok_or_else(|| {
-                        format!("Cannot find action {} in curio", curio_action_index)
-                            .invalid_msg()
+                        format!("Cannot find action {} in curio", curio_action_index).invalid_msg()
                     })
             })
             .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
         let mut metadata = self.default_metadata()?;
         let sprite_action_metadata = action.apply(self, active_curio_key, pt)?;
-        // metadata.put_optional(keys::PREVIOUS_ACTIVE_CURIO, self.active_curio_key())?;
         metadata.put(keys::CURIO_ACTION_METADATA, &sprite_action_metadata)?;
         self.deactivate_curio();
         self.check_victory_conditions();
@@ -153,9 +149,10 @@ impl Node {
         target: Point,
         metadata: &Metadata,
     ) -> Result<()> {
-        let active_curio_key = metadata.expect(keys::PREVIOUS_ACTIVE_CURIO)?;
+        let active_curio_key = metadata.expect(keys::PERFORMING_CURIO)?;
         let curio_not_found = self
-            .with_curio_mut(active_curio_key, |mut curio| curio.untap()).is_none();
+            .with_curio_mut(active_curio_key, |mut curio| curio.untap())
+            .is_none();
         if curio_not_found {
             return "Take curio action curio does not exist".fail_critical();
         }
@@ -213,7 +210,12 @@ impl StateChange for NodeChange {
 
     fn is_durable(&self, metadata: &Metadata) -> bool {
         use NodeChange::*;
-        if metadata.get(keys::TEAM).unwrap_or(None).map(|team| team.is_ai()).unwrap_or(false) {
+        if metadata
+            .get(keys::TEAM)
+            .unwrap_or(None)
+            .map(|team| team.is_ai())
+            .unwrap_or(false)
+        {
             return matches!(self, FinishTurn); // Finish turn is the only durable event
         }
         match self {
@@ -228,103 +230,7 @@ impl StateChange for NodeChange {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct DroppedSquare(pub usize, pub Point);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpritePoint(pub usize, pub Point);
-
-#[derive(Debug, Clone, Getters)]
-pub struct NodeChangeMetadata {
-    /// Movement or action caused these squares to drop.
-    /// We should do testing to make sure they are recorded in the order of ebing dropped off and res
-    #[get = "pub"]
-    dropped_squares: Vec<DroppedSquare>,
-    // An item was picked up during movement
-    #[get = "pub"]
-    pickup: Option<Pickup>,
-    #[get = "pub"]
-    previous_active_curio_id: Option<usize>,
-    #[get = "pub"]
-    team: Team,
-    #[get = "pub"]
-    deleted_sprite: Option<(usize, Sprite)>,
-}
-
-impl NodeChangeMetadata {
-    /// Likely just temporary
-    pub fn to_metadata(&self) -> Result<Metadata> {
-        let mut metadata = Metadata::new();
-        use keys::*;
-        metadata.put(TEAM, &self.team)?;
-        metadata.put_nonempty(DROPPED_SQUARES, &self.dropped_squares)?;
-        metadata.put_optional(PICKUP, &self.pickup)?;
-        metadata.put_optional(PREVIOUS_ACTIVE_CURIO, &self.previous_active_curio_id)?;
-        metadata.put_optional(DELETED_SPRITE, &self.deleted_sprite)?;
-        Ok(metadata)
-    }
-
-    /// Likely just temporary
-    pub fn from(metadata: &Metadata) -> Result<NodeChangeMetadata> {
-        use keys::*;
-        let team = metadata.expect(TEAM)?;
-        let dropped_squares = metadata.get(DROPPED_SQUARES)?.unwrap_or_default();
-        let pickup = metadata.get(PICKUP)?;
-        let previous_active_curio_id = metadata.get(PREVIOUS_ACTIVE_CURIO)?;
-        let deleted_sprite = metadata.get(DELETED_SPRITE)?;
-        Ok(NodeChangeMetadata {
-            team,
-            pickup,
-            dropped_squares,
-            previous_active_curio_id,
-            deleted_sprite,
-        })
-    }
-
-    pub(crate) fn for_team(team: Team) -> NodeChangeMetadata {
-        NodeChangeMetadata {
-            team,
-            pickup: None,
-            dropped_squares: Vec::new(),
-            previous_active_curio_id: None,
-            deleted_sprite: None,
-        }
-    }
-
-    fn expect_previous_active_curio_id(&self) -> Result<usize> {
-        self.previous_active_curio_id.ok_or_else(|| {
-            "Missing metadata field previous_active_curio_id required for undo".fail_critical_msg()
-        })
-    }
-
-    pub(crate) fn with_previous_active_curio_id<S: Into<Option<usize>>>(
-        mut self,
-        curio_id: S,
-    ) -> NodeChangeMetadata {
-        self.previous_active_curio_id = curio_id.into();
-        self
-    }
-
-    pub(crate) fn with_pickup<P: Into<Option<Pickup>>>(mut self, pickup: P) -> NodeChangeMetadata {
-        self.pickup = pickup.into();
-        self
-    }
-
-    pub(crate) fn with_dropped_squares(
-        mut self,
-        dropped_squares: Vec<DroppedSquare>,
-    ) -> NodeChangeMetadata {
-        self.dropped_squares = dropped_squares;
-        self
-    }
-
-    pub(crate) fn with_deleted_sprite<P: Into<Option<(usize, Sprite)>>>(
-        mut self,
-        deleted_sprite: P,
-    ) -> NodeChangeMetadata {
-        self.deleted_sprite = deleted_sprite.into();
-        self
-    }
-}
 
 impl NodeChange {
     /// Helper method so StateChange trait doesn't have to be imported

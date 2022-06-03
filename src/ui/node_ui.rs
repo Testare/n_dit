@@ -44,8 +44,7 @@ impl NodeUiState {
         self.selected_square = pt;
 
         if let NodePhase::FreeSelect {
-            selected_curio_key,
-            ..
+            selected_curio_key, ..
         } = &mut self.phase
         {
             *selected_curio_key = node.with_curio_at(pt, |curio| curio.key());
@@ -73,8 +72,7 @@ impl NodeUiState {
                 match self.phase {
                     NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
                     NodePhase::MoveCurio {
-                        selected_curio_key,
-                        ..
+                        selected_curio_key, ..
                     } => {
                         // TODO To consider: What if the selected square is over another curio and not the active curio?
                         if node
@@ -85,8 +83,7 @@ impl NodeUiState {
                         }
                     }
                     NodePhase::CurioAction {
-                        selected_curio_key,
-                        ..
+                        selected_curio_key, ..
                     } => {
                         let (moves, head_pt) = node
                             .with_curio(selected_curio_key, |curio| (curio.moves(), curio.head()))
@@ -101,9 +98,9 @@ impl NodeUiState {
                 self.focus = NodeFocus::Grid;
             }
             NodeFocus::Grid => {
-                let selected_curio_key = node.active_curio_key().or_else(|| {
-                    node.with_curio_at(self.selected_square(), |curio| (curio.key()))
-                });
+                let selected_curio_key = node
+                    .active_curio_key()
+                    .or_else(|| node.with_curio_at(self.selected_square(), |curio| (curio.key())));
                 if selected_curio_key.is_some() {
                     if self.selected_action_index() == None {
                         self.set_default_selected_action();
@@ -167,10 +164,7 @@ impl NodeUiState {
                         }
                         dirs.into_iter()
                             .find_map(|dir| {
-                                if node
-                                    .with_active_curio(|curio| curio.can_move(dir))
-                                    .unwrap()
-                                {
+                                if node.with_active_curio(|curio| curio.can_move(dir)).unwrap() {
                                     // TODO this is probably not the right pattern
                                     Some(UiAction::GameCommand(GameCommand::NodeMoveActiveCurio(
                                         dir,
@@ -206,8 +200,7 @@ impl NodeUiState {
                 match user_input {
                     UserInput::Activate => match self.phase {
                         NodePhase::FreeSelect {
-                            selected_curio_key,
-                            ..
+                            selected_curio_key, ..
                         } => {
                             vec!(
                                     UiAction::activate_curio(selected_curio_key.expect("How do we confirm selection when there is no selected curio key?")),
@@ -331,9 +324,7 @@ impl NodeUiState {
                 if self.focus == NodeFocus::ActionMenu {
                     let selected_curio_key = node
                         .active_curio_key()
-                        .or_else(|| {
-                            node.with_curio_at(self.selected_square(), |curio| curio.key())
-                        })
+                        .or_else(|| node.with_curio_at(self.selected_square(), |curio| curio.key()))
                         .unwrap();
                     if let Some(action_index) = self.selected_action_index() {
                         let num_actions = node
@@ -367,9 +358,9 @@ impl NodeUiState {
                 // This means if we try to activate unsuccessfully, selected square will go to
                 // active curio
                 // ...But is this a bug or a feature?
-                if let Some((moves, actions, head)) = node.with_active_curio(|curio| {
-                    (curio.moves(), curio.actions().len(), curio.head())
-                }) {
+                if let Some((moves, actions, head)) = node
+                    .with_active_curio(|curio| (curio.moves(), curio.actions().len(), curio.head()))
+                {
                     self.set_selected_square(head, node);
                     if moves != 0 {
                         self.phase.transition_to_move_curio(node)?;
@@ -388,8 +379,8 @@ impl NodeUiState {
                 Ok(())
             }
             UiAction::GameCommand(GameCommand::NodeMoveActiveCurio(_direction)) => {
-                if let Some((remaining_moves, head, is_tapped)) = node
-                    .with_active_curio(|curio| (curio.moves(), curio.head(), curio.tapped()))
+                if let Some((remaining_moves, head, is_tapped)) =
+                    node.with_active_curio(|curio| (curio.moves(), curio.head(), curio.tapped()))
                 {
                     self.set_selected_square(head, node);
                     if remaining_moves == 0 && !is_tapped && self.selected_action_index().is_none()
@@ -512,8 +503,7 @@ impl NodePhase {
                     selected_curio_key: node.active_curio_key().unwrap(),
                 }),
                 NodePhase::CurioAction {
-                    selected_curio_key,
-                    ..
+                    selected_curio_key, ..
                 } => Ok::<_, String>(NodePhase::MoveCurio {
                     selected_curio_key: *selected_curio_key,
                     selected_action_index: None,

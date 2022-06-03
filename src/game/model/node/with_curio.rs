@@ -1,10 +1,10 @@
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
 use super::super::keys::node_change_keys as keys;
-use super::{SpritePoint, DroppedSquare};
 use super::Node;
+use super::SpritePoint;
 use crate::{
-    Bounds, Direction, GridMap, Pickup, Sprite, Point, PointSet, Curio, StandardCurioAction, Team,
+    Bounds, Curio, Direction, GridMap, Pickup, Point, PointSet, Sprite, StandardCurioAction, Team,
 };
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
@@ -185,6 +185,11 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
     }
 
     /// Increases the max size of the curio
+    pub fn set_max_size(&mut self, max_size: usize) {
+        self.curio_mut().set_max_size(max_size);
+    }
+
+    /// Increases the max size of the curio
     pub fn increase_max_size(&mut self, increase: usize, bound: Option<NonZeroUsize>) -> usize {
         let curio = self.curio_mut();
         // TODO test this logic
@@ -262,9 +267,6 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         if sucessful_movement {
             if at_max_size {
                 let dropped_point = grid_mut.back(self.curio_key).unwrap();
-                let dropped_square = DroppedSquare(self.curio_key, dropped_point);
-
-                metadata.put(keys::DROPPED_SQUARES, &vec![dropped_square])?;
                 metadata.put(keys::DROPPED_POINT, &dropped_point)?;
                 grid_mut.pop_back(self.curio_key);
             }

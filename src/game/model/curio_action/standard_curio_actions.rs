@@ -1,4 +1,4 @@
-use super::{SACondition, SAEffect, CurioAction, CurioActionGenre, Target};
+use super::{CurioAction, CurioActionGenre, SACondition, SAEffect, Target};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroUsize;
 use std::ops::Deref;

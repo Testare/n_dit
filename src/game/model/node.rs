@@ -1,20 +1,19 @@
 mod node_change;
 mod with_curio;
 
-pub use node_change::{DroppedSquare, SpritePoint}; // TODO Move these to better location
 pub use node_change::NodeChange;
-pub use node_change::NodeChangeMetadata;
+pub use node_change::SpritePoint; // TODO Move these to better location
 
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
-use super::keys::node_change_keys;
 use super::super::error::Result;
-use super::inventory::{Inventory, Pickup};
 use super::curio::Curio;
-use crate::{Bounds, GridMap, Point, Team, Metadata};
+use super::inventory::{Inventory, Pickup};
+use super::keys::node_change_keys;
+use crate::{Bounds, GridMap, Metadata, Point, Team};
 use log::debug;
 
 use with_curio::WithCurio;
@@ -66,10 +65,8 @@ impl Node {
             panic!("No enemies remain! You win!")
         }
 
-        self.filtered_curio_keys(|_, curio| {
-            curio.team() == self.active_team() && !curio.tapped()
-        })
-        .len()
+        self.filtered_curio_keys(|_, curio| curio.team() == self.active_team() && !curio.tapped())
+            .len()
     }
 
     pub fn active_curio_key(&self) -> Option<usize> {
@@ -201,10 +198,7 @@ impl Node {
     }
 
     // TODO Make specialized "get curios for team" function, since that it the primary use case here
-    pub fn filtered_curio_keys<P: Fn(usize, WithCurio) -> bool>(
-        &self,
-        predicate: P,
-    ) -> Vec<usize> {
+    pub fn filtered_curio_keys<P: Fn(usize, WithCurio) -> bool>(&self, predicate: P) -> Vec<usize> {
         self.grid.filtered_keys(|key, _| {
             self.with_curio(key, |curio| predicate(key, curio))
                 .unwrap_or(false)

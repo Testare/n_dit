@@ -1,8 +1,8 @@
-use super::keys::curio_action_keys as keys;
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
+use super::keys::curio_action_keys as keys;
 use super::SpritePoint;
-use crate::{Node, Sprite, Point};
+use crate::{Node, Point, Sprite};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 use typed_key::{typed_key, Key};
@@ -98,14 +98,9 @@ impl CurioAction<'_> {
         target_pt: Point,
         metadata: &Metadata,
     ) -> Result<()> {
-        let deleted_sprite = metadata.get(keys::DELETED_SPRITE)?;
+        let deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
         let damages = metadata.get_or_default(keys::DAMAGES)?;
-        /*let deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
-        for (key, Sprite) in deleted_sprite.into_iter() {
-
-        }*/
-        if let Some((key, spr)) = deleted_sprite {
-            log::debug!("Tell me about things {}", key);
+        for (key, spr) in deleted_sprites.into_iter() {
             let head = damages
                 .iter()
                 .find(|dropped_square| dropped_square.0 == key)
@@ -115,7 +110,6 @@ impl CurioAction<'_> {
                         .fail_critical()
                 })?;
             unsafe {
-                log::debug!("Tell me about things {}", key);
                 // I am just returning an item that was removed
                 node.return_sprite_with_key(key, head, spr);
             }
@@ -132,6 +126,17 @@ impl CurioAction<'_> {
                 .fail_critical_msg()
             })?;
         }
+
+        if let Some((old_max_size, _)) = metadata.get(keys::MAX_SIZE_CHANGE)? {
+            let target_id = metadata.expect(keys::TARGET_CURIO)?;
+            node.with_curio_mut(target_id, |mut curio| {
+                curio.set_max_size(old_max_size);
+            })
+            .ok_or_else(|| {
+                format!("Unable to fix max size for missing curio {}", curio_key)
+                    .fail_critical_msg()
+            })?;
+        }
         Ok(())
     }
     pub fn apply(&self, node: &mut Node, curio_key: usize, target_pt: Point) -> Result<Metadata> {
@@ -146,6 +151,10 @@ impl CurioAction<'_> {
                 .all(|condition| condition.met(node, curio_key, target_pt))
             {
                 let mut metadata = Metadata::new();
+                metadata.put_optional(
+                    keys::TARGET_CURIO,
+                    node.with_curio_at(target_pt, |target| target.key()),
+                )?;
 
                 match self.effect {
                     SAEffect::DealDamage(dmg) => {
@@ -158,22 +167,25 @@ impl CurioAction<'_> {
                                     .fail_reversible_msg()
                             })?;
                         metadata.put(keys::DAMAGES, &dropped_pts)?;
-                        let deleted_sprite_opt = Some(key).zip(deleted_curio);
-                        metadata.put_optional(keys::DELETED_SPRITE, &deleted_sprite_opt)?;
-                        if let Some(deleted_sprite) = deleted_sprite_opt {
-                            let mut deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
-                            deleted_sprites.push(deleted_sprite);
+                        if let Some(deleted_curio) = deleted_curio {
+                            let mut deleted_sprites =
+                                metadata.get_or_default(keys::DELETED_SPRITES)?;
+                            deleted_sprites.push((key, deleted_curio));
                             metadata.put(keys::DELETED_SPRITES, &deleted_sprites)?;
                         }
                     }
                     SAEffect::IncreaseMaxSize { amount, bound } => {
-                        node.with_curio_at_mut(target_pt, |mut target| {
-                            target.increase_max_size(amount, bound)
-                        })
-                        .ok_or_else(|| {
-                            "Invalid target for increase size: Target must be a curio"
-                                .fail_reversible_msg()
-                        })?;
+                        let max_size_change: (usize, usize) = node
+                            .with_curio_at_mut(target_pt, |mut target| {
+                                let old_max = target.max_size();
+                                let new_max = target.increase_max_size(amount, bound);
+                                (old_max, new_max)
+                            })
+                            .ok_or_else(|| {
+                                "Invalid target for increase size: Target must be a curio"
+                                    .fail_reversible_msg()
+                            })?;
+                        metadata.put(keys::MAX_SIZE_CHANGE, &max_size_change)?;
                     }
                     _ => unimplemented!("Not implemented yet!"),
                 }
