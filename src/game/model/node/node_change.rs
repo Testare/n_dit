@@ -37,7 +37,8 @@ impl Node {
     }
 
     fn finish_turn_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
-        self.set_active_team(metadata.team);
+        let metadata: Metadata = metadata.to_metadata()?;
+        self.set_active_team(metadata.expect(keys::TEAM)?);
         Ok(())
     }
 
@@ -52,7 +53,8 @@ impl Node {
     }
 
     fn activate_curio_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
-        let previous_curio_id = metadata.previous_active_curio_id;
+        let metadata = metadata.to_metadata()?;
+        let previous_curio_id = metadata.get(keys::PREVIOUS_ACTIVE_CURIO)?;
         // If there was a previously active curio when this one was activated, untap it and make it active
         if let Some(curio_id) = previous_curio_id {
             let curio_exists = self.with_curio_mut(curio_id, |mut curio| curio.untap());
@@ -79,7 +81,8 @@ impl Node {
     }
 
     fn deactivate_curio_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
-        let curio_id = metadata.expect_previous_active_curio_id()?;
+        let metadata = metadata.to_metadata()?;
+        let curio_id = metadata.expect(keys::PREVIOUS_ACTIVE_CURIO)?;
         let curio_not_found = self
             .with_curio_mut(curio_id, |mut curio| curio.untap())
             .is_none();
@@ -98,10 +101,11 @@ impl Node {
     }
 
     fn move_active_curio_undo(&mut self, metadata: &NodeChangeMetadata) -> Result<()> {
+        let metadata = metadata.to_metadata()?;
         let head_pt = self
             .with_active_curio_mut(|mut curio| {
                 let head_pt = curio.head();
-                for dropped_square in metadata.dropped_squares() {
+                for dropped_square in metadata.get_or_default(keys::DROPPED_SQUARES)? {
                     if dropped_square.0 == curio.key() {
                         curio.grow_back(dropped_square.1);
                     }
@@ -111,8 +115,8 @@ impl Node {
             })
             .unwrap_or_else(|| "No active curio".fail_critical())?;
 
-        if let Some(pickup) = metadata.pickup() {
-            self.inventory.remove(pickup);
+        if let Some(pickup) = metadata.get(keys::PICKUP)? {
+            self.inventory.remove(&pickup);
             self.grid_mut()
                 .put_item(head_pt, Sprite::Pickup(pickup.clone()));
         }
@@ -152,10 +156,10 @@ impl Node {
         target: Point,
         metadata: &NodeChangeMetadata,
     ) -> Result<()> {
-        let active_curio_key = metadata.expect_previous_active_curio_id()?;
+        let metadata = metadata.to_metadata()?;
+        let active_curio_key = metadata.expect(keys::PREVIOUS_ACTIVE_CURIO)?;
         let curio_not_found = self
-            .with_curio_mut(active_curio_key, |mut curio| curio.untap())
-            .is_none();
+            .with_curio_mut(active_curio_key, |mut curio| curio.untap()).is_none();
         if curio_not_found {
             return "Take curio action curio does not exist".fail_critical();
         }
@@ -173,8 +177,8 @@ impl Node {
         // TODO This logic will likely be more complex
 
         self.set_active_curio(Some(active_curio_key));
-        action.unapply(self, active_curio_key, target, &metadata.to_metadata()?)?;
-        for dropped_square in metadata.dropped_squares() {
+        action.unapply(self, active_curio_key, target, &metadata)?;
+        for dropped_square in metadata.get_or_default(keys::DROPPED_SQUARES)? {
             self.with_curio_mut(dropped_square.0, |mut curio| {
                 curio.grow_back(dropped_square.1);
             })

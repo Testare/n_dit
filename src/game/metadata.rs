@@ -45,6 +45,10 @@ impl Metadata {
             .transpose()
     }
 
+    pub fn get_or_default<'a, T: Deserialize<'a> + Default>(&'a self, key: Key<T>) -> Result<T> {
+        self.get(key).map(Option::unwrap_or_default)
+    }
+
     pub fn expect<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<T> {
         if let Some(data) = self.0.get(&key.name().to_string()) {
             serde_json::from_str(data).map_err(|e| {
