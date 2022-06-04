@@ -100,7 +100,7 @@ impl Node {
         can_activate
     }
 
-    pub(crate) fn grid(&self) -> &GridMap<Sprite> {
+    pub fn grid(&self) -> &GridMap<Sprite> {
         &self.grid
     }
 

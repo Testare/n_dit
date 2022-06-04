@@ -1,6 +1,6 @@
+use game_core::{Bounds, Direction, Point};
 use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
 use super::SubLayout;
-use crate::{Bounds, Direction, Point};
 use crossterm::queue;
 use std::{
     cmp,

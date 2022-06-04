@@ -1,4 +1,4 @@
-use crate::Point;
+use game_core::Point;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ClickTarget {

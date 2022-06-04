@@ -1,5 +1,5 @@
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
-use crate::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, Node, Point};
+use game_core::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, Node, Point};
 use getset::{CopyGetters, Getters};
 
 // TODO Might be best to represent soem of this state as an enum state machine

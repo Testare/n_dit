@@ -1,3 +1,7 @@
+mod grid_map;
+
+pub use grid_map::GridMap;
+
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::collections::HashSet;

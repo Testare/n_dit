@@ -1,4 +1,4 @@
-use crate::{Bounds, Direction, Point};
+use game_core::{Bounds, Direction, Point};
 use crossterm::event::{
     Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };

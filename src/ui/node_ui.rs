@@ -1,5 +1,6 @@
+use game_core::{Direction, GameCommand, Node, Point, PointSet};
 use super::NodeCt;
-use crate::{Direction, GameCommand, Node, Point, PointSet, UiAction, UserInput};
+use crate::{UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
 

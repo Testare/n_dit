@@ -1,4 +1,4 @@
-use super::super::{Bounds, GameState, Point};
+use game_core::{Bounds, GameState, Point};
 use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView};
 
 mod node_layout;
@@ -82,8 +82,9 @@ impl Layout {
 
 // Will likely be used later when I figure out how to handle multiple layouts.
 mod too_small_layout {
+    use crate::{SuperState, UiAction};
     use super::{ClickTarget, NodeUiState, SubLayout};
-    use crate::{Bounds, Point, SuperState, UiAction};
+    use game_core::{Bounds, Point};
     use crossterm::execute;
     use std::io::stdout;
 

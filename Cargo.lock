@@ -78,6 +78,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
+name = "game_core"
+version = "0.1.0"
+dependencies = [
+ "getset",
+ "lazy_static",
+ "log",
+ "serde",
+ "serde_json",
+ "typed_key",
+]
+
+[[package]]
 name = "getset"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -181,15 +193,12 @@ version = "0.1.0"
 dependencies = [
  "aquamarine",
  "crossterm",
+ "game_core",
  "getset",
  "itertools 0.10.3",
- "lazy_static",
  "log",
  "pad",
- "serde",
- "serde_json",
  "simplelog",
- "typed_key",
  "unicode-width",
 ]
 

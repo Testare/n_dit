@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 // Level 0
 mod common;
 mod error;
@@ -14,7 +17,7 @@ mod event;
 // Level 6
 mod game_master;
 
-pub use common::{Bounds, Direction, Point, PointSet};
+pub use common::{Bounds, Direction, Point, PointSet, GridMap};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
 use abstractions::StateChange;
 pub use game_master::{AuthorityGameMaster, EventPublisher, GameCommand};

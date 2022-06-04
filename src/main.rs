@@ -1,11 +1,7 @@
 use core::time::Duration;
 use crossterm::{self, execute};
-use n_dit::{
-    game::{Card, Curio, Node, Pickup, Sprite, StandardCurioAction},
-    grid_map::GridMap,
-    ui::{SuperState, UiAction, UserInput},
-    Team,
-};
+use game_core::{Card, Curio, GridMap, Node, Pickup, Sprite, StandardCurioAction, Team};
+use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 use std::{fs::File, io::stdout, panic, time::Instant};
 

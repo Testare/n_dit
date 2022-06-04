@@ -1,5 +1,5 @@
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
-use crate::{Node, Pickup, Point, Sprite, Team};
+use game_core::{Node, Pickup, Point, Sprite, Team};
 use itertools::Itertools;
 use pad::PadStr;
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
@@ -15,67 +15,65 @@ enum BorderType {
     Linked = 2,
 }
 
-impl Sprite {
-    // Might want to change this to just accept a mutable Write reference to make more effecient.
-    fn render_square(
-        &self,
-        node: &Node,
-        key: usize,
-        position: usize,
-        configuration: &DrawConfiguration,
-    ) -> String {
-        let string = match self {
-            Sprite::AccessPoint => String::from("&&"),
-            Sprite::Pickup(pickup) => configuration
-                .color_scheme()
-                .mon()
-                .apply(pickup.square_display()),
-            Sprite::Curio(curio) => {
-                if position == 0 {
-                    String::from(curio.display())
-                } else if false {
-                    // Logic to format the last square differently if position + 1 == max_size and the
-                    // curio is selected, so that you can tell that moving will not grow the curio.
-                    String::from("[]")
-                } else {
-                    match configuration.tail_appearance() {
-                        FillMethod::NoFill => String::from("  "),
-                        FillMethod::Brackets => String::from("[]"),
-                        FillMethod::DotFill => String::from(".."),
-                        FillMethod::HeadCopy => String::from(curio.display()),
-                        FillMethod::Sequence => {
-                            format!("{:02}", position)
-                        }
+// Might want to change this to just accept a mutable Write reference to make more effecient.
+fn render_square(
+    sprite: &Sprite,
+    node: &Node,
+    key: usize,
+    position: usize,
+    configuration: &DrawConfiguration,
+) -> String {
+    let string = match sprite {
+        Sprite::AccessPoint => String::from("&&"),
+        Sprite::Pickup(pickup) => configuration
+            .color_scheme()
+            .mon()
+            .apply(pickup.square_display()),
+        Sprite::Curio(curio) => {
+            if position == 0 {
+                String::from(curio.display())
+            } else if false {
+                // Logic to format the last square differently if position + 1 == max_size and the
+                // curio is selected, so that you can tell that moving will not grow the curio.
+                String::from("[]")
+            } else {
+                match configuration.tail_appearance() {
+                    FillMethod::NoFill => String::from("  "),
+                    FillMethod::Brackets => String::from("[]"),
+                    FillMethod::DotFill => String::from(".."),
+                    FillMethod::HeadCopy => String::from(curio.display()),
+                    FillMethod::Sequence => {
+                        format!("{:02}", position)
                     }
                 }
             }
-        };
-        self.style(node, key, position, configuration).apply(string)
-    }
-
-    fn style(
-        &self,
-        node: &Node,
-        key: usize,
-        position: usize,
-        draw_config: &DrawConfiguration,
-    ) -> UiFormat {
-        match self {
-            Sprite::Pickup(_) => draw_config.color_scheme().mon(),
-            Sprite::AccessPoint => draw_config.color_scheme().access_point(),
-            Sprite::Curio(curio) => match curio.team() {
-                Team::PlayerTeam => {
-                    if node.active_curio_key() == Some(key) {
-                        draw_config.color_scheme().player_team_active()
-                    } else if curio.tapped() && position == 0 {
-                        draw_config.color_scheme().player_team_tapped()
-                    } else {
-                        draw_config.color_scheme().player_team()
-                    }
-                }
-                Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
-            },
         }
+    };
+    style(sprite, node, key, position, configuration).apply(string)
+}
+
+fn style(
+    sprite: &Sprite, 
+    node: &Node,
+    key: usize,
+    position: usize,
+    draw_config: &DrawConfiguration,
+) -> UiFormat {
+    match sprite {
+        Sprite::Pickup(_) => draw_config.color_scheme().mon(),
+        Sprite::AccessPoint => draw_config.color_scheme().access_point(),
+        Sprite::Curio(curio) => match curio.team() {
+            Team::PlayerTeam => {
+                if node.active_curio_key() == Some(key) {
+                    draw_config.color_scheme().player_team_active()
+                } else if curio.tapped() && position == 0 {
+                    draw_config.color_scheme().player_team_tapped()
+                } else {
+                    draw_config.color_scheme().player_team()
+                }
+            }
+            Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
+        },
     }
 }
 
@@ -243,7 +241,7 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
     let grid_map = grid.number_map();
 
     let sprite_map =
-        grid.point_map(|key, i, sprite| sprite.render_square(node, key, i, draw_config));
+        grid.point_map(|key, i, sprite| render_square(sprite, node, key, i, draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x / 3;
