@@ -151,8 +151,7 @@ impl From<Metadata> for HashMap<String, Value>{
     }
 }
 
-
-
+#[cfg(test)]
 mod test {
     use super::Metadata;
     use std::collections::HashMap;

@@ -1,11 +1,11 @@
-use getset::Getters;
+
 use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::{Metadata, StateChange};
 pub use super::super::keys::node_change_keys as keys;
 use super::Sprite;
-use crate::{Direction, GameState, Node, Pickup, Point, Team};
+use crate::{Direction, GameState, Node, Point, Team};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum NodeChange {

@@ -1,11 +1,11 @@
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
 use super::keys::curio_action_keys as keys;
-use super::SpritePoint;
+
 use crate::{Node, Point, Sprite};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
-use typed_key::{typed_key, Key};
+
 
 mod standard_curio_actions;
 
@@ -95,7 +95,7 @@ impl CurioAction<'_> {
         &self,
         node: &mut Node,
         curio_key: usize,
-        target_pt: Point,
+        _target_pt: Point,
         metadata: &Metadata,
     ) -> Result<()> {
         let deleted_sprites = metadata.get_or_default(keys::DELETED_SPRITES)?;
@@ -220,11 +220,4 @@ impl Target {
             _ => unimplemented!("Target {:?} not implemented yet", self),
         }
     }
-}
-
-#[non_exhaustive]
-pub enum CurioActionError {
-    InvalidTarget,
-    ConditionNotMet,
-    CurioSpecificEffectOnNonCurioTarget,
 }

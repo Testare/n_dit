@@ -4,7 +4,7 @@ use super::super::keys::node_change_keys as keys;
 use super::Node;
 use super::SpritePoint;
 use crate::{
-    Bounds, Curio, Direction, GridMap, Pickup, Point, PointSet, Sprite, StandardCurioAction, Team,
+    Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, StandardCurioAction, Team,
 };
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 

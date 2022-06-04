@@ -2,7 +2,7 @@ use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use crate::Sprite;
-use std::{cmp::min, fmt};
+use std::{fmt};
 
 #[derive(Clone, Debug, Default, Getters, CopyGetters, Serialize, Deserialize)]
 pub struct Inventory {
@@ -23,7 +23,7 @@ impl Inventory {
     pub fn remove(&mut self, pickup: &Pickup) {
         match pickup {
             Pickup::Mon(mon) => {
-                self.wallet = self.wallet - mon;
+                self.wallet -= mon;
             }
             Pickup::Item(item) => {
                 // Will obviously need more complex logic if we have "stackable" items
@@ -39,7 +39,7 @@ impl Inventory {
     pub fn pick_up(&mut self, pickup: Pickup) {
         match pickup {
             Pickup::Mon(mon) => {
-                self.wallet = self.wallet + mon;
+                self.wallet += mon;
             }
             Pickup::Item(item) => {
                 // Will obviously need more complex logic if we have "stackable" items
