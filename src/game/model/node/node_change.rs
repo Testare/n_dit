@@ -32,7 +32,6 @@ impl Node {
 
     fn finish_turn_change(&mut self) -> NodeChangeResult {
         let metadata = self.default_metadata()?;
-        let team = self.active_team();
         self.change_active_team();
         Ok(metadata)
     }

@@ -137,9 +137,9 @@ impl From<HashMap<String, Value>> for Metadata {
     }
 }
 
-impl Into<HashMap<String, Value>> for Metadata {
-    fn into(self) -> HashMap<String, Value> {
-        self.0
+impl From<Metadata> for HashMap<String, Value>{
+    fn from(metadata: Metadata) -> Self {
+        metadata.0
             .into_iter()
             .map(|(key, val)| {
                 (
@@ -150,6 +150,8 @@ impl Into<HashMap<String, Value>> for Metadata {
             .collect()
     }
 }
+
+
 
 mod test {
     use super::Metadata;
@@ -176,7 +178,6 @@ mod test {
             })
             .unwrap();
         let result = serde_json::to_string(&metadata).unwrap();
-        println!("{}", result);
-        // assert_eq!("{\"m\":{\"foo\":\"bar\",\"what\":\"hey\",\"whata\":\"hey\"},\"key1\":343,\"inner_metadata\":{\"key1\":143}}", result);
+        assert_eq!("{\"m\":{\"foo\":\"bar\",\"what\":\"hey\",\"whata\":\"hey\"},\"key1\":343,\"inner_metadata\":{\"key1\":143}}", result);
     }
 }

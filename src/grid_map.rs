@@ -498,9 +498,9 @@ impl<T> GridMap<T> {
 
     /// Used to add an item back to the map with its original key.
     ///
-    /// ### SAFETY
-    /// Unexpected /// behavior can happen if used to add an item with a new key,
-    ///
+    /// # Safety
+    /// 
+    /// Unexpected behavior can happen if used to add an item with a new key,
     pub unsafe fn return_item_with_key(&mut self, id: usize, pt: Point, item: T) -> Option<usize> {
         if let Some(square) = self.square_mut(pt) {
             if square.item == None {
