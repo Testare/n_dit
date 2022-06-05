@@ -43,6 +43,7 @@ pub enum Sprite {
 }
 
 impl Node {
+
     /// ### SAFETY
     /// Unsafe to return sprites with new keys
     /// See grid_map return_item_with_key
@@ -136,6 +137,11 @@ impl Node {
 
     pub fn add_money(&mut self, pt: Point, amount: usize) -> Option<usize> {
         self.grid.put_item(pt, Sprite::Pickup(Pickup::Mon(amount)))
+    }
+
+    pub fn add_action_dictionary(&mut self, action_dictionary: HashMap<String, CurioAction>) {
+        // In the future, only load actions that are needed by the sprites?
+        self.action_dictionary.extend(action_dictionary);
     }
 
     pub fn width(&self) -> usize {

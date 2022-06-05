@@ -160,6 +160,7 @@ fn load_state() -> SuperState {
     );
     node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
     node.add_sprite((6, 2), Sprite::AccessPoint);
+    node.add_action_dictionary(StandardCurioAction::action_dictionary());
     SuperState::from(Some(node))
 }
 

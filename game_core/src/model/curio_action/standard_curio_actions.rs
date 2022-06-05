@@ -1,10 +1,15 @@
+use std::collections::HashMap;
 use super::{CurioAction, CurioActionGenre, SACondition, SAEffect, Target};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroUsize;
 use std::ops::Deref;
 
+
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
+// We want this to be intiialized by asset loading, not hardcoded
+#[deprecated]
 pub enum StandardCurioAction {
     Brutus,
     Bite,
@@ -12,6 +17,24 @@ pub enum StandardCurioAction {
 }
 
 impl StandardCurioAction {
+
+    pub fn action_dictionary() -> HashMap<String, CurioAction> {
+        let mut dictionary = HashMap::new();
+        dictionary.insert(
+            "Brutus".to_string(),
+            BRUTUS.clone()
+        );
+        dictionary.insert(
+            "Bite".to_string(),
+            BITE.clone()
+        );
+        dictionary.insert(
+            "Fiddle".to_string(),
+            FIDDLE.clone()
+        );
+        dictionary
+    }
+
     pub fn unwrap(&self) -> &'static CurioAction {
         match self {
             StandardCurioAction::Brutus => &BRUTUS,
