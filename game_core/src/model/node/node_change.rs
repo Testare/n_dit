@@ -123,18 +123,15 @@ impl Node {
         let active_curio_key = self
             .active_curio_key()
             .ok_or_else(|| "No active curio".invalid_msg())?;
+        let mut metadata = self.default_metadata()?;
         let action = self
             .with_curio(active_curio_key, |curio| {
-                curio
-                    .actions()
-                    .get(curio_action_index)
-                    .map(|action| action.unwrap())
+                curio.indexed_action(curio_action_index)
                     .ok_or_else(|| {
                         format!("Cannot find action {} in curio", curio_action_index).invalid_msg()
                     })
             })
             .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
-        let mut metadata = self.default_metadata()?;
         let sprite_action_metadata = action.apply(self, active_curio_key, pt)?;
         metadata.put(keys::CURIO_ACTION_METADATA, &sprite_action_metadata)?;
         self.deactivate_curio();
@@ -157,10 +154,7 @@ impl Node {
         }
         let action = self
             .with_curio(active_curio_key, |curio| {
-                curio
-                    .actions()
-                    .get(action_index)
-                    .map(|action| action.unwrap())
+                curio.indexed_action(action_index)
                     .ok_or_else(|| {
                         format!("Cannot find action {} in curio", action_index).fail_critical_msg()
                     })

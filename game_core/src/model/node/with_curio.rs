@@ -1,10 +1,13 @@
+use std::sync::Arc;
+
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
 use super::super::keys::node_change_keys as keys;
+use super::super::curio_action::CurioAction;
 use super::Node;
 use super::SpritePoint;
 use crate::{
-    Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, StandardCurioAction, Team,
+    Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, Team,
 };
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
@@ -33,14 +36,41 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
         }
     }
 
-    // NOTE maybe this shouldn't be public?
+    pub fn action_count(&self) -> usize {
+        self.action_names().len()
+    }
+
     /// List of actions the curio can take
-    pub fn actions(&self) -> &Vec<StandardCurioAction> {
+    pub fn actions(&self) -> Result<Vec<Arc<CurioAction>>> {
+        self.action_names().iter()
+        .map(|action|{
+            self.node
+                .action_dictionary()
+                .get(action)
+                .cloned()
+                .ok_or_else(||"Sprite action {} missing from dictionary".fail_critical_msg())
+        }).collect()
+    }
+
+    pub fn action_names(&self) -> &Vec<String> {
         if let Sprite::Curio(curio) = self.node.grid().item(self.curio_key).unwrap() {
             curio.actions()
         } else {
             panic!("{}", CURIO_KEY_IS_VALID);
         }
+    }
+
+    pub fn action(&self, key: &str) -> Option<Arc<CurioAction>> {
+        if self.action_names().contains(&key.to_string()) {
+            self.node.action_dictionary.get(&key.to_string()).cloned()
+        } else {
+            None
+        }
+    }
+
+    pub fn indexed_action(&self, index: usize) -> Option<Arc<CurioAction>> {
+        let action_name = self.action_names().get(index)?;
+        self.action(action_name)
     }
 
     /// Tests if the curio can go in the specified direction, if it is a legal move.
@@ -101,13 +131,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
     pub fn range_of_action(&self, action_index: usize) -> Option<PointSet> {
         let pt = self.head();
         let bounds = self.node.bounds();
-        let range = self
-            .curio()
-            .actions()
-            .get(action_index)?
-            .unwrap()
-            .range()?
-            .get();
+        let range = self.indexed_action(action_index)?.range()?.get();
         Some(PointSet::range_of_pt(pt, range, bounds))
         // TODO remove closed squares unless they're a target.
         /* TODO Perhaps changes PointSet to "TargetSet", with difference

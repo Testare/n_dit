@@ -319,7 +319,7 @@ impl SubLayout for StandardNodeLayout {
                 (pt.1 - top)
                     .checked_sub(Self::CURIO_ACTION_Y)
                     .and_then(|index| {
-                        node.with_curio_at(state.selected_square(), |curio| curio.actions().len())
+                        node.with_curio_at(state.selected_square(), |curio| curio.action_count())
                             .filter(|available_action_total| *available_action_total > index)
                             .map(|_| NodeCt::CurioActionMenu(index).into())
                     })

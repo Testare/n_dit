@@ -3,7 +3,6 @@ mod curio_builder;
 use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
-use super::curio_action::StandardCurioAction;
 use curio_builder::CurioBuilder;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -27,7 +26,7 @@ pub struct Curio {
     team: Team,
     tapped: bool,
     #[get = "pub"]
-    actions: Vec<StandardCurioAction>, // Vec<Metadata>
+    actions: Vec<String>, // Vec<Metadata>
 }
 
 impl Curio {
@@ -45,9 +44,9 @@ impl Curio {
             team: Team::PlayerTeam,
             tapped: false,
             actions: vec![
-                StandardCurioAction::Brutus,
-                StandardCurioAction::Bite,
-                StandardCurioAction::Fiddle,
+                "Brutus".to_string(),
+                "Bite".to_string(),
+                "Fiddle".to_string(),
             ],
         }
     }

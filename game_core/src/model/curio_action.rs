@@ -1,16 +1,15 @@
+use std::{num::NonZeroUsize, ops::RangeInclusive};
+use std::sync::Arc;
+use std::collections::HashMap;
+
+use getset::{CopyGetters, Getters};
+use serde::{Serialize, Deserialize};
+
+use crate::{Node, Point, Sprite};
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
 use super::keys::curio_action_keys as keys;
 
-use crate::{Node, Point, Sprite};
-use getset::{CopyGetters, Getters};
-use std::{num::NonZeroUsize, ops::RangeInclusive};
-use serde::{Serialize, Deserialize};
-
-
-mod standard_curio_actions;
-
-pub use standard_curio_actions::StandardCurioAction;
 
 // TODO look into making this a trait instead?
 #[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
@@ -221,4 +220,50 @@ impl Target {
             _ => unimplemented!("Target {:?} not implemented yet", self),
         }
     }
+}
+
+
+#[deprecated]
+pub fn interim_action_dictionary() -> HashMap<String, Arc<CurioAction>> {
+    let BRUTUS: CurioAction = CurioAction {
+        name: "Brutus".to_string(),
+        genre: CurioActionGenre::Attack,
+        range: NonZeroUsize::new(2),
+        effect: SAEffect::DealDamage(2),
+        targets: vec![Target::Ally],
+        conditions: Vec::new()
+    };
+    let BITE: CurioAction = CurioAction {
+        name: "Bite".to_string(),
+        genre: CurioActionGenre::Attack,
+        range: NonZeroUsize::new(1),
+        effect: SAEffect::DealDamage(2),
+        targets: vec![Target::Enemy],
+        conditions: Vec::new()
+    };
+    let FIDDLE: CurioAction = CurioAction {
+        name: "Fiddle".to_string(),
+        genre: CurioActionGenre::Support,
+        range: NonZeroUsize::new(2),
+        effect: SAEffect::IncreaseMaxSize {
+            amount: 1,
+            bound: NonZeroUsize::new(5)
+        },
+        targets: vec![Target::Ally],
+        conditions: vec![SACondition::TargetMaxSize(1..=4)],
+    };
+    let mut dictionary = HashMap::new();
+    dictionary.insert(
+        "Brutus".to_string(),
+        Arc::new(BRUTUS.clone())
+    );
+    dictionary.insert(
+        "Bite".to_string(),
+        Arc::new(BITE.clone())
+    );
+    dictionary.insert(
+        "Fiddle".to_string(),
+        Arc::new(FIDDLE.clone())
+    );
+    dictionary
 }

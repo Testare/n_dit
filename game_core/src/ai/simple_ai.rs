@@ -54,6 +54,7 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
 
         if let Some((action_index, preferred_action)) = curio
             .actions()
+            .expect("If the AI has an action not defined, panic")
             .iter()
             .enumerate()
             .filter(|(_, action)| action.can_target_enemy() && action.range().is_some())

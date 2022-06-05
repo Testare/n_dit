@@ -127,7 +127,7 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
                 base_vec[6] = "=".repeat(width);
                 let selected_action = state.selected_action_index();
                 for (i, action) in curio.actions().iter().enumerate() {
-                    let mut action = action.unwrap().name().with_exact_width(width);
+                    let mut action = action.with_exact_width(width);
                     if Some(i) == selected_action {
                         action = color_scheme.selected_menu_item().apply(action);
                     }

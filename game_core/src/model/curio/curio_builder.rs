@@ -1,8 +1,8 @@
-use crate::{Curio, StandardCurioAction, Team};
+use crate::{Curio, Team};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CurioBuilder {
-    actions: Vec<StandardCurioAction>,
+    actions: Vec<String>,
     display: Option<String>,
     max_size: Option<usize>,
     movement_speed: Option<usize>,
@@ -11,8 +11,8 @@ pub struct CurioBuilder {
 }
 
 impl CurioBuilder {
-    pub fn action(&mut self, action: StandardCurioAction) -> &mut Self {
-        self.actions.push(action);
+    pub fn action(&mut self, action: &str) -> &mut Self {
+        self.actions.push(action.to_string());
         self
     }
 

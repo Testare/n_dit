@@ -6,6 +6,7 @@ pub use node_change::SpritePoint; // TODO Move these to better location
 use with_curio::WithCurio;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use getset::Getters;
 use serde::{Deserialize, Serialize};
@@ -23,6 +24,8 @@ use super::{
 
 type NodeConstructionError = String;
 
+type ActionDictionary = HashMap<String, Arc<CurioAction>>;
+
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct Node {
     grid: GridMap<Sprite>,
@@ -32,7 +35,8 @@ pub struct Node {
     active_team: Team,
     #[get = "pub"]
     inventory: Inventory,
-    action_dictionary: HashMap<String, CurioAction>,
+    #[get]
+    action_dictionary: ActionDictionary,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -139,7 +143,7 @@ impl Node {
         self.grid.put_item(pt, Sprite::Pickup(Pickup::Mon(amount)))
     }
 
-    pub fn add_action_dictionary(&mut self, action_dictionary: HashMap<String, CurioAction>) {
+    pub fn add_action_dictionary(&mut self, action_dictionary: HashMap<String, Arc<CurioAction>>) {
         // In the future, only load actions that are needed by the sprites?
         self.action_dictionary.extend(action_dictionary);
     }

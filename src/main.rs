@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{Card, Curio, GridMap, Node, Pickup, Sprite, StandardCurioAction, Team};
+use game_core::{Card, Curio, GridMap, Node, Pickup, Sprite, Team};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -125,7 +125,7 @@ fn load_state() -> SuperState {
         Curio::builder()
             .display("あ")
             .name("Horus")
-            .action(StandardCurioAction::Bite)
+            .action("Bite")
             .max_size(3)
             .movement_speed(2)
             .build()
@@ -142,7 +142,7 @@ fn load_state() -> SuperState {
             .team(Team::EnemyTeam)
             .display("骨")
             .name("Jackson")
-            .action(StandardCurioAction::Bite)
+            .action("Bite")
             .max_size(4)
             .movement_speed(7)
             .build()
@@ -160,7 +160,7 @@ fn load_state() -> SuperState {
     );
     node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
     node.add_sprite((6, 2), Sprite::AccessPoint);
-    node.add_action_dictionary(StandardCurioAction::action_dictionary());
+    node.add_action_dictionary(game_core::interim_action_dictionary());
     SuperState::from(Some(node))
 }
 

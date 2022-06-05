@@ -314,7 +314,7 @@ impl NodeUiState {
                     .or_else(|| node.with_curio_at(self.selected_square(), |curio| curio.key()))
                     .unwrap();
                 let num_actions = node
-                    .with_curio(selected_curio_key, |curio| curio.actions().len()) // TODO method to count actions
+                    .with_curio(selected_curio_key, |curio| curio.action_names().len()) // TODO method to count actions
                     .unwrap();
                 if *idx < num_actions {
                     self.set_selected_action_index(*idx);
@@ -329,7 +329,7 @@ impl NodeUiState {
                         .unwrap();
                     if let Some(action_index) = self.selected_action_index() {
                         let num_actions = node
-                            .with_curio(selected_curio_key, |curio| curio.actions().len())
+                            .with_curio(selected_curio_key, |curio| curio.action_count())
                             .unwrap();
                         self.set_selected_action_index(match dir {
                             Direction::North => (action_index + num_actions - 1) % num_actions,
@@ -360,7 +360,7 @@ impl NodeUiState {
                 // active curio
                 // ...But is this a bug or a feature?
                 if let Some((moves, actions, head)) = node
-                    .with_active_curio(|curio| (curio.moves(), curio.actions().len(), curio.head()))
+                    .with_active_curio(|curio| (curio.moves(), curio.action_count(), curio.head()))
                 {
                     self.set_selected_square(head, node);
                     if moves != 0 {
