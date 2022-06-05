@@ -1,8 +1,9 @@
 use game_core::{Direction, GameCommand, Node, Point, PointSet};
-use super::NodeCt;
-use crate::{UiAction, UserInput};
 use getset::{CopyGetters, Setters};
 use log::debug;
+
+use super::NodeCt;
+use crate::{UiAction, UserInput};
 
 #[derive(Clone, Debug, CopyGetters, Setters)]
 pub struct NodeUiState {
@@ -279,7 +280,6 @@ impl NodeUiState {
                             selected_action_index: Some(selected_action_index),
                             selected_curio_key: Some(selected_curio_key),
                         } => {
-                            // FIXME Need to active the curio
                             self.phase = NodePhase::CurioAction {
                                 selected_action_index: *selected_action_index,
                                 selected_curio_key: *selected_curio_key,

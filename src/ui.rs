@@ -6,16 +6,16 @@ mod render;
 mod super_state;
 mod user_input;
 
+use std::num::NonZeroUsize;
+
+use click::{ClickTarget, NodeCt};
 pub use configuration::DrawConfiguration;
 pub(self) use configuration::{DrawType, FillMethod, UiFormat};
 pub use layout::Layout;
+use node_ui::NodeUiState;
+use super_state::UiView;
 pub use super_state::{SuperState, UiAction};
 pub use user_input::UserInput;
-
-use click::{ClickTarget, NodeCt};
-use node_ui::NodeUiState;
-use std::num::NonZeroUsize;
-use super_state::UiView;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Window {

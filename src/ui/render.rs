@@ -1,8 +1,10 @@
-use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
+use std::{cmp, collections::HashSet, ops::RangeInclusive};
+
 use game_core::{Node, Pickup, Point, Sprite, Team};
 use itertools::Itertools;
 use pad::PadStr;
-use std::{cmp, collections::HashSet, ops::RangeInclusive};
+
+use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
@@ -53,7 +55,7 @@ fn render_square(
 }
 
 fn style(
-    sprite: &Sprite, 
+    sprite: &Sprite,
     node: &Node,
     key: usize,
     position: usize,

@@ -1,9 +1,10 @@
 use core::time::Duration;
+use std::{fs::File, io::stdout, panic, time::Instant};
+
 use crossterm::{self, execute};
 use game_core::{Card, Curio, GridMap, Node, Pickup, Sprite, StandardCurioAction, Team};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
-use std::{fs::File, io::stdout, panic, time::Instant};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();

@@ -1,7 +1,7 @@
-use game_core::{Bounds, Direction, Point};
 use crossterm::event::{
     Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
+use game_core::{Bounds, Direction, Point};
 
 #[derive(Clone, Copy, Debug)]
 pub enum UserInput {

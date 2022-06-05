@@ -1,13 +1,15 @@
-use game_core::{Bounds, Direction, Point};
-use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
-use super::SubLayout;
-use crossterm::queue;
 use std::{
     cmp,
     io::{stdout, Write},
     num::NonZeroUsize,
 };
+
+use crossterm::queue;
+use game_core::{Bounds, Direction, Point};
 use unicode_width::UnicodeWidthStr;
+
+use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
+use super::SubLayout;
 
 #[derive(Clone, Copy, Debug)]
 pub enum NodeLayout {

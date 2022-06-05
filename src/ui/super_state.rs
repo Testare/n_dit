@@ -1,6 +1,7 @@
-use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
 use game_core::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, Node, Point};
 use getset::{CopyGetters, Getters};
+
+use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
 
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug, Getters, CopyGetters)]

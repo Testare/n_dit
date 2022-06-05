@@ -1,6 +1,7 @@
+use std::fmt::Display;
+
 use crossterm::style::{Attribute, Color, StyledContent, Stylize};
 use getset::{CopyGetters, Getters};
-use std::fmt::Display;
 
 #[derive(Clone, Debug, CopyGetters, Getters)]
 pub struct DrawConfiguration {
