@@ -3,20 +3,23 @@ mod with_curio;
 
 pub use node_change::NodeChange;
 pub use node_change::SpritePoint; // TODO Move these to better location
+use with_curio::WithCurio;
+
+use std::collections::HashMap;
 
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-
-// TODO Use some abstraction for EnemyAi, so we don't depend on that
-use super::super::ai::EnemyAi;
-use super::super::error::Result;
-use super::curio::Curio;
-use super::inventory::{Inventory, Pickup};
-use super::keys::node_change_keys;
-use crate::{Bounds, GridMap, Metadata, Point, Team};
 use log::debug;
 
-use with_curio::WithCurio;
+use crate::{Bounds, GridMap, Metadata, Point, Team, error::Result};
+// TODO Use some abstraction for EnemyAi, so we don't depend on that
+use super::super::ai::EnemyAi;
+use super::{
+    curio::Curio, 
+    curio_action::CurioAction,
+    keys::node_change_keys,
+    inventory::{Inventory, Pickup}
+};
 
 type NodeConstructionError = String;
 
@@ -29,6 +32,7 @@ pub struct Node {
     active_team: Team,
     #[get = "pub"]
     inventory: Inventory,
+    action_dictionary: HashMap<String, CurioAction>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -228,6 +232,7 @@ impl From<GridMap<Sprite>> for Node {
             grid,
             name: String::from("Node"),
             inventory: Inventory::default(),
+            action_dictionary: Default::default(),
         }
     }
 }
@@ -241,6 +246,7 @@ impl From<(String, GridMap<Sprite>)> for Node {
             grid,
             name,
             inventory: Inventory::default(),
+            action_dictionary: Default::default(),
         }
     }
 }
@@ -254,6 +260,7 @@ impl From<(String, GridMap<Sprite>, EnemyAi)> for Node {
             grid,
             name,
             inventory: Inventory::default(),
+            action_dictionary: Default::default(),
         }
     }
 }

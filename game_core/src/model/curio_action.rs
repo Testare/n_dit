@@ -5,6 +5,7 @@ use super::keys::curio_action_keys as keys;
 use crate::{Node, Point, Sprite};
 use getset::{CopyGetters, Getters};
 use std::{num::NonZeroUsize, ops::RangeInclusive};
+use serde::{Serialize, Deserialize};
 
 
 mod standard_curio_actions;
@@ -12,10 +13,10 @@ mod standard_curio_actions;
 pub use standard_curio_actions::StandardCurioAction;
 
 // TODO look into making this a trait instead?
-#[derive(Debug, CopyGetters, Getters)]
-pub struct CurioAction<'a> {
+#[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
+pub struct CurioAction {
     #[get = "pub"]
-    name: &'a str,
+    name: String,
     #[get_copy = "pub"]
     genre: CurioActionGenre,
     #[get_copy = "pub"]
@@ -25,13 +26,13 @@ pub struct CurioAction<'a> {
     conditions: Vec<SACondition>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum CurioActionGenre {
     Attack = 0,
     Support = 1,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub enum SAEffect {
     DealDamage(usize),
@@ -54,7 +55,7 @@ pub enum SAEffect {
     _CloseSquare,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub enum SACondition {
     Size(RangeInclusive<usize>),
@@ -62,6 +63,17 @@ pub enum SACondition {
     TargetMaxSize(RangeInclusive<usize>),
     _Uses(usize),
     _UsesPerTarget(usize),
+}
+
+// TODO enumset?
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub enum Target {
+    Ally = 0,
+    // Area,
+    _ClosedSquare,
+    _EmptySquare,
+    Enemy,
+    _Itself,
 }
 
 impl SACondition {
@@ -79,18 +91,7 @@ impl SACondition {
     }
 }
 
-// TODO enumset?
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Target {
-    Ally = 0,
-    // Area,
-    _ClosedSquare,
-    _EmptySquare,
-    Enemy,
-    _Itself,
-}
-
-impl CurioAction<'_> {
+impl CurioAction {
     pub fn unapply(
         &self,
         node: &mut Node,

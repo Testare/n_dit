@@ -12,7 +12,7 @@ pub enum StandardCurioAction {
 }
 
 impl StandardCurioAction {
-    pub fn unwrap(&self) -> &'static CurioAction<'static> {
+    pub fn unwrap(&self) -> &'static CurioAction {
         match self {
             StandardCurioAction::Brutus => &BRUTUS,
             StandardCurioAction::Bite => &BITE,
@@ -22,38 +22,38 @@ impl StandardCurioAction {
 }
 
 impl Deref for StandardCurioAction {
-    type Target = CurioAction<'static>;
+    type Target = CurioAction;
 
     fn deref(&self) -> &Self::Target {
         self.unwrap()
     }
 }
 
-impl From<StandardCurioAction> for &'static CurioAction<'static> {
+impl From<StandardCurioAction> for &'static CurioAction {
     fn from(standard_curio_action: StandardCurioAction) -> Self {
         standard_curio_action.unwrap()
     }
 }
 
 lazy_static! {
-    static ref BRUTUS: CurioAction<'static> = CurioAction {
-        name: "Brutus",
+    static ref BRUTUS: CurioAction = CurioAction {
+        name: "Brutus".to_string(),
         genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(2),
         effect: SAEffect::DealDamage(2),
         targets: vec![Target::Ally],
         conditions: Vec::new()
     };
-    static ref BITE: CurioAction<'static> = CurioAction {
-        name: "Bite",
+    static ref BITE: CurioAction = CurioAction {
+        name: "Bite".to_string(),
         genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(1),
         effect: SAEffect::DealDamage(2),
         targets: vec![Target::Enemy],
         conditions: Vec::new()
     };
-    static ref FIDDLE: CurioAction<'static> = CurioAction {
-        name: "Fiddle",
+    static ref FIDDLE: CurioAction = CurioAction {
+        name: "Fiddle".to_string(),
         genre: CurioActionGenre::Support,
         range: NonZeroUsize::new(2),
         effect: SAEffect::IncreaseMaxSize {
