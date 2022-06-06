@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{Card, Curio, GridMap, Node, Pickup, Sprite, Team};
+use game_core::{loader, Card, Curio, GridMap, Node, Pickup, Sprite, Team};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -160,11 +160,14 @@ fn load_state() -> SuperState {
     );
     node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
     node.add_sprite((6, 2), Sprite::AccessPoint);
-    let action_dictionary_string =
+    /* let action_dictionary_string =
         std::fs::read_to_string("./assets/nightfall/action_dictionary.json").unwrap();
-    let dict = serde_json::from_str(action_dictionary_string.as_ref()).unwrap();
-
-    node.add_action_dictionary(dict);
+    let dict = serde_json::from_str(action_dictionary_string.as_ref()).unwrap();*/
+    let config = loader::Configuration {
+        assets_folder: "./assets".to_string(),
+    };
+    let action_dictionary = loader::load_action_dictionaries(config);
+    node.add_action_dictionary(action_dictionary);
     SuperState::from(Some(node))
 }
 
@@ -222,5 +225,4 @@ fn setup_logging() {
         )
         .unwrap()
     }
-    // WriteLogger::init(LevelFilter::Debug, simplelog::Config::default(), File::create("debug.log").unwrap()).unwrap()
 }

@@ -10,7 +10,6 @@ use std::sync::Arc;
 
 use getset::Getters;
 use serde::{Deserialize, Serialize};
-use log::debug;
 
 use crate::{Bounds, GridMap, Metadata, Point, Team, error::Result};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
@@ -101,7 +100,6 @@ impl Node {
         if can_activate {
             self.with_active_curio_mut(|mut curio|
                 if curio.moves_taken() != 0 {
-                    debug!("Activating new curio, old curio had taken {:?} moves and so must be tapped", curio.moves_taken());
                     curio.tap();
                 });
             self.active_curio = Some(curio_key);

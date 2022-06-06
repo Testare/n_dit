@@ -16,7 +16,7 @@ mod event;
 // Level 5
 // Level 6
 mod game_master;
-mod loader;
+pub mod loader;
 
 pub use common::{Bounds, Direction, Point, PointSet, GridMap};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
