@@ -160,7 +160,8 @@ fn load_state() -> SuperState {
     );
     node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
     node.add_sprite((6, 2), Sprite::AccessPoint);
-    let action_dictionary_string = std::fs::read_to_string("./assets/nightfall/action_dictionary.json").unwrap();
+    let action_dictionary_string =
+        std::fs::read_to_string("./assets/nightfall/action_dictionary.json").unwrap();
     let dict = serde_json::from_str(action_dictionary_string.as_ref()).unwrap();
 
     node.add_action_dictionary(dict);
