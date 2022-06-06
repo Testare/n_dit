@@ -20,6 +20,7 @@ pub struct CurioAction {
     range: Option<NonZeroUsize>,
     effect: SAEffect,
     targets: Vec<Target>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     conditions: Vec<SACondition>,
 }
 

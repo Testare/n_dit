@@ -3,21 +3,11 @@
         "genre": "Support",
         "range": 2,
         "effect": {
-            "IncreaseMaxSize": {
-                "amount": 1,
-                "bound": 5
-            }
+            "IncreaseMaxSize": { "amount": 1, "bound": 5 }
         },
-        "targets": [
-            "Ally"
-        ],
+        "targets": [ "Ally" ],
         "conditions": [
-            {
-                "TargetMaxSize": {
-                    "start": 1,
-                    "end": 4
-                }
-            }
+            { "TargetMaxSize": { "start": 1, "end": 4 } }
         ]
     },
     "Brutus": {
@@ -28,8 +18,7 @@
         },
         "targets": [
             "Ally"
-        ],
-        "conditions": []
+        ]
     },
     "Bite": {
         "genre": "Attack",
@@ -37,9 +26,6 @@
         "effect": {
             "DealDamage": 2
         },
-        "targets": [
-            "Enemy"
-        ],
-        "conditions": []
+        "targets": [ "Enemy" ]
     }
 }
