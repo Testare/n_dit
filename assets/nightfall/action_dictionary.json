@@ -1,0 +1,45 @@
+{
+    "Fiddle": {
+        "genre": "Support",
+        "range": 2,
+        "effect": {
+            "IncreaseMaxSize": {
+                "amount": 1,
+                "bound": 5
+            }
+        },
+        "targets": [
+            "Ally"
+        ],
+        "conditions": [
+            {
+                "TargetMaxSize": {
+                    "start": 1,
+                    "end": 4
+                }
+            }
+        ]
+    },
+    "Brutus": {
+        "genre": "Attack",
+        "range": 2,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [
+            "Ally"
+        ],
+        "conditions": []
+    },
+    "Bite": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [
+            "Enemy"
+        ],
+        "conditions": []
+    }
+}

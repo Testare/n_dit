@@ -14,8 +14,6 @@ use super::keys::curio_action_keys as keys;
 // TODO look into making this a trait instead?
 #[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
 pub struct CurioAction {
-    #[get = "pub"]
-    name: String,
     #[get_copy = "pub"]
     genre: CurioActionGenre,
     #[get_copy = "pub"]
@@ -226,7 +224,6 @@ impl Target {
 #[deprecated]
 pub fn interim_action_dictionary() -> HashMap<String, Arc<CurioAction>> {
     let BRUTUS: CurioAction = CurioAction {
-        name: "Brutus".to_string(),
         genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(2),
         effect: SAEffect::DealDamage(2),
@@ -234,7 +231,6 @@ pub fn interim_action_dictionary() -> HashMap<String, Arc<CurioAction>> {
         conditions: Vec::new()
     };
     let BITE: CurioAction = CurioAction {
-        name: "Bite".to_string(),
         genre: CurioActionGenre::Attack,
         range: NonZeroUsize::new(1),
         effect: SAEffect::DealDamage(2),
@@ -242,7 +238,6 @@ pub fn interim_action_dictionary() -> HashMap<String, Arc<CurioAction>> {
         conditions: Vec::new()
     };
     let FIDDLE: CurioAction = CurioAction {
-        name: "Fiddle".to_string(),
         genre: CurioActionGenre::Support,
         range: NonZeroUsize::new(2),
         effect: SAEffect::IncreaseMaxSize {
