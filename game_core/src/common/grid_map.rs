@@ -111,15 +111,24 @@ impl From<Square> for Option<usize> {
 
 impl<T> GridMap<T> {
     /// A representation of closed and open squares, though no width/height information encoded.
-    pub fn bitvec_shape(&self) -> BitVec<u8> {
-        self.grid
+    /// Does not support maps with width/height greater u16::MAX
+    pub fn shape_bitvec(&self) -> BitVec<u8> {
+        let height: [u8; 2] = (self.height() as u16).to_le_bytes();
+        let width: [u8; 2] = (self.width() as u16).to_le_bytes();
+        let squarebits: BitVec<u8> =  self.grid
             .iter()
             .flat_map(|col| col.iter().map(|sqr| sqr.is_some()))
-            .collect()
+            .collect();
+
+        let mut bitvec = BitVec::<u8>::new();
+        bitvec.extend_from_raw_slice(&width[..]);
+        bitvec.extend_from_raw_slice(&height);
+        bitvec.extend(squarebits);
+        bitvec
     }
 
     pub fn shape_string_base64(&self) -> String {
-        base64::encode(self.bitvec_shape().into_vec())
+        base64::encode(self.shape_bitvec().into_vec())
     }
 
     /// Closes a square. Returns false if it is already closed, is occupied, or it is out of bounds.
@@ -216,9 +225,26 @@ impl<T> GridMap<T> {
             .collect()
     }
 
+    pub fn from_shape_string(shape: &str) -> Result<Self, base64::DecodeError> {
+        let bits: Vec<u8> = base64::decode(shape)?;
+        let bitvec = BitVec::<u8>::from_vec(bits);
+        Ok(Self::from_shape_bitslice(bitvec.as_bitslice()))
+    }
+
     /// Creates a base grid_map from a shape string
-    pub fn from_bitslice(width: usize, height: usize, bits: &BitSlice<u8>) -> Self {
-        let grid: Vec<Vec<Option<Square>>> = bits
+    /// 
+    /// 
+    pub fn from_shape_bitslice(bits: &BitSlice<u8>) -> Self {
+        let (hw, squarebits) = bits.split_at(32);
+        let (wbits, hbits) = hw.split_at(16);
+        let mut wbytes: [u8; 2] = Default::default();
+        let mut hbytes: [u8; 2] = Default::default();
+        wbytes.copy_from_slice(wbits.to_bitvec().as_raw_slice());
+        hbytes.copy_from_slice(hbits.to_bitvec().as_raw_slice());
+        let width = <u16>::from_le_bytes(wbytes) as usize;
+        let height = <u16>::from_le_bytes(hbytes) as usize;
+
+        let grid: Vec<Vec<Option<Square>>> = squarebits
             .chunks(height)
             .enumerate()
             .map(|(x, col)| {
@@ -1216,5 +1242,75 @@ mod test {
 
         let key = map.put_item((0, 1), TEST_VALUE).unwrap();
         assert_eq!(vec![vec![0, key], vec![0, 1],], map.number_map());
+    }
+
+    #[test]
+    fn grid_shape_test() {
+        let expected_grid: GridMap<()> = GridMap::from(vec![
+            vec![
+                false, false, false, false, false, true, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, true, true, true, false, false, false, false,
+            ],
+            vec![
+                false, false, false, true, true, true, true, true, false, false, false,
+            ],
+            vec![
+                false, false, true, true, true, true, true, true, true, false, false,
+            ],
+            vec![
+                false, true, true, true, true, true, true, true, true, true, false,
+            ],
+            vec![
+                true, true, true, true, true, false, true, true, true, true, true,
+            ],
+            vec![
+                true, true, true, true, false, false, false, true, true, true, true,
+            ],
+            vec![
+                true, true, true, true, false, false, false, true, true, true, true,
+            ],
+            vec![
+                false, false, false, true, true, true, true, true, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, true, false, false, false, false, false,
+            ],
+            vec![
+                false, false, false, true, true, true, true, true, false, false, false,
+            ],
+            vec![
+                true, true, true, true, false, false, false, true, true, true, true,
+            ],
+            vec![
+                true, true, true, true, false, false, false, true, true, true, true,
+            ],
+            vec![
+                true, true, true, true, true, false, true, true, true, true, true,
+            ],
+            vec![
+                false, true, true, true, true, true, true, true, true, true, false,
+            ],
+            vec![
+                false, false, true, true, true, true, true, true, true, false, false,
+            ],
+            vec![
+                false, false, false, true, true, true, true, true, false, false, false,
+            ],
+            vec![
+                false, false, false, false, true, true, true, false, false, false, false,
+            ],
+            vec![
+                false, false, false, false, false, true, false, false, false, false, false,
+            ],
+        ]);
+        let shape_base_64 = "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==";
+        let other_shape   = "EwALACCAAz7447/vP/6x+AABPh7/+O/7jz/4gAMIAA==";
+        let grid_map_from_shape = GridMap::from_shape_string(shape_base_64).unwrap();
+        let grid_map_from_other_shape = GridMap::from_shape_string(other_shape).unwrap();
+        assert_eq!(expected_grid, grid_map_from_shape);
+        assert_eq!(shape_base_64, expected_grid.shape_string_base64());
+        assert_ne!(expected_grid, grid_map_from_other_shape);
     }
 }

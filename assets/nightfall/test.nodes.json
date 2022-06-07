@@ -1,10 +1,6 @@
 {
     "node0": {
-        "grid": {
-            "width": 19,
-            "height": 11,
-            "shape": "IIADPvjjv+8//vH4AAE+Hv/47/uPP/iAAwgA"
-        },
+        "grid_shape": "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
         "sprites": [
             {
                 "type": "AccessPoint",

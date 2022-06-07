@@ -46,7 +46,6 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
                 self.node
                     .action_dictionary()
                     .get(action)
-                    .cloned()
                     .ok_or_else(|| "Sprite action {} missing from dictionary".fail_critical_msg())
             })
             .collect()
@@ -62,7 +61,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
 
     pub fn action(&self, key: &str) -> Option<Arc<CurioAction>> {
         if self.action_names().contains(&key.to_string()) {
-            self.node.action_dictionary.get(&key.to_string()).cloned()
+            self.node.action_dictionary.get(&key.to_string())
         } else {
             None
         }

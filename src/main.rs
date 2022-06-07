@@ -120,9 +120,6 @@ fn load_state() -> SuperState {
         ],
     ]));
 
-    log::debug!("{:?}", node);
-
-    // node.add_curio(Curio::new("あ"), vec![(1, 6), (2, 6), (3, 6)])
     node.add_curio(
         Curio::builder()
             .display("あ")
@@ -162,16 +159,10 @@ fn load_state() -> SuperState {
     );
     node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
     node.add_sprite((6, 2), Sprite::AccessPoint);
-    /* let action_dictionary_string =
-        std::fs::read_to_string("./assets/nightfall/action_dictionary.json").unwrap();
-    let dict = serde_json::from_str(action_dictionary_string.as_ref()).unwrap();*/
-    let node_shape = node.grid().shape_string_base64();
-    log::debug!("Node shape <{}>)", node_shape);
     let config = loader::Configuration {
         assets_folder: "./assets".to_string(),
     };
-    let action_dictionary = loader::load_action_dictionaries(config);
-    node.add_action_dictionary(action_dictionary);
+    node.add_action_dictionary(loader::load_asset_dictionary(config).unwrap());
     SuperState::from(Some(node))
 }
 

@@ -32,3 +32,4 @@ pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
 
 use ai::EnemyAi;
+use assets::AssetDictionary;

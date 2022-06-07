@@ -1,27 +1,10 @@
-use bitvec::vec::BitVec;
 use serde::{Deserialize, Serialize};
 
 use super::sprite_definition::SpriteDef;
-use crate::GridMap;
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct GridMapDef {
-    width: usize,
-    height: usize,
-    shape: String,
-}
-
-impl GridMapDef {
-    fn to_base_grid_map<T>(&self) -> GridMap<T> {
-        let bits: Vec<u8> = base64::decode(self.shape.as_str()).unwrap();
-        let bitvec = BitVec::from_vec(bits);
-        GridMap::from_bitslice(self.width, self.height, bitvec.as_bitslice())
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 struct NodeDef {
-    grid: GridMapDef,
+    grid_shape: String,
     sprites: Vec<SpriteDef>,
 }
 
@@ -34,11 +17,7 @@ mod test {
     #[test]
     fn node_def_sede_test() {
         let node = NodeDef {
-            grid: GridMapDef {
-                width: 10,
-                height: 5,
-                shape: "abdefbdafcd082".to_string(),
-            },
+            grid_shape: "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
             sprites: vec![
                 SpriteDef::AccessPoint { point: (0, 1) },
                 SpriteDef::Pickup {
@@ -138,7 +117,7 @@ mod test {
         let grid_def = GridMapDef {
             width: 19,
             height: 11,
-            shape: "IIADPvjjv+8//vH4AAE+Hv/47/uPP/iAAwgA".to_string(),
+            shape: "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==".to_string()
         };
         let grid_map = grid_def.to_base_grid_map::<()>();
 
