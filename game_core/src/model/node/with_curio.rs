@@ -46,7 +46,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
                 self.node
                     .action_dictionary()
                     .get(action)
-                    .ok_or_else(|| "Sprite action {} missing from dictionary".fail_critical_msg())
+                    .ok_or_else(|| format!("Sprite action [{}] missing from dictionary", action).fail_critical_msg())
             })
             .collect()
     }

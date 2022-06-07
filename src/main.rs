@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{loader, Card, Curio, GridMap, Node, NodeDef, Pickup, Sprite, Team};
+use game_core::{loader, node_from_def, NodeDef};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -60,115 +60,13 @@ fn set_terminal_state() -> std::io::Result<()> {
 }
 
 fn load_state() -> SuperState {
-    let mut node = Node::from(GridMap::from(vec![
-        vec![
-            false, false, false, false, false, true, false, false, false, false, false,
-        ],
-        vec![
-            false, false, false, false, true, true, true, false, false, false, false,
-        ],
-        vec![
-            false, false, false, true, true, true, true, true, false, false, false,
-        ],
-        vec![
-            false, false, true, true, true, true, true, true, true, false, false,
-        ],
-        vec![
-            false, true, true, true, true, true, true, true, true, true, false,
-        ],
-        vec![
-            true, true, true, true, true, false, true, true, true, true, true,
-        ],
-        vec![
-            true, true, true, true, false, false, false, true, true, true, true,
-        ],
-        vec![
-            true, true, true, true, false, false, false, true, true, true, true,
-        ],
-        vec![
-            false, false, false, true, true, true, true, true, false, false, false,
-        ],
-        vec![
-            false, false, false, false, false, true, false, false, false, false, false,
-        ],
-        vec![
-            false, false, false, true, true, true, true, true, false, false, false,
-        ],
-        vec![
-            true, true, true, true, false, false, false, true, true, true, true,
-        ],
-        vec![
-            true, true, true, true, false, false, false, true, true, true, true,
-        ],
-        vec![
-            true, true, true, true, true, false, true, true, true, true, true,
-        ],
-        vec![
-            false, true, true, true, true, true, true, true, true, true, false,
-        ],
-        vec![
-            false, false, true, true, true, true, true, true, true, false, false,
-        ],
-        vec![
-            false, false, false, true, true, true, true, true, false, false, false,
-        ],
-        vec![
-            false, false, false, false, true, true, true, false, false, false, false,
-        ],
-        vec![
-            false, false, false, false, false, true, false, false, false, false, false,
-        ],
-    ]));
-
-    node.add_curio(
-        Curio::builder()
-            .display("あ")
-            .name("Horus")
-            .action("Bite")
-            .max_size(3)
-            .movement_speed(2)
-            .build()
-            .unwrap(),
-        vec![(1, 6), (2, 6), (3, 6)],
-    )
-    .unwrap();
-    node.add_curio(Curio::new("死"), vec![(4, 6), (5, 6), (5, 7)])
-        .unwrap();
-    node.add_curio(Curio::new("8]"), vec![(3, 3), (3, 4)])
-        .unwrap();
-    node.add_curio(
-        Curio::builder()
-            .team(Team::EnemyTeam)
-            .display("骨")
-            .name("Jackson")
-            .action("Bite")
-            .max_size(4)
-            .movement_speed(7)
-            .build()
-            .unwrap(),
-        vec![(14, 4)],
-    )
-    .unwrap();
-    node.add_curio(Curio::new("<>"), vec![(14, 6)]).unwrap();
-    node.add_sprite(
-        (15, 7),
-        Card {
-            name: "Jeremy".to_string(),
-        }
-        .into(),
-    );
-    node.add_sprite((6, 1), Pickup::Mon(500).to_sprite());
-    node.add_sprite((6, 2), Sprite::AccessPoint);
     let config = loader::Configuration {
         assets_folder: "./assets".to_string(),
     };
-    let node0 = &loader::load_asset_dictionary::<NodeDef>(&config).unwrap()["Node0"];
-    log::debug!(
-        "node0: {:?}\n\njson: {}",
-        node0,
-        serde_json::to_string(&node0).unwrap()
-    );
-    node.add_action_dictionary(loader::load_asset_dictionary(&config).unwrap());
+    let node_def = &loader::load_asset_dictionary::<NodeDef>(&config).unwrap()["Node0"];
+    let curio_dict = loader::load_asset_dictionary(&config).unwrap();
+    let action_dict = loader::load_asset_dictionary(&config).unwrap();
+    let node = node_from_def(node_def, curio_dict, action_dict).unwrap();
     SuperState::from(Some(node))
 }
 

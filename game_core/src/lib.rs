@@ -27,7 +27,7 @@ pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
-pub use loader::{NodeDef, SpriteDef, CurioDef};
+pub use loader::{NodeDef, SpriteDef, CurioDef, node_from_def};
 
 use ai::EnemyAi;
 use assets::{AssetDictionary, Asset};

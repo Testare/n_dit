@@ -1,8 +1,8 @@
 mod node_definition;
 mod sprite_definition;
 
-pub use node_definition::NodeDef;
-pub use sprite_definition::{CurioDef, SpriteDef};
+pub use node_definition::{NodeDef, node_from_def};
+pub use sprite_definition::{CurioDef, SpriteDef, CurioInstanceDefAlternative};
 
 use super::model::curio_action::CurioAction;
 use crate::assets::{AssetDictionary, Asset};
@@ -15,6 +15,8 @@ use std::sync::Arc;
 pub enum LoadingError {
     Io(std::io::Error),
     SerdeJson(serde_json::Error),
+    DecodeError(base64::DecodeError),
+    MissingAsset(&'static str, String),
 }
 
 impl From<std::io::Error> for LoadingError {
@@ -26,6 +28,12 @@ impl From<std::io::Error> for LoadingError {
 impl From<serde_json::Error> for LoadingError {
     fn from(err: serde_json::Error) -> Self {
         LoadingError::SerdeJson(err)
+    }
+}
+
+impl From<base64::DecodeError> for LoadingError {
+    fn from(err: base64::DecodeError) -> Self {
+        LoadingError::DecodeError(err)
     }
 }
 

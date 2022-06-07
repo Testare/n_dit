@@ -16,6 +16,11 @@ impl CurioBuilder {
         self
     }
 
+    pub fn actions(&mut self, actions: &Vec<String>) -> &mut Self {
+        self.actions.extend(actions.clone());
+        self
+    }
+
     pub fn display<S: ToString>(&mut self, display: S) -> &mut Self {
         // Validations here that display is 2 characters wide?
         self.display = Some(display.to_string());

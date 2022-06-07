@@ -3,32 +3,62 @@
         "grid_shape": "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
         "sprites": [
             {
+                "type": "Curio",
+                "actions": ["Bite", "Brutus", "Fiddle"],
+                "display": "骨",
+                "max_size": 3,
+                "movement_speed": 2,
+                "nickname": "Jackson",
+                "points": [[4, 6], [5, 6], [5, 7]],
+                "team": "PlayerTeam"
+            },
+            {
+                "type": "Curio",
+                "actions": ["Bite", "Brutus", "Fiddle"],
+                "display": "8]",
+                "max_size": 2,
+                "movement_speed": 3,
+                "points": [[3, 3], [3, 4]],
+                "team": "PlayerTeam"
+            },
+            {
+                "type": "Curio",
+                "actions": ["Bite", "Brutus", "Fiddle"],
+                "display": "<>",
+                "max_size": 3,
+                "movement_speed": 3,
+                "points": [[14, 6]],
+                "team": "PlayerTeam"
+            },
+            {
+                "type": "Curio",
+                "actions": ["Bite"],
+                "display": "あ",
+                "max_size": 2,
+                "movement_speed": 3,
+                "nickname": "Horus",
+                "points": [[1, 6], [2, 6], [3, 6]],
+                "team": "EnemyTeam"
+            },
+            {
+                "type": "Curio",
+                "team": "EnemyTeam",
+                "points": [[14, 4]],
+                "template_name": "Dog"
+            },
+            {
                 "type": "AccessPoint",
-                "point": [0,1]
+                "point": [6, 2]
             },
             {
                 "type": "Pickup",
-                "Mon": 400,
-                "point": [0,2]
+                "mon": 500,
+                "point": [6, 1]
             },
             {
-                "type": "Curio",
-                "nickname": "Coleslaw",
-                "team": "EnemyTeam",
-                "points": [[0,3], [0,4]],
-                "template_name": "Nelson"
-            },
-            {
-                "type": "Curio",
-                "nickname": "Grimothy",
-                "team": "EnemyTeam",
-                "points": [[0,5]],
-                "actions": [
-                    "Bite"
-                ],
-                "movement_speed": 2,
-                "max_size": 1,
-                "display": "]["
+                "type": "Pickup",
+                "card": {"name": "Jeremy"},
+                "point": [15, 7]
             }
         ]
     }

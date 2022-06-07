@@ -39,13 +39,12 @@ pub enum CurioInstanceDefAlternative {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CurioDef {
-    actions: Vec<String>,
-    movement_speed: usize,
-    max_size: usize,
-    display: String,
+    pub actions: Vec<String>,
+    pub movement_speed: usize,
+    pub max_size: usize,
+    pub display: String,
     // mind: Mind // Save for post-nightfall
 }
-
 
 impl Asset for CurioDef {
     const SUB_EXTENSION: &'static str = "curios";
