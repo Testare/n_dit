@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 // Level 0
 mod common;
 mod error;
@@ -30,6 +27,7 @@ pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
+pub use loader::{NodeDef, SpriteDef, CurioDef};
 
 use ai::EnemyAi;
-use assets::AssetDictionary;
+use assets::{AssetDictionary, Asset};

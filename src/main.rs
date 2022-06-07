@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{loader, Card, Curio, GridMap, Node, Pickup, Sprite, Team};
+use game_core::{loader, Card, Curio, GridMap, Node, NodeDef, Pickup, Sprite, Team};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -162,14 +162,19 @@ fn load_state() -> SuperState {
     let config = loader::Configuration {
         assets_folder: "./assets".to_string(),
     };
-    node.add_action_dictionary(loader::load_asset_dictionary(config).unwrap());
+    let node0 = &loader::load_asset_dictionary::<NodeDef>(&config).unwrap()["Node0"];
+    log::debug!(
+        "node0: {:?}\n\njson: {}",
+        node0,
+        serde_json::to_string(&node0).unwrap()
+    );
+    node.add_action_dictionary(loader::load_asset_dictionary(&config).unwrap());
     SuperState::from(Some(node))
 }
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
     let mut keep_going = true;
     let mut last_action;
-    // state.render()?;
     while keep_going {
         last_action = Instant::now();
         state.render()?;

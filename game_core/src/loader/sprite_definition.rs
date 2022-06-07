@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{Pickup, Point, Team};
+use crate::Asset;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "type")]
@@ -15,7 +16,7 @@ pub enum SpriteDef {
         team: Team,
         points: Vec<Point>,
         #[serde(flatten)]
-        def: CurioDefAlternative,
+        def: CurioInstanceDefAlternative,
     },
     AccessPoint {
         point: Point,
@@ -24,7 +25,7 @@ pub enum SpriteDef {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
-pub enum CurioDefAlternative {
+pub enum CurioInstanceDefAlternative {
     FromTemplate {
         template_name: String,
     },
@@ -37,10 +38,15 @@ pub enum CurioDefAlternative {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct CurioTemplateDef {
+pub struct CurioDef {
     actions: Vec<String>,
     movement_speed: usize,
     max_size: usize,
     display: String,
     // mind: Mind // Save for post-nightfall
+}
+
+
+impl Asset for CurioDef {
+    const SUB_EXTENSION: &'static str = "curios";
 }

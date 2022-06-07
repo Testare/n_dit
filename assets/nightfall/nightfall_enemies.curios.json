@@ -1,0 +1,8 @@
+{
+    "Dog": {
+        "actions": [ "Bite" ],
+        "movement_speed": 3,
+        "max_size": 2,
+        "display": "犬"
+    }
+}

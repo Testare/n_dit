@@ -1,6 +1,9 @@
 mod node_definition;
 mod sprite_definition;
 
+pub use node_definition::NodeDef;
+pub use sprite_definition::{CurioDef, SpriteDef};
+
 use super::model::curio_action::CurioAction;
 use crate::assets::{AssetDictionary, Asset};
 use std::collections::HashMap;
@@ -30,7 +33,7 @@ pub struct Configuration {
     pub assets_folder: String,
 }
 
-pub fn load_action_dictionaries(config: Configuration) -> HashMap<String, Arc<CurioAction>> {
+pub fn load_action_dictionaries(config: &Configuration) -> HashMap<String, Arc<CurioAction>> {
     if let Ok(files) = get_all_assets_of_name(config, "actions") {
         return files
             .iter()
@@ -49,7 +52,7 @@ pub fn load_action_dictionaries(config: Configuration) -> HashMap<String, Arc<Cu
     }
 }
 
-pub fn load_asset_dictionary<T: Asset>(config: Configuration) -> Result<AssetDictionary<T>, LoadingError> {
+pub fn load_asset_dictionary<T: Asset>(config: &Configuration) -> Result<AssetDictionary<T>, LoadingError> {
     let files = get_all_assets_of_name(config, T::SUB_EXTENSION)?;
     Ok(files.iter()
             .filter_map(|file_contents| {
@@ -64,8 +67,8 @@ pub fn load_asset_dictionary<T: Asset>(config: Configuration) -> Result<AssetDic
             ).into())
 }
 
-fn get_all_assets_of_name(config: Configuration, extension: &str) -> std::io::Result<Vec<String>> {
-    Ok(read_dir(config.assets_folder)
+fn get_all_assets_of_name(config: &Configuration, extension: &str) -> std::io::Result<Vec<String>> {
+    Ok(read_dir(config.assets_folder.as_str())
         .unwrap()
         .flat_map(|dir| match dir {
             Ok(dir) => {
