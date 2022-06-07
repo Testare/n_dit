@@ -2,7 +2,7 @@ use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use crate::Sprite;
-use std::{fmt};
+use std::fmt;
 
 #[derive(Clone, Debug, Default, Getters, CopyGetters, Serialize, Deserialize)]
 pub struct Inventory {

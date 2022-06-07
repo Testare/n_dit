@@ -11,14 +11,14 @@ use std::sync::Arc;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-use crate::{Bounds, GridMap, Metadata, Point, Team, error::Result};
+use crate::{error::Result, Bounds, GridMap, Metadata, Point, Team};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
 use super::{
-    curio::Curio, 
+    curio::Curio,
     curio_action::CurioAction,
+    inventory::{Inventory, Pickup},
     keys::node_change_keys,
-    inventory::{Inventory, Pickup}
 };
 
 type NodeConstructionError = String;
@@ -46,7 +46,6 @@ pub enum Sprite {
 }
 
 impl Node {
-
     /// ### SAFETY
     /// Unsafe to return sprites with new keys
     /// See grid_map return_item_with_key
@@ -98,10 +97,11 @@ impl Node {
             .unwrap_or(false);
 
         if can_activate {
-            self.with_active_curio_mut(|mut curio|
+            self.with_active_curio_mut(|mut curio| {
                 if curio.moves_taken() != 0 {
                     curio.tap();
-                });
+                }
+            });
             self.active_curio = Some(curio_key);
         }
         can_activate

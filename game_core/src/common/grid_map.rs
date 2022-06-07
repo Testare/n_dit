@@ -1,6 +1,8 @@
-use super::Point;
+use bitvec::{slice::BitSlice, vec::BitVec};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, iter::Rev, vec::IntoIter};
+
+use super::Point;
 
 // Potential future developments:
 // * removing squares from the middle of an Item
@@ -21,7 +23,7 @@ use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 /// * A reference to its location on the map
 /// * An id for an item in the containing GridMap, if the square is occupied.
 /// * A reference to the next square occupied by the item, if any.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Square {
     item: Option<usize>,
     next: Option<Point>,
@@ -32,7 +34,7 @@ pub struct Square {
 /// have at least one square of representation in the grid, possibly more. These squares are
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GridMap<T> {
     width: usize,
     height: usize,
@@ -108,6 +110,18 @@ impl From<Square> for Option<usize> {
 }
 
 impl<T> GridMap<T> {
+    /// A representation of closed and open squares, though no width/height information encoded.
+    pub fn bitvec_shape(&self) -> BitVec<u8> {
+        self.grid
+            .iter()
+            .flat_map(|col| col.iter().map(|sqr| sqr.is_some()))
+            .collect()
+    }
+
+    pub fn shape_string_base64(&self) -> String {
+        base64::encode(self.bitvec_shape().into_vec())
+    }
+
     /// Closes a square. Returns false if it is already closed, is occupied, or it is out of bounds.
     pub fn close_square(&mut self, pt: Point) -> bool {
         if self.square_is_free(pt) {
@@ -200,6 +214,29 @@ impl<T> GridMap<T> {
             .filter(|(key, (item, _))| predicate(**key, item))
             .map(|(key, _)| *key)
             .collect()
+    }
+
+    /// Creates a base grid_map from a shape string
+    pub fn from_bitslice(width: usize, height: usize, bits: &BitSlice<u8>) -> Self {
+        let grid: Vec<Vec<Option<Square>>> = bits
+            .chunks(height)
+            .enumerate()
+            .map(|(x, col)| {
+                col.iter()
+                    .enumerate()
+                    .map(|(y, bit)| bit.then(|| Square::new((x, y))))
+                    .collect()
+            })
+            .take(width)
+            .collect();
+
+        GridMap {
+            height,
+            entries: HashMap::new(),
+            next_id: 2,
+            grid,
+            width,
+        }
     }
 
     /// Returns the number of entries currently stored in the grid. Unrelated to the dimensions of
@@ -499,7 +536,7 @@ impl<T> GridMap<T> {
     /// Used to add an item back to the map with its original key.
     ///
     /// # Safety
-    /// 
+    ///
     /// Unexpected behavior can happen if used to add an item with a new key,
     pub unsafe fn return_item_with_key(&mut self, id: usize, pt: Point, item: T) -> Option<usize> {
         if let Some(square) = self.square_mut(pt) {

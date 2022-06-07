@@ -2,13 +2,11 @@ use std::sync::Arc;
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
-use super::super::keys::node_change_keys as keys;
 use super::super::curio_action::CurioAction;
+use super::super::keys::node_change_keys as keys;
 use super::Node;
 use super::SpritePoint;
-use crate::{
-    Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, Team,
-};
+use crate::{Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, Team};
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
 const CURIO_KEY_IS_VALID: &str = "Curio key is expected to be valid key for node grid";
@@ -42,14 +40,16 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
 
     /// List of actions the curio can take
     pub fn actions(&self) -> Result<Vec<Arc<CurioAction>>> {
-        self.action_names().iter()
-        .map(|action|{
-            self.node
-                .action_dictionary()
-                .get(action)
-                .cloned()
-                .ok_or_else(||"Sprite action {} missing from dictionary".fail_critical_msg())
-        }).collect()
+        self.action_names()
+            .iter()
+            .map(|action| {
+                self.node
+                    .action_dictionary()
+                    .get(action)
+                    .cloned()
+                    .ok_or_else(|| "Sprite action {} missing from dictionary".fail_critical_msg())
+            })
+            .collect()
     }
 
     pub fn action_names(&self) -> &Vec<String> {

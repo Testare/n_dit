@@ -1,0 +1,39 @@
+{
+    "node0": {
+        "grid": {
+            "width": 19,
+            "height": 11,
+            "shape": "IIADPvjjv+8//vH4AAE+Hv/47/uPP/iAAwgA"
+        },
+        "sprites": [
+            {
+                "type": "AccessPoint",
+                "point": [0,1]
+            },
+            {
+                "type": "Pickup",
+                "Mon": 400,
+                "point": [0,2]
+            },
+            {
+                "type": "Curio",
+                "nickname": "Coleslaw",
+                "team": "EnemyTeam",
+                "points": [[0,3], [0,4]],
+                "template_name": "Nelson"
+            },
+            {
+                "type": "Curio",
+                "nickname": "Grimothy",
+                "team": "EnemyTeam",
+                "points": [[0,5]],
+                "actions": [
+                    "Bite"
+                ],
+                "movement_speed": 2,
+                "max_size": 1,
+                "display": "]["
+            }
+        ]
+    }
+}
