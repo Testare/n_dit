@@ -181,7 +181,14 @@ impl NodeUiState {
                     NodePhase::CurioAction {
                         selected_action_index,
                         ..
-                    } => vec![UiAction::perform_curio_action(selected_action_index, pt)],
+                    } => node
+                        .with_active_curio(|curio| {
+                            Some(vec![UiAction::perform_curio_action(
+                                curio.action_names().get(selected_action_index)?.as_str(),
+                                pt,
+                            )])
+                        })
+                        .expect("No active sprite or no active sprite_action_index"),
                 }
             }
             NodeCt::CurioActionMenu(curio_action_index) => {
@@ -243,10 +250,14 @@ impl NodeUiState {
                         NodePhase::CurioAction {
                             selected_action_index,
                             ..
-                        } => vec![UiAction::perform_curio_action(
-                            selected_action_index,
-                            self.selected_square(),
-                        )],
+                        } => node
+                            .with_active_curio(|curio| {
+                                Some(vec![UiAction::perform_curio_action(
+                                    curio.action_names().get(selected_action_index)?,
+                                    self.selected_square(),
+                                )])
+                            })
+                            .expect("No active sprite or invalid selected action index"),
                         NodePhase::FreeSelect {
                             selected_curio_key: Some(curio_key),
                             ..

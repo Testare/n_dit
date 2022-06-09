@@ -197,9 +197,9 @@ pub enum UiAction {
 type UiActions = Vec<UiAction>;
 
 impl UiAction {
-    pub fn perform_curio_action(curio_action_id: usize, target: Point) -> UiAction {
+    pub fn perform_curio_action(action_name: &str, target: Point) -> UiAction {
         UiAction::GameCommand(GameCommand::NodeTakeAction {
-            curio_action_id,
+            action_name: action_name.to_string(),
             target,
         })
     }

@@ -144,24 +144,17 @@ impl Node {
         metadata: &Metadata,
     ) -> Result<()> {
         let active_curio_key = metadata.expect(keys::PERFORMING_CURIO)?;
+        let action = self.action_dictionary.get(action_name)
+            .ok_or_else(|| "Action not found".fail_critical_msg())?;
+        self.set_active_curio(Some(active_curio_key));
+        let curio_action_metadata = metadata.expect(keys::CURIO_ACTION_METADATA)?;
+        action.unapply(self, active_curio_key, target, &curio_action_metadata)?;
         let curio_not_found = self
             .with_curio_mut(active_curio_key, |mut curio| curio.untap())
             .is_none();
         if curio_not_found {
-            return "Take curio action curio does not exist".fail_critical();
-        }
-        let action = self
-            .with_curio(active_curio_key, |curio| {
-                curio.action(action_name).ok_or_else(|| {
-                    format!("Cannot find action {} in curio", action_name).fail_critical_msg()
-                })
-            })
-            .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
-        // TODO This logic will likely be more complex
-
-        self.set_active_curio(Some(active_curio_key));
-        let curio_action_metadata = metadata.expect(keys::CURIO_ACTION_METADATA)?;
-        action.unapply(self, active_curio_key, target, &curio_action_metadata)
+            return "Take curio action curio does not exist".fail_critical()
+        } else { Ok(()) }
     }
 }
 

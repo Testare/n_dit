@@ -39,14 +39,15 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
     }
 
     /// List of actions the curio can take
-    pub fn actions(&self) -> Result<Vec<Arc<CurioAction>>> {
+    pub fn actions(&self) -> Result<Vec<(&str, Arc<CurioAction>)>> {
         self.action_names()
             .iter()
-            .map(|action| {
+            .map(|action_name| {
+                Some(action_name.as_str()).zip(
                 self.node
                     .action_dictionary()
-                    .get(action)
-                    .ok_or_else(|| format!("Sprite action [{}] missing from dictionary", action).fail_critical_msg())
+                    .get(action_name))
+                    .ok_or_else(|| format!("Sprite action [{}] missing from dictionary", action_name).fail_critical_msg())
             })
             .collect()
     }
