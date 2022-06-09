@@ -86,7 +86,7 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
                     .with_curio(chosen_target, |curio| curio.head()) // FIXME The head is not the only targetable sprite of the player
                     .expect("Chosen target should have a head");
 
-                collect(NodeChange::TakeCurioAction(action_index, chosen_target_pt));
+                collect(NodeChange::TakeCurioAction(preferred_action.name(), chosen_target_pt));
             } else {
                 // For now, do nothing. In the future, we might:
                 // Pathfind towards /closest/ enemy

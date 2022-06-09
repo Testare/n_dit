@@ -6,13 +6,13 @@ pub use super::super::keys::node_change_keys as keys;
 use super::Sprite;
 use crate::{Direction, GameState, Node, Point, Team};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeChange {
     ActivateCurio(usize), // Starts using a unit.
     DeactivateCurio,      // Finishes using a unit
     FinishTurn,
     MoveActiveCurio(Direction),
-    TakeCurioAction(usize, Point),
+    TakeCurioAction(String, Point),
 }
 
 type NodeChangeResult = Result<Metadata>;
@@ -116,7 +116,7 @@ impl Node {
 
     fn take_curio_action_change(
         &mut self,
-        curio_action_index: usize,
+        action_name: &str,
         pt: Point,
     ) -> NodeChangeResult {
         let active_curio_key = self
@@ -125,8 +125,8 @@ impl Node {
         let mut metadata = self.default_metadata()?;
         let action = self
             .with_curio(active_curio_key, |curio| {
-                curio.indexed_action(curio_action_index).ok_or_else(|| {
-                    format!("Cannot find action {} in curio", curio_action_index).invalid_msg()
+                curio.action(action_name).ok_or_else(|| {
+                    format!("Cannot find action {} in curio", action_name).invalid_msg()
                 })
             })
             .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
@@ -139,7 +139,7 @@ impl Node {
 
     fn take_curio_action_undo(
         &mut self,
-        action_index: usize,
+        action_name: &str,
         target: Point,
         metadata: &Metadata,
     ) -> Result<()> {
@@ -152,8 +152,8 @@ impl Node {
         }
         let action = self
             .with_curio(active_curio_key, |curio| {
-                curio.indexed_action(action_index).ok_or_else(|| {
-                    format!("Cannot find action {} in curio", action_index).fail_critical_msg()
+                curio.action(action_name).ok_or_else(|| {
+                    format!("Cannot find action {} in curio", action_name).fail_critical_msg()
                 })
             })
             .ok_or_else(|| "Active curio key is not an actual curio".fail_critical_msg())??;
@@ -178,8 +178,8 @@ impl StateChange for NodeChange {
             DeactivateCurio => node.deactivate_curio_change(),
             FinishTurn => node.finish_turn_change(),
             MoveActiveCurio(dir) => node.move_active_curio(*dir),
-            TakeCurioAction(curio_action_index, pt) => {
-                node.take_curio_action_change(*curio_action_index, *pt)
+            TakeCurioAction(action_name, pt) => {
+                node.take_curio_action_change(action_name.as_str(), *pt)
             }
         }
     }
@@ -192,8 +192,8 @@ impl StateChange for NodeChange {
             DeactivateCurio => node.deactivate_curio_undo(metadata),
             FinishTurn => node.finish_turn_undo(metadata),
             MoveActiveCurio(_) => node.move_active_curio_undo(metadata),
-            TakeCurioAction(action_index, target) => {
-                node.take_curio_action_undo(*action_index, *target, metadata)
+            TakeCurioAction(action_name, target) => {
+                node.take_curio_action_undo(action_name.as_str(), *target, metadata)
             }
         }
     }

@@ -62,7 +62,7 @@ impl Event {
 }
 
 /// Used to help with converting a StateChange trait object into an Event, which can be serialized/deserialized/managed/etc
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Change {
     G(GameChange),
     N(NodeChange),

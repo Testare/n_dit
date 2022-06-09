@@ -31,7 +31,7 @@ pub enum GameCommand {
     },
     NodeDeactivateCurio,
     NodeTakeAction {
-        curio_action_id: usize, // TODO Enum for usize, or name
+        action_name: String, // TODO Enum for usize, or name
         target: Point,
     },
 }
@@ -52,10 +52,10 @@ pub(super) fn apply_command_dispatch(
             node_check_turn_end(gm)
         }
         NodeTakeAction {
-            curio_action_id,
+            action_name,
             target,
         } => {
-            gm.apply(NodeChange::TakeCurioAction(*curio_action_id, *target))?;
+            gm.apply(NodeChange::TakeCurioAction(action_name.clone(), *target))?;
             node_check_turn_end(gm)
         }
         Next => {

@@ -61,7 +61,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
 
     pub fn action(&self, key: &str) -> Option<Arc<CurioAction>> {
         if self.action_names().contains(&key.to_string()) {
-            self.node.action_dictionary.get(&key.to_string())
+            self.node.action_dictionary.get(key)
         } else {
             None
         }
