@@ -68,3 +68,29 @@ impl ErrorMsg for str {
         Error::FailureCritical(self.to_string())
     }
 }
+
+#[derive(Debug)]
+pub enum LoadingError {
+    Io(std::io::Error),
+    SerdeJson(serde_json::Error),
+    DecodeError(base64::DecodeError),
+    MissingAsset(&'static str, String),
+}
+
+impl From<std::io::Error> for LoadingError {
+    fn from(err: std::io::Error) -> Self {
+        LoadingError::Io(err)
+    }
+}
+
+impl From<serde_json::Error> for LoadingError {
+    fn from(err: serde_json::Error) -> Self {
+        LoadingError::SerdeJson(err)
+    }
+}
+
+impl From<base64::DecodeError> for LoadingError {
+    fn from(err: base64::DecodeError) -> Self {
+        LoadingError::DecodeError(err)
+    }
+}

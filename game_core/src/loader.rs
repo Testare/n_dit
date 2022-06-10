@@ -1,41 +1,11 @@
-mod node_definition;
-mod sprite_definition;
 
-pub use node_definition::{NodeDef, node_from_def};
-pub use sprite_definition::{CardDef, SpriteDef, CardInstanceDefAlternative};
-
+use crate::error::LoadingError;
 use crate::assets::{AssetDictionary, Asset};
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string};
 use std::ffi::OsString;
 use std::path::Path;
 use std::sync::Arc;
-
-#[derive(Debug)]
-pub enum LoadingError {
-    Io(std::io::Error),
-    SerdeJson(serde_json::Error),
-    DecodeError(base64::DecodeError),
-    MissingAsset(&'static str, String),
-}
-
-impl From<std::io::Error> for LoadingError {
-    fn from(err: std::io::Error) -> Self {
-        LoadingError::Io(err)
-    }
-}
-
-impl From<serde_json::Error> for LoadingError {
-    fn from(err: serde_json::Error) -> Self {
-        LoadingError::SerdeJson(err)
-    }
-}
-
-impl From<base64::DecodeError> for LoadingError {
-    fn from(err: base64::DecodeError) -> Self {
-        LoadingError::DecodeError(err)
-    }
-}
 
 pub struct Configuration {
     pub assets_folder: String,

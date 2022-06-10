@@ -1,45 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Pickup, Point, Team, Metadata};
 use crate::Asset;
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "type")]
-pub enum SpriteDef {
-    Pickup {
-        #[serde(flatten)]
-        pickup: Pickup,
-        point: Point,
-    },
-    Curio {
-        #[serde(default, skip_serializing_if="Metadata::is_empty")]
-        metadata: Metadata,
-        #[serde(default, skip_serializing_if="Option::is_none")]
-        nickname: Option<String>,
-        team: Team,
-        points: Vec<Point>,
-        #[serde(flatten)]
-        def: CardInstanceDefAlternative,
-    },
-    AccessPoint {
-        point: Point,
-    },
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum CardInstanceDefAlternative {
-    FromTemplate {
-        card: String,
-    },
-    Custom {
-        actions: Vec<String>,
-        display: String,
-        max_size: usize,
-        speed: usize,
-        name: String,
-    },
-}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CardDef {

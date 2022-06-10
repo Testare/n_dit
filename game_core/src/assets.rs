@@ -1,3 +1,9 @@
+mod node_definition;
+mod card_definition;
+
+pub use node_definition::{NodeDef, node_from_def};
+pub use card_definition::{CardDef};
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::ops::Index;

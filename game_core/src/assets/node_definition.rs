@@ -1,10 +1,20 @@
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
-use super::sprite_definition::SpriteDef;
-use crate::Asset;
 
-use super::{LoadingError, CardInstanceDefAlternative};
-use crate::{Curio, CurioAction, CardDef, AssetDictionary, Node, GridMap, Sprite, };
+use crate::Asset;
+use crate::{Pickup, Point, Metadata, Team};
+use super::{CardDef};
+
+use crate::error::{LoadingError};
+use crate::{Curio, CurioAction, AssetDictionary, Node, GridMap, Sprite};
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct NodeDef {
+    grid_shape: String,
+    name: String,
+    sprites: Vec<SpriteDef>,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeDefUnnamed {
@@ -13,10 +23,32 @@ pub struct NodeDefUnnamed {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct NodeDef {
-    grid_shape: String,
-    name: String,
-    sprites: Vec<SpriteDef>,
+#[serde(tag = "type")]
+pub enum SpriteDef {
+    Pickup {
+        #[serde(flatten)]
+        pickup: Pickup,
+        point: Point,
+    },
+    Curio {
+        #[serde(default, skip_serializing_if="Metadata::is_empty")]
+        metadata: Metadata,
+        #[serde(default, skip_serializing_if="Option::is_none")]
+        nickname: Option<String>,
+        team: Team,
+        points: Vec<Point>,
+        card: CardRef,
+    },
+    AccessPoint {
+        point: Point,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum CardRef {
+    FromAsset(String),
+    Custom(CardDef),
 }
 
 impl Asset for NodeDef {
@@ -32,7 +64,7 @@ impl Asset for NodeDef {
     }
 }
 
-pub fn node_from_def(def: &NodeDef, curio_templates: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<CurioAction>) -> Result<Node, LoadingError> {
+pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<CurioAction>) -> Result<Node, LoadingError> {
     let mut node = Node::from(GridMap::from_shape_string(def.grid_shape.as_str())?);
     node.add_action_dictionary(action_dictionary);
     for sprite_def in def.sprites.iter() {
@@ -48,38 +80,25 @@ pub fn node_from_def(def: &NodeDef, curio_templates: AssetDictionary<CardDef>, a
                 metadata,
                 team,
                 points,
-                def
+                card
             } => {
-                // let nickname: String = nickname.clone().unwrap_or_else(||"Nameless".to_string());
+                let card_ref = match card {
+                    CardRef::FromAsset ( card ) => {
+                        card_dict.get(card)
+                            .ok_or_else(||LoadingError::MissingAsset(CardDef::SUB_EXTENSION, card.clone()))?
+                    }, 
+                    CardRef::Custom ( card ) => Arc::new(card.clone())
+                };
                 let mut builder = Curio::builder();
                 let builder = builder
                     .team(*team)
-                    .metadata(metadata.clone());
-
-                let builder = match def {
-                    CardInstanceDefAlternative::FromTemplate { card } => {
-                        let template = curio_templates.get(card)
-                            .ok_or_else(||LoadingError::MissingAsset(CardDef::SUB_EXTENSION, card.clone()))?;
-                        builder.actions(&template.actions)
-                            .speed(template.speed)
-                            .max_size(template.max_size)
-                            .display(&template.display)
-                            .name(nickname.as_ref().unwrap_or(&template.name).clone())
-                    }, 
-                    CardInstanceDefAlternative::Custom {
-                        name, 
-                        actions,
-                        speed,
-                        max_size,
-                        display
-                    } => {
-                        builder.actions(actions)
-                            .speed(*speed)
-                            .max_size(*max_size)
-                            .display(display)
-                            .name(nickname.as_ref().unwrap_or(name).clone())
-                    }
-                };
+                    .metadata(metadata.clone())
+                    .actions(&card_ref.actions)
+                    .speed(card_ref.speed)
+                    .max_size(card_ref.max_size)
+                    .display(card_ref.display.clone())
+                    .name(nickname.as_ref().unwrap_or(&card_ref.name).clone());
+                    // TODO Error handling for build error here
                 node.add_curio(builder.build().unwrap(), points.clone()).unwrap();
             }
         }

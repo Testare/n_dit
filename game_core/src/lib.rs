@@ -1,6 +1,6 @@
 // Level 0
 mod common;
-mod error;
+pub mod error;
 mod metadata;
 // Level 1
 mod abstractions;
@@ -27,7 +27,7 @@ pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
-pub use loader::{NodeDef, SpriteDef, CardDef, node_from_def};
+pub use assets::{NodeDef, CardDef, node_from_def};
 
 use ai::EnemyAi;
 use assets::{AssetDictionary, Asset};

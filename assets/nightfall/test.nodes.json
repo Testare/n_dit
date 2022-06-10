@@ -4,43 +4,51 @@
         "sprites": [
             {
                 "type": "Curio",
-                "actions": ["Bite", "Brutus", "Fiddle"],
-                "display": "骨",
-                "max_size": 3,
-                "name": "Skeleton",
                 "nickname": "Jackson",
-                "speed": 2,
+                "card": {
+                    "name": "Skeleton",
+                    "actions": ["Bite", "Brutus", "Fiddle"],
+                    "display": "骨",
+                    "max_size": 3,
+                    "speed": 2
+                },
                 "points": [[4, 6], [5, 6], [5, 7]],
                 "team": "PlayerTeam"
             },
             {
                 "type": "Curio",
-                "actions": ["Bite", "Brutus", "Fiddle"],
-                "display": "8]",
-                "name": "Smiley",
-                "max_size": 2,
-                "speed": 3,
+                "card": {
+                    "actions": ["Bite", "Brutus", "Fiddle"],
+                    "display": "8]",
+                    "name": "Smiley",
+                    "max_size": 2,
+                    "speed": 3
+                },
                 "points": [[3, 3], [3, 4]],
                 "team": "PlayerTeam"
             },
             {
                 "type": "Curio",
-                "actions": ["Bite", "Brutus", "Fiddle"],
-                "display": "<>",
-                "name": "Diamond",
-                "max_size": 3,
-                "speed": 3,
+                "card": {
+                    "name": "Diamond",
+                    "actions": ["Bite", "Brutus", "Fiddle"],
+                    "display": "<>",
+                    "max_size": 3,
+                    "speed": 3
+                },
                 "points": [[14, 6]],
                 "team": "PlayerTeam"
             },
             {
                 "type": "Curio",
-                "actions": ["Bite"],
-                "display": "あ",
-                "max_size": 2,
-                "speed": 3,
+                "card": {
+                    "name": "Abso",
+                    "actions": ["Bite"],
+                    "display": "あ",
+                    "max_size": 2,
+                    "speed": 3
+                },
                 "nickname": "Horus",
-                "name": "Abso",
                 "points": [[1, 6], [2, 6], [3, 6]],
                 "team": "EnemyTeam"
             },
