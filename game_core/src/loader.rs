@@ -7,6 +7,7 @@ pub use sprite_definition::{CardDef, SpriteDef, CardInstanceDefAlternative};
 use crate::assets::{AssetDictionary, Asset};
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string};
+use std::ffi::OsString;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -43,30 +44,31 @@ pub struct Configuration {
 pub fn load_asset_dictionary<T: Asset + std::fmt::Debug>(config: &Configuration) -> Result<AssetDictionary<T>, LoadingError> {
     let files = get_all_assets_of_name(config, T::SUB_EXTENSION)?;
     Ok(files.iter()
-            .filter_map(|file_contents| {
-
-                log::debug!("LOGWOO B {:?}", &file_contents);
-                // serde_json::from_str::<HashMap<String, Arc<T::UnnamedAsset>>>(file_contents).ok()
-                serde_json::from_str::<HashMap<String, T::UnnamedAsset>>(file_contents).map(|dict| {
-                    dict.into_iter()
+            .filter_map(|(filename, file_contents)| {
+                let serde_result = serde_json::from_str::<HashMap<String, T::UnnamedAsset>>(file_contents);
+                match serde_result {
+                    Ok(dict)=>Some(dict.into_iter()
                         .map(|(key, unnamed)| {
                             let named = T::with_name(unnamed, key.as_str());
                             (key, Arc::new(named))
                         })
-                        .collect::<HashMap<String, Arc<T>>>()
-                }).ok()
+                        .collect::<HashMap<String, Arc<T>>>()),
+                    Err(err)=> {
+                        log::warn!("Unable to load asset [{:?}] : [{}]", filename, err);
+                        None
+                    }
+                }
             })
             .fold(
                 HashMap::<String, Arc<T>>::new(),
                 |mut master_dictionary, new_dict| {
-                    log::debug!("LOGWOO C {:?}", &new_dict);
                     master_dictionary.extend(new_dict);
                     master_dictionary
                 },
             ).into())
 }
 
-fn get_all_assets_of_name(config: &Configuration, extension: &str) -> std::io::Result<Vec<String>> {
+fn get_all_assets_of_name(config: &Configuration, extension: &str) -> std::io::Result<Vec<(OsString, String)>> {
     Ok(read_dir(config.assets_folder.as_str())
         .unwrap()
         .flat_map(|dir| match dir {
@@ -84,7 +86,13 @@ fn get_all_assets_of_name(config: &Configuration, extension: &str) -> std::io::R
                                     .and_then(Path::extension)
                                     .and_then(|os_str| os_str.to_str());
                                 if subextension == Some(extension) {
-                                    read_to_string(file.path()).ok()
+                                    match read_to_string(file.path()) {
+                                        Ok(contents) => Some((path.into_os_string(), contents)),
+                                        Err(err) => {
+                                            log::warn!("Unable to read asset file [{:?}], error: [{}]", path.into_os_string(), err);
+                                            None
+                                        }
+                                    }
                                 } else {
                                     None
                                 }

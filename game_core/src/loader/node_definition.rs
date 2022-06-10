@@ -34,7 +34,6 @@ impl Asset for NodeDef {
 
 pub fn node_from_def(def: &NodeDef, curio_templates: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<CurioAction>) -> Result<Node, LoadingError> {
     let mut node = Node::from(GridMap::from_shape_string(def.grid_shape.as_str())?);
-    log::debug!("LOGWOO A {:?}", node);
     node.add_action_dictionary(action_dictionary);
     for sprite_def in def.sprites.iter() {
         match sprite_def {
