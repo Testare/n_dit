@@ -22,12 +22,11 @@ use abstractions::StateChange;
 pub use game_master::{AuthorityGameMaster, EventPublisher, GameCommand};
 pub use metadata::Metadata;
 pub use model::curio::{Curio, Team};
-pub use model::curio_action::CurioAction;
 pub use model::game_state::{GameChange, GameState};
 pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
-pub use assets::{NodeDef, CardDef, node_from_def};
+pub use assets::{NodeDef, CardDef, ActionDef, node_from_def};
 
 use ai::EnemyAi;
 use assets::{AssetDictionary, Asset};

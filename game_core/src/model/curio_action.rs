@@ -1,103 +1,11 @@
 
-use std::{num::NonZeroUsize, ops::RangeInclusive};
-
-use getset::{CopyGetters, Getters};
-use serde::{Deserialize, Serialize};
-
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
 use super::keys::curio_action_keys as keys;
-use crate::{Asset, Node, Point, Sprite};
+use crate::{Node, Point};
+use crate::assets::{ActionDef, ActionTarget, ActionCondition, ActionEffect};
 
-// TODO look into making this a trait instead?
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CurioActionUnnamed {
-    genre: CurioActionGenre,
-    range: Option<NonZeroUsize>,
-    effect: SAEffect,
-    targets: Vec<Target>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    conditions: Vec<SACondition>,
-}
-
-#[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
-pub struct CurioAction {
-    name: String,
-    #[get_copy = "pub"]
-    genre: CurioActionGenre,
-    #[get_copy = "pub"]
-    range: Option<NonZeroUsize>,
-    effect: SAEffect,
-    targets: Vec<Target>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    conditions: Vec<SACondition>,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub enum CurioActionGenre {
-    Attack = 0,
-    Support = 1,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[non_exhaustive]
-pub enum SAEffect {
-    DealDamage(usize),
-    IncreaseMaxSize {
-        amount: usize,
-        bound: Option<NonZeroUsize>,
-    },
-    _IncreaseMovementSpeed {
-        amount: usize,
-        bound: Option<NonZeroUsize>,
-    },
-    _Recover {
-        amount: usize,
-        bound: Option<NonZeroUsize>,
-    },
-    _Create {
-        sprite: Sprite,
-    },
-    _OpenSquare,
-    _CloseSquare,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[non_exhaustive]
-pub enum SACondition {
-    Size(RangeInclusive<usize>),
-    TargetSize(RangeInclusive<usize>),
-    TargetMaxSize(RangeInclusive<usize>),
-    _Uses(usize),
-    _UsesPerTarget(usize),
-}
-
-// TODO enumset?
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub enum Target {
-    Ally = 0,
-    // Area,
-    _ClosedSquare,
-    _EmptySquare,
-    Enemy,
-    _Itself,
-}
-
-impl SACondition {
-    fn met(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
-        match self {
-            SACondition::Size(range) => range.contains(&node.sprite_len(curio_key)),
-            SACondition::TargetSize(range) => node
-                .with_curio_at(target_pt, |target| range.contains(&target.size()))
-                .unwrap_or(false),
-            SACondition::TargetMaxSize(range) => node
-                .with_curio_at(target_pt, |target| range.contains(&target.max_size()))
-                .unwrap_or(false),
-            _ => unimplemented!("TODO implement other conditions"),
-        }
-    }
-}
+type CurioAction = ActionDef;
 
 impl CurioAction {
     pub fn unapply(
@@ -150,12 +58,12 @@ impl CurioAction {
     }
     pub fn apply(&self, node: &mut Node, curio_key: usize, target_pt: Point) -> Result<Metadata> {
         if let Some(_target_type) = self
-            .targets
+            .targets()
             .iter()
             .find(|target| target.matches(node, curio_key, target_pt))
         {
             if self
-                .conditions
+                .conditions()
                 .iter()
                 .all(|condition| condition.met(node, curio_key, target_pt))
             {
@@ -165,14 +73,14 @@ impl CurioAction {
                     node.with_curio_at(target_pt, |target| target.key()),
                 )?;
 
-                match self.effect {
-                    SAEffect::DealDamage(dmg) => {
+                match self.effect() {
+                    ActionEffect::DealDamage(dmg) => {
                         let (key, (dropped_pts, deleted_curio)) = node
                             .with_curio_at_mut(target_pt, |target| {
-                                (target.key(), target.take_damage(dmg))
+                                (target.key(), target.take_damage(*dmg))
                             })
                             .ok_or_else(|| {
-                                "Invalid target for damage: Target must be a curio"
+                                "Invalid target for damage: ActionTarget must be a curio"
                                     .fail_reversible_msg()
                             })?;
                         metadata.put(keys::DAMAGES, &dropped_pts)?;
@@ -183,15 +91,15 @@ impl CurioAction {
                             metadata.put(keys::DELETED_SPRITES, &deleted_sprites)?;
                         }
                     }
-                    SAEffect::IncreaseMaxSize { amount, bound } => {
+                    ActionEffect::IncreaseMaxSize { amount, bound } => {
                         let max_size_change: (usize, usize) = node
                             .with_curio_at_mut(target_pt, |mut target| {
                                 let old_max = target.max_size();
-                                let new_max = target.increase_max_size(amount, bound);
+                                let new_max = target.increase_max_size(*amount, *bound);
                                 (old_max, new_max)
                             })
                             .ok_or_else(|| {
-                                "Invalid target for increase size: Target must be a curio"
+                                "Invalid target for increase size: ActionTarget must be a curio"
                                     .fail_reversible_msg()
                             })?;
                         metadata.put(keys::MAX_SIZE_CHANGE, &max_size_change)?;
@@ -208,11 +116,27 @@ impl CurioAction {
     }
 
     pub fn can_target_enemy(&self) -> bool {
-        self.targets.contains(&Target::Enemy)
+        self.targets().contains(&ActionTarget::Enemy)
     }
 }
 
-impl Target {
+impl ActionCondition {
+    fn met(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
+        match self {
+            ActionCondition::Size(range) => range.contains(&node.sprite_len(curio_key)),
+            ActionCondition::TargetSize(range) => node
+                .with_curio_at(target_pt, |target| range.contains(&target.size()))
+                .unwrap_or(false),
+            ActionCondition::TargetMaxSize(range) => node
+                .with_curio_at(target_pt, |target| range.contains(&target.max_size()))
+                .unwrap_or(false),
+            _ => unimplemented!("TODO implement other conditions"),
+        }
+    }
+}
+
+
+impl ActionTarget {
     fn matches(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
         match self {
             Self::Enemy => {
@@ -226,24 +150,7 @@ impl Target {
                 let target_team = node.with_curio_at(target_pt, |curio| curio.team());
                 source_team.is_some() && target_team.is_some() && source_team == target_team
             }
-            _ => unimplemented!("Target {:?} not implemented yet", self),
+            _ => unimplemented!("ActionTarget {:?} not implemented yet", self),
         }
-    }
-}
-
-impl Asset for CurioAction {
-    const SUB_EXTENSION: &'static str = "actions";
-    type UnnamedAsset = CurioActionUnnamed;
-
-    fn with_name(unnamed: Self::UnnamedAsset, name: &str) -> Self {
-        CurioAction {
-            name: name.to_string(),
-            genre: unnamed.genre,
-            range: unnamed.range,
-            effect: unnamed.effect,
-            targets: unnamed.targets,
-            conditions: unnamed.conditions,
-        }
-
     }
 }

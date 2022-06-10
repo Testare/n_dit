@@ -7,24 +7,21 @@ use with_curio::WithCurio;
 
 use crate::AssetDictionary;
 
-
-
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Result, Bounds, GridMap, Metadata, Point, Team};
+use crate::{error::Result, assets::ActionDef, Bounds, GridMap, Metadata, Point, Team};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
 use super::{
     curio::Curio,
-    curio_action::CurioAction,
     inventory::{Inventory, Pickup},
     keys::node_change_keys,
 };
 
 type NodeConstructionError = String;
 
-type ActionDictionary = AssetDictionary<CurioAction>;
+type ActionDictionary = AssetDictionary<ActionDef>;
 
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct Node {
@@ -143,7 +140,7 @@ impl Node {
         self.grid.put_item(pt, Sprite::Pickup(Pickup::Mon(amount)))
     }
 
-    pub fn add_action_dictionary(&mut self, action_dictionary: AssetDictionary<CurioAction>) {
+    pub fn add_action_dictionary(&mut self, action_dictionary: AssetDictionary<ActionDef>) {
         // In the future, only load actions that are needed by the sprites?
         self.action_dictionary.extend(action_dictionary);
     }

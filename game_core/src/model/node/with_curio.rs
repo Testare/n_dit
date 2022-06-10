@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
-use super::super::curio_action::CurioAction;
 use super::super::keys::node_change_keys as keys;
 use super::Node;
 use super::SpritePoint;
+use crate::assets::ActionDef;
 use crate::{Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, Team};
 use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
@@ -39,7 +39,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
     }
 
     /// List of actions the curio can take
-    pub fn actions(&self) -> Result<Vec<(&str, Arc<CurioAction>)>> {
+    pub fn actions(&self) -> Result<Vec<(&str, Arc<ActionDef>)>> {
         self.action_names()
             .iter()
             .map(|action_name| {
@@ -60,7 +60,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
         }
     }
 
-    pub fn action(&self, key: &str) -> Option<Arc<CurioAction>> {
+    pub fn action(&self, key: &str) -> Option<Arc<ActionDef>> {
         if self.action_names().contains(&key.to_string()) {
             self.node.action_dictionary.get(key)
         } else {
@@ -68,7 +68,7 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
         }
     }
 
-    pub fn indexed_action(&self, index: usize) -> Option<Arc<CurioAction>> {
+    pub fn indexed_action(&self, index: usize) -> Option<Arc<ActionDef>> {
         let action_name = self.action_names().get(index)?;
         self.action(action_name)
     }

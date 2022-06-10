@@ -1,13 +1,12 @@
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
-
 use crate::Asset;
 use crate::{Pickup, Point, Metadata, Team};
-use super::{CardDef};
+use super::{CardDef, ActionDef};
 
 use crate::error::{LoadingError};
-use crate::{Curio, CurioAction, AssetDictionary, Node, GridMap, Sprite};
+use crate::{Curio, AssetDictionary, Node, GridMap, Sprite};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct NodeDef {
@@ -64,7 +63,7 @@ impl Asset for NodeDef {
     }
 }
 
-pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<CurioAction>) -> Result<Node, LoadingError> {
+pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<ActionDef>) -> Result<Node, LoadingError> {
     let mut node = Node::from(GridMap::from_shape_string(def.grid_shape.as_str())?);
     node.add_action_dictionary(action_dictionary);
     for sprite_def in def.sprites.iter() {
