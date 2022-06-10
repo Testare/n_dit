@@ -1,11 +1,12 @@
-use crate::{Curio, Team};
+use crate::{Curio, Team, Metadata};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CurioBuilder {
     actions: Vec<String>,
     display: Option<String>,
     max_size: Option<usize>,
-    movement_speed: Option<usize>,
+    speed: Option<usize>,
+    metadata: Option<Metadata>,
     name: Option<String>,
     team: Option<Team>,
 }
@@ -32,8 +33,13 @@ impl CurioBuilder {
         self
     }
 
-    pub fn movement_speed(&mut self, movement_speed: usize) -> &mut Self {
-        self.movement_speed = Some(movement_speed);
+    pub fn speed(&mut self, speed: usize) -> &mut Self {
+        self.speed = Some(speed);
+        self
+    }
+
+    pub fn metadata(&mut self, metadata: Metadata) -> &mut Self {
+        self.metadata = Some(metadata);
         self
     }
 
@@ -51,7 +57,8 @@ impl CurioBuilder {
         CurioBuilder {
             display: None,
             max_size: None,
-            movement_speed: None,
+            speed: None,
+            metadata: None,
             name: None,
             team: None,
             actions: Vec::new(),
@@ -62,7 +69,8 @@ impl CurioBuilder {
         Some(Curio {
             display: self.display.as_ref()?.clone(),
             max_size: self.max_size?,
-            movement_speed: self.movement_speed?,
+            speed: self.speed?,
+            metadata: self.metadata.clone().unwrap_or_default(),
             name: self.name.clone().unwrap_or_else(|| "George".to_string()),
             team: self.team.unwrap_or(Team::EnemyTeam),
             actions: self.actions.clone(),

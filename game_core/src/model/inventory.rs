@@ -111,6 +111,15 @@ pub struct Item {
 pub struct Card {
     #[get = "pub"]
     pub name: String,
+
+    /*
+    #[serde(default, skip_serializing_if="Option::is_none")]
+    pub nickname: Option<String>,
+    #[serde(default, skip_serializing_if="Metadata::is_empty")]
+    pub metadata: Metadata,
+    #[serde(flatten)]
+    pub base_card: CardDef,
+    */
 }
 
 impl From<Card> for Pickup {

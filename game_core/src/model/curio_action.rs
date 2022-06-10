@@ -1,5 +1,4 @@
 
-
 use std::{num::NonZeroUsize, ops::RangeInclusive};
 
 use getset::{CopyGetters, Getters};
@@ -8,11 +7,23 @@ use serde::{Deserialize, Serialize};
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
 use super::keys::curio_action_keys as keys;
-use crate::{Node, Point, Sprite};
+use crate::{Asset, Node, Point, Sprite};
 
 // TODO look into making this a trait instead?
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CurioActionUnnamed {
+    genre: CurioActionGenre,
+    range: Option<NonZeroUsize>,
+    effect: SAEffect,
+    targets: Vec<Target>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    conditions: Vec<SACondition>,
+}
+
 #[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
 pub struct CurioAction {
+    name: String,
     #[get_copy = "pub"]
     genre: CurioActionGenre,
     #[get_copy = "pub"]
@@ -217,5 +228,22 @@ impl Target {
             }
             _ => unimplemented!("Target {:?} not implemented yet", self),
         }
+    }
+}
+
+impl Asset for CurioAction {
+    const SUB_EXTENSION: &'static str = "actions";
+    type UnnamedAsset = CurioActionUnnamed;
+
+    fn with_name(unnamed: Self::UnnamedAsset, name: &str) -> Self {
+        CurioAction {
+            name: name.to_string(),
+            genre: unnamed.genre,
+            range: unnamed.range,
+            effect: unnamed.effect,
+            targets: unnamed.targets,
+            conditions: unnamed.conditions,
+        }
+
     }
 }

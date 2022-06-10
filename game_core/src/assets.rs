@@ -4,10 +4,12 @@ use std::ops::Index;
 
 use serde::{Deserialize, Serialize};
 
-use super::model::curio_action::CurioAction;
-
-pub trait Asset: Serialize + for<'de> Deserialize<'de> {
+pub trait Asset {
+    type UnnamedAsset: Serialize + for<'de> Deserialize<'de> ;
     const SUB_EXTENSION: &'static str;
+
+    fn with_name(unnamed: Self::UnnamedAsset, name: &str) -> Self;
+
 }
 
 // Impl std::ops::Index and std::ops::Extend
@@ -41,8 +43,4 @@ impl <T: Asset> From<HashMap<String, Arc<T>>> for AssetDictionary<T> {
     fn from(asset_map: HashMap<String, Arc<T>>) -> Self {
         AssetDictionary(asset_map)
     }
-}
-
-impl Asset for CurioAction {
-    const SUB_EXTENSION: &'static str = "actions";
 }

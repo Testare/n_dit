@@ -2,9 +2,8 @@ mod node_definition;
 mod sprite_definition;
 
 pub use node_definition::{NodeDef, node_from_def};
-pub use sprite_definition::{CurioDef, SpriteDef, CurioInstanceDefAlternative};
+pub use sprite_definition::{CardDef, SpriteDef, CardInstanceDefAlternative};
 
-use super::model::curio_action::CurioAction;
 use crate::assets::{AssetDictionary, Asset};
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string};
@@ -41,34 +40,26 @@ pub struct Configuration {
     pub assets_folder: String,
 }
 
-pub fn load_action_dictionaries(config: &Configuration) -> HashMap<String, Arc<CurioAction>> {
-    if let Ok(files) = get_all_assets_of_name(config, "actions") {
-        return files
-            .iter()
-            .filter_map(|file_contents| {
-                serde_json::from_str::<HashMap<String, Arc<CurioAction>>>(file_contents).ok()
-            })
-            .fold(
-                HashMap::<String, Arc<CurioAction>>::new(),
-                |mut master_dictionary, new_dict| {
-                    master_dictionary.extend(new_dict);
-                    master_dictionary
-                },
-            );
-    } else {
-        HashMap::new()
-    }
-}
-
-pub fn load_asset_dictionary<T: Asset>(config: &Configuration) -> Result<AssetDictionary<T>, LoadingError> {
+pub fn load_asset_dictionary<T: Asset + std::fmt::Debug>(config: &Configuration) -> Result<AssetDictionary<T>, LoadingError> {
     let files = get_all_assets_of_name(config, T::SUB_EXTENSION)?;
     Ok(files.iter()
             .filter_map(|file_contents| {
-                serde_json::from_str::<HashMap<String, Arc<T>>>(file_contents).ok()
+
+                log::debug!("LOGWOO B {:?}", &file_contents);
+                // serde_json::from_str::<HashMap<String, Arc<T::UnnamedAsset>>>(file_contents).ok()
+                serde_json::from_str::<HashMap<String, T::UnnamedAsset>>(file_contents).map(|dict| {
+                    dict.into_iter()
+                        .map(|(key, unnamed)| {
+                            let named = T::with_name(unnamed, key.as_str());
+                            (key, Arc::new(named))
+                        })
+                        .collect::<HashMap<String, Arc<T>>>()
+                }).ok()
             })
             .fold(
                 HashMap::<String, Arc<T>>::new(),
                 |mut master_dictionary, new_dict| {
+                    log::debug!("LOGWOO C {:?}", &new_dict);
                     master_dictionary.extend(new_dict);
                     master_dictionary
                 },

@@ -5,11 +5,16 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use typed_key::Key;
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 
 impl Metadata {
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn new() -> Self {
         Metadata::default()
     }

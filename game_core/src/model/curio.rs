@@ -4,6 +4,7 @@ use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
 use curio_builder::CurioBuilder;
+use crate::Metadata;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Team {
@@ -17,8 +18,10 @@ pub struct Curio {
     #[get_copy = "pub"]
     #[set = "pub"]
     max_size: usize,
+    #[get = "pub"]
+    metadata: Metadata,
     #[set]
-    movement_speed: usize,
+    speed: usize,
     #[get_copy = "pub"]
     moves_taken: usize,
     name: String,
@@ -38,10 +41,11 @@ impl Curio {
         Curio {
             display: String::from(display),
             max_size: 3,
-            movement_speed: 3,
+            speed: 3,
             moves_taken: 0,
             name: String::from("George"),
             team: Team::PlayerTeam,
+            metadata: Metadata::default(),
             tapped: false,
             actions: vec![
                 "Brutus".to_string(),
@@ -60,7 +64,7 @@ impl Curio {
     }
 
     pub fn moves(&self) -> usize {
-        self.movement_speed - self.moves_taken
+        self.speed - self.moves_taken
     }
 
     pub fn tap(&mut self) {
@@ -82,7 +86,7 @@ impl Curio {
 
     pub fn took_a_move(&mut self) {
         self.moves_taken += 1;
-        if self.actions.is_empty() && self.moves_taken == self.movement_speed {
+        if self.actions.is_empty() && self.moves_taken == self.speed {
             self.tap()
         }
     }
