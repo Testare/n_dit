@@ -17,7 +17,7 @@ pub struct Inventory {
 pub enum Pickup {
     Mon(usize),
     Item(Item),
-    Card(Card),
+    Card(String),
 }
 
 impl Inventory {
@@ -32,7 +32,7 @@ impl Inventory {
             }
             Pickup::Card(card) => {
                 // Will obviously need more complex logic if we have "stackable" cards
-                self.deck.retain(|iter_card| card != iter_card);
+                self.deck.retain(|iter_card| card != iter_card.name());
             }
         }
     }
@@ -46,9 +46,9 @@ impl Inventory {
                 // Will obviously need more complex logic if we have "stackable" items
                 self.bag.push(item);
             }
-            Pickup::Card(card) => {
+            Pickup::Card(card_name) => {
                 // Will obviously need more complex logic if we have "stackable" cards
-                self.deck.push(card);
+                self.deck.push(Card::named(&card_name));
             }
         }
     }
@@ -91,7 +91,7 @@ impl fmt::Display for Pickup {
         match self {
             Pickup::Mon(mon) => write!(f, "${}", mon),
             Pickup::Item(item) => write!(f, "{}", item.name()),
-            Pickup::Card(card) => write!(f, "\"{}\" card", card.name()),
+            Pickup::Card(card) => write!(f, "\"{}\" card", card),
         }
     }
 }
@@ -122,14 +122,12 @@ pub struct Card {
     */
 }
 
-impl From<Card> for Pickup {
-    fn from(card: Card) -> Pickup {
-        Pickup::Card(card)
-    }
-}
+impl Card {
 
-impl From<Card> for Sprite {
-    fn from(card: Card) -> Sprite {
-        Sprite::from(Pickup::from(card))
+    fn named(name: &str) -> Card {
+        Card {
+            name: name.to_string()
+        }
     }
+
 }

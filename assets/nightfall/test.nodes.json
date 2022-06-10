@@ -69,7 +69,7 @@
             },
             {
                 "type": "Pickup",
-                "card": {"name": "Jeremy"},
+                "card": "Jeremy",
                 "point": [15, 7]
             }
         ]

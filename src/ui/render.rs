@@ -112,7 +112,7 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
             Sprite::Pickup(Pickup::Card(card)) => {
                 base_vec[2].push_str("Loose Card");
                 base_vec[3] = "=".repeat(width);
-                base_vec[4].push_str(card.name());
+                base_vec[4].push_str(card);
             }
             Sprite::AccessPoint => {
                 base_vec[2].push_str("Access Pnt");
