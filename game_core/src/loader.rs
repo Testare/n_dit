@@ -1,11 +1,9 @@
 
 use crate::error::LoadingError;
 use crate::assets::{AssetDictionary, Asset};
-use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string};
 use std::ffi::OsString;
 use std::path::Path;
-use std::sync::Arc;
 
 pub struct Configuration {
     pub assets_folder: String,
@@ -15,27 +13,21 @@ pub fn load_asset_dictionary<T: Asset + std::fmt::Debug>(config: &Configuration)
     let files = get_all_assets_of_name(config, T::SUB_EXTENSION)?;
     Ok(files.iter()
             .filter_map(|(filename, file_contents)| {
-                let serde_result = serde_json::from_str::<HashMap<String, T::UnnamedAsset>>(file_contents);
-                match serde_result {
-                    Ok(dict)=>Some(dict.into_iter()
-                        .map(|(key, unnamed)| {
-                            let named = T::with_name(unnamed, key.as_str());
-                            (key, Arc::new(named))
-                        })
-                        .collect::<HashMap<String, Arc<T>>>()),
+                let dict_result = AssetDictionary::from_json(file_contents);
+                match dict_result {
+                    Ok(dict)=>Some(dict),
                     Err(err)=> {
-                        log::warn!("Unable to load asset [{:?}] : [{}]", filename, err);
+                    log::warn!("Unable to load asset [{:?}] : [{}]", filename, err);
                         None
                     }
                 }
             })
-            .fold(
-                HashMap::<String, Arc<T>>::new(),
+            .reduce(
                 |mut master_dictionary, new_dict| {
                     master_dictionary.extend(new_dict);
                     master_dictionary
-                },
-            ).into())
+                }
+            ).unwrap_or_default())
 }
 
 fn get_all_assets_of_name(config: &Configuration, extension: &str) -> std::io::Result<Vec<(OsString, String)>> {

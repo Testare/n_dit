@@ -153,7 +153,7 @@ impl Node {
             .with_curio_mut(active_curio_key, |mut curio| curio.untap())
             .is_none();
         if curio_not_found {
-            return "Take curio action curio does not exist".fail_critical()
+            "Take curio action curio does not exist".fail_critical()
         } else { Ok(()) }
     }
 }

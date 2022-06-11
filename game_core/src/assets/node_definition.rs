@@ -63,9 +63,12 @@ impl Asset for NodeDef {
     }
 }
 
+//
 pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<ActionDef>) -> Result<Node, LoadingError> {
     let mut node = Node::from(GridMap::from_shape_string(def.grid_shape.as_str())?);
     node.add_action_dictionary(action_dictionary);
+    node.add_card_dictionary(card_dict.clone());
+
     for sprite_def in def.sprites.iter() {
         match sprite_def {
             SpriteDef::Pickup { pickup, point } => {

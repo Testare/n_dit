@@ -1,15 +1,19 @@
-use getset::{CopyGetters, Getters};
+use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
-use crate::Sprite;
+use crate::{Metadata, Sprite};
+use crate::assets::{AssetDictionary, CardDef};
 use std::fmt;
 
-#[derive(Clone, Debug, Default, Getters, CopyGetters, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Setters, Getters, CopyGetters, Serialize, Deserialize)]
 pub struct Inventory {
     bag: Vec<Item>,
     deck: Vec<Card>,
     #[get_copy = "pub"]
     wallet: usize,
+    #[serde(default, skip)]
+    #[set = "pub(crate)"]
+    card_dict: AssetDictionary<CardDef>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,7 +36,8 @@ impl Inventory {
             }
             Pickup::Card(card) => {
                 // Will obviously need more complex logic if we have "stackable" cards
-                self.deck.retain(|iter_card| card != iter_card.name());
+                let last_card = self.deck.pop().expect("Undo is dropping a card, but there are no cards!");
+                assert_eq!(last_card.name(), card, "Undo is dropping some other card than the last card");
             }
         }
     }
@@ -48,7 +53,7 @@ impl Inventory {
             }
             Pickup::Card(card_name) => {
                 // Will obviously need more complex logic if we have "stackable" cards
-                self.deck.push(Card::named(&card_name));
+                self.deck.push(Card::named(&card_name, &self.card_dict));
             }
         }
     }
@@ -109,25 +114,26 @@ pub struct Item {
 /// can have their own unique names
 // TODO Implement actual logic
 pub struct Card {
-    #[get = "pub"]
-    pub name: String,
-
-    /*
     #[serde(default, skip_serializing_if="Option::is_none")]
     pub nickname: Option<String>,
     #[serde(default, skip_serializing_if="Metadata::is_empty")]
     pub metadata: Metadata,
     #[serde(flatten)]
     pub base_card: CardDef,
-    */
 }
 
 impl Card {
 
-    fn named(name: &str) -> Card {
+    fn named(name: &str, card_dict: &AssetDictionary<CardDef>) -> Card {
         Card {
-            name: name.to_string()
+            nickname: None,
+            metadata: Default::default(),
+            base_card: (*card_dict[name]).clone(),
         }
+    }
+
+    fn name(&self) -> &str {
+        self.base_card.name.as_str()
     }
 
 }

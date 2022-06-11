@@ -5,12 +5,11 @@ pub use node_change::NodeChange;
 pub use node_change::SpritePoint; // TODO Move these to better location
 use with_curio::WithCurio;
 
-use crate::AssetDictionary;
-
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Result, assets::ActionDef, Bounds, GridMap, Metadata, Point, Team};
+use crate::assets::{AssetDictionary, CardDef, ActionDef};
+use crate::{error::Result, Bounds, GridMap, Metadata, Point, Team};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
 use super::{
@@ -143,6 +142,10 @@ impl Node {
     pub fn add_action_dictionary(&mut self, action_dictionary: AssetDictionary<ActionDef>) {
         // In the future, only load actions that are needed by the sprites?
         self.action_dictionary.extend(action_dictionary);
+    }
+
+    pub(crate) fn add_card_dictionary(&mut self, card_dictionary: AssetDictionary<CardDef>) {
+        self.inventory.set_card_dict(card_dictionary);
     }
 
     pub fn width(&self) -> usize {

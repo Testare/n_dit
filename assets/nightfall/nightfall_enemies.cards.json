@@ -4,5 +4,12 @@
         "display": "犬",
         "max_size": 2,
         "speed": 3
+    },
+    "Jeremy": {
+        "actions": [],
+        "display": "JM",
+        "max_size": 10,
+        "speed": 3
     }
+
 }

@@ -14,11 +14,10 @@ use std::ops::Index;
 use serde::{Deserialize, Serialize};
 
 pub trait Asset {
-    type UnnamedAsset: Serialize + for<'de> Deserialize<'de> ;
+    type UnnamedAsset: Serialize + for<'de> Deserialize<'de>;
     const SUB_EXTENSION: &'static str;
 
     fn with_name(unnamed: Self::UnnamedAsset, name: &str) -> Self;
-
 }
 
 // Impl std::ops::Index and std::ops::Extend
@@ -45,6 +44,16 @@ impl <T: Asset> AssetDictionary<T> {
 
     pub fn get(&self, idx: &str) -> Option<Arc<T>> {
         self.0.get(idx).cloned()
+    }
+
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        let dict = serde_json::from_str::<HashMap<String, T::UnnamedAsset>>(json)?;
+        Ok(AssetDictionary(dict.into_iter()
+                .map(|(key, unnamed)| {
+                    let named = T::with_name(unnamed, key.as_str());
+                    (key, Arc::new(named))
+                })
+                .collect::<HashMap<String, Arc<T>>>()))
     }
 }
 
