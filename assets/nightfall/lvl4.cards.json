@@ -1,0 +1,79 @@
+{
+    "Catapult": {
+        "actions": [ "Fling" ],
+        "description": "Extreme-range mobile attacker",
+        "display": "cp",
+        "max_size": 3,
+        "speed": 2
+    },
+    "Clog.03": {
+        "actions": [ "Chug", "Hang" ],
+        "description": "Brings hostile programs to a halt",
+        "display": "c3",
+        "max_size": 4,
+        "speed": 2
+    },
+    "Golem Stone": {
+        "actions": [ "Crash" ],
+        "description": "Nothing can stand in its way",
+        "display": "gs",
+        "max_size": 7,
+        "speed": 3
+    },
+    "Guru": {
+        "actions": [ "Fire", "Ice" ],
+        "description": "Multipurpose software for the 133tist of the 133t",
+        "display": "GR",
+        "max_size": 3,
+        "speed": 2
+    },
+    "Heisenbug": {
+        "actions": [ "Quantum Glitch" ],
+        "description": "They can't kill what they can't catch",
+        "display": "hb",
+        "max_size": 1,
+        "speed": 5
+    },
+    "Laser Satellite": {
+        "actions": [ "Megascramble" ],
+        "description": "Long-range hard-hitting program",
+        "display": "ls",
+        "max_size": 1,
+        "speed": 2
+    },
+    "Logic Bomb": {
+        "actions": [ "Selfdestruct" ],
+        "description": "Self-destructing attack program",
+        "display": "LB",
+        "max_size": 6,
+        "speed": 3
+    },
+    "Seeker 3.0": {
+        "actions": [ "Poke", "Seek and Destroy" ],
+        "description": "Seeker with extra deletion power",
+        "display": "s3",
+        "max_size": 5,
+        "speed": 4
+    },
+    "Sumo": {
+        "actions": [ "Dataslam" ],
+        "description": "A massive and slow-moving powerhouse",
+        "display": "大",
+        "max_size": 12,
+        "speed": 2
+    },
+    "Tarantula": {
+        "actions": [ "Megabyte", "Paralyze" ],
+        "description": "Fast, with a venomous bite",
+        "display": "tt",
+        "max_size": 3,
+        "speed": 5
+    },
+    "Wizard": {
+        "actions": [ "Scorch", "Stretch" ],
+        "description": "Pay no attention to the man behind the curtain",
+        "display": "WZ",
+        "max_size": 4,
+        "speed": 3
+    }
+}

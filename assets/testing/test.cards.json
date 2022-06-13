@@ -10,6 +10,12 @@
         "display": "JM",
         "max_size": 10,
         "speed": 3
+    },
+    "Andy": {
+        "actions": [ "Bite" ],
+        "display": "ND",
+        "max_size": 1,
+        "speed": 6
     }
 
 }

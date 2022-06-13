@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{loader, node_from_def, NodeDef};
+use game_core::{loader, node_from_def, Inventory, NodeDef, Pickup};
 use n_dit::ui::{SuperState, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -66,8 +66,18 @@ fn load_state() -> SuperState {
     let node_def = &loader::load_asset_dictionary::<NodeDef>(&config).unwrap()["Node0"];
     let curio_dict = loader::load_asset_dictionary(&config).unwrap();
     let action_dict = loader::load_asset_dictionary(&config).unwrap();
-    let node = node_from_def(node_def, curio_dict, action_dict).unwrap();
+    let node = node_from_def(node_def, debug_inventory(), curio_dict, action_dict).unwrap();
     SuperState::from(Some(node))
+}
+
+fn debug_inventory() -> Inventory {
+    let mut inventory = Inventory::default();
+    inventory.pick_up(Pickup::Card("Hack".to_string()));
+    inventory.pick_up(Pickup::Card("Hack".to_string()));
+    inventory.pick_up(Pickup::Card("Hack 3.0".to_string()));
+    inventory.pick_up(Pickup::Card("Andy".to_string()));
+    inventory.pick_up(Pickup::Card("Slingshot".to_string()));
+    inventory
 }
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {

@@ -14,6 +14,8 @@ pub struct ActionDefUnnamed {
     pub targets: Vec<ActionTarget>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub conditions: Vec<ActionCondition>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cost: Option<NonZeroUsize>,
 }
 
 #[derive(Clone, Debug, CopyGetters, Getters, Deserialize, Serialize)]
@@ -31,6 +33,8 @@ pub struct ActionDef {
     #[get = "pub"]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     conditions: Vec<ActionCondition>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    cost: Option<NonZeroUsize>,
 }
 
 
@@ -38,6 +42,7 @@ pub struct ActionDef {
 pub enum CurioActionGenre {
     Attack = 0,
     Support = 1,
+    Special = 2,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -48,19 +53,27 @@ pub enum ActionEffect {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
-    _IncreaseMovementSpeed {
+    DecreaseMaxSize {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
-    _Recover {
+    IncreaseSpeed {
+        amount: usize,
+        bound: Option<NonZeroUsize>,
+    },
+    DecreaseSpeed {
+        amount: usize,
+        bound: Option<NonZeroUsize>,
+    },
+    Recover {
         amount: usize,
         bound: Option<NonZeroUsize>,
     },
     _Create {
         sprite: Sprite,
     },
-    _OpenSquare,
-    _CloseSquare,
+    OpenSquare,
+    CloseSquare,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -78,8 +91,8 @@ pub enum ActionCondition {
 pub enum ActionTarget {
     Ally = 0,
     // Area,
-    _ClosedSquare,
-    _EmptySquare,
+    ClosedSquare,
+    EmptySquare,
     Enemy,
     _Itself,
 }
@@ -96,6 +109,7 @@ impl Asset for ActionDef {
             effect: unnamed.effect,
             targets: unnamed.targets,
             conditions: unnamed.conditions,
+            cost: unnamed.cost
         }
 
     }

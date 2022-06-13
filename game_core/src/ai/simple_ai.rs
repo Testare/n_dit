@@ -48,9 +48,13 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
         A better greedy algorithm would take into account conditions necessary to use actions, but for now
         we just have to not put actions like that on the AI.
     */
-
+    if node.curio_keys_for_team(Team::PlayerTeam).is_empty() {
+        // Game over man, game over!
+        return;
+    }
     node.with_curio(curio_key, |curio| {
         collect(NodeChange::ActivateCurio(curio_key));
+
 
         if let Some((action_name, preferred_action)) = curio
             .actions()

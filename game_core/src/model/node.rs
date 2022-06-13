@@ -14,7 +14,7 @@ use crate::{error::Result, Bounds, GridMap, Metadata, Point, Team};
 use super::super::ai::EnemyAi;
 use super::{
     curio::Curio,
-    inventory::{Inventory, Pickup},
+    inventory::{Inventory, Pickup, CardId},
     keys::node_change_keys,
 };
 
@@ -24,21 +24,26 @@ type ActionDictionary = AssetDictionary<ActionDef>;
 
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct Node {
-    grid: GridMap<Sprite>,
     name: String,
-    active_curio: Option<usize>,
+    grid: GridMap<Sprite>,
+    #[get = "pub"]
+    table_set: bool,
     enemy_ai: EnemyAi,
+    active_curio: Option<usize>,
     active_team: Team,
     #[get = "pub"]
     inventory: Inventory,
     #[get]
     #[serde(default, skip)]
     action_dictionary: ActionDictionary,
+    #[get]
+    #[serde(default, skip)]
+    card_dictionary: AssetDictionary<CardDef>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Sprite {
-    AccessPoint,
+    AccessPoint(Option<CardId>),
     Curio(Curio),
     Pickup(Pickup),
 }
@@ -65,11 +70,6 @@ impl Node {
     }
 
     pub fn untapped_curios_on_active_team(&self) -> usize {
-        let enemy_curios_remaining = self.curio_keys_for_team(Team::EnemyTeam).len();
-        if enemy_curios_remaining == 0 {
-            panic!("No enemies remain! You win!")
-        }
-
         self.filtered_curio_keys(|_, curio| curio.team() == self.active_team() && !curio.tapped())
             .len()
     }
@@ -145,7 +145,7 @@ impl Node {
     }
 
     pub(crate) fn add_card_dictionary(&mut self, card_dictionary: AssetDictionary<CardDef>) {
-        self.inventory.set_card_dict(card_dictionary);
+        self.card_dictionary.extend(card_dictionary);
     }
 
     pub fn width(&self) -> usize {
@@ -235,29 +235,13 @@ impl Sprite {
 
 impl From<GridMap<Sprite>> for Node {
     fn from(grid: GridMap<Sprite>) -> Self {
-        Node {
-            active_curio: None,
-            active_team: Team::PlayerTeam,
-            enemy_ai: EnemyAi::Simple,
-            grid,
-            name: String::from("Node"),
-            inventory: Inventory::default(),
-            action_dictionary: Default::default(),
-        }
+        ("Node".to_string(), grid).into()
     }
 }
 
 impl From<(String, GridMap<Sprite>)> for Node {
     fn from((name, grid): (String, GridMap<Sprite>)) -> Self {
-        Node {
-            active_curio: None,
-            active_team: Team::PlayerTeam,
-            enemy_ai: EnemyAi::Simple,
-            grid,
-            name,
-            inventory: Inventory::default(),
-            action_dictionary: Default::default(),
-        }
+        (name, grid, EnemyAi::Simple).into()
     }
 }
 
@@ -266,11 +250,29 @@ impl From<(String, GridMap<Sprite>, EnemyAi)> for Node {
         Node {
             active_curio: None,
             active_team: Team::PlayerTeam,
+            table_set: false,
             enemy_ai,
             grid,
             name,
-            inventory: Inventory::default(),
+            inventory: Default::default(),
             action_dictionary: Default::default(),
+            card_dictionary: Default::default(),
+        }
+    }
+}
+
+impl From<(String, Inventory, GridMap<Sprite>)> for Node {
+    fn from((name, inventory, grid): (String, Inventory, GridMap<Sprite>)) -> Self {
+        Node {
+            active_curio: None,
+            active_team: Team::PlayerTeam,
+            table_set: false,
+            enemy_ai: EnemyAi::Simple,
+            grid,
+            name,
+            inventory,
+            action_dictionary: Default::default(),
+            card_dictionary: Default::default(),
         }
     }
 }

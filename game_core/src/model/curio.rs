@@ -20,6 +20,7 @@ pub struct Curio {
     max_size: usize,
     #[get = "pub"]
     metadata: Metadata,
+    #[get_copy = "pub"]
     #[set]
     speed: usize,
     #[get_copy = "pub"]

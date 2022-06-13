@@ -34,6 +34,11 @@ pub enum GameCommand {
         action_name: String, // TODO Enum for usize, or name
         target: Point,
     },
+    NodePlayCard {
+        card_name: String, // TODO Need a way to deliniate between multiple cards of the same name
+        target_access_point: Point, // TODO Enum for piece ID or point
+    },
+    NodeReadyToPlay,
 }
 
 pub(super) fn apply_command_dispatch(
@@ -42,22 +47,6 @@ pub(super) fn apply_command_dispatch(
 ) -> Result<()> {
     use GameCommand::*;
     match command {
-        NodeActivateCurio { curio_id } => gm.apply(NodeChange::ActivateCurio(*curio_id)),
-        NodeMoveActiveCurio(dir) => {
-            gm.apply(NodeChange::MoveActiveCurio(*dir))?;
-            node_check_turn_end(gm)
-        }
-        NodeDeactivateCurio => {
-            gm.apply(NodeChange::DeactivateCurio)?;
-            node_check_turn_end(gm)
-        }
-        NodeTakeAction {
-            action_name,
-            target,
-        } => {
-            gm.apply(NodeChange::TakeCurioAction(action_name.clone(), *target))?;
-            node_check_turn_end(gm)
-        }
         Next => {
             if let Some(rx) = &gm.ai_action_receiver {
                 let change = rx.recv().unwrap();
@@ -67,6 +56,28 @@ pub(super) fn apply_command_dispatch(
             } else {
                 gm.apply(GameChange::NextPage)
             }
+        }
+        NodeActivateCurio { curio_id } => gm.apply(NodeChange::ActivateCurio(*curio_id)),
+        NodeDeactivateCurio => {
+            gm.apply(NodeChange::DeactivateCurio)?;
+            node_check_turn_end(gm)
+        }
+        NodeMoveActiveCurio(dir) => {
+            gm.apply(NodeChange::MoveActiveCurio(*dir))?;
+            node_check_turn_end(gm)
+        }
+        NodePlayCard { card_name, target_access_point } => {
+            gm.apply(NodeChange::PlayCard(card_name.clone(), *target_access_point))
+        }
+        NodeReadyToPlay => {
+            gm.apply(NodeChange::ReadyToPlay)
+        }
+        NodeTakeAction {
+            action_name,
+            target,
+        } => {
+            gm.apply(NodeChange::TakeCurioAction(action_name.clone(), *target))?;
+            node_check_turn_end(gm)
         }
         Skip => {
             unimplemented!("Skip action not yet implemented");

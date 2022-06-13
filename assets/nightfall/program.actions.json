@@ -1,0 +1,311 @@
+{
+    "Boost": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "IncreaseSpeed": { "amount": 1 }
+        },
+		"cost": 1,
+        "targets": [ "Ally" ]
+    },
+    "Chug": {
+        "genre": "Support",
+        "range": 3,
+        "effect": {
+            "DecreaseSpeed": { "amount": 2 }
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Dataslam": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 8
+        },
+        "conditions": [
+            { "Size": { "start": 6, "end": 1000 } }
+        ],
+        "targets": [ "Enemy" ]
+    },
+    "Dice": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 3
+        },
+        "conditions": [
+            { "Size": { "start": 3, "end": 1000 } }
+        ],
+        "targets": [ "Enemy" ]
+    },
+    "Fire": {
+        "genre": "Attack",
+        "range": 2,
+        "effect": {
+            "DealDamage": 4
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Fling": {
+        "genre": "Attack",
+        "range": 4,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Fractal Glitch": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 4
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Glitch": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Grow": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "Recover": { "amount": 2 }
+        },
+        "targets": [ "Ally" ]
+    },
+    "Hang": {
+        "genre": "Support",
+        "range": 3,
+        "effect": {
+            "DecreaseSpeed": { "amount": 1000 }
+        },
+        "conditions": [
+            { "Size": { "start": 4, "end": 1000 } }
+        ],
+        "targets": [ "Enemy" ]
+    },
+    "Hypo": {
+        "genre": "Support",
+        "range": 3,
+        "effect": {
+            "Recover": { "amount": 2 }
+        },
+        "targets": [ "Ally" ]
+    },
+    "Ice": {
+        "genre": "Support",
+        "range": 2,
+        "effect": {
+            "DecreaseSpeed": { "amount": 3 }
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Kamikaze": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 5
+        },
+		"cost":1000,
+        "targets": [ "Enemy" ]
+    },
+    "Lag": {
+        "genre": "Support",
+        "range": 3,
+        "effect": {
+            "DecreaseSpeed": { "amount": 1 }
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Megaboost": {
+        "genre": "Support",
+        "range": 2,
+        "effect": {
+            "IncreaseSpeed": { "amount": 2 }
+        },
+        "conditions": [
+            { "Size": { "start": 3, "end": 1000 } }
+        ],
+		"cost": 2,
+        "targets": [ "Ally" ]
+    },
+    "Megagrow": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "Recover": { "amount": 4 }
+        },
+        "targets": [ "Ally" ]
+    },
+    "Megascramble": {
+        "genre": "Attack",
+        "range": 3,
+        "effect": {
+            "DealDamage": 4
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Mutilate": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 4
+        },
+        "conditions": [
+            { "Size": { "start": 4, "end": 1000 } }
+        ],
+        "targets": [ "Enemy" ]
+    },
+    "One": {
+        "genre": "Special",
+        "range": 1,
+        "effect": "OpenSquare",
+        "targets": [ "ClosedSquare" ]
+    },
+    "Paralyze": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "DecreaseSpeed": { "amount": 3 }
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Peek": {
+        "genre": "Attack",
+        "range": 2,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Poke": {
+        "genre": "Attack",
+        "range": 3,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Quantum Glitch": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 6
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Scorch": {
+        "genre": "Attack",
+        "range": 3,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Scramble": {
+        "genre": "Attack",
+        "range": 2,
+        "effect": {
+            "DealDamage": 4
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Selfdestruct": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 10
+        },
+		"cost":1000,
+        "targets": [ "Enemy" ]
+    },
+    "Seek and Destroy": {
+        "genre": "Attack",
+        "range": 2,
+        "effect": {
+            "DealDamage": 5
+        },
+        "conditions": [
+            { "Size": { "start": 5, "end": 1000 } }
+        ],
+		"cost": 2,
+        "targets": [ "Enemy" ]
+    },
+    "Slice": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 2
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Sting": {
+        "genre": "Attack",
+        "range": 1,
+        "effect": {
+            "DealDamage": 1
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Stone": {
+        "genre": "Attack",
+        "range": 3,
+        "effect": {
+            "DealDamage": 1
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Stretch": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "IncreaseMaxSize": { "amount": 1 }
+        },
+        "targets": [ "Ally" ]
+    },
+    "Surgery": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "IncreaseMaxSize": { "amount": 1 }
+        },
+        "targets": [ "Ally" ]
+    },
+    "Spot": {
+        "genre": "Attack",
+        "range": 3,
+        "effect": {
+            "DealDamage": 3
+        },
+        "targets": [ "Enemy" ]
+    },
+    "Tweak": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "IncreaseSpeed": { "amount": 1 }
+        },
+		"cost": 1,
+        "targets": [ "Ally" ]
+    },
+    "Twiddle": {
+        "genre": "Support",
+        "range": 1,
+        "effect": {
+            "IncreaseMaxSize": { "amount": 1 }
+        },
+		"cost": 1,
+        "targets": [ "Ally" ]
+    },
+    "Zero": {
+        "genre": "Special",
+        "range": 1,
+        "effect": "CloseSquare",
+        "targets": [ "EmptySquare" ]
+    }
+}

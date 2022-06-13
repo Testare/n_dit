@@ -1,0 +1,51 @@
+{
+    "Golem Mud": {
+        "actions": [ "Thump" ],
+        "description": "Slow and steady attack program",
+        "display": "gm",
+        "max_size": 5,
+        "speed": 1
+    },
+    "Hack 2.0": {
+        "actions": ["Slice", "Dice"],
+        "description": "Improved Hack: larger size and better attacks",
+        "display": "h2",
+        "max_size": 4,
+        "speed": 3
+    },
+    "Medic": {
+        "actions": [ "Hypo" ],
+        "description": "Grows your programs from a distance",
+        "display": "md",
+        "max_size": 3,
+        "speed": 3
+    },
+    "Seeker": {
+        "actions": [ "Peek" ],
+        "description": "Solid distance attack program",
+        "display": "sk",
+        "max_size": 3,
+        "speed": 3
+    },
+    "Tower": {
+        "actions": [ "Spot" ],
+        "description": "Immobile long-range program",
+        "display": "tw",
+        "max_size": 1,
+        "speed": 0
+    },
+    "Turbo": {
+        "actions": [ "Boost" ],
+        "description": "Speeds up your programs",
+        "display": "tb",
+        "max_size": 3,
+        "speed": 3
+    },
+    "Wolf Spider": {
+        "actions": [ "Byte" ],
+        "description": "Speedy and creepy little program",
+        "display": "ws",
+        "max_size": 3,
+        "speed": 3
+    }
+}

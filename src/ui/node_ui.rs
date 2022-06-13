@@ -1,4 +1,4 @@
-use game_core::{Direction, GameCommand, Node, Point, PointSet};
+use game_core::{Direction, GameCommand, Node, Point, PointSet, Sprite};
 use getset::{CopyGetters, Setters};
 use log::debug;
 
@@ -203,7 +203,10 @@ impl NodeUiState {
 
     pub fn ui_action_for_input(&self, node: &Node, user_input: UserInput) -> Vec<UiAction> {
         // TODO Undo
-        // TODO Not sure why we don't have node state passed in here
+        if user_input == UserInput::Menu {
+            return vec![UiAction::ready_to_play()];
+        }
+
         match self.focus {
             NodeFocus::ActionMenu => {
                 match user_input {
@@ -271,8 +274,20 @@ impl NodeUiState {
                                 UiAction::none()
                             }
                         }
+                        NodePhase::FreeSelect { .. } => {
+                            if let Some(Sprite::AccessPoint(crd)) =
+                                node.sprite_at(self.selected_square)
+                            {
+                                if crd.is_some() {
+                                    vec![UiAction::play_card("Hack 3.0", self.selected_square)]
+                                } else {
+                                    vec![UiAction::play_card("Andy", self.selected_square)]
+                                }
+                            } else {
+                                UiAction::none()
+                            }
+                        }
                         NodePhase::MoveCurio { .. } => vec![UiAction::deactivate_curio()], // TODO if node's curio key at selected square is not selected_curio_key, activate the new curio key instead
-                        _ => UiAction::none(),
                     },
                     UserInput::Select => vec![UiAction::change_selection()],
                     UserInput::Back => vec![UiAction::undo()],

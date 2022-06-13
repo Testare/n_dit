@@ -262,7 +262,7 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         let grid_mut = self.node.grid_mut();
 
         match grid_mut.item_at(next_pt) {
-            Some(Sprite::AccessPoint) => "Move curio collision with access point".fail_critical(),
+            Some(Sprite::AccessPoint(..)) => "Move curio collision with access point".fail_critical(),
             Some(Sprite::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if let Some(Sprite::Pickup(pickup)) = grid_mut.pop_front(key) {

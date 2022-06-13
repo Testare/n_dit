@@ -197,6 +197,17 @@ pub enum UiAction {
 type UiActions = Vec<UiAction>;
 
 impl UiAction {
+    pub fn ready_to_play() -> UiAction {
+        UiAction::GameCommand(GameCommand::NodeReadyToPlay)
+    }
+
+    pub fn play_card(card_name: &str, target_access_point: Point) -> UiAction {
+        UiAction::GameCommand(GameCommand::NodePlayCard {
+            card_name: card_name.to_string(),
+            target_access_point,
+        })
+    }
+
     pub fn perform_curio_action(action_name: &str, target: Point) -> UiAction {
         UiAction::GameCommand(GameCommand::NodeTakeAction {
             action_name: action_name.to_string(),

@@ -6,6 +6,9 @@ use pad::PadStr;
 
 use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Window};
 
+const CLOSED_SQUARE: &str = "  ";
+const OPEN_SQUARE: &str = "░░";
+
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
@@ -26,7 +29,7 @@ fn render_square(
     configuration: &DrawConfiguration,
 ) -> String {
     let string = match sprite {
-        Sprite::AccessPoint => String::from("&&"),
+        Sprite::AccessPoint(_) => String::from("&&"),
         Sprite::Pickup(pickup) => configuration
             .color_scheme()
             .mon()
@@ -63,7 +66,7 @@ fn style(
 ) -> UiFormat {
     match sprite {
         Sprite::Pickup(_) => draw_config.color_scheme().mon(),
-        Sprite::AccessPoint => draw_config.color_scheme().access_point(),
+        Sprite::AccessPoint(_) => draw_config.color_scheme().access_point(),
         Sprite::Curio(curio) => match curio.team() {
             Team::PlayerTeam => {
                 if node.active_curio_key() == Some(key) {
@@ -114,16 +117,20 @@ pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<Strin
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push_str(card);
             }
-            Sprite::AccessPoint => {
+            Sprite::AccessPoint(card_id) => {
                 base_vec[2].push_str("Access Pnt");
+                base_vec[3] = "=".repeat(width);
+                base_vec[4].push_str(format!("{:?}", card_id).as_str());
             }
             Sprite::Curio(curio) => {
-                base_vec[2].push_str("Curio");
-                base_vec[3] = "=".repeat(width);
-                base_vec[4].push('[');
-                base_vec[4].push_str(curio.display());
-                base_vec[4].push(']');
-                base_vec[5].push_str(curio.name());
+                base_vec[1].push_str("Curio");
+                base_vec[2] = "=".repeat(width);
+                base_vec[3].push('[');
+                base_vec[3].push_str(curio.display());
+                base_vec[3].push(']');
+                base_vec[4].push_str(curio.name());
+                base_vec[5]
+                    .push_str(format!("S:{} MS:{}", curio.speed(), curio.max_size()).as_str());
                 base_vec[6] = "=".repeat(width);
                 let selected_action = state.selected_action_index();
                 for (i, action) in curio.actions().iter().enumerate() {
@@ -372,8 +379,16 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                             }
                             if include_space {
                                 let space_style = space_style_for(state, (x, y));
-                                let square =
-                                    sprite_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                                let square = sprite_map
+                                    .get(&(x, y))
+                                    .map(String::as_ref)
+                                    .unwrap_or_else(|| {
+                                        if grid.square_is_closed((x, y)) {
+                                            CLOSED_SQUARE
+                                        } else {
+                                            OPEN_SQUARE
+                                        }
+                                    });
                                 if square.chars().count() == 1 {
                                     space_line.push_str(
                                         space_style.apply(draw_config.half_char()).as_str(),
@@ -407,7 +422,16 @@ pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
                 }
                 if include_space {
                     let space_style = space_style_for(state, (x, y));
-                    let square = sprite_map.get(&(x, y)).map(String::as_ref).unwrap_or("  ");
+                    let square = sprite_map
+                        .get(&(x, y))
+                        .map(String::as_ref)
+                        .unwrap_or_else(|| {
+                            if grid.square_is_closed((x, y)) {
+                                CLOSED_SQUARE
+                            } else {
+                                OPEN_SQUARE
+                            }
+                        });
                     // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                     space_line.push_str(space_style.apply(square).as_str());
                     if x == x_start && skip_x == 2 && square.chars().count() == 1 {

@@ -33,8 +33,8 @@ impl ToString for Error {
             CommandNotSuccessful => "Command unsucessful".to_string(),
             InvalidForContext(msg) => format!("Command not possible, requires context [{}]", msg),
             NotPossibleForState(msg) => format!("Command not currently possible [{}]", msg),
-            FailureReversible(msg) => format!("Curiomer error detected, aborting [{}]", msg),
-            FailureCritical(msg) => format!("Curiomer error detected, crashing [{}]", msg),
+            FailureReversible(msg) => format!("Programmer error detected, aborting [{}]", msg),
+            FailureCritical(msg) => format!("Programmer error detected, crashing [{}]", msg),
         }
     }
 }

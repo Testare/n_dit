@@ -3,7 +3,7 @@ use crossterm::event::{
 };
 use game_core::{Bounds, Direction, Point};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UserInput {
     Dir(Direction), // Gamepad joystick: Defaults to HJKL and arrow keys. Might need to configure for WASD as well?
     AltDir(Direction), // Gamepad D-pad: Moving while special key is held down

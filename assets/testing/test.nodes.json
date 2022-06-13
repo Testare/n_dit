@@ -1,5 +1,5 @@
 {
-    "Node0": {
+    "Test0": {
         "grid_shape": "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
         "sprites": [
             {
@@ -69,7 +69,7 @@
             },
             {
                 "type": "Pickup",
-                "card": "Jeremy",
+                "card": "Andy",
                 "point": [15, 7]
             }
         ]

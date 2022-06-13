@@ -189,6 +189,11 @@ impl<T> GridMap<T> {
         self.item(self.square_ref(pt)?.item_key()?)
     }
 
+    /// Returns a reference to the item at the given point
+    pub fn item_at_mut(&mut self, pt: Point) -> Option<&mut T> {
+        self.item_mut(self.square_ref(pt)?.item_key()?)
+    }
+
     /// Returns the key to the item at the given point
     pub fn item_key_at(&self, pt: Point) -> Option<usize> {
         self.square_ref(pt)?.item_key()
@@ -359,6 +364,21 @@ impl<T> GridMap<T> {
             .collect()
     }
 
+    pub fn point_map_filtered<F, R>(&self, func: F) -> HashMap<Point, R>
+    where
+        F: Fn(usize, usize, &T) -> Option<R>,
+    {
+        self.entries
+            .iter()
+            .flat_map(|(key, (item, _))| {
+                let func_ref = &func;
+                self.square_iter(*key)
+                    .enumerate()
+                    .filter_map(move |(i, sqr)| Some(sqr.location()).zip(func_ref(*key, i, item)))
+            })
+            .collect()
+    }
+
     /// Removes an item from the last grid square this item was added to.
     ///
     /// "last" means sequentially (as in closest to the back), not chronologically.
@@ -386,7 +406,7 @@ impl<T> GridMap<T> {
                 self.entries.remove(&item_key).map(|(item, _)| item)
             }
             (None, None) => None, // There are no points here, should we panic?
-            _ => panic!("Curiomer error, this should not be possible"),
+            _ => panic!("Programmer error, this should not be possible"),
         }
     }
 
@@ -554,6 +574,17 @@ impl<T> GridMap<T> {
             } else {
                 None
             }
+        } else {
+            None
+        }
+    }
+
+    /// Replaces the item for key, if one already exists
+    ///
+    /// Returns the previous value
+    pub fn replace_item(&mut self, key: usize, item: T) -> Option<T> {
+        if let Some(entry) = self.entries.get_mut(&key) {
+            Some(std::mem::replace(&mut entry.0, item))
         } else {
             None
         }

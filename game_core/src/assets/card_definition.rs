@@ -15,6 +15,7 @@ pub struct CardDef {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CardDefUnnamed {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub actions: Vec<String>,
     pub display: String,
     pub max_size: usize,

@@ -6,12 +6,12 @@ use crate::{Pickup, Point, Metadata, Team};
 use super::{CardDef, ActionDef};
 
 use crate::error::{LoadingError};
-use crate::{Curio, AssetDictionary, Node, GridMap, Sprite};
+use crate::{Inventory, Curio, AssetDictionary, Node, GridMap, Sprite};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct NodeDef {
-    grid_shape: String,
     name: String,
+    grid_shape: String,
     sprites: Vec<SpriteDef>,
 }
 
@@ -63,11 +63,8 @@ impl Asset for NodeDef {
     }
 }
 
-//
-pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<ActionDef>) -> Result<Node, LoadingError> {
-    let mut node = Node::from(GridMap::from_shape_string(def.grid_shape.as_str())?);
-    node.add_action_dictionary(action_dictionary);
-    node.add_card_dictionary(card_dict.clone());
+pub fn node_from_def(def: &NodeDef, inventory: Inventory, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<ActionDef>) -> Result<Node, LoadingError> {
+    let mut node = Node::from((def.name.clone(), inventory, GridMap::from_shape_string(def.grid_shape.as_str())?));
 
     for sprite_def in def.sprites.iter() {
         match sprite_def {
@@ -75,7 +72,7 @@ pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_
                 node.add_sprite(*point, pickup.clone().to_sprite());
             },
             SpriteDef::AccessPoint { point } => {
-                node.add_sprite(*point, Sprite::AccessPoint);
+                node.add_sprite(*point, Sprite::AccessPoint(None));
             },
             SpriteDef::Curio {
                 nickname,
@@ -105,6 +102,10 @@ pub fn node_from_def(def: &NodeDef, card_dict: AssetDictionary<CardDef>, action_
             }
         }
     }
+
+    node.add_action_dictionary(action_dictionary);
+    node.add_card_dictionary(card_dict);
+
     Ok(node)
 }
 

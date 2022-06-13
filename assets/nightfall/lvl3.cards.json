@@ -1,0 +1,100 @@
+{
+
+    "Ballista": {
+        "actions": [ "Fling" ],
+        "description": "Extreme-range attack program",
+        "display": "bl",
+        "max_size": 2,
+        "speed": 1
+    },
+    "Black Widow": {
+        "actions": [ "Byte", "Paralyze" ],
+        "description": "Speedier and creepier",
+        "display": "bw",
+        "max_size": 3,
+        "speed": 4
+    },
+    "Buzzbomb": {
+        "actions": [ "String", "Kamikaze" ],
+        "description": "Fast and annoying",
+        "display": "BB",
+        "max_size": 2,
+        "speed": 8
+    },
+    "Clog.02": {
+        "actions": [ "Chug" ],
+        "description": "Twice as effective as version.01",
+        "display": "c2",
+        "max_size": 4,
+        "speed": 2
+    },
+    "Data Doctor Pro": {
+        "actions": [ "Megagrow", "Surgery" ],
+        "description": "Twice the expansion power of Data Doctor",
+        "display": "DD",
+        "max_size": 8,
+        "speed": 5
+    },
+    "Fiddle": {
+        "actions": [ "Tweak", "Twiddle" ],
+        "description": "Grows your programs from a distance",
+        "display": "fd",
+        "max_size": 3,
+        "speed": 3
+    },
+    "Golem Clay": {
+        "actions": [ "Bash" ],
+        "description": "Clay is stronger than mud",
+        "display": "gc",
+        "max_size": 6,
+        "speed": 2
+    },
+    "Hack 3.0": {
+        "actions": ["Slice", "Mutilate"],
+        "description": "The top of the Hack series",
+        "display": "h3",
+        "max_size": 4,
+        "speed": 4
+    },
+    "Mandelbug": {
+        "actions": [ "Fractal Glitch" ],
+        "description": "It's not a bug, it's a feature",
+        "display": "mb",
+        "max_size": 1,
+        "speed": 5
+    },
+    "Memory Hog": {
+        "description": "Massive memory-filling bloatware",
+        "display": "MH",
+        "max_size": 30,
+        "speed": 5
+    },
+    "Mobile Tower": {
+        "actions": [ "Spot" ],
+        "description": "Slow-moving long-range program",
+        "display": "MT",
+        "max_size": 1,
+        "speed": 1
+    },
+    "Satellite": {
+        "actions": [ "Scramble" ],
+        "description": "Short-range hard-hitting program",
+        "display": "-s",
+        "max_size": 1,
+        "speed": 1
+    },
+    "Seeker 2.0": {
+        "actions": [ "Poke" ],
+        "description": "Bigger and better than Seeker",
+        "display": "s2",
+        "max_size": 4,
+        "speed": 3
+    },
+    "Turbo Deluxe": {
+        "actions": [ "Megaboost" ],
+        "description": "Slow and steady is for losers",
+        "display": "TB",
+        "max_size": 4,
+        "speed": 4
+    }
+}
