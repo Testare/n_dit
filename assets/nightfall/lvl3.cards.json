@@ -79,7 +79,7 @@
     "Satellite": {
         "actions": [ "Scramble" ],
         "description": "Short-range hard-hitting program",
-        "display": "-s",
+        "display": "s ",
         "max_size": 1,
         "speed": 1
     },

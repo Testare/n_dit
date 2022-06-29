@@ -9,7 +9,7 @@
     "Bug": {
         "actions": [ "Glitch" ],
         "description": "Fast, cheap, and out of control",
-        "display": "-b",
+        "display": "b ",
         "max_size": 1,
         "speed": 5
     },

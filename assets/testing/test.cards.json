@@ -1,18 +1,21 @@
 {
     "Dog": {
         "actions": [ "Bite" ],
+        "description": "Is a doggy",
         "display": "犬",
         "max_size": 2,
         "speed": 3
     },
     "Jeremy": {
         "actions": [],
+        "description": "He's cool enough",
         "display": "JM",
         "max_size": 10,
         "speed": 3
     },
     "Andy": {
         "actions": [ "Bite" ],
+        "description": "A friendly guy?",
         "display": "ND",
         "max_size": 1,
         "speed": 6
