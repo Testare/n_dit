@@ -33,7 +33,7 @@ impl <T: Asset> Default for AssetDictionary<T> {
 impl <T: Asset> Index<&str> for AssetDictionary<T> {
     type Output = Arc<T>;
     fn index(&self, idx: &str) -> &Self::Output {
-        &self.0[idx]
+        &self.0[idx] // TODO Change output to Result<Arc<T>, Error(Missing Asset)>>
     }
 }
 

@@ -2,7 +2,14 @@
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, )]
+#[non_exhaustive]
+pub enum ErrorLevel {
+    NonCritical,
+    Critical,
+}
+
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// For low-level failures, like the player accidentally tries to move a
@@ -24,6 +31,7 @@ pub enum Error {
     /// Create a new save, do not overwrite old save, and dump state to a debug
     /// file.
     FailureCritical(String),
+    LoadingError(LoadingError),
 }
 
 impl ToString for Error {
@@ -35,6 +43,17 @@ impl ToString for Error {
             NotPossibleForState(msg) => format!("Command not currently possible [{}]", msg),
             FailureReversible(msg) => format!("Programmer error detected, aborting [{}]", msg),
             FailureCritical(msg) => format!("Programmer error detected, crashing [{}]", msg),
+            LoadingError(err) => format!("Error occured while loading asset: [{:?}]", err)
+        }
+    }
+}
+
+impl Error {
+    fn error_level(&self) -> ErrorLevel {
+        use Error::*;
+        match self {
+            FailureCritical(_) | FailureReversible(_) | LoadingError(_) => ErrorLevel::Critical,
+            _ => ErrorLevel::NonCritical,
         }
     }
 }
