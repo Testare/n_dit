@@ -2,7 +2,7 @@ use game_core::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, 
 use getset::{CopyGetters, Getters};
 
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
-
+use super::tui::TuiEventPublisher;
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug, Getters, CopyGetters)]
 pub struct SuperState {
@@ -42,14 +42,17 @@ impl SuperState {
         let (t_width, t_height) =
             crossterm::terminal::size().expect("Problem getting terminal size");
 
-        SuperState {
+        let mut state = SuperState {
             node_ui: node.as_ref().map(NodeUiState::from),
             world_ui: WorldUiState::new(),
             gm: Box::new(GameState::from(node).into()),
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
             view: UiView::Node,
-        }
+        };
+
+        state.gm.add_publisher("tui", TuiEventPublisher());
+        state
     }
 
     pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Vec<UiAction> {

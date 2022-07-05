@@ -1,3 +1,4 @@
+mod tui;
 mod click;
 pub mod configuration;
 pub mod layout;

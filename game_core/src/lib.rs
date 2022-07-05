@@ -9,7 +9,7 @@ mod model;
 // Level 3
 // Level 4
 mod ai;
-mod event;
+pub mod event;
 // Level 5
 // Level 6
 mod assets;
@@ -19,7 +19,7 @@ pub mod loader;
 pub use common::{Bounds, Direction, GridMap, Point, PointSet};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
 use abstractions::StateChange;
-pub use game_master::{AuthorityGameMaster, EventPublisher, GameCommand};
+pub use game_master::{AuthorityGameMaster, EventPublisher, EventLog, GameCommand};
 pub use metadata::Metadata;
 pub use model::curio::{Curio, Team};
 pub use model::game_state::{GameChange, GameState};

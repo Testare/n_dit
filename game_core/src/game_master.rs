@@ -86,7 +86,7 @@ impl AuthorityGameMaster {
         }
     }
 
-    pub fn add_publisher<P: EventPublisher + 'static>(&mut self, key: String, publisher: P) {
+    pub fn add_publisher<P: EventPublisher + 'static>(&mut self, key: &str, publisher: P) {
         self.event_publishers.add_publisher(key, publisher);
     }
 
@@ -136,10 +136,10 @@ struct EventPublisherManager {
 impl EventPublisherManager {
     fn add_publisher<P: EventPublisher + 'static>(
         &mut self,
-        key: String,
+        key: &str,
         publisher: P,
     ) -> Option<Box<dyn EventPublisher>> {
-        self.publishers.insert(key, Box::new(publisher))
+        self.publishers.insert(key.to_string(), Box::new(publisher))
     }
 
     fn remove_publisher(&mut self, key: String) -> Option<Box<dyn EventPublisher>> {
