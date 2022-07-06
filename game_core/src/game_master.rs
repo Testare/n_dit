@@ -23,13 +23,34 @@ pub use game_command::GameCommand;
 
 #[derive(Debug)]
 pub struct AuthorityGameMaster {
+    running: bool,
     state: GameState,
     ai_action_receiver: Option<Receiver<Change>>, // caching of advance-states
     event_log: EventLog,
     event_publishers: EventPublisherManager,
+    inputs: HashMap<usize, Receiver<GameCommand>>,
 }
 
 impl AuthorityGameMaster {
+
+    pub fn add_player_input(&mut self, player_id: usize, gc_tx: Receiver<GameCommand>) {
+        self.inputs.insert(player_id, gc_tx);
+    }
+
+    pub fn run(&mut self) {
+        while self.running {
+            let commands: Vec<(usize, GameCommand)> = self.inputs.iter().flat_map(|(player_id, gc_tx)| {
+                gc_tx.try_iter().map(|command| (*player_id, command))
+            }).collect();
+            for (_player_id, gc) in commands {
+                if gc == GameCommand::ShutDown {
+                    self.running = false;
+                } else if let Err(error) = self.apply_command(gc) {
+                    self.running = !error.is_critical()
+                }
+            }
+        }
+    }
     // Used in GameCommand
     fn apply<C: Into<Change>>(&mut self, change: C) -> Result<()> {
         let new_event_id = self.event_log.last_event_id() + 1;
@@ -114,9 +135,11 @@ impl From<GameState> for AuthorityGameMaster {
     fn from(state: GameState) -> AuthorityGameMaster {
         AuthorityGameMaster {
             state,
+            running: true,
             ai_action_receiver: None,
             event_log: EventLog::default(),
             event_publishers: EventPublisherManager::default(),
+            inputs: HashMap::new(),
         }
     }
 }

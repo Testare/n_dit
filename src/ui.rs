@@ -1,10 +1,10 @@
-mod tui;
 mod click;
 pub mod configuration;
 pub mod layout;
 mod node_ui;
 mod render;
 mod super_state;
+mod tui;
 mod user_input;
 
 use std::num::NonZeroUsize;

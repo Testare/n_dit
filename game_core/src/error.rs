@@ -49,12 +49,16 @@ impl ToString for Error {
 }
 
 impl Error {
-    fn error_level(&self) -> ErrorLevel {
+    pub fn error_level(&self) -> ErrorLevel {
         use Error::*;
         match self {
             FailureCritical(_) | FailureReversible(_) | LoadingError(_) => ErrorLevel::Critical,
             _ => ErrorLevel::NonCritical,
         }
+    }
+
+    pub fn is_critical(&self) -> bool {
+        self.error_level() == ErrorLevel::Critical
     }
 }
 

@@ -21,6 +21,8 @@ use crate::{Direction, Point};
 #[non_exhaustive]
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum GameCommand {
+    Start, // When a player joins, it should execute this command
+    ShutDown,
     Next,
     Skip,
     Undo,
