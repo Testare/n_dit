@@ -43,12 +43,16 @@ impl AuthorityGameMaster {
         &mut self.informants
     }
 
+    pub fn setup_informant<I: Informant + 'static, C: FnOnce(&GameState)-> I>(&mut self, construct_informant: C) {
+        self.informants.add_informant(construct_informant(&self.state));
+    }
+
     pub fn run(&mut self) {
         let mut start_frame;
         while self.running {
             start_frame = Instant::now();
             // log::info!("Frame Time: {:?}", start_frame);
-            let commands = self.informants.poll(&self.state);
+            let commands = self.informants.tick(&self.state);
             for (_player_id, gc) in commands {
                 if gc == GameCommand::ShutDown {
                     self.running = false;
@@ -236,9 +240,9 @@ pub struct InformantManager {
 
 impl InformantManager {
 
-    fn poll(&self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
-        self.informants.iter().filter_map(|(informant_id, informant)| {
-            Some((*informant_id, informant.poll(state)?))
+    fn tick(&mut self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
+        self.informants.iter_mut().filter_map(|(informant_id, informant)| {
+            Some((*informant_id, informant.tick(state)?))
         }).collect()
     }
 

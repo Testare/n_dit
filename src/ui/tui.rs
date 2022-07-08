@@ -1,6 +1,8 @@
 use game_core::{error::Error, event::Event, Informant, EventLog, EventPublisher, GameCommand, GameState};
 use std::time::Duration;
 
+use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
+
 #[derive(Debug)]
 pub struct TuiEventPublisher();
 
@@ -20,20 +22,28 @@ impl EventPublisher for TuiEventPublisher {
 }
 
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct CrosstermInformant {
-
+    layout: Layout,
+    draw_config: DrawConfiguration,
+    node_ui: Option<NodeUiState>,
 }
 
 impl CrosstermInformant {
+    pub fn new(state: &GameState) -> Self {
+        let (t_width, t_height) =
+            crossterm::terminal::size().expect("Problem getting terminal size");
 
-    pub fn new() -> Self {
-        Default::default()
+        CrosstermInformant {
+            node_ui: state.node().map(NodeUiState::from),
+            layout: Layout::new((t_width, t_height).into()),
+            draw_config: DrawConfiguration::default(),
+        }
     }
 }
 
 impl Informant for CrosstermInformant {
-    fn poll(&self, game_state: &GameState) -> Option<GameCommand> {
+    fn tick(&mut self, game_state: &GameState) -> Option<GameCommand> {
         if crossterm::event::poll(Duration::from_secs(0)).unwrap() {
             let e = crossterm::event::read().unwrap();
             if let crossterm::event::Event::Key(crossterm::event::KeyEvent { code , ..}) = e {

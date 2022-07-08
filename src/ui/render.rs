@@ -8,6 +8,8 @@ use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Windo
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
+const ZWSP: char = '\u{200B}';
+const EXAMPLE:char = '死';
 
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',

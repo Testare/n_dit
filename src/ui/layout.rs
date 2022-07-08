@@ -1,6 +1,6 @@
 use game_core::{Bounds, GameState, Point};
 
-use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView};
+use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView, DrawConfiguration};
 
 mod node_layout;
 
@@ -74,6 +74,10 @@ impl Layout {
         } else {
             unimplemented!("TODO World map not implemented")
         }
+    }
+
+    pub fn render_gs(&self, game_state: &GameState, draw_config: &DrawConfiguration) {
+
     }
 
     pub fn resize(&mut self, bounds: Bounds) {

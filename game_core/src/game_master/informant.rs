@@ -25,7 +25,7 @@ use super::{
  * Perhaps a better name would be "UI Pipe", since it it's representative of
  */
 pub trait Informant: Debug {
-    fn poll(&self, game_state: &GameState) -> Option<GameCommand>;
+    fn tick(&mut self, game_state: &GameState) -> Option<GameCommand>;
     fn collect(&mut self, event: &Event, game_state: &GameState);
     fn fail(&mut self, error: &Error, command: &GameCommand);
     fn publish(&mut self, command: &GameCommand);

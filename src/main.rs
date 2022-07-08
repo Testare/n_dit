@@ -95,8 +95,7 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
         }
     }
     Ok(())*/
-    let crossterm_ui = CrosstermInformant::new();
-    state.gm_testing().informants_testing().add_informant(crossterm_ui);
+    state.gm_testing().setup_informant(CrosstermInformant::new);
     state.gm_testing().run();
     Ok(())
     // state.gm_testing().add_player_input(1, receiver);
