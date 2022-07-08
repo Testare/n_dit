@@ -1,4 +1,7 @@
 mod game_command;
+mod informant;
+
+pub use informant::Informant;
 
 use super::error::{Error, ErrorMsg as _, Result};
 use super::{
@@ -7,6 +10,7 @@ use super::{
 };
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver};
+use std::time::{Duration, Instant};
 
 pub use game_command::GameCommand;
 
@@ -28,20 +32,23 @@ pub struct AuthorityGameMaster {
     ai_action_receiver: Option<Receiver<Change>>, // caching of advance-states
     event_log: EventLog,
     event_publishers: EventPublisherManager,
-    inputs: HashMap<usize, Receiver<GameCommand>>,
+    informants: InformantManager,
 }
+
+const FRAME_DELAY: Duration = Duration::from_millis(50);
 
 impl AuthorityGameMaster {
 
-    pub fn add_player_input(&mut self, player_id: usize, gc_tx: Receiver<GameCommand>) {
-        self.inputs.insert(player_id, gc_tx);
+    pub fn informants_testing(&mut self) -> &mut InformantManager {
+        &mut self.informants
     }
 
     pub fn run(&mut self) {
+        let mut start_frame;
         while self.running {
-            let commands: Vec<(usize, GameCommand)> = self.inputs.iter().flat_map(|(player_id, gc_tx)| {
-                gc_tx.try_iter().map(|command| (*player_id, command))
-            }).collect();
+            start_frame = Instant::now();
+            // log::info!("Frame Time: {:?}", start_frame);
+            let commands = self.informants.poll(&self.state);
             for (_player_id, gc) in commands {
                 if gc == GameCommand::ShutDown {
                     self.running = false;
@@ -49,6 +56,8 @@ impl AuthorityGameMaster {
                     self.running = !error.is_critical()
                 }
             }
+            let time_passed = Instant::now() - start_frame;
+            std::thread::sleep(FRAME_DELAY - time_passed);
         }
     }
     // Used in GameCommand
@@ -60,7 +69,7 @@ impl AuthorityGameMaster {
         match result {
             Err(err) => Err(err),
             Ok(event) => {
-                self.event_publishers.collect(&event, &self.state);
+                self.informants.collect(&event, &self.state);
                 self.event_log.push_event(event);
                 Ok(())
             }
@@ -72,7 +81,7 @@ impl AuthorityGameMaster {
         if let Some(event) = event_opt {
             log::debug!("Undoing event {:?}", &event);
             event.undo(&mut self.state)?;
-            self.event_publishers
+            self.informants
                 .collect_undo(&event, &self.state, &self.event_log);
             Ok(())
         } else {
@@ -118,9 +127,9 @@ impl AuthorityGameMaster {
     pub fn apply_command(&mut self, command: GameCommand) -> Result<()> {
         let result = game_command::apply_command_dispatch(self, &command);
         match &result {
-            Ok(_) => self.event_publishers.publish(&command),
+            Ok(_) => self.informants.publish(&command),
             // Failing here instead of in apply in case the command wants to modify the error message a little.
-            Err(error) => self.event_publishers.fail(error, &command),
+            Err(error) => self.informants.fail(error, &command),
         }
         result
     }
@@ -139,7 +148,7 @@ impl From<GameState> for AuthorityGameMaster {
             ai_action_receiver: None,
             event_log: EventLog::default(),
             event_publishers: EventPublisherManager::default(),
-            inputs: HashMap::new(),
+            informants: Default::default(),
         }
     }
 }
@@ -212,5 +221,60 @@ impl EventLog {
 
     fn is_durable(&self) -> bool {
         self.0.last().map(Event::is_durable).unwrap_or(true)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct InformantId(usize);
+
+// TODO This should perhaps not be public
+#[derive(Debug, Default)]
+pub struct InformantManager {
+    informants: HashMap<InformantId, Box<dyn Informant>>,
+    informant_id_counter: usize
+}
+
+impl InformantManager {
+
+    fn poll(&self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
+        self.informants.iter().filter_map(|(informant_id, informant)| {
+            Some((*informant_id, informant.poll(state)?))
+        }).collect()
+    }
+
+    pub fn add_informant<P: Informant + 'static>(
+        &mut self,
+        informant: P,
+    ) -> Option<Box<dyn Informant>> {
+        self.informant_id_counter += 1;
+        self.informants.insert(InformantId(self.informant_id_counter), Box::new(informant))
+    }
+
+    fn remove_informant(&mut self, id: &InformantId) -> Option<Box<dyn Informant>> {
+        self.informants.remove(id)
+    }
+
+    fn collect(&mut self, event: &Event, game_state: &GameState) {
+        for informant in self.informants.values_mut() {
+            informant.collect(event, game_state);
+        }
+    }
+
+    fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
+        for informant in self.informants.values_mut() {
+            informant.collect_undo(event, game_state, event_log);
+        }
+    }
+
+    fn fail(&mut self, error: &Error, command: &GameCommand) {
+        for informant in self.informants.values_mut() {
+            informant.fail(error, command);
+        }
+    }
+
+    fn publish(&mut self, command: &GameCommand) {
+        for informant in self.informants.values_mut() {
+            informant.publish(command);
+        }
     }
 }

@@ -19,7 +19,7 @@ pub mod loader;
 pub use common::{Bounds, Direction, GridMap, Point, PointSet};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
 use abstractions::StateChange;
-pub use game_master::{AuthorityGameMaster, EventPublisher, EventLog, GameCommand};
+pub use game_master::{AuthorityGameMaster, EventPublisher, EventLog, GameCommand, Informant};
 pub use metadata::Metadata;
 pub use model::curio::{Curio, Team};
 pub use model::game_state::{GameChange, GameState};

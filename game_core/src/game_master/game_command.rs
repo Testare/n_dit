@@ -21,8 +21,9 @@ use crate::{Direction, Point};
 #[non_exhaustive]
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum GameCommand {
-    Start, // When a player joins, it should execute this command
-    ShutDown,
+    Start, // When a player joins a server, it should execute this command
+    ShutDown, // To close the server down, run this one
+    Drop, // When a player disconnects from the server, run this one.
     Next,
     Skip,
     Undo,
@@ -85,6 +86,9 @@ pub(super) fn apply_command_dispatch(
             unimplemented!("Skip action not yet implemented");
         }
         Undo => gm.undo_until_last_durable_event(),
+        Start => {
+            Ok(())
+        }
         _ => {
             unimplemented!("Many actions not yet implemented");
         }

@@ -3,7 +3,7 @@ use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
 use game_core::{loader, node_from_def, Inventory, NodeDef, Pickup};
-use n_dit::ui::{SuperState, UiAction, UserInput};
+use n_dit::ui::{SuperState, UiAction, UserInput, CrosstermInformant};
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() -> crossterm::Result<()> {
@@ -81,7 +81,7 @@ fn debug_inventory() -> Inventory {
 }
 
 fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
-    let mut keep_going = true;
+    /*let mut keep_going = true;
     let mut last_action;
     while keep_going {
         last_action = Instant::now();
@@ -94,7 +94,28 @@ fn game_loop(mut state: SuperState) -> crossterm::Result<()> {
             }
         }
     }
+    Ok(())*/
+    let crossterm_ui = CrosstermInformant::new();
+    state.gm_testing().informants_testing().add_informant(crossterm_ui);
+    state.gm_testing().run();
     Ok(())
+    // state.gm_testing().add_player_input(1, receiver);
+    /*
+    let jn_handle = std::thread::spawn(move || {
+        let mut keep_going = true;
+        let mut last_action;
+        while keep_going {
+            let mut last_action = Instant::now();
+
+            let event = crossterm::event::read();
+            if action.is_quit() {
+                keep_going = false;
+            } else {
+            }
+        }
+    });
+    Ok(())
+    */
 }
 
 const TIMEOUT: Duration = Duration::from_millis(500);

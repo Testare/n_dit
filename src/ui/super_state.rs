@@ -55,6 +55,10 @@ impl SuperState {
         state
     }
 
+    pub fn gm_testing(&mut self) -> &mut AuthorityGameMaster {
+        &mut self.gm
+    }
+
     pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Vec<UiAction> {
         let ct = self.layout.click_target(self, pt);
         log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
