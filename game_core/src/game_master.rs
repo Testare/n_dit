@@ -35,7 +35,9 @@ pub struct AuthorityGameMaster {
     informants: InformantManager,
 }
 
-const FRAME_DELAY: Duration = Duration::from_millis(50);
+// Currently render loop is coupled with input loop and animation loop.
+// In the future all 3 of these need to be decoupled
+const FRAME_DELAY: Duration = Duration::from_millis(100);
 
 impl AuthorityGameMaster {
 
@@ -49,6 +51,7 @@ impl AuthorityGameMaster {
 
     pub fn run(&mut self) {
         let mut start_frame;
+        let mut frame_count: usize = 0;
         while self.running {
             start_frame = Instant::now();
             // log::info!("Frame Time: {:?}", start_frame);
@@ -60,6 +63,10 @@ impl AuthorityGameMaster {
                     self.running = !error.is_critical()
                 }
             }
+            if frame_count % 5 == 0 {
+                self.apply_command(GameCommand::Next); // TODO better AI command logic
+            }
+            frame_count = (frame_count + 1) % 2100;
             let time_passed = Instant::now() - start_frame;
             std::thread::sleep(FRAME_DELAY - time_passed);
         }

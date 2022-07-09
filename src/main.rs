@@ -9,10 +9,11 @@ use simplelog::{LevelFilter, WriteLogger};
 
 fn main() -> crossterm::Result<()> {
     setup_logging();
-    let gm = load_state();
+    let mut gm = load_state();
     reset_terminal_on_panic(); // If the game panics, we want to bring the terminal back to a normal state
     set_terminal_state()?;
-    game_loop(gm)?;
+    gm.setup_informant(CrosstermInformant::new);
+    gm.run();
     reset_terminal_state()?;
     Ok(())
 }
@@ -79,12 +80,6 @@ fn debug_inventory() -> Inventory {
     inventory.pick_up(Pickup::Card("Andy".to_string()));
     inventory.pick_up(Pickup::Card("Slingshot".to_string()));
     inventory
-}
-
-fn game_loop(mut gm: AuthorityGameMaster) -> crossterm::Result<()> {
-    gm.setup_informant(CrosstermInformant::new);
-    gm.run();
-    Ok(())
 }
 
 // Can set up more advanced CLI support in the future with clap
