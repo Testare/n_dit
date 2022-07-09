@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
 
-use game_core::{Node, Pickup, Point, Sprite, Team};
+use game_core::{Node, Pickup, Point, Sprite, Team, GameState};
 use itertools::Itertools;
 use pad::PadStr;
 
@@ -84,11 +84,10 @@ fn style(
     }
 }
 
-pub fn render_menu(state: &SuperState, height: usize, width: usize) -> Vec<String> {
+pub fn render_menu(state: &SuperState, game_state: &GameState, height: usize, width: usize) -> Vec<String> {
     // TODO height checking + scrolling + etc
     // TODO render_menu when there is no node
-    let node = state
-        .game_state()
+    let node = game_state
         .node()
         .expect("TODO what if there is no node?");
     let sprite_opt = node
@@ -239,12 +238,12 @@ pub fn space_style_for(state: &SuperState, pt: Point) -> UiFormat {
 
 // TODO make this unsafe, panic if there is no node
 // TODO "NodeRenderingMathCache" struct
-pub fn render_node(state: &SuperState, window: Window) -> Vec<String> {
-    let node_opt = state.game_state().node();
+pub fn render_node(node: &Node, state: &SuperState, window: Window) -> Vec<String> {
+    /*let node_opt = state.game_state().node();
     if node_opt.is_none() {
         return vec![]; // Panic?
     }
-    let node = node_opt.unwrap();
+    let node = node_opt.unwrap();*/
     let draw_config = state.draw_config();
     let grid = node.grid();
     let width = grid.width();
@@ -479,4 +478,16 @@ fn intersection_for_pivot(
     let west = border_type_bit(draw_config, left[0], left[1]) << 3;
 
     INTERSECTION_CHAR[north | east | south | west]
+}
+
+
+#[cfg(test)]
+mod test {
+    use crossterm::style::Stylize;
+    use crossterm::style::Color;
+    #[test]
+    fn style_cell_max_size() {
+        let s: String = "--".bold().reverse().with(Color::Rgb{r:255, g:255, b:255}).on(Color::Rgb{r:255, g: 0, b: 0}).to_string();
+        assert_eq!(true, s.len() < 60);
+    }
 }

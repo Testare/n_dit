@@ -6,7 +6,6 @@ use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug, Getters, CopyGetters)]
 pub struct SuperState {
-    gm: Box<AuthorityGameMaster>,
     layout: Layout,
     draw_config: DrawConfiguration,
     #[get_copy = "pub"]
@@ -37,37 +36,27 @@ pub enum UiView {
 }
 
 impl SuperState {
-    pub fn from(node: Option<Node>) -> Self {
+    pub fn from(state: &GameState) -> Self {
         // TODO This should be more safe, probably not an actual trait for UiState
         let (t_width, t_height) =
             crossterm::terminal::size().expect("Problem getting terminal size");
 
-        let mut state = SuperState {
-            node_ui: node.as_ref().map(NodeUiState::from),
+        SuperState {
+            node_ui: state.node().map(NodeUiState::from),
             world_ui: WorldUiState::new(),
-            gm: Box::new(GameState::from(node).into()),
             layout: Layout::new((t_width, t_height).into()),
             draw_config: DrawConfiguration::default(),
             view: UiView::Node,
-        };
-
-        state.gm.add_publisher("tui", TuiEventPublisher());
-        state
+        }
     }
 
-    pub fn gm_testing(&mut self) -> &mut AuthorityGameMaster {
-        &mut self.gm
-    }
-
-    pub fn action_for_char_pt(&self, pt: Point, alt: bool, in_animation: bool) -> Vec<UiAction> {
-        let ct = self.layout.click_target(self, pt);
+    pub fn action_for_char_pt(&self, pt: Point, state: &GameState, alt: bool, in_animation: bool) -> Vec<UiAction> {
+        let ct = self.layout.click_target(self, state, pt);
         log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
         let ui_actions = match ct {
             Some(ClickTarget::Node(node_ct)) => {
                 self.node_ui().unwrap().ui_actions_for_click_target(
-                    self.game_state()
-                        .node()
-                        .expect("Node click target whe nnode is not present"),
+                    state.node().expect("Node click target whe nnode is not present"),
                     node_ct,
                     alt,
                 )
@@ -107,24 +96,20 @@ impl SuperState {
         self.node_ui.as_ref()
     }
 
-    pub fn render(&self) -> std::io::Result<bool> {
-        self.layout.render(self)
+    pub fn render(&self, state: &GameState) -> std::io::Result<bool> {
+        self.layout.render(self, state)
     }
 
-    pub fn game_state(&self) -> &GameState {
-        self.gm.state()
-    }
-
-    pub fn ui_actions_for_input(&self, user_input: UserInput) -> Vec<UiAction> {
+    pub fn ui_actions_for_input(&self, state: &GameState, user_input: UserInput) -> Vec<UiAction> {
         // TODO Perhaps have a method "is_animation_safe" property to indicate UI actions that can
         // apply even during animations
-        let in_animation = self.game_state().animation().is_some();
+        let in_animation = state.animation().is_some();
         match user_input {
             UserInput::Quit => vec![UiAction::quit()], // Might be able to just return None here
             UserInput::Debug => panic!("Debug state: {:?}", self),
             UserInput::Resize(bounds) => vec![UiAction::set_terminal_size(bounds)],
-            UserInput::Click(pt) => self.action_for_char_pt(pt, false, in_animation),
-            UserInput::AltClick(pt) => self.action_for_char_pt(pt, true, in_animation),
+            UserInput::Click(pt) => self.action_for_char_pt(pt, state, false, in_animation),
+            UserInput::AltClick(pt) => self.action_for_char_pt(pt, state, true, in_animation),
             UserInput::Next => {
                 if in_animation {
                     Vec::new()
@@ -136,7 +121,7 @@ impl SuperState {
                 if !in_animation {
                     self.node_ui
                         .as_ref()
-                        .zip(self.game_state().node())
+                        .zip(state.node())
                         .map(|(node_ui, node)| node_ui.ui_action_for_input(node, user_input))
                         .unwrap_or_else(UiAction::none)
                 } else {
@@ -146,16 +131,10 @@ impl SuperState {
         }
     }
 
-    pub fn apply_action(&mut self, ui_action: UiAction) -> Result<(), String> {
+    pub fn apply_action(&mut self, ui_action: UiAction, state: &GameState) -> Result<(), String> {
         log::info!("Performing UiAction {:?}", ui_action);
-        if let UiAction::GameCommand(game_command) = &ui_action {
-            self.gm
-                .apply_command(game_command.clone())
-                .map_err(|err| err.to_string())?;
-        }
 
         let SuperState {
-            gm,
             node_ui,
             layout,
             ..
@@ -173,7 +152,7 @@ impl SuperState {
 
         node_ui
             .as_mut()
-            .zip(gm.state().node())
+            .zip(state.node())
             .map(|(node_ui, node)| node_ui.apply_action(node, &ui_action))
             .unwrap_or_else(|| Err("Node UI action, but no node".to_string()))?;
 

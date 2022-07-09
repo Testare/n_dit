@@ -27,7 +27,7 @@ use super::{
 pub trait Informant: Debug {
     fn tick(&mut self, game_state: &GameState) -> Option<GameCommand>;
     fn collect(&mut self, event: &Event, game_state: &GameState);
-    fn fail(&mut self, error: &Error, command: &GameCommand);
-    fn publish(&mut self, command: &GameCommand);
+    fn fail(&mut self, error: &Error, command: &GameCommand, game_state: &GameState);
+    fn publish(&mut self, command: &GameCommand, game_state: &GameState);
     fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog);
 }

@@ -5,7 +5,7 @@ use std::{
 };
 
 use crossterm::queue;
-use game_core::{Bounds, Direction, Point};
+use game_core::{Bounds, Direction, Point, GameState};
 use unicode_width::UnicodeWidthStr;
 
 use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
@@ -26,16 +26,16 @@ impl SubLayout for NodeLayout {
         self.layout_mut().scroll_to_pt(pt)
     }
 
-    unsafe fn render(&self, state: &SuperState) -> std::io::Result<bool> {
-        self.layout().render(state)
+    unsafe fn render(&self, state: &SuperState, game_state: &GameState) -> std::io::Result<bool> {
+        self.layout().render(state, game_state)
     }
 
     fn resize(&mut self, terminal_size: Bounds) -> bool {
         self.layout_mut().resize(terminal_size)
     }
 
-    fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
-        self.layout().click_target(state, pt)
+    fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget> {
+        self.layout().click_target(state, game_state, pt)
     }
 }
 
@@ -205,7 +205,7 @@ impl SubLayout for StandardNodeLayout {
     /// ## Safety
     ///
     /// Assumes game_state.node().is_some()
-    unsafe fn render(&self, super_state: &SuperState) -> std::io::Result<bool> {
+    unsafe fn render(&self, super_state: &SuperState, game_state: &GameState) -> std::io::Result<bool> {
         // TODO queue + flush over execute
         let mut stdout = stdout();
         queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;
@@ -222,10 +222,10 @@ impl SubLayout for StandardNodeLayout {
             }
             return Ok(false);
         }
-        let mon = super_state.game_state().player_mon();
+        let mon = game_state.player_mon();
         let fields = self.calculated_fields.unwrap(); // TODO change to an if let
         let border = '\\';
-        let node = super_state.game_state().node().unwrap();
+        let node = game_state.node().unwrap();
         queue!(
             stdout,
             crossterm::style::Print("\\".repeat(fields.width)),
@@ -250,9 +250,10 @@ impl SubLayout for StandardNodeLayout {
             )?;
         }
 
-        let node_rendering = render::render_node(super_state, fields.map_window);
+        let node_rendering = render::render_node(node, super_state, fields.map_window);
         for (map_row, menu_row) in node_rendering.iter().zip(render::render_menu(
             super_state,
+            game_state,
             fields.height,
             fields.menu_width,
         )) {
@@ -300,7 +301,7 @@ impl SubLayout for StandardNodeLayout {
         // TODO adjust scrolling after resize
     }
 
-    fn click_target(&self, state: &SuperState, pt: Point) -> Option<ClickTarget> {
+    fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget> {
         // TODO change logic for eager layout math
         let Bounds(available_width, available_height) = state.terminal_size();
         if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
@@ -314,7 +315,7 @@ impl SubLayout for StandardNodeLayout {
         let left = 13;
         if pt.1 >= top && pt.1 < height {
             if pt.0 > 0 && pt.0 < left {
-                let node = state.game_state().node().unwrap();
+                let node = game_state.node().unwrap();
                 // Action Menus
                 (pt.1 - top)
                     .checked_sub(Self::CURIO_ACTION_Y)
@@ -333,8 +334,7 @@ impl SubLayout for StandardNodeLayout {
                     pt,
                     (x, y)
                 );
-                if state
-                    .game_state()
+                if game_state
                     .node()
                     .unwrap()
                     .bounds()

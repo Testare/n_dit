@@ -130,10 +130,11 @@ impl AuthorityGameMaster {
 
     pub fn apply_command(&mut self, command: GameCommand) -> Result<()> {
         let result = game_command::apply_command_dispatch(self, &command);
+        let AuthorityGameMaster{informants, state, ..} = self;
         match &result {
-            Ok(_) => self.informants.publish(&command),
+            Ok(_) => informants.publish(&command, state),
             // Failing here instead of in apply in case the command wants to modify the error message a little.
-            Err(error) => self.informants.fail(error, &command),
+            Err(error) => informants.fail(error, &command, state),
         }
         result
     }
@@ -270,15 +271,15 @@ impl InformantManager {
         }
     }
 
-    fn fail(&mut self, error: &Error, command: &GameCommand) {
+    fn fail(&mut self, error: &Error, command: &GameCommand, state: &GameState) {
         for informant in self.informants.values_mut() {
-            informant.fail(error, command);
+            informant.fail(error, command, state);
         }
     }
 
-    fn publish(&mut self, command: &GameCommand) {
+    fn publish(&mut self, command: &GameCommand, state: &GameState) {
         for informant in self.informants.values_mut() {
-            informant.publish(command);
+            informant.publish(command, state);
         }
     }
 }

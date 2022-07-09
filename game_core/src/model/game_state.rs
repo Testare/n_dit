@@ -5,9 +5,8 @@ pub use game_change::GameChange;
 use super::super::{Inventory, Node, Team, WorldMap};
 use super::animation::Animation;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GameState {
-    _world_map: WorldMap,
     node: Option<Node>,
     animation: Option<Animation>,
     inventory: Inventory,
@@ -41,7 +40,6 @@ impl GameState {
     pub fn from(node: Option<Node>) -> Self {
         GameState {
             node,
-            _world_map: WorldMap { nodes: 1 },
             animation: None,
             inventory: Inventory::default(),
         }
