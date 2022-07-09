@@ -2,8 +2,10 @@ use core::time::Duration;
 use std::{fs::File, io::stdout, panic, time::Instant};
 
 use crossterm::{self, execute};
-use game_core::{GameState, AuthorityGameMaster, loader, node_from_def, Inventory, NodeDef, Pickup};
-use n_dit::ui::{UiAction, UserInput, CrosstermInformant};
+use game_core::{
+    loader, node_from_def, AuthorityGameMaster, GameState, Inventory, NodeDef, Pickup,
+};
+use n_dit::ui::{CrosstermInformant, UiAction, UserInput};
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() -> crossterm::Result<()> {

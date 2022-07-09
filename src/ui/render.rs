@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
 
-use game_core::{Node, Pickup, Point, Sprite, Team, GameState};
+use game_core::{GameState, Node, Pickup, Point, Sprite, Team};
 use itertools::Itertools;
 use pad::PadStr;
 
@@ -9,7 +9,7 @@ use super::{DrawConfiguration, DrawType, FillMethod, SuperState, UiFormat, Windo
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
 const ZWSP: char = '\u{200B}';
-const EXAMPLE:char = '死';
+const EXAMPLE: char = '死';
 
 const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
@@ -84,12 +84,15 @@ fn style(
     }
 }
 
-pub fn render_menu(state: &SuperState, game_state: &GameState, height: usize, width: usize) -> Vec<String> {
+pub fn render_menu(
+    state: &SuperState,
+    game_state: &GameState,
+    height: usize,
+    width: usize,
+) -> Vec<String> {
     // TODO height checking + scrolling + etc
     // TODO render_menu when there is no node
-    let node = game_state
-        .node()
-        .expect("TODO what if there is no node?");
+    let node = game_state.node().expect("TODO what if there is no node?");
     let sprite_opt = node
         .active_curio_key()
         .and_then(|key| node.sprite(key))
@@ -480,14 +483,22 @@ fn intersection_for_pivot(
     INTERSECTION_CHAR[north | east | south | west]
 }
 
-
 #[cfg(test)]
 mod test {
-    use crossterm::style::Stylize;
     use crossterm::style::Color;
+    use crossterm::style::Stylize;
     #[test]
     fn style_cell_max_size() {
-        let s: String = "--".bold().reverse().with(Color::Rgb{r:255, g:255, b:255}).on(Color::Rgb{r:255, g: 0, b: 0}).to_string();
+        let s: String = "--"
+            .bold()
+            .reverse()
+            .with(Color::Rgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            })
+            .on(Color::Rgb { r: 255, g: 0, b: 0 })
+            .to_string();
         assert_eq!(true, s.len() < 60);
     }
 }

@@ -5,7 +5,7 @@ use std::{
 };
 
 use crossterm::queue;
-use game_core::{Bounds, Direction, Point, GameState};
+use game_core::{Bounds, Direction, GameState, Point};
 use unicode_width::UnicodeWidthStr;
 
 use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};
@@ -34,7 +34,12 @@ impl SubLayout for NodeLayout {
         self.layout_mut().resize(terminal_size)
     }
 
-    fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget> {
+    fn click_target(
+        &self,
+        state: &SuperState,
+        game_state: &GameState,
+        pt: Point,
+    ) -> Option<ClickTarget> {
         self.layout().click_target(state, game_state, pt)
     }
 }
@@ -205,7 +210,11 @@ impl SubLayout for StandardNodeLayout {
     /// ## Safety
     ///
     /// Assumes game_state.node().is_some()
-    unsafe fn render(&self, super_state: &SuperState, game_state: &GameState) -> std::io::Result<bool> {
+    unsafe fn render(
+        &self,
+        super_state: &SuperState,
+        game_state: &GameState,
+    ) -> std::io::Result<bool> {
         // TODO queue + flush over execute
         let mut stdout = stdout();
         queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;
@@ -301,7 +310,12 @@ impl SubLayout for StandardNodeLayout {
         // TODO adjust scrolling after resize
     }
 
-    fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget> {
+    fn click_target(
+        &self,
+        state: &SuperState,
+        game_state: &GameState,
+        pt: Point,
+    ) -> Option<ClickTarget> {
         // TODO change logic for eager layout math
         let Bounds(available_width, available_height) = state.terminal_size();
         if available_width < Self::MIN_WIDTH || available_height < Self::MIN_HEIGHT {
@@ -334,12 +348,7 @@ impl SubLayout for StandardNodeLayout {
                     pt,
                     (x, y)
                 );
-                if game_state
-                    .node()
-                    .unwrap()
-                    .bounds()
-                    .contains_pt((x, y))
-                {
+                if game_state.node().unwrap().bounds().contains_pt((x, y)) {
                     Some(NodeCt::Grid((x, y)).into())
                 } else {
                     None

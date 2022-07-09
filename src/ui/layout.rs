@@ -1,6 +1,6 @@
 use game_core::{Bounds, GameState, Point};
 
-use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView, DrawConfiguration};
+use super::{ClickTarget, DrawConfiguration, NodeUiState, SuperState, UiAction, UiView};
 
 mod node_layout;
 
@@ -14,7 +14,12 @@ trait SubLayout {
     unsafe fn render(&self, state: &SuperState, game_state: &GameState) -> std::io::Result<bool>;
     fn scroll_to_pt(&mut self, pt: Point);
     fn resize(&mut self, terminal_size: Bounds) -> bool;
-    fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget>;
+    fn click_target(
+        &self,
+        state: &SuperState,
+        game_state: &GameState,
+        pt: Point,
+    ) -> Option<ClickTarget>;
     // fn can_be_rendered
     // fn update_size
     // TODO scroll(Direction)
@@ -37,7 +42,12 @@ impl Layout {
         self.node_layout.apply_action(ui_action, node_ui);
     }
 
-    pub fn click_target(&self, state: &SuperState, game_state: &GameState, pt: Point) -> Option<ClickTarget> {
+    pub fn click_target(
+        &self,
+        state: &SuperState,
+        game_state: &GameState,
+        pt: Point,
+    ) -> Option<ClickTarget> {
         if game_state.node().is_some() {
             self.node_layout.click_target(state, game_state, pt)
         } else {
@@ -86,7 +96,7 @@ mod too_small_layout {
     use std::io::stdout;
 
     use crossterm::execute;
-    use game_core::{Bounds, Point, GameState};
+    use game_core::{Bounds, GameState, Point};
 
     use super::{ClickTarget, NodeUiState, SubLayout};
     use crate::{SuperState, UiAction};
@@ -95,7 +105,11 @@ mod too_small_layout {
     pub struct TooSmallLayout(pub Bounds);
 
     impl SubLayout for TooSmallLayout {
-        unsafe fn render(&self, _state: &SuperState, _game_state: &GameState) -> std::io::Result<bool> {
+        unsafe fn render(
+            &self,
+            _state: &SuperState,
+            _game_state: &GameState,
+        ) -> std::io::Result<bool> {
             let (available_width, available_height) = self.0.into();
             for i in 0..available_height {
                 let blinds = if i % 2 == 0 { ">" } else { "<" };

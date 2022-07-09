@@ -1,7 +1,9 @@
-use game_core::{error::Error, event::Event, Informant, EventLog, EventPublisher, GameCommand, GameState};
+use game_core::{
+    error::Error, event::Event, EventLog, EventPublisher, GameCommand, GameState, Informant,
+};
 use std::time::Duration;
 
-use super::{UiAction, ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput, SuperState};
+use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, SuperState, UiAction, UserInput};
 
 #[derive(Debug)]
 pub struct TuiEventPublisher();
@@ -20,7 +22,6 @@ impl EventPublisher for TuiEventPublisher {
         log::debug!(" TEP undo {:?}", event)
     }
 }
-
 
 #[derive(Debug)]
 pub struct CrosstermInformant {
@@ -82,7 +83,9 @@ impl Informant for CrosstermInformant {
         log::debug!(" TEP fail {:?}", error)
     }
     fn publish(&mut self, command: &GameCommand, game_state: &GameState) {
-        self.super_state.apply_action(UiAction::GameCommand(command.clone()), game_state).unwrap();
+        self.super_state
+            .apply_action(UiAction::GameCommand(command.clone()), game_state)
+            .unwrap();
         log::debug!(" TEP publish {:?}", command);
         self.render(game_state);
     }
@@ -90,5 +93,4 @@ impl Informant for CrosstermInformant {
     fn collect_undo(&mut self, event: &Event, _game_state: &GameState, _event_log: &EventLog) {
         log::debug!(" TEP undo {:?}", event)
     }
-
 }

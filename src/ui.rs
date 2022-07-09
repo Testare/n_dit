@@ -16,8 +16,8 @@ pub use layout::Layout;
 use node_ui::NodeUiState;
 use super_state::UiView;
 pub use super_state::{SuperState, UiAction};
-pub use user_input::UserInput;
 pub use tui::CrosstermInformant;
+pub use user_input::UserInput;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Window {

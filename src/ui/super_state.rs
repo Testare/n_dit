@@ -50,13 +50,21 @@ impl SuperState {
         }
     }
 
-    pub fn action_for_char_pt(&self, pt: Point, state: &GameState, alt: bool, in_animation: bool) -> Vec<UiAction> {
+    pub fn action_for_char_pt(
+        &self,
+        pt: Point,
+        state: &GameState,
+        alt: bool,
+        in_animation: bool,
+    ) -> Vec<UiAction> {
         let ct = self.layout.click_target(self, state, pt);
         log::info!("Click at point [{:?}] -> CT [{:?}]", pt, ct);
         let ui_actions = match ct {
             Some(ClickTarget::Node(node_ct)) => {
                 self.node_ui().unwrap().ui_actions_for_click_target(
-                    state.node().expect("Node click target whe nnode is not present"),
+                    state
+                        .node()
+                        .expect("Node click target whe nnode is not present"),
                     node_ct,
                     alt,
                 )
@@ -135,9 +143,7 @@ impl SuperState {
         log::info!("Performing UiAction {:?}", ui_action);
 
         let SuperState {
-            node_ui,
-            layout,
-            ..
+            node_ui, layout, ..
         } = self;
 
         match &ui_action {
