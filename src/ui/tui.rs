@@ -3,7 +3,7 @@ use game_core::{
 };
 use std::time::Duration;
 
-use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, SuperState, UiAction, UserInput};
+use super::{DrawConfiguration, Layout, NodeUiState, SuperState, UiAction, UserInput};
 
 #[derive(Debug)]
 pub struct TuiEventPublisher();
@@ -65,7 +65,7 @@ impl Informant for CrosstermInformant {
                         game_command = Some(gc);
                     } else {
                         self.super_state.apply_action(action, game_state).unwrap();
-                        self.render(&game_state);
+                        self.render(game_state);
                     }
                 }
                 game_command

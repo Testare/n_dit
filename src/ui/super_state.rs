@@ -1,7 +1,6 @@
-use game_core::{AuthorityGameMaster, Bounds, Direction, GameCommand, GameState, Node, Point};
+use game_core::{Bounds, Direction, GameCommand, GameState, Point};
 use getset::{CopyGetters, Getters};
 
-use super::tui::TuiEventPublisher;
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};
 // TODO Might be best to represent soem of this state as an enum state machine
 #[derive(Debug, Getters, CopyGetters)]

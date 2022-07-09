@@ -1,6 +1,6 @@
 use game_core::{Bounds, GameState, Point};
 
-use super::{ClickTarget, DrawConfiguration, NodeUiState, SuperState, UiAction, UiView};
+use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView};
 
 mod node_layout;
 
