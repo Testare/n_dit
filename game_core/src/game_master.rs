@@ -7,9 +7,11 @@ use super::error::{Error, ErrorMsg as _, Result};
 use super::{
     event::{Change, Event},
     EnemyAi, GameState,
+    network::{ServerConnectionListener, NetworkInformant},
+
 };
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::time::{Duration, Instant};
 
 pub use game_command::GameCommand;
@@ -33,6 +35,8 @@ pub struct AuthorityGameMaster {
     event_log: EventLog,
     event_publishers: EventPublisherManager,
     informants: InformantManager,
+    server_connection_listener: Option<ServerConnectionListener>,
+
 }
 
 // Currently render loop is coupled with input loop and animation loop.
@@ -61,6 +65,22 @@ impl AuthorityGameMaster {
                     self.running = false;
                 } else if let Err(error) = self.apply_command(gc) {
                     self.running = !error.is_critical()
+                }
+            }
+            if let Some(scl) = &self.server_connection_listener {
+                match scl.poll_for_connection() {
+                    Ok(tcp_connection) => {
+                        log::debug!("Connection made!");
+                        let ni = NetworkInformant::new(tcp_connection);
+                        self.setup_informant(|_|ni);
+                    }, 
+                    Err(TryRecvError::Empty) => {
+                    }
+                    Err(TryRecvError::Disconnected) => {
+                        // TODO What do we do in this situation?
+                        panic!("Unexpected situation has occured, server is no longer listening")
+                        //self.server_connection_listener = None;
+                    }
                 }
             }
             if frame_count % 5 == 0 {
@@ -127,6 +147,16 @@ impl AuthorityGameMaster {
         }
     }
 
+    pub fn listen_for_connections(&mut self, port: u16) -> std::io::Result<()> {
+        self.server_connection_listener = Some(ServerConnectionListener::start(port)?);
+        Ok(())
+    }
+
+    pub fn stop_listening_for_connection(&mut self) {
+        // Hopefully manually closing is not necessary.
+        self.server_connection_listener = None;
+    }
+
     pub fn add_publisher<P: EventPublisher + 'static>(&mut self, key: &str, publisher: P) {
         self.event_publishers.add_publisher(key, publisher);
     }
@@ -161,6 +191,7 @@ impl From<GameState> for AuthorityGameMaster {
             event_log: EventLog::default(),
             event_publishers: EventPublisherManager::default(),
             informants: Default::default(),
+            server_connection_listener: None,
         }
     }
 }
@@ -243,7 +274,7 @@ struct InformantId(usize);
 #[derive(Debug, Default)]
 pub struct InformantManager {
     informants: HashMap<InformantId, Box<dyn Informant>>,
-    informant_id_counter: usize
+    informant_id_counter: usize,
 }
 
 impl InformantManager {

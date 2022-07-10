@@ -35,7 +35,6 @@ impl CrosstermInformant {
     pub fn new(state: &GameState) -> Self {
         let (t_width, t_height) =
             crossterm::terminal::size().expect("Problem getting terminal size");
-        log::debug!("LOGWOO");
 
         let informant = CrosstermInformant {
             node_ui: state.node().map(NodeUiState::from),

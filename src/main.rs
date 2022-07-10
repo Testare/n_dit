@@ -2,7 +2,7 @@ use std::{fs::File, io::stdout, panic};
 
 use crossterm::{self, execute};
 use game_core::{
-    loader, node_from_def, AuthorityGameMaster, GameState, Inventory, NodeDef, Pickup,
+    loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory, NodeDef, Pickup,
 };
 use n_dit::ui::CrosstermInformant;
 use simplelog::{LevelFilter, WriteLogger};
@@ -13,6 +13,7 @@ fn main() -> crossterm::Result<()> {
     reset_terminal_on_panic(); // If the game panics, we want to bring the terminal back to a normal state
     set_terminal_state()?;
     gm.setup_informant(CrosstermInformant::new);
+    gm.listen_for_connections(62062).unwrap();
     gm.run();
     reset_terminal_state()?;
     Ok(())

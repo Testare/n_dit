@@ -2,6 +2,7 @@ use super::super::error::Result;
 use super::super::{GameChange, NodeChange};
 use super::AuthorityGameMaster;
 use crate::{Direction, Point};
+use serde::{Deserialize, Serialize};
 /**
  * These commands are to be the sole method outside of the game core crate
  * of changing the internal state.
@@ -19,7 +20,7 @@ use crate::{Direction, Point};
  * This should definitely be refactored out to its own module.
  */
 #[non_exhaustive]
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 pub enum GameCommand {
     Start, // When a player joins a server, it should execute this command
     ShutDown, // To close the server down, run this one
@@ -90,7 +91,7 @@ pub(super) fn apply_command_dispatch(
             Ok(())
         }
         _ => {
-            unimplemented!("Many actions not yet implemented");
+            unimplemented!("Many actions not yet implemented, such as {:?}", command);
         }
     }
 }
