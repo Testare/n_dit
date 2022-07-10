@@ -29,6 +29,7 @@ pub use model::inventory::{Card, Inventory, Item, Pickup};
 pub use model::node::{Node, NodeChange, Sprite};
 pub use model::world_map::WorldMap;
 pub use assets::{NodeDef, CardDef, ActionDef, node_from_def};
+pub use network::NetworkGameMaster;
 
 use ai::EnemyAi;
 use assets::{AssetDictionary, Asset};

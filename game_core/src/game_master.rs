@@ -43,6 +43,11 @@ pub struct AuthorityGameMaster {
 // In the future all 3 of these need to be decoupled
 const FRAME_DELAY: Duration = Duration::from_millis(100);
 
+pub trait GameMaster { 
+
+}
+
+
 impl AuthorityGameMaster {
 
     pub fn informants_testing(&mut self) -> &mut InformantManager {
@@ -56,6 +61,7 @@ impl AuthorityGameMaster {
     pub fn run(&mut self) {
         let mut start_frame;
         let mut frame_count: usize = 0;
+        self.running = true;
         while self.running {
             start_frame = Instant::now();
             // log::info!("Frame Time: {:?}", start_frame);
@@ -71,8 +77,7 @@ impl AuthorityGameMaster {
                 match scl.poll_for_connection() {
                     Ok(tcp_connection) => {
                         log::debug!("Connection made!");
-                        let ni = NetworkInformant::new(tcp_connection);
-                        self.setup_informant(|_|ni);
+                        self.setup_informant(|state|NetworkInformant::new(tcp_connection, state));
                     }, 
                     Err(TryRecvError::Empty) => {
                     }
@@ -84,7 +89,7 @@ impl AuthorityGameMaster {
                 }
             }
             if frame_count % 5 == 0 {
-                self.apply_command(GameCommand::Next); // TODO better AI command logic
+                // NOCOMMIT undo this comment self.apply_command(GameCommand::Next); // TODO better AI command logic
             }
             frame_count = (frame_count + 1) % 2100;
             let time_passed = Instant::now() - start_frame;
@@ -182,11 +187,16 @@ impl AuthorityGameMaster {
     }
 }
 
+impl GameMaster for AuthorityGameMaster {
+
+}
+
+
 impl From<GameState> for AuthorityGameMaster {
     fn from(state: GameState) -> AuthorityGameMaster {
         AuthorityGameMaster {
             state,
-            running: true,
+            running: false,
             ai_action_receiver: None,
             event_log: EventLog::default(),
             event_publishers: EventPublisherManager::default(),
@@ -268,7 +278,7 @@ impl EventLog {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-struct InformantId(usize);
+pub struct InformantId(usize);
 
 // TODO This should perhaps not be public
 #[derive(Debug, Default)]
@@ -279,7 +289,7 @@ pub struct InformantManager {
 
 impl InformantManager {
 
-    fn tick(&mut self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
+    pub fn tick(&mut self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
         self.informants.iter_mut().filter_map(|(informant_id, informant)| {
             Some((*informant_id, informant.tick(state)?))
         }).collect()
@@ -293,7 +303,7 @@ impl InformantManager {
         self.informants.insert(InformantId(self.informant_id_counter), Box::new(informant))
     }
 
-    fn remove_informant(&mut self, id: &InformantId) -> Option<Box<dyn Informant>> {
+    pub fn remove_informant(&mut self, id: &InformantId) -> Option<Box<dyn Informant>> {
         self.informants.remove(id)
     }
 

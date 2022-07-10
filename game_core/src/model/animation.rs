@@ -1,6 +1,7 @@
 use super::game_state::GameState;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Animation {
     EnemyActions, // Might need to be rethought
 }

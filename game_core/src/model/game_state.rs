@@ -4,8 +4,9 @@ pub use game_change::GameChange;
 
 use super::super::{Inventory, Node, Team, WorldMap};
 use super::animation::Animation;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GameState {
     node: Option<Node>,
     animation: Option<Animation>,

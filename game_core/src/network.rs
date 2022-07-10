@@ -1,14 +1,22 @@
-use super::{Informant, GameState, event::Event, GameCommand, error::Error, EventLog};
+use super::{Informant, game_master::{GameMaster, InformantManager}, GameState, event::Event, GameCommand, error::Error, EventLog};
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::{self, TryRecvError, Receiver, Sender};
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct NetworkInformant(Receiver<GameCommand>);
+// TODO Use TcpStream.non_blocking() instead of receiver thread
+pub struct NetworkInformant(Receiver<GameCommand>, TcpStream);
 
 #[derive(Debug)]
-pub struct NetworkGameMaster(TcpStream);
+pub struct NetworkGameMaster {
+    write: TcpStream,
+    read: BufReader<TcpStream>,
+    reliable_state: GameState,
+    reliable_event_log: EventLog,
+    informants: InformantManager,
+    running: bool,
+}
 
 #[derive(Debug)]
 pub struct ServerConnectionListener {
@@ -63,8 +71,11 @@ impl ServerConnectionListener {
 
 impl NetworkInformant {
 
-    pub fn new(mut stream: TcpStream) -> Self {
+    pub fn new(mut stream: TcpStream, state: &GameState) -> Self {
         let (tx, rx) = mpsc::channel();
+        let writer = stream.try_clone().unwrap();
+        serde_json::to_writer(&writer, state).unwrap();
+        writeln!(&writer);
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stream);
             let mut connected = true;
@@ -79,14 +90,12 @@ impl NetworkInformant {
                 connected = false;
             }
         });
-
-        NetworkInformant(rx)
-
+        NetworkInformant(rx, writer)
     }
 }
 
 impl Informant for NetworkInformant {
-    fn tick(&mut self, game_state: &GameState) -> Option<GameCommand>{
+    fn tick(&mut self, _game_state: &GameState) -> Option<GameCommand>{
         let tr = self.0.try_recv();
         match tr {
             Ok(gc) => {
@@ -108,4 +117,61 @@ impl Informant for NetworkInformant {
     fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
 
     }
+}
+
+
+impl NetworkGameMaster {
+
+    pub fn informants_testing(&mut self) -> &mut InformantManager {
+        &mut self.informants
+    }
+
+    pub fn setup_informant<I: Informant + 'static, C: FnOnce(&GameState)-> I>(&mut self, construct_informant: C) {
+        self.informants.add_informant(construct_informant(&self.reliable_state));
+    }
+
+    pub fn run(&mut self) {
+        log::debug!{"Running..."};
+        self.running = true;
+        while self.running {
+            let commands = self.informants.tick(&self.reliable_state);
+            for (_player_id, gc) in commands {
+                log::debug!("Sending command: {:?}", &gc);
+                if gc == GameCommand::Drop {
+                    self.running = false;
+                }
+                serde_json::to_writer(&self.write, &gc).unwrap();
+                writeln!(&self.write).unwrap();
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    pub fn connect(address: &str) -> crate::error::Result<NetworkGameMaster> {
+        let stream = TcpStream::connect(address)?;
+
+        log::debug!{"Connection successful"};
+        let write = stream.try_clone()?;
+        let mut read = BufReader::new(stream);
+        let mut state_str = String::new();
+        read.read_line(&mut state_str)?;
+        log::debug!{"Received state: {}", state_str};
+
+        let reliable_state = serde_json::from_str(&state_str).unwrap();
+
+        Ok(NetworkGameMaster {
+            write,
+            read,
+            reliable_state,
+            reliable_event_log: EventLog::default(),
+            informants: InformantManager::default(),
+            running: false,
+        })
+
+    }
+
+}
+
+impl GameMaster for NetworkGameMaster {
+
 }
