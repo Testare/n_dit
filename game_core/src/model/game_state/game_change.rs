@@ -3,7 +3,9 @@ use super::super::super::error::{Error, Result};
 use super::super::animation::Animation;
 use crate::GameState;
 
-#[derive(Debug, Clone, Copy)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum GameChange {
     NextPage,
     CloseNode,

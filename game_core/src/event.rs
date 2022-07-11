@@ -1,10 +1,9 @@
 use super::error::{Error, ErrorMsg as _, Result};
 use super::{GameChange, GameState, NodeChange, StateChange};
+use serde::{Deserialize, Serialize};
 
-// For now this will just be an alias.
-// Perhaps in the future, we will replace with a catch-all "GameError"
-
-#[derive(Debug, Clone)]
+// TODO In the future, turn this into a trait and use typetag crate
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Event {
     G {
         id: usize,
@@ -35,6 +34,13 @@ impl Event {
         match self {
             Event::G { id, .. } => *id,
             Event::N { id, .. } => *id,
+        }
+    }
+
+    pub fn into_change(self) -> Change {
+        match self {
+            Event::G { change, .. } => Change::G(change),
+            Event::N { change, .. } => Change::N(change),
         }
     }
 

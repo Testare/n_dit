@@ -1,12 +1,18 @@
-use super::{Informant, game_master::{GameMaster, InformantManager}, GameState, event::Event, GameCommand, error::Error, EventLog};
+use super::{error, Informant, game_master::{GameMaster, InformantManager}, GameState, event::Event, GameCommand, error::Error, EventLog};
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::{self, TryRecvError, Receiver, Sender};
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::time::Duration;
+
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 
 #[derive(Debug)]
 // TODO Use TcpStream.non_blocking() instead of receiver thread
-pub struct NetworkInformant(Receiver<GameCommand>, TcpStream);
+pub struct NetworkInformant{
+    rx: Receiver<GameCommand>,
+    write: TcpStream,
+    event_buffer: Vec<Event>,
+}
 
 #[derive(Debug)]
 pub struct NetworkGameMaster {
@@ -61,42 +67,44 @@ impl ServerConnectionListener {
     pub fn poll_for_connection(&self) -> Result<TcpStream,TryRecvError> { 
         self.rx.try_recv()
     }
-
-    // Might not be necessary: Dropping this should implicitly close connection
-    pub fn close(&self) {
-        self.tx.send(());
-    }
 }
 
+/**
+ * Message from NetworkInformant to NetworkGameManager
+ */
+#[derive(Debug, Deserialize, Serialize)]
+enum NetInformantMessage {
+    Event(GameCommand, Event)
+}
 
 impl NetworkInformant {
 
-    pub fn new(mut stream: TcpStream, state: &GameState) -> Self {
+    pub fn new(stream: TcpStream, state: &GameState) -> Self {
         let (tx, rx) = mpsc::channel();
-        let writer = stream.try_clone().unwrap();
-        serde_json::to_writer(&writer, state).unwrap();
-        writeln!(&writer);
+        let write = stream.try_clone().unwrap();
+        send_serialized(&write, state).unwrap();
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stream);
             let mut connected = true;
             while connected {
-                let mut command_str = String::new();
-                if reader.read_line(&mut command_str).is_ok() {
-                    if let Ok(gc) = serde_json::from_str(&command_str) {
-                        connected = tx.send(gc).is_ok();
-                        continue;
-                    } // else Should we inform user command is malformed?
+                if let Ok(gc) = receive_serialized(&mut reader) {
+                    connected = tx.send(gc).is_ok()
+                } else {
+                    connected = false
                 }
-                connected = false;
             }
         });
-        NetworkInformant(rx, writer)
+        NetworkInformant{
+            rx, 
+            write,
+            event_buffer: Default::default()
+        }
     }
 }
 
 impl Informant for NetworkInformant {
     fn tick(&mut self, _game_state: &GameState) -> Option<GameCommand>{
-        let tr = self.0.try_recv();
+        let tr = self.rx.try_recv();
         match tr {
             Ok(gc) => {
                 Some(gc)
@@ -106,13 +114,17 @@ impl Informant for NetworkInformant {
         }
     }
     fn collect(&mut self, event: &Event, game_state: &GameState) {
+        self.event_buffer.push(event.clone());
 
     }
     fn fail(&mut self, error: &Error, command: &GameCommand, game_state: &GameState) {
-
+        self.event_buffer.clear();
+        // TODO send error 
     }
     fn publish(&mut self, command: &GameCommand, game_state: &GameState) {
-
+        for event in self.event_buffer.drain(..) {
+            send_serialized(&self.write, &NetInformantMessage::Event(command.clone(), event)).unwrap()
+        }
     }
     fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
 
@@ -140,8 +152,19 @@ impl NetworkGameMaster {
                 if gc == GameCommand::Drop {
                     self.running = false;
                 }
-                serde_json::to_writer(&self.write, &gc).unwrap();
-                writeln!(&self.write).unwrap();
+                send_serialized(&self.write, &gc).unwrap();
+            }
+            if let Some(message) = receive_serialized_nb(&mut self.read).expect("Unexpected error while listening for inputs") {
+                match message {
+                    NetInformantMessage::Event(gc, event) => {
+                        let id = event.id();
+                        let event = event.into_change().apply(id, &mut self.reliable_state).unwrap();
+                        self.informants.collect(&event, &self.reliable_state);
+                        // TODO Publish after calling all events for the same GC
+                        // TODO Collect multiple events at once
+                        self.informants.publish(&gc, &self.reliable_state);
+                    }
+                }
             }
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -150,14 +173,11 @@ impl NetworkGameMaster {
     pub fn connect(address: &str) -> crate::error::Result<NetworkGameMaster> {
         let stream = TcpStream::connect(address)?;
 
-        log::debug!{"Connection successful"};
+        log::debug!{"Connection successful to [{}]", address};
         let write = stream.try_clone()?;
         let mut read = BufReader::new(stream);
-        let mut state_str = String::new();
-        read.read_line(&mut state_str)?;
-        log::debug!{"Received state: {}", state_str};
-
-        let reliable_state = serde_json::from_str(&state_str).unwrap();
+        let reliable_state = receive_serialized(&mut read)?;
+        write.set_nonblocking(true)?;
 
         Ok(NetworkGameMaster {
             write,
@@ -174,4 +194,30 @@ impl NetworkGameMaster {
 
 impl GameMaster for NetworkGameMaster {
 
+}
+
+/** Helper function */
+fn send_serialized<T: Serialize>(mut stream: &TcpStream, obj: &T) ->error::Result<()> {
+    serde_json::to_writer(stream, obj)?;
+    writeln!(&mut stream);
+    Ok(())
+}
+
+fn receive_serialized<T: DeserializeOwned>(read: &mut BufReader<TcpStream>) -> error::Result<T> {
+    let mut buffer = String::new();
+    read.read_line(&mut buffer)?;
+    Ok(serde_json::from_str(&buffer)?)
+}
+
+fn receive_serialized_nb<T: DeserializeOwned>(read: &mut BufReader<TcpStream>) -> error::Result<Option<T>> {
+    let mut buffer = String::new();
+    match read.read_line(&mut buffer) {
+        Ok(_) => {
+            Ok(serde_json::from_str(&buffer)?)
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+            Ok(None)
+        }
+        Err(err) => Err(err.into())
+    }
 }

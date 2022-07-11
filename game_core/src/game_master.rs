@@ -89,7 +89,7 @@ impl AuthorityGameMaster {
                 }
             }
             if frame_count % 5 == 0 {
-                // NOCOMMIT undo this comment self.apply_command(GameCommand::Next); // TODO better AI command logic
+                self.apply_command(GameCommand::Next); // TODO better AI command logic, or at least better logging for this
             }
             frame_count = (frame_count + 1) % 2100;
             let time_passed = Instant::now() - start_frame;
@@ -307,25 +307,25 @@ impl InformantManager {
         self.informants.remove(id)
     }
 
-    fn collect(&mut self, event: &Event, game_state: &GameState) {
+    pub fn collect(&mut self, event: &Event, game_state: &GameState) {
         for informant in self.informants.values_mut() {
             informant.collect(event, game_state);
         }
     }
 
-    fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
+    pub fn collect_undo(&mut self, event: &Event, game_state: &GameState, event_log: &EventLog) {
         for informant in self.informants.values_mut() {
             informant.collect_undo(event, game_state, event_log);
         }
     }
 
-    fn fail(&mut self, error: &Error, command: &GameCommand, state: &GameState) {
+    pub fn fail(&mut self, error: &Error, command: &GameCommand, state: &GameState) {
         for informant in self.informants.values_mut() {
             informant.fail(error, command, state);
         }
     }
 
-    fn publish(&mut self, command: &GameCommand, state: &GameState) {
+    pub fn publish(&mut self, command: &GameCommand, state: &GameState) {
         for informant in self.informants.values_mut() {
             informant.publish(command, state);
         }

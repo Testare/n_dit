@@ -32,7 +32,8 @@ pub enum Error {
     /// file.
     FailureCritical(String),
     LoadingError(LoadingError),
-    Io(std::io::Error)
+    Io(std::io::Error),
+    SerdeJson(serde_json::Error),
 }
 
 impl ToString for Error {
@@ -46,6 +47,7 @@ impl ToString for Error {
             FailureCritical(msg) => format!("Programmer error detected, crashing [{}]", msg),
             LoadingError(err) => format!("Error occured while loading asset: [{:?}]", err),
             Io(err) => format!("IO [{}]", err),
+            SerdeJson(err) => format!("Serde Json [{}]", err),
         }
     }
 }
@@ -123,5 +125,11 @@ impl From<base64::DecodeError> for LoadingError {
 impl From<std::io::Error> for Error{
     fn from(err: std::io::Error) -> Self {
         Error::Io(err)
+    }
+}
+
+impl From<serde_json::Error> for Error{
+    fn from(err: serde_json::Error) -> Self {
+        Error::SerdeJson(err)
     }
 }
