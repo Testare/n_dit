@@ -5,9 +5,9 @@
 # it wants to stop the commit.
 #
 # To enable this hook, rename this file to "pre-commit".
-if [ -n "$(command -v rg)" ] && ( [ -n "$(rg NOCOMMIT src)" ] || [ -n "$(rg NO_COMMIT src)" ] ) ; then 
+if [ -n "$(command -v rg)" ] && ( [ -n "$(rg NOCOMMIT src **/src)" ] || [ -n "$(rg NO_COMMIT src **/src)" ] ) ; then 
     echo "ERROR: You have instances of NOCOMMIT statements"
-    rg NOCOMMIT src
-    rg NO_COMMIT src
+    rg NOCOMMIT src **/src
+    rg NO_COMMIT src **/src
     exit 2
 fi
