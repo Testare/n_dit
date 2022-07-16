@@ -181,14 +181,22 @@ impl NodeUiState {
                     NodePhase::CurioAction {
                         selected_action_index,
                         ..
-                    } => node
-                        .with_active_curio(|curio| {
-                            Some(vec![UiAction::perform_curio_action(
-                                curio.action_names().get(selected_action_index)?.as_str(),
-                                pt,
-                            )])
-                        })
-                        .expect("No active sprite or no active sprite_action_index"),
+                    } => {
+                        if selected_action_index == 0 {
+                            vec![UiAction::deactivate_curio()]
+                        } else {
+                            node.with_active_curio(|curio| {
+                                Some(vec![UiAction::perform_curio_action(
+                                    curio
+                                        .action_names()
+                                        .get(selected_action_index - 1)?
+                                        .as_str(),
+                                    pt,
+                                )])
+                            })
+                            .expect("No active sprite or no active sprite_action_index")
+                        }
+                    }
                 }
             }
             NodeCt::CurioActionMenu(curio_action_index) => {
@@ -212,13 +220,34 @@ impl NodeUiState {
                 match user_input {
                     UserInput::Activate => match self.phase {
                         NodePhase::FreeSelect {
-                            selected_curio_key, ..
+                            selected_curio_key,
+                            selected_action_index,
+                            ..
                         } => {
-                            vec!(
+                            if Some(0) == selected_action_index {
+                                vec![
                                     UiAction::activate_curio(selected_curio_key.expect("How do we confirm selection when there is no selected curio key?")),
-                                    UiAction::confirm_selection(None),
-                                )
+                                    UiAction::confirm_selection(selected_action_index),
+                                    UiAction::deactivate_curio(),
+                                ]
+                            } else {
+                                vec![
+                                    UiAction::activate_curio(selected_curio_key.expect("How do we confirm selection when there is no selected curio key?")),
+                                    UiAction::confirm_selection(selected_action_index),
+                                ]
+                            }
                         }
+                        NodePhase::MoveCurio {
+                            selected_action_index: Some(0),
+                            ..
+                        }
+                        | NodePhase::CurioAction {
+                            selected_action_index: 0,
+                            ..
+                        } => vec![
+                            UiAction::confirm_selection(None),
+                            UiAction::deactivate_curio(),
+                        ],
                         _ => vec![UiAction::confirm_selection(None)],
                     },
                     UserInput::Dir(dir) => {
@@ -253,14 +282,19 @@ impl NodeUiState {
                         NodePhase::CurioAction {
                             selected_action_index,
                             ..
-                        } => node
-                            .with_active_curio(|curio| {
-                                Some(vec![UiAction::perform_curio_action(
-                                    curio.action_names().get(selected_action_index)?,
-                                    self.selected_square(),
-                                )])
-                            })
-                            .expect("No active sprite or invalid selected action index"),
+                        } => {
+                            if selected_action_index == 0 {
+                                vec![UiAction::deactivate_curio()]
+                            } else {
+                                node.with_active_curio(|curio| {
+                                    Some(vec![UiAction::perform_curio_action(
+                                        curio.action_names().get(selected_action_index - 1)?,
+                                        self.selected_square(),
+                                    )])
+                                })
+                                .expect("No active sprite or invalid selected action index")
+                            }
+                        }
                         NodePhase::FreeSelect {
                             selected_curio_key: Some(curio_key),
                             ..
@@ -320,6 +354,7 @@ impl NodeUiState {
                                 selected_curio_key: *selected_curio_key,
                             };
                         }
+
                         _ => {}
                     };
                     self.focus = NodeFocus::Grid;
@@ -342,7 +377,7 @@ impl NodeUiState {
                 let num_actions = node
                     .with_curio(selected_curio_key, |curio| curio.action_names().len()) // TODO method to count actions
                     .unwrap();
-                if *idx < num_actions {
+                if *idx <= num_actions {
                     self.set_selected_action_index(*idx);
                 }
                 Ok(())
@@ -356,7 +391,8 @@ impl NodeUiState {
                     if let Some(action_index) = self.selected_action_index() {
                         let num_actions = node
                             .with_curio(selected_curio_key, |curio| curio.action_count())
-                            .unwrap();
+                            .unwrap()
+                            + 1;
                         self.set_selected_action_index(match dir {
                             Direction::North => (action_index + num_actions - 1) % num_actions,
                             Direction::South => (action_index + 1) % num_actions,
@@ -368,8 +404,10 @@ impl NodeUiState {
             }
             UiAction::ChangeSelection => self.change_focus(node),
             UiAction::MoveSelectedSquare { direction, speed } => {
-                let range_limit: Option<PointSet> =
-                    self.selected_action_index().and_then(|action_index| {
+                let range_limit: Option<PointSet> = self
+                    .selected_action_index()
+                    .and_then(|action_index| action_index.checked_sub(1))
+                    .and_then(|action_index| {
                         node.with_active_curio(|curio| curio.range_of_action(action_index))
                     });
                 debug!("Moving selected square {:?} by {}", direction, speed);

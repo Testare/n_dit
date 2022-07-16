@@ -290,8 +290,9 @@ pub struct InformantManager {
 impl InformantManager {
 
     pub fn tick(&mut self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
-        self.informants.iter_mut().filter_map(|(informant_id, informant)| {
-            Some((*informant_id, informant.tick(state)?))
+        self.informants.iter_mut().flat_map(|(informant_id, informant)| {
+            informant.tick(state).into_iter().map(|gc|(*informant_id, gc))
+            // Some((*informant_id, informant.tick(state)?))
         }).collect()
     }
 

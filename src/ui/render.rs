@@ -124,7 +124,11 @@ pub fn render_menu(
             Sprite::AccessPoint(card_id) => {
                 base_vec[2].push_str("Access Pnt");
                 base_vec[3] = "=".repeat(width);
-                base_vec[4].push_str(format!("{:?}", card_id).as_str());
+                let card_name = card_id
+                    .as_ref()
+                    .map(|card_id| card_id.card_name())
+                    .unwrap_or_else(|| "None");
+                base_vec[4].push_str(card_name);
             }
             Sprite::Curio(curio) => {
                 base_vec[1].push_str("Curio");
@@ -134,15 +138,25 @@ pub fn render_menu(
                 base_vec[3].push(']');
                 base_vec[4].push_str(curio.name());
                 base_vec[5]
-                    .push_str(format!("S:{} MS:{}", curio.speed(), curio.max_size()).as_str());
+                    .push_str(format!("Sp:{} MSz:{}", curio.speed(), curio.max_size()).as_str());
                 base_vec[6] = "=".repeat(width);
                 let selected_action = state.selected_action_index();
+                base_vec[7].push_str(
+                    if Some(0) == selected_action {
+                        color_scheme
+                            .selected_menu_item()
+                            .apply("No action".with_exact_width(width))
+                    } else {
+                        "No action".with_exact_width(width)
+                    }
+                    .as_str(),
+                );
                 for (i, action) in curio.actions().iter().enumerate() {
                     let mut action = action.with_exact_width(width);
-                    if Some(i) == selected_action {
+                    if Some(i + 1) == selected_action {
                         action = color_scheme.selected_menu_item().apply(action);
                     }
-                    base_vec[7 + i].push_str(action.as_str());
+                    base_vec[8 + i].push_str(action.as_str());
                 }
             }
         };
@@ -277,6 +291,7 @@ pub fn render_node(node: &Node, state: &SuperState, window: Window) -> Vec<Strin
     let mut available_moves: Option<HashSet<Point>> = node.with_active_curio(|curio| {
         state
             .selected_action_index()
+            .and_then(|action_index| action_index.checked_sub(1)) // Compensate for "No Action" option
             .and_then(|action_index| curio.range_of_action(action_index))
             .map(|point_set| point_set.into_set())
     });

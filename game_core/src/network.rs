@@ -103,14 +103,15 @@ impl NetworkInformant {
 }
 
 impl Informant for NetworkInformant {
-    fn tick(&mut self, _game_state: &GameState) -> Option<GameCommand>{
+    fn tick(&mut self, _game_state: &GameState) -> Vec<GameCommand> {
+        // TODO Perhaps I should change this to a loop to get multiple commands?
         let tr = self.rx.try_recv();
         match tr {
             Ok(gc) => {
-                Some(gc)
+                vec![gc]
             }
-            Err(TryRecvError::Empty) => None,
-            Err(TryRecvError::Disconnected) => Some(GameCommand::Drop),
+            Err(TryRecvError::Empty) => vec![],
+            Err(TryRecvError::Disconnected) => vec![GameCommand::Drop],
         }
     }
     fn collect(&mut self, event: &Event, game_state: &GameState) {

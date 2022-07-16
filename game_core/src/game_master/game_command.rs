@@ -58,7 +58,8 @@ pub(super) fn apply_command_dispatch(
                 gm.check_to_run_ai(); // If we changed turns, delete the AI.
                 result
             } else {
-                gm.apply(GameChange::NextPage)
+                // gm.apply(GameChange::NextPage)
+                Ok(())
             }
         }
         NodeActivateCurio { curio_id } => gm.apply(NodeChange::ActivateCurio(*curio_id)),

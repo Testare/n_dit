@@ -136,7 +136,7 @@ pub enum CardId {
 }
 
 impl CardId {
-    fn card_name(&self) -> &str {
+    pub fn card_name(&self) -> &str {
         match self {
             CardId::Nickname(s) => s.as_str(),
             CardId::Cardname(s) => s.as_str(),
