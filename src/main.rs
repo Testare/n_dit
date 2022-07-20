@@ -21,7 +21,7 @@ fn main() -> error::Result<()> {
         log::debug!("Starting to run");
         gm.run();
     } else if std::env::args().any(|arg| arg == "--charmie") {
-        n_dit::charmie_ui::start_with_charmie()
+        n_dit::charmie_ui::start_with_charmie(state)
     } else {
         let mut gm = AuthorityGameMaster::from(state);
         gm.listen_for_connections(62062).unwrap();

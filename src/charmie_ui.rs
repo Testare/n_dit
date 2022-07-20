@@ -4,11 +4,14 @@ use bevy::prelude::*;
 use dynamic_layout::{
     CharmieRenderingComponent, DynamicTextLayout, MenuUi, MenuUiItem, SimpleUi, TextRendering,
 };
-use game_core::Bounds;
+use game_core::{Bounds, GameState};
 use std::collections::HashMap;
 use taffy::prelude::*;
 
-pub fn start_with_charmie() {
+#[derive(Component, Debug)]
+struct GameStateComponent(GameState);
+
+pub fn start_with_charmie(state: GameState) {
     App::new()
         .insert_non_send_resource(Taffy::new())
         .add_startup_system(setup_node_layout)
