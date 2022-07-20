@@ -10,6 +10,7 @@ pub enum ClickTarget {
 pub enum NodeCt {
     Grid(Point),
     CurioActionMenu(usize),
+    DeckMenu(usize),
     _TitleButton(_TitleButtonCt),
 }
 

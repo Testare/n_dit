@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::ops::{Add, BitAnd, BitOr};
 
 pub type Point = (usize, usize);
+pub type Pt<T> = (T, T);
 
 #[derive(Clone, Debug)]
 pub enum PointSet {

@@ -94,12 +94,13 @@ impl Informant for CrosstermInformant {
         return vec![];
     }
 
-    fn collect(&mut self, event: &Event, _game_state: &GameState) {
-        log::debug!(" TEP collect {:?}", event)
-    }
+    fn collect(&mut self, event: &Event, _game_state: &GameState) {}
 
-    fn fail(&mut self, error: &Error, _command: &GameCommand, _game_state: &GameState) {
-        log::debug!(" TEP fail {:?}", error)
+    fn fail(&mut self, error: &Error, command: &GameCommand, _game_state: &GameState) {
+        let ui_action = UiAction::GameCommand(command.clone());
+        if self.action_vec.front() == Some(&ui_action) {
+            self.action_vec.pop_front();
+        }
     }
 
     fn publish(&mut self, command: &GameCommand, game_state: &GameState) {
@@ -111,11 +112,8 @@ impl Informant for CrosstermInformant {
             .apply_action(ui_action, game_state)
             .unwrap();
 
-        log::debug!(" TEP publish {:?}", command);
         self.render(game_state);
     }
 
-    fn collect_undo(&mut self, event: &Event, _game_state: &GameState, _event_log: &EventLog) {
-        log::debug!(" TEP undo {:?}", event)
-    }
+    fn collect_undo(&mut self, event: &Event, _game_state: &GameState, _event_log: &EventLog) {}
 }

@@ -16,10 +16,11 @@ aquamarine = "0.1.5"
 getset = "0.1.1"
 itertools = "0.10.1"
 # CLI Rendering
-pad = "0.1"
+pad =  { git = "https://github.com/Testare/rust-pad" }
 unicode-width = "0.1.8"
 crossterm = "0.20.0"
-# taffy = "0.1.0" # For some reason not building here? Even though you can se
+taffy = "0.1.0" # For some reason not building here? Even though you can se
+bevy = "0.7"
 
 # Use for "cargo flamegraph"
 # [profile.release]

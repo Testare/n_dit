@@ -36,7 +36,7 @@ pub struct Node {
     #[get]
     #[serde(default, skip)]
     action_dictionary: ActionDictionary,
-    #[get]
+    #[get = "pub"]
     #[serde(default, skip)]
     card_dictionary: AssetDictionary<CardDef>,
 }

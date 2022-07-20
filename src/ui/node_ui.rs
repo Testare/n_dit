@@ -1,6 +1,7 @@
 use game_core::{Direction, GameCommand, Node, Point, PointSet, Sprite};
 use getset::{CopyGetters, Setters};
 use log::debug;
+use serde_json::de;
 
 use super::NodeCt;
 use crate::{UiAction, UserInput};
@@ -18,15 +19,17 @@ pub struct NodeUiState {
 enum NodeFocus {
     Grid,
     ActionMenu,
+    DeckMenu, // Only applicable during SetUp currently
 }
 
 #[derive(Clone, Debug)]
 enum NodePhase {
-    /* TODO SetUp
     SetUp {
-        selected_curio_index: usize,
+        selected_access_point: Option<usize>,
+        selected_deck_index: Option<usize>,
         selected_action_index: Option<usize>,
-    }, */
+        deck_offset: usize,
+    },
     FreeSelect {
         selected_curio_key: Option<usize>,
         selected_action_index: Option<usize>,
@@ -45,11 +48,34 @@ impl NodeUiState {
     fn set_selected_square(&mut self, pt: Point, node: &Node) {
         self.selected_square = pt;
 
-        if let NodePhase::FreeSelect {
-            selected_curio_key, ..
-        } = &mut self.phase
-        {
-            *selected_curio_key = node.with_curio_at(pt, |curio| curio.key());
+        match &mut self.phase {
+            NodePhase::SetUp {
+                selected_access_point,
+                selected_action_index,
+                ..
+            } => {
+                let grid = node.grid();
+                if let Some((key, Sprite::AccessPoint(_))) = grid
+                    .item_key_at(pt)
+                    .and_then(|key| Some(key).zip(grid.item(key)))
+                {
+                    if Some(key) != *selected_access_point {
+                        // Reset selection action index to 0 if changing access points
+                        *selected_action_index = selected_action_index.and(Some(0))
+                    }
+                    *selected_access_point = Some(key);
+                } else {
+                    self.focus = NodeFocus::Grid;
+                    *selected_access_point = None;
+                    *selected_action_index = None;
+                }
+            }
+            NodePhase::FreeSelect {
+                selected_curio_key, ..
+            } => {
+                *selected_curio_key = node.with_curio_at(pt, |curio| curio.key());
+            }
+            _ => {}
         }
     }
     fn move_selected_square(
@@ -70,9 +96,16 @@ impl NodeUiState {
 
     fn change_focus(&mut self, node: &Node) -> Result<(), String> {
         match self.focus {
+            NodeFocus::DeckMenu => {
+                self.set_default_selected_action();
+                self.focus = NodeFocus::ActionMenu;
+            }
             NodeFocus::ActionMenu => {
                 match self.phase {
-                    NodePhase::FreeSelect { .. } => self.clear_selected_action_index(),
+                    NodePhase::FreeSelect { .. } => {
+                        self.clear_selected_action_index();
+                        self.focus = NodeFocus::Grid;
+                    }
                     NodePhase::MoveCurio {
                         selected_curio_key, ..
                     } => {
@@ -83,6 +116,7 @@ impl NodeUiState {
                         {
                             self.clear_selected_action_index();
                         }
+                        self.focus = NodeFocus::DeckMenu;
                     }
                     NodePhase::CurioAction {
                         selected_curio_key, ..
@@ -95,19 +129,36 @@ impl NodeUiState {
                             self.set_selected_square(head_pt, node);
                             self.clear_selected_action_index();
                         }
+                        self.focus = NodeFocus::Grid;
+                    }
+                    NodePhase::SetUp { .. } => {
+                        self.clear_selected_action_index();
+                        self.focus = NodeFocus::DeckMenu;
                     }
                 }
-                self.focus = NodeFocus::Grid;
             }
             NodeFocus::Grid => {
-                let selected_curio_key = node
-                    .active_curio_key()
-                    .or_else(|| node.with_curio_at(self.selected_square(), |curio| (curio.key())));
-                if selected_curio_key.is_some() {
-                    if self.selected_action_index() == None {
-                        self.set_default_selected_action();
+                if let NodePhase::SetUp {
+                    selected_deck_index,
+                    selected_access_point,
+                    deck_offset,
+                    ..
+                } = &mut self.phase
+                {
+                    if let Some(key) = selected_access_point {
+                        *selected_deck_index = Some(*deck_offset);
+                        self.focus = NodeFocus::DeckMenu;
                     }
-                    self.focus = NodeFocus::ActionMenu;
+                } else {
+                    let selected_curio_key = node.active_curio_key().or_else(|| {
+                        node.with_curio_at(self.selected_square(), |curio| (curio.key()))
+                    });
+                    if selected_curio_key.is_some() {
+                        if self.selected_action_index() == None {
+                            self.set_default_selected_action();
+                        }
+                        self.focus = NodeFocus::ActionMenu;
+                    }
                 }
             }
         }
@@ -197,6 +248,17 @@ impl NodeUiState {
                             .expect("No active sprite or no active sprite_action_index")
                         }
                     }
+                    NodePhase::SetUp { .. } => {
+                        if alt {
+                            if let Some(Sprite::AccessPoint(_)) = node.grid().item_at(pt) {
+                                return vec![
+                                    UiAction::set_selected_square(pt),
+                                    UiAction::change_selection(),
+                                ];
+                            }
+                        }
+                        vec![UiAction::set_selected_square(pt)]
+                    }
                 }
             }
             NodeCt::CurioActionMenu(curio_action_index) => {
@@ -279,6 +341,17 @@ impl NodeUiState {
                         }
                     }
                     UserInput::Activate => match self.phase {
+                        NodePhase::SetUp {
+                            selected_access_point,
+                            ..
+                        } => {
+                            if selected_access_point.is_some() {
+                                // self.focus = NodeFocus::DeckMenu;
+                                vec![UiAction::ChangeSelection]
+                            } else {
+                                vec![]
+                            }
+                        }
                         NodePhase::CurioAction {
                             selected_action_index,
                             ..
@@ -327,6 +400,9 @@ impl NodeUiState {
                     UserInput::Back => vec![UiAction::undo()],
                     _ => UiAction::none(),
                 }
+            }
+            NodeFocus::DeckMenu => {
+                unimplemented!("Deck menu not implemented. Probably scrapping this UI framework for bevy + charmie")
             }
         }
     }
@@ -471,17 +547,26 @@ impl NodeUiState {
                 }
                 Ok(())
             }
+
+            UiAction::GameCommand(GameCommand::NodeReadyToPlay) => {
+                self.phase
+                    .transition_to_free_select(self.selected_square, node);
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
 
     pub fn selected_action_index(&self) -> Option<usize> {
         match self.phase {
+            NodePhase::SetUp {
+                selected_action_index,
+                ..
+            } => selected_action_index,
             NodePhase::FreeSelect {
                 selected_action_index,
                 ..
             } => selected_action_index,
-
             NodePhase::MoveCurio {
                 selected_action_index,
                 ..
@@ -512,6 +597,10 @@ impl NodeUiState {
             NodePhase::CurioAction { .. } => {
                 log::warn!("clear_selected_action_index() called while we were NodePhase::CurioAction, which is a noop")
             }
+            NodePhase::SetUp {
+                selected_action_index,
+                ..
+            } => *selected_action_index = None,
         }
     }
 
@@ -529,6 +618,10 @@ impl NodeUiState {
                 selected_action_index,
                 ..
             } => *selected_action_index = idx,
+            NodePhase::SetUp {
+                selected_action_index,
+                ..
+            } => *selected_action_index = Some(idx),
         }
     }
 }
@@ -602,6 +695,50 @@ impl NodePhase {
             }
             _ => unimplemented!("Implement!"),
         }?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use taffy::prelude::*;
+    #[test]
+    fn taffy_test() -> Result<(), Error> {
+        let mut taffy = Taffy::new();
+        let leafStyle = Style {
+            flex_grow: 1.0,
+            ..Default::default()
+        };
+
+        let leaf1 = taffy.new_node(leafStyle.clone(), &[])?;
+        let leaf2 = taffy.new_node(
+            Style {
+                flex_grow: 1.0,
+                ..Default::default()
+            },
+            &[],
+        )?;
+        let parent_style = Style {
+            size: Size {
+                width: Dimension::Points(200.0),
+                height: Dimension::Points(100.0),
+            },
+            ..Default::default()
+        };
+        let parent = taffy.new_node(parent_style, &[leaf1, leaf2])?;
+        taffy.compute_layout(
+            parent,
+            Size {
+                width: Number::Defined(190.0),
+                height: Number::Defined(190.0),
+            },
+        )?;
+        let layout = taffy.layout(parent)?;
+        println!("{:?}", layout);
+        println!("-> {:?}", taffy.layout(leaf1)?);
+        println!("-> {:?}", taffy.layout(leaf2)?);
+        assert_eq!(1, 2);
+
         Ok(())
     }
 }

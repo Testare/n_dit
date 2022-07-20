@@ -18,7 +18,7 @@ pub mod loader;
 
 mod network;
 
-pub use common::{Bounds, Direction, GridMap, Point, PointSet};
+pub use common::{Bounds, Direction, GridMap, Point, PointSet, Pt};
 // use event::{Event, GameEvent, EventSubtype, EventConstructor, EventErr};
 use abstractions::StateChange;
 pub use game_master::{AuthorityGameMaster, EventPublisher, EventLog, GameCommand, Informant};

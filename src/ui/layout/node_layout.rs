@@ -335,7 +335,7 @@ impl SubLayout for StandardNodeLayout {
                     .checked_sub(Self::CURIO_ACTION_Y)
                     .and_then(|index| {
                         node.with_curio_at(state.selected_square(), |curio| curio.action_count())
-                            .filter(|available_action_total| *available_action_total > index)
+                            .filter(|available_action_total| *available_action_total >= index)
                             .map(|_| NodeCt::CurioActionMenu(index).into())
                     })
             } else if pt.0 < width {

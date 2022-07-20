@@ -10,10 +10,12 @@ pub enum UserInput {
     Activate,       // Gamepad "A": Default binds are "A" or Space
     Back,           // Gamepad "B": Default binds are "U" or Backspace
     Select,         // Gamepad "X" or "Select": Default binds are "S" or Tab
-    Menu,           // Gamepad "Y" or "Start": Default binds are "M" or Escape
+    Menu,           // Gamepad "Y" or "Start": Default binds are "M" or Escape or Enter
     Next,           // Gamepad "R": Default binds are "N"
     Previous,       // Gamepad "L": Default binds are "P"
     Click(Point),
+    ScrollUp(Point),   // Scroll up. Point is provided, but probably won't be needed
+    ScrollDown(Point), // Scrool  down. Poitn si provided, but probably won't be needed
     Drag(Point),
     AltClick(Point),
     Resize(Bounds),
@@ -50,6 +52,7 @@ impl UserInput {
                     KeyCode::Char('q') => Some(UserInput::Quit),
                     KeyCode::Char('-') => Some(UserInput::Debug),
                     KeyCode::Esc => Some(UserInput::Menu),
+                    KeyCode::Enter => Some(UserInput::Menu),
                     KeyCode::Tab => Some(UserInput::Select),
                     KeyCode::Char(' ') => Some(UserInput::Activate),
                     _ => None,

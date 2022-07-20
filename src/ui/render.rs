@@ -121,14 +121,48 @@ pub fn render_menu(
                 base_vec[3] = "=".repeat(width);
                 base_vec[4].push_str(card);
             }
-            Sprite::AccessPoint(card_id) => {
+            Sprite::AccessPoint(card_id_opt) => {
                 base_vec[2].push_str("Access Pnt");
                 base_vec[3] = "=".repeat(width);
-                let card_name = card_id
-                    .as_ref()
-                    .map(|card_id| card_id.card_name())
-                    .unwrap_or_else(|| "None");
-                base_vec[4].push_str(card_name);
+                if let Some(card_id) = card_id_opt {
+                    base_vec[4].push_str(card_id.card_name());
+                    if let Some(card_def) = node
+                        .inventory()
+                        .deck()
+                        .card_by_id(card_id)
+                        .and_then(|card| node.card_dictionary().get(&card.basis))
+                    {
+                        // base_vec[2] = "=".repeat(width);
+                        /*base_vec[3].push('[');
+                        base_vec[3].push_str(&card_def.display);
+                        base_vec[3].push(']');*/
+                        // base_vec[4].push_str(&card_def.name);
+                        base_vec[5].push_str(
+                            format!("Sp:{} MSz:{}", card_def.speed, card_def.max_size).as_str(),
+                        );
+                        base_vec[6] = "=".repeat(width);
+                        let selected_action = state.selected_action_index();
+                        base_vec[7].push_str(
+                            if Some(0) == selected_action {
+                                color_scheme
+                                    .selected_menu_item()
+                                    .apply("No action".with_exact_width(width))
+                            } else {
+                                "No action".with_exact_width(width)
+                            }
+                            .as_str(),
+                        );
+                        for (i, action) in card_def.actions.iter().enumerate() {
+                            let mut action = action.with_exact_width(width);
+                            if Some(i + 1) == selected_action {
+                                action = color_scheme.selected_menu_item().apply(action);
+                            }
+                            base_vec[8 + i].push_str(action.as_str());
+                        }
+                    }
+                } else {
+                    base_vec[4].push_str("None");
+                }
             }
             Sprite::Curio(curio) => {
                 base_vec[1].push_str("Curio");
