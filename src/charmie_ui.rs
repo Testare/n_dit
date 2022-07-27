@@ -1,11 +1,11 @@
 mod dynamic_layout;
+mod n_dit_views;
 
 use bevy::prelude::*;
 use dynamic_layout::{
     CharmieRenderingComponent, DynamicTextLayout, MenuUi, MenuUiItem, SimpleUi, TextRendering,
 };
 use game_core::{Bounds, GameState};
-use pad::PadStr;
 use taffy::prelude::*;
 
 use self::dynamic_layout::TaffyNodeComponent;
@@ -16,8 +16,10 @@ use std::collections::{BTreeMap, VecDeque};
 struct GameStateComponent(GameState);
 
 pub fn start_with_charmie(state: GameState) {
+    let node = state.node().unwrap().clone();
     App::new()
         .insert_non_send_resource(Taffy::new())
+        .insert_resource(node)
         .add_startup_system(setup_node_layout)
         .init_resource::<crate::DrawConfiguration>()
         .add_plugin(HierarchyPlugin::default())
@@ -37,190 +39,14 @@ pub fn start_with_charmie(state: GameState) {
         .run()
 }
 
-fn setup_node_layout(mut taffy: NonSendMut<Taffy>, mut commands: Commands) {
+fn setup_node_layout(
+    mut taffy: NonSendMut<Taffy>,
+    node: Res<game_core::Node>,
+    mut commands: Commands,
+) {
     log::debug!("Hello whirled!");
     println!("Hello world");
-
-    let deck_list_bundle = MenuUi {
-        options: vec![
-            MenuUiItem {
-                name: "Item A".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item B".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item C".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item D".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item E".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item F".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item G But |its LONG, too long and gets truncated".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "それは".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "それはほんとうにすごい！".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item J".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item K".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item L".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item M".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item N".to_string(),
-                onselect: vec![],
-            },
-        ],
-        selected_option: Some(5),
-        scroll_offset: 3,
-    }
-    .bundle(
-        &mut taffy,
-        taffy::prelude::Style {
-            min_size: taffy::prelude::Size {
-                width: taffy::prelude::Dimension::Points(11.0),
-                height: taffy::prelude::Dimension::Points(4.0),
-            },
-            margin: taffy::geometry::Rect {
-                bottom: Dimension::Points(1.0),
-                end: Dimension::Points(1.0),
-                start: Dimension::Points(1.0),
-                top: Dimension::Points(1.0),
-            },
-            flex_grow: 1.0,
-            ..Default::default()
-        },
-    );
-
-    let curio_desc_bundle = SimpleUi {
-        draw: vec![
-            "----|----|----|----|".to_string(),
-            "Hullo Hey".to_string(),
-            "hulloguvnaiamheretokillyou".to_string(),
-        ],
-    }
-    .bundle(
-        &mut taffy,
-        taffy::prelude::Style {
-            min_size: taffy::prelude::Size {
-                width: taffy::prelude::Dimension::Points(10.0),
-                height: taffy::prelude::Dimension::Points(4.0),
-            },
-            margin: taffy::geometry::Rect {
-                bottom: Dimension::Points(1.0),
-                end: Dimension::Points(1.0),
-                start: Dimension::Points(1.0),
-                top: Dimension::Points(1.0),
-            },
-            ..Default::default()
-        },
-    );
-
-    let grid_map_bundle = SimpleUi {
-        draw: vec!["GRID".to_string(), "GRID2".to_string()],
-    }
-    .bundle(
-        &mut taffy,
-        taffy::prelude::Style {
-            min_size: taffy::prelude::Size {
-                width: taffy::prelude::Dimension::Points(10.0),
-                height: taffy::prelude::Dimension::Points(10.0),
-            },
-            flex_grow: 5.0,
-            ..Default::default()
-        },
-    );
-
-    // NodeLayoutView V
-    // * Title bar
-    // * main screen H
-    //   * Sidebar V (Might use "====" lines instead of margins)
-    //     * Sprite label (Curio/AccessPoint/Pickup)
-    //     * Deck List
-    //     * Sprite Desc
-    //     * Action List (No margin)
-    //   * GridMap
-    // * messages
-
-    //
-    // sidebar
-    //
-
-    // let deck_list = commands.spawn().insert_bundle(deck_list_bundle).id();
-    // let curio_desc = commands.spawn().insert_bundle(curio_desc_bundle).id();
-
-    commands
-        .spawn()
-        .insert(DynamicTextLayout {
-            bounds: Bounds(30, 30), // TODO Make sure this is coupled with taffy style
-        })
-        .insert(TaffyNodeComponent::new(
-            &mut taffy,
-            taffy::prelude::Style {
-                size: taffy::prelude::Size {
-                    width: taffy::prelude::Dimension::Points(30.0),
-                    height: taffy::prelude::Dimension::Points(30.0),
-                },
-                ..Default::default()
-            },
-        ))
-        .with_children(|parent| {
-            // parent.spawn().insert_bundle(deck_list_bundle); // tmp
-            // parent.spawn().insert_bundle(curio_desc_bundle); // tmp
-            parent
-                .spawn()
-                .insert(TaffyNodeComponent::new(
-                    &mut taffy,
-                    taffy::style::Style {
-                        flex_direction: taffy::style::FlexDirection::Column,
-                        flex_grow: 1.0,
-                        ..Default::default()
-                    },
-                ))
-                .insert(Name::new("Sidebar"))
-                .with_children(|parent| {
-                    parent
-                        .spawn()
-                        .insert(Name::new("Decklist"))
-                        .insert_bundle(deck_list_bundle);
-                    parent
-                        .spawn()
-                        .insert(Name::new("Curio Desc"))
-                        .insert_bundle(curio_desc_bundle);
-                });
-            parent.spawn().insert_bundle(grid_map_bundle);
-        });
-
-    // commands.spawn().insert_bundle(curio_desc_bundle);
+    n_dit_views::setup_node_view(taffy, &*node, &mut commands)
 }
 
 fn pause() {

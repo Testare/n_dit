@@ -25,3 +25,11 @@ bevy = "0.7"
 # Use for "cargo flamegraph"
 # [profile.release]
 # debug = true
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
