@@ -56,13 +56,14 @@ fn pause() {
 fn taffy_follow_entity_model(
     mut taffy: NonSendMut<Taffy>,
     nodes: Query<&TaffyNodeComponent>,
-    new_child_nodes: Query<(&TaffyNodeComponent, &Parent), Added<TaffyNodeComponent>>,
+    new_child_nodes: Query<(&TaffyNodeComponent, &Children), Changed<Children>>,
 ) {
-    for (child, parent_entity_id) in new_child_nodes.iter() {
-        if let Ok(parent_node) = nodes.get(parent_entity_id.0).map(|p| p.node) {
-            log::debug!("Adding child to parent");
-            taffy.add_child(parent_node, child.node).unwrap();
-        }
+    for (parent, children) in new_child_nodes.iter() {
+        let children_nodes: Vec<taffy::node::Node> = nodes
+            .iter_many(children)
+            .map(|taffy_node_component| taffy_node_component.node)
+            .collect();
+        taffy.set_children(parent.node, &children_nodes).unwrap();
     }
 }
 

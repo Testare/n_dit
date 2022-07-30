@@ -7,11 +7,11 @@ use taffy::{node::Taffy, prelude::Dimension, style::Style as TaffyStyle};
 
 #[derive(Component)]
 struct NodeView {
-    deck_menu: Entity,
+    deck_list: Entity,
     curio_desc: Entity,
-    /*action_menu: Entity,
+    action_list: Entity,
     action_desc: Entity,
-    grid_map: Entity,
+    /*grid_map: Entity,
     menu_bar: Entity,
     message_bar: Entity,*/
 }
@@ -57,26 +57,6 @@ pub fn setup_node_view(
             },
             MenuUiItem {
                 name: "それはほんとうにすごい！".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item J".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item K".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item L".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item M".to_string(),
-                onselect: vec![],
-            },
-            MenuUiItem {
-                name: "Item N".to_string(),
                 onselect: vec![],
             },
         ],
@@ -142,6 +122,8 @@ pub fn setup_node_view(
     .bundle(
         &mut taffy,
         TaffyStyle {
+            flex_grow: 1.0,
+
             ..Default::default()
         },
     );
@@ -152,6 +134,7 @@ pub fn setup_node_view(
     .bundle(
         &mut taffy,
         TaffyStyle {
+            flex_grow: 1.0,
             ..Default::default()
         },
     );
@@ -179,9 +162,11 @@ pub fn setup_node_view(
     //     * Deck List
     //     * Sprite Desc
     //     * Action List (No margin)
+    //     * Aciton Desc
     //   * GridMap
     // * messages
 
+    // BUG: Ordering is not really respected, as the system that adds child entities to taffy doesn't notice order.
     //
     // sidebar
     //
@@ -191,10 +176,9 @@ pub fn setup_node_view(
 
     let mut deck_menu: Option<Entity> = None;
     let mut curio_desc: Option<Entity> = None;
-    /*curio_desc_node,
-    action_menu,
-    action_desc_node,
-    grid_map,
+    let mut action_menu: Option<Entity> = None;
+    let mut action_desc: Option<Entity> = None;
+    /*grid_map,
     menu_bar,
     message_bar,*/
     commands
@@ -235,16 +219,32 @@ pub fn setup_node_view(
                     curio_desc = Some(
                         parent
                             .spawn()
-                            .insert(Name::new("Curio Desc"))
+                            .insert(Name::new("Curio Description"))
                             .insert_bundle(curio_desc_bundle)
+                            .id(),
+                    );
+                    action_menu = Some(
+                        parent
+                            .spawn()
+                            .insert(Name::new("Action Menu"))
+                            .insert_bundle(action_list_bundle)
+                            .id(),
+                    );
+                    action_desc = Some(
+                        parent
+                            .spawn()
+                            .insert(Name::new("Action Description"))
+                            .insert_bundle(action_desc_bundle)
                             .id(),
                     );
                 });
             parent.spawn().insert_bundle(grid_map_bundle);
         })
         .insert(NodeView {
-            deck_menu: deck_menu.unwrap(),
+            deck_list: deck_menu.unwrap(),
             curio_desc: curio_desc.unwrap(),
+            action_list: action_menu.unwrap(),
+            action_desc: action_desc.unwrap(),
         });
 
     // commands.spawn().insert_bundle(curio_desc_bundle);
