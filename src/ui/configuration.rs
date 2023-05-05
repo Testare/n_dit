@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
+use bevy::prelude::Resource;
 use crossterm::style::{Attribute, Color, StyledContent, Stylize};
 use getset::{CopyGetters, Getters};
 
-#[derive(Clone, Debug, CopyGetters, Getters)]
+#[derive(Clone, Debug, CopyGetters, Getters, Resource)]
 pub struct DrawConfiguration {
     #[get_copy = "pub"]
     border_appearance: DrawType,

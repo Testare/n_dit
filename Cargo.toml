@@ -20,7 +20,7 @@ pad =  { git = "https://github.com/Testare/rust-pad" }
 unicode-width = "0.1.8"
 crossterm = "0.20.0"
 taffy = "0.1.0"
-bevy = "0.8"
+bevy = "0.10"
 
 # Use for "cargo flamegraph"
 # [profile.release]

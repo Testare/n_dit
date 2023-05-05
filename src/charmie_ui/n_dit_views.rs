@@ -182,7 +182,7 @@ pub fn setup_node_view(
     menu_bar,
     message_bar,*/
     commands
-        .spawn()
+        .spawn(())
         .insert(DynamicTextLayout {
             bounds: Bounds(30, 30), // TODO Make sure this is coupled with taffy style
         })
@@ -198,7 +198,7 @@ pub fn setup_node_view(
         ))
         .with_children(|parent| {
             parent
-                .spawn()
+                .spawn(())
                 .insert(TaffyNodeComponent::new(
                     &mut taffy,
                     taffy::style::Style {
@@ -211,34 +211,34 @@ pub fn setup_node_view(
                 .with_children(|parent| {
                     deck_menu = Some(
                         parent
-                            .spawn()
+                            .spawn(())
                             .insert(Name::new("Decklist"))
-                            .insert_bundle(deck_list_bundle)
+                            .insert(deck_list_bundle)
                             .id(),
                     );
                     curio_desc = Some(
                         parent
-                            .spawn()
+                            .spawn(())
                             .insert(Name::new("Curio Description"))
-                            .insert_bundle(curio_desc_bundle)
+                            .insert(curio_desc_bundle)
                             .id(),
                     );
                     action_menu = Some(
                         parent
-                            .spawn()
+                            .spawn(())
                             .insert(Name::new("Action Menu"))
-                            .insert_bundle(action_list_bundle)
+                            .insert(action_list_bundle)
                             .id(),
                     );
                     action_desc = Some(
                         parent
-                            .spawn()
+                            .spawn(())
                             .insert(Name::new("Action Description"))
-                            .insert_bundle(action_desc_bundle)
+                            .insert(action_desc_bundle)
                             .id(),
                     );
                 });
-            parent.spawn().insert_bundle(grid_map_bundle);
+            parent.spawn(()).insert(grid_map_bundle);
         })
         .insert(NodeView {
             deck_list: deck_menu.unwrap(),

@@ -96,3 +96,4 @@ pub mod charmie_ui;
 pub mod ui;
 pub use game_core::GridMap;
 pub use ui::*;
+pub mod bevy_n;

@@ -15,8 +15,15 @@ use std::collections::{BTreeMap, VecDeque};
 #[derive(Component, Debug)]
 struct GameStateComponent(GameState);
 
+/// Wrap non-resource objects to make them resource components
+#[derive(Resource, Deref)]
+struct Wrapped<T>(T);
+
 pub fn start_with_charmie(state: GameState) {
     let node = state.node().unwrap().clone();
+    /*
+    // BEVY 0.8
+    
     App::new()
         .insert_non_send_resource(Taffy::new())
         .insert_resource(node)
@@ -37,11 +44,12 @@ pub fn start_with_charmie(state: GameState) {
         )
         // .add_system(pause)
         .run()
+        */
 }
 
 fn setup_node_layout(
     mut taffy: NonSendMut<Taffy>,
-    node: Res<game_core::Node>,
+    node: Res<Wrapped<game_core::Node>>,
     mut commands: Commands,
 ) {
     log::debug!("Hello whirled!");
