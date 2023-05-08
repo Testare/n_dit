@@ -1347,6 +1347,7 @@ checksum = "c0ebde6a9dd5e331cd6c6f48253254d117642c31653baa475e394657c59c1f7d"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
+ "futures-core",
  "libc",
  "mio 0.7.14",
  "parking_lot 0.11.2",
