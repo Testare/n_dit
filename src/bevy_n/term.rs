@@ -1,3 +1,6 @@
+mod configuration;
+mod render;
+
 use bevy::prelude::*;
 use crossterm::event::Event as CrosstermEvent;
 use crossterm::execute;
@@ -11,8 +14,9 @@ pub struct CharmiePlugin;
 struct Stub;
 
 #[derive(Component)]
-struct TerminalWindow {
+pub struct TerminalWindow {
     dimensions: Stub,
+    render_target: Option<Entity>,
 }
 
 #[derive(Resource)]
@@ -22,14 +26,32 @@ struct TermConfig {
 
 #[derive(Deref, Resource)]
 struct TermEventListener {
-    rx: Mutex<Receiver<CrosstermEvent>>
+    rx: Mutex<Receiver<CrosstermEvent>>,
 }
 
 impl TerminalWindow {
+    pub fn width(&self) -> usize {
+        100 // TODO Remove stub
+    }
+
+    pub fn height(&self) -> usize {
+        100 // TODO remove stub
+    }
+
+    pub fn scroll_x(&self) -> usize {
+        0 // TODO remove stub, allow negative
+    }
+    pub fn scroll_y(&self) -> usize {
+        0
+    }
+
     fn new() -> std::io::Result<TerminalWindow> {
         Self::reset_terminal_on_panic();
         Self::set_terminal_state()?;
-        Ok(TerminalWindow { dimensions: Stub })
+        Ok(TerminalWindow {
+            dimensions: Stub,
+            render_target: None,
+        })
     }
 
     fn reset_terminal_state() -> std::io::Result<()> {
@@ -76,7 +98,6 @@ impl TerminalWindow {
     }
 }
 
-
 impl Default for TermConfig {
     fn default() -> Self {
         TermConfig { exit_key: 'q' }
@@ -118,9 +139,7 @@ impl Default for TermEventListener {
                 }
             }
         });
-        TermEventListener {
-            rx: Mutex::new(rx)
-        }
+        TermEventListener { rx: Mutex::new(rx) }
     }
 }
 
@@ -144,6 +163,7 @@ impl Plugin for CharmiePlugin {
         app.add_event::<CrosstermEvent>();
         app.add_system(term_event_listener);
         app.add_system(exit_key);
+        app.add_system(render::render_node);
     }
 }
 
@@ -155,6 +175,7 @@ fn create_terminal_window(mut commands: Commands) {
     commands.init_resource::<TermConfig>();
     commands.init_resource::<TermEventListener>();
     commands.spawn(terminal_window);
+    log::debug!("Created loop schedule");
 }
 
 fn exit_key(

@@ -6,7 +6,6 @@ struct Card;
 #[derive(Component, Deref, FromReflect, Reflect)]
 struct Tags {
     tags: Vec<Tag>,
-
 }
 
 #[derive(FromReflect, Reflect)]
@@ -24,7 +23,5 @@ mod action {
     }
 
     #[derive(Component, FromReflect, Reflect)]
-    struct Action {
-
-    }
+    struct Action {}
 }
