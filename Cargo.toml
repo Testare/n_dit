@@ -22,6 +22,7 @@ unicode-width = "0.1.8"
 crossterm = { version = "0.20.0", features = ["event-stream"] }
 taffy = "0.1.0"
 bevy = "0.10"
+thiserror = "1.0.40"
 
 # Use for "cargo flamegraph"
 # [profile.release]

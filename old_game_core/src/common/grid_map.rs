@@ -1,6 +1,7 @@
 use bitvec::{slice::BitSlice, vec::BitVec};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, iter::Rev, vec::IntoIter};
+use bevy::reflect::{FromReflect, Reflect};
 
 use super::Point;
 
@@ -23,7 +24,7 @@ use super::Point;
 /// * A reference to its location on the map
 /// * An id for an item in the containing GridMap, if the square is occupied.
 /// * A reference to the next square occupied by the item, if any.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromReflect, Reflect)]
 pub struct Square {
     item: Option<usize>,
     next: Option<Point>,
@@ -34,7 +35,7 @@ pub struct Square {
 /// have at least one square of representation in the grid, possibly more. These squares are
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromReflect, Reflect)]
 pub struct GridMap<T> {
     width: usize,
     height: usize,

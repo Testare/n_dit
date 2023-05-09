@@ -1,47 +1,25 @@
-use bevy::prelude::*;
+mod node;
+mod card;
 
-#[derive(Component, Reflect)]
-struct Node {}
+use bevy::prelude::{Plugin, App};
+use thiserror::Error;
 
-#[derive(Component, Reflect)]
-struct GridMap {
-    // Re-implement grid_map.rs to store entity references directly
+pub use node::{EntityGrid, Node, NodePiece, Mon};
+
+#[derive(Debug, Error)]
+pub enum NDitError {
+    #[error("attempt to decode string [{encoded_string}] but encountered error [{decode_error}]")]
+    DecodeError{
+        encoded_string: String,
+        decode_error: String,
+    }
+
 }
 
-#[derive(Component, Reflect)]
-struct NodePiece {
-    display_name: String,
-}
+pub struct NDitCorePlugin;
 
-#[derive(Component, Reflect)]
-struct Mon {
-    value: u32,
+impl Plugin for NDitCorePlugin {
+    fn build(&self, app: &mut App) {
+        
+    }
 }
-
-#[derive(Component, Reflect)]
-struct AccessPoint {
-    card: Entity, // Display card data to load
-}
-
-#[derive(Component, Reflect)]
-struct Card {
-    curio_actions: Vec<Entity>, // Entities or just a list of them directly?
-    tags: Vec<Tag>,
-}
-
-#[derive(FromReflect, Reflect)]
-enum Tag {
-    Fire,
-    Flying,
-}
-
-#[derive(Component, Reflect)]
-struct Curio {
-    max_size: usize,
-    speed: usize,
-    owner: Entity,
-    card: Entity,
-}
-
-#[derive(Component, Reflect)]
-struct CurioAction {}

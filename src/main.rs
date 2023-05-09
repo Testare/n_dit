@@ -17,6 +17,8 @@ fn main() -> error::Result<()> {
         .add_plugins(MinimalPlugins)
         .add_plugin(HierarchyPlugin)
         .add_plugin(n_dit::bevy_n::term::CharmiePlugin)
+        .add_plugin(n_dit::bevy_n::game_core::NDitCorePlugin)
+        .add_plugin(n_dit::bevy_n::demo::DemoPlugin)
         .run();
 
     Ok(())

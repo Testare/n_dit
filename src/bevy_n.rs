@@ -5,3 +5,4 @@ pub mod prelude {
 
 pub mod game_core;
 pub mod term;
+pub mod demo;
