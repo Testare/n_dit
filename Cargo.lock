@@ -1569,6 +1569,7 @@ name = "game_core"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "bevy",
  "bitvec",
  "getset",
  "lazy_static",
@@ -2221,6 +2222,7 @@ dependencies = [
  "getset",
  "itertools 0.10.3",
  "log",
+ "old_game_core",
  "pad",
  "serde_json",
  "simplelog",
@@ -2494,6 +2496,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6951b4e8bf21c8193da321bcce9c9dd2e13c858fe078bf9054a288b419ae5d6e"
 dependencies = [
  "byteorder",
+]
+
+[[package]]
+name = "old_game_core"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "bitvec",
+ "getset",
+ "lazy_static",
+ "log",
+ "serde",
+ "serde_json",
+ "typed_key",
 ]
 
 [[package]]

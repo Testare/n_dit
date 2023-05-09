@@ -1,4 +1,4 @@
-use game_core::{
+use old_game_core::{
     error::Error, event::Event, EventLog, EventPublisher, GameCommand, GameState, Informant,
 };
 use std::{collections::VecDeque, time::Duration};

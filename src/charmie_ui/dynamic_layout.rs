@@ -3,7 +3,7 @@ use bevy::{
     ecs::bundle::Bundle,
     prelude::{Component, Entity},
 };
-use game_core::{Bounds, Point, Pt};
+use old_game_core::{Bounds, Point, Pt};
 use pad::PadStr;
 use std::ops::Deref;
 use taffy::{style::Style as TaffyStyle, Taffy};

@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use dynamic_layout::{
     CharmieRenderingComponent, DynamicTextLayout, MenuUi, MenuUiItem, SimpleUi, TextRendering,
 };
-use game_core::{Bounds, GameState};
+use old_game_core::{Bounds, GameState};
 use taffy::prelude::*;
 
 use self::dynamic_layout::TaffyNodeComponent;
@@ -49,7 +49,7 @@ pub fn start_with_charmie(state: GameState) {
 
 fn setup_node_layout(
     mut taffy: NonSendMut<Taffy>,
-    node: Res<Wrapped<game_core::Node>>,
+    node: Res<Wrapped<old_game_core::Node>>,
     mut commands: Commands,
 ) {
     log::debug!("Hello whirled!");

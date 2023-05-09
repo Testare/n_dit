@@ -94,6 +94,6 @@ pub mod hld {}
 
 pub mod charmie_ui;
 pub mod ui;
-pub use game_core::GridMap;
+pub use old_game_core::GridMap;
 pub use ui::*;
 pub mod bevy_n;

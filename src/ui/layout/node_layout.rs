@@ -5,7 +5,7 @@ use std::{
 };
 
 use crossterm::queue;
-use game_core::{Bounds, Direction, GameState, Point};
+use old_game_core::{Bounds, Direction, GameState, Point};
 use unicode_width::UnicodeWidthStr;
 
 use super::super::{render, ClickTarget, NodeCt, NodeUiState, SuperState, UiAction, Window};

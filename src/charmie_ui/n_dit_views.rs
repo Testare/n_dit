@@ -2,7 +2,7 @@ use super::dynamic_layout::{
     CharmieRenderingComponent, DynamicTextLayout, MenuUi, MenuUiItem, SimpleUi, TaffyNodeComponent,
 };
 use bevy::prelude::*;
-use game_core::{Bounds, Node};
+use old_game_core::{Bounds, Node};
 use taffy::{node::Taffy, prelude::Dimension, style::Style as TaffyStyle};
 
 #[derive(Component)]
@@ -18,7 +18,7 @@ struct NodeView {
 
 pub fn setup_node_view(
     mut taffy: NonSendMut<Taffy>, /*, deck: Deck*/
-    node: &game_core::Node,
+    node: &old_game_core::Node,
     commands: &mut Commands,
 ) {
     let deck_list_bundle = MenuUi {

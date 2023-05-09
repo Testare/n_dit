@@ -2,7 +2,7 @@ use std::{fs::File, io::stdout, panic};
 
 use bevy::prelude::*;
 use crossterm::{self, execute};
-use game_core::{
+use old_game_core::{
     error, loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory,
     NetworkGameMaster, NodeDef, Pickup,
 };

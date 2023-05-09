@@ -1,4 +1,4 @@
-use game_core::Point;
+use old_game_core::Point;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ClickTarget {

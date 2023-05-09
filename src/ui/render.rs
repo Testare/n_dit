@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashSet, ops::RangeInclusive};
 
-use game_core::{GameState, Node, Pickup, Point, Sprite, Team};
+use old_game_core::{GameState, Node, Pickup, Point, Sprite, Team};
 use itertools::Itertools;
 use pad::PadStr;
 

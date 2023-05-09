@@ -1,4 +1,4 @@
-use game_core::{Bounds, GameState, Point};
+use old_game_core::{Bounds, GameState, Point};
 
 use super::{ClickTarget, NodeUiState, SuperState, UiAction, UiView};
 
@@ -96,7 +96,7 @@ mod too_small_layout {
     use std::io::stdout;
 
     use crossterm::execute;
-    use game_core::{Bounds, GameState, Point};
+    use old_game_core::{Bounds, GameState, Point};
 
     use super::{ClickTarget, NodeUiState, SubLayout};
     use crate::{SuperState, UiAction};

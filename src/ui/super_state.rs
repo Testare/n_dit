@@ -1,4 +1,4 @@
-use game_core::{Bounds, Direction, GameCommand, GameState, Point};
+use old_game_core::{Bounds, Direction, GameCommand, GameState, Point};
 use getset::{CopyGetters, Getters};
 
 use super::{ClickTarget, DrawConfiguration, Layout, NodeUiState, UserInput};

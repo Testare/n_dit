@@ -1,4 +1,4 @@
-use game_core::{Direction, GameCommand, Node, Point, PointSet, Sprite};
+use old_game_core::{Direction, GameCommand, Node, Point, PointSet, Sprite};
 use getset::{CopyGetters, Setters};
 use log::debug;
 use serde_json::de;
