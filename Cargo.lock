@@ -1574,6 +1574,7 @@ dependencies = [
  "getset",
  "lazy_static",
  "log",
+ "old_game_core",
  "serde",
  "serde_json",
  "typed_key",

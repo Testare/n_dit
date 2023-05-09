@@ -15,3 +15,6 @@ getset = "0.1.1"
 log = "0.4"
 bitvec = "1"
 base64 = "0.13"
+old_game_core = { path = "../old_game_core/" }
+
+
