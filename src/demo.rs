@@ -1,4 +1,4 @@
-use super::game_core::{EntityGrid, Mon, Node as NDNode, NodePiece};
+use game_core::{EntityGrid, Mon, Node as NDNode, NodePiece};
 use bevy::{prelude::*, app::ScheduleRunnerSettings};
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 

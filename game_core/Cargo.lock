@@ -1509,6 +1509,7 @@ dependencies = [
  "old_game_core",
  "serde",
  "serde_json",
+ "thiserror",
  "typed_key",
 ]
 
@@ -2350,6 +2351,7 @@ name = "old_game_core"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "bevy",
  "bitvec",
  "getset",
  "lazy_static",

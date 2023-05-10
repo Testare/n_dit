@@ -1,4 +1,4 @@
-use super::super::game_core::{self, EntityGrid};
+use game_core::{self, EntityGrid};
 use super::configuration::{DrawConfiguration, DrawType, UiFormat};
 use super::TerminalWindow;
 use bevy::prelude::*;

@@ -22,9 +22,9 @@ fn main() -> error::Result<()> {
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_millis(25)))
         .add_plugin(bevy::app::ScheduleRunnerPlugin)
         .add_plugin(FrameCountPlugin)
-        .add_plugin(n_dit::bevy_n::term::CharmiePlugin)
-        .add_plugin(n_dit::bevy_n::game_core::NDitCorePlugin)
-        .add_plugin(n_dit::bevy_n::demo::DemoPlugin)
+        .add_plugin(game_core::NDitCorePlugin)
+        .add_plugin(n_dit::term::CharmiePlugin)
+        .add_plugin(n_dit::demo::DemoPlugin)
         .run();
 
     Ok(())
