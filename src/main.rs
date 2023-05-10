@@ -6,7 +6,6 @@ use old_game_core::{
     error, loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory,
     NetworkGameMaster, NodeDef, Pickup,
 };
-use n_dit::ui::CrosstermInformant;
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() -> error::Result<()> {
