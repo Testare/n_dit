@@ -2,7 +2,6 @@ use game_core::{self, EntityGrid};
 use super::configuration::{DrawConfiguration, DrawType, UiFormat};
 use super::TerminalWindow;
 use bevy::prelude::*;
-use bevy::core::FrameCount; // For debugging, remove
 use itertools::Itertools;
 use std::cmp;
 use std::io::{stdout, Write};
@@ -18,9 +17,8 @@ const INTERSECTION_CHAR: [char; 16] = [
 
 // Might want to change this to just accept a mutable Write reference to make more effecient.
 fn render_square(
-    sprite: &Entity,
-    key: usize,
     position: usize,
+    entity: Entity,
     configuration: &DrawConfiguration,
 ) -> String {
     /*let string = match sprite {
@@ -165,12 +163,12 @@ pub fn render_node(
     // let draw_config = state.draw_config();
     let draw_config = DrawConfiguration::default();
     if let Some(grid) = node_grids.iter().next() {
-        let width = grid.width();
-        let height = grid.height();
+        let width = grid.width() as usize;
+        let height = grid.height() as usize;
         let grid_map = grid.number_map();
 
         let sprite_map =
-            grid.point_map(|key, i, sprite| render_square(sprite, key, i, &draw_config));
+            grid.point_map(|i, sprite| render_square(i, sprite, &draw_config));
 
         let str_width = width * 3 + 3;
         let x_start = window.scroll_x() / 3;
@@ -232,6 +230,7 @@ pub fn render_node(
                     } else {
                         (grid_map[x][y - 1], grid_map[x][y])
                     };
+                    let pt = (x as u32, y as u32).into();
 
                     let border_x_range = if x == 0 { 0..=0 } else { x - 1..=x };
 
@@ -305,10 +304,10 @@ pub fn render_node(
                                 if include_space {
                                     let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
                                     let square = sprite_map
-                                        .get(&(x, y))
+                                        .get(&pt)
                                         .map(String::as_ref)
                                         .unwrap_or_else(|| {
-                                            if grid.square_is_closed((x, y)) {
+                                            if grid.square_is_closed(pt) {
                                                 CLOSED_SQUARE
                                             } else {
                                                 OPEN_SQUARE
@@ -355,10 +354,10 @@ pub fn render_node(
                         let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
                         let square =
                             sprite_map
-                                .get(&(x, y))
+                                .get(&pt)
                                 .map(String::as_ref)
                                 .unwrap_or_else(|| {
-                                    if grid.square_is_closed((x, y)) {
+                                    if grid.square_is_closed(pt) {
                                         CLOSED_SQUARE
                                     } else {
                                         OPEN_SQUARE

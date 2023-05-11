@@ -1,14 +1,16 @@
 pub use bevy::prelude::{
-    Entity,
-    Name,
+    Commands,
+    Component,
     Deref,
     DerefMut,
-    Component,
-    Commands,
-    Query,
-    Vec2,
-    UVec2,
+    Entity,
+    FromReflect,
     IVec2,
+    Name,
     Plugin,
+    Query,
+    Reflect,
+    UVec2,
+    Vec2,
     World
 };

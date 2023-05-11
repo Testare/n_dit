@@ -13,10 +13,10 @@ impl Plugin for DemoPlugin {
 
 fn demo_startup(mut commands: Commands) {
     let mut entity_grid =
-        EntityGrid::new_from_shape("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap();
+        EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap();
 
     let mon_entity_1 = commands.spawn((Mon(500), NodePiece::new("mon"))).id();
-    entity_grid.put_item((4, 4), mon_entity_1);
+    entity_grid.put_item((4, 4).into(), mon_entity_1);
 
     let node = commands
         .spawn((NDNode, entity_grid))
@@ -38,7 +38,7 @@ fn debug_key(mut inputs: EventReader<CrosstermEvent>, nodes: Query<&EntityGrid, 
             log::debug!("Debug event occured");
             for entity_grid in nodes.iter() {
                 log::debug!("# Node");
-                for entry in entity_grid.entries() {
+                for entry in entity_grid.entities() {
                     log::debug!("Entity: {:?}", entry);
                 }
             }

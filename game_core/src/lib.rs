@@ -2,14 +2,15 @@ mod entity_grid;
 mod prelude;
 mod card;
 mod node;
-mod grid_map;
 
 pub use node::*;
 
 use bevy::prelude::{App, Plugin};
 use thiserror::Error;
 
-pub use node::{EntityGrid, Mon, Node, NodePiece};
+pub use node::{Mon, Node, NodePiece};
+
+pub use entity_grid::EntityGrid;
 
 #[derive(Debug, Error)]
 pub enum NDitError {
