@@ -2,6 +2,7 @@ mod entity_grid;
 mod prelude;
 mod card;
 mod node;
+mod grid_map;
 
 pub use node::*;
 

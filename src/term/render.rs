@@ -16,9 +16,6 @@ const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
-fn clear() {
-    
-}
 // Might want to change this to just accept a mutable Write reference to make more effecient.
 fn render_square(
     sprite: &Entity,
@@ -159,7 +156,6 @@ pub fn border_style_for(
 pub fn render_node(
     windows: Query<&TerminalWindow>,
     node_grids: Query<&EntityGrid, With<game_core::Node>>,
-    frame_count: Res<FrameCount>,
 ) {
     let window = windows
         .iter()
@@ -408,7 +404,6 @@ pub fn render_node(
             );
         }
         stdout.flush();
-        log::debug!("Node! {}", frame_count.0);
     } else {
         log::debug!("No node?");
     }
