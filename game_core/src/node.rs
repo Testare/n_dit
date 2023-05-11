@@ -5,8 +5,9 @@ use old_game_core::GridMap;
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, getset::Getters)]
 pub struct NodePiece {
+    #[getset(get="pub")]
     display_name: String,
 }
 
@@ -24,6 +25,12 @@ struct Curio {
     speed: usize,
     owner: Entity,
     card: Entity,
+}
+
+#[derive(Clone, Component, FromReflect, Reflect)]
+pub enum Team {
+    Enemy,
+    Player,
 }
 
 impl NodePiece {

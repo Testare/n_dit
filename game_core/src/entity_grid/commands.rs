@@ -2,25 +2,23 @@ use bevy::ecs::system::{EntityCommand, EntityCommands};
 use crate::prelude::*;
 use super::EntityGrid;
 
-type Point = UVec2;
-
-trait AddToGrid {
-    fn add_to_grid(&mut self, grid: Entity, points: Vec<Point>) -> &mut Self;
+pub trait AddToGrid {
+    fn add_to_grid<P: Into<UVec2>>(&mut self, grid: Entity, points: Vec<P>) -> &mut Self;
 }
 
-struct AddToGridCommand {
+pub struct AddToGridCommand {
     grid_entity: Entity,
-    points: Vec<Point>,
+    points: Vec<UVec2>,
 }
 
 impl <'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
-    fn add_to_grid(&mut self, grid_entity: Entity, points: Vec<Point>) -> &mut Self {
+    fn add_to_grid<P: Into<UVec2>>(&mut self, grid_entity: Entity, points: Vec<P>) -> &mut Self {
         if points.len() < 1 {
             panic!("cannot add to grid when there are no points");
         }
         let command = AddToGridCommand {
             grid_entity,
-            points,
+            points: points.into_iter().map(|p|p.into()).collect(),
         };
         self.add(command);
         self

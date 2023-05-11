@@ -159,11 +159,11 @@ impl Drop for TerminalWindow {
 impl Plugin for CharmiePlugin {
     fn build(&self, app: &mut App) {
         // TODO atty check
-        app.add_startup_system(create_terminal_window);
-        app.add_event::<CrosstermEvent>();
-        app.add_system(term_event_listener);
-        app.add_system(exit_key);
-        app.add_system(render::render_node);
+        app.add_plugin(render::RenderPlugin)
+            .add_startup_system(create_terminal_window)
+            .add_event::<CrosstermEvent>()
+            .add_system(term_event_listener)
+            .add_system(exit_key);
     }
 }
 

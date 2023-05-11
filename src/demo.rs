@@ -1,5 +1,5 @@
-use game_core::{EntityGrid, Mon, Node as NDNode, NodePiece};
-use bevy::{prelude::*, app::ScheduleRunnerSettings};
+use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
+use game_core::prelude::*;
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
@@ -12,23 +12,34 @@ impl Plugin for DemoPlugin {
 }
 
 fn demo_startup(mut commands: Commands) {
-    let mut entity_grid =
-        EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap();
+    commands
+        .spawn((
+            Node, 
+            EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap()
+        ))
+        .with_children(|node| {
+            let node_id = node.parent_entity();
 
-    let mon_entity_1 = commands.spawn((Mon(500), NodePiece::new("mon"))).id();
-    entity_grid.put_item((4, 4).into(), mon_entity_1);
+            node
+                .spawn((
+                    Mon(500), 
+                    NodePiece::new("curio:hack"),
+                    Team::Enemy
+                ))
+                .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
+            node
+                .spawn((Mon(700), NodePiece::new("pickup:card")))
+                .add_to_grid(node_id, vec![(3, 3)]);
 
-    let node = commands
-        .spawn((NDNode, entity_grid))
-        .add_child(mon_entity_1)
-        .id();
+        });
+
     // commands.get_entity(node).unwrap().insert(entity_grid);
     log::debug!("Demo startup executed");
 }
 
 // TODO figure out how to add entity to GridMap well, custom Command?
 
-fn debug_key(mut inputs: EventReader<CrosstermEvent>, nodes: Query<&EntityGrid, With<NDNode>>) {
+fn debug_key(mut inputs: EventReader<CrosstermEvent>, nodes: Query<&EntityGrid, With<Node>>) {
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {
             code: KeyCode::Char('d'),

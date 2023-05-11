@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, iter::Rev, vec::IntoIter};
 use bevy::reflect::{FromReflect, Reflect};
 use crate::prelude::*;
-mod commands;
+pub mod commands;
 
 // Potential future developments:
 // * removing squares from the middle of an Item
