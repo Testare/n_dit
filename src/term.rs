@@ -11,11 +11,10 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 pub struct CharmiePlugin;
-struct Stub;
 
-#[derive(Component)]
+#[derive(Component, Debug, getset::Setters, getset::Getters)]
 pub struct TerminalWindow {
-    dimensions: Stub,
+    #[getset(get="pub", set="pub")]
     render_target: Option<Entity>,
 }
 
@@ -49,7 +48,6 @@ impl TerminalWindow {
         Self::reset_terminal_on_panic();
         Self::set_terminal_state()?;
         Ok(TerminalWindow {
-            dimensions: Stub,
             render_target: None,
         })
     }
@@ -169,7 +167,7 @@ impl Plugin for CharmiePlugin {
 
 /// Systems
 
-fn create_terminal_window(mut commands: Commands) {
+pub fn create_terminal_window(mut commands: Commands) {
     let terminal_window =
         TerminalWindow::new().expect("Error occured while creating terminal window");
     commands.init_resource::<TermConfig>();

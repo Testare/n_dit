@@ -65,12 +65,6 @@ impl Pickup {
     // TODO move this render-specific logic, configurable symbols
     const MON_SQUARE: &'static str = "$$";
     const ITEM_SQUARE: &'static str = "++";
-    // const CARD_SQUARE: &'static str = "🃁 ";
-    // const CARD_SQUARE: &'static str = "♠♥";
-    // const CARD_SQUARE: &'static str = "==";
-    // const CARD_SQUARE: &'static str = "++";
-    // const CARD_SQUARE: &'static str = "&]";
-    // const CARD_SQUARE: &'static str = "□]";
     const CARD_SQUARE: &'static str = "🂠 ";
 
     pub fn square_display(&self) -> &'static str {
