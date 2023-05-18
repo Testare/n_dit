@@ -2,12 +2,11 @@ mod render_node;
 
 use std::io::{stdout, Write};
 
-use bevy::core::FrameCount;
-use game_core::{self, EntityGrid, NodePiece, Team};
 use super::TerminalWindow;
+use bevy::core::FrameCount;
 use game_core::prelude::*;
+use game_core::{self, EntityGrid, NodePiece, Team};
 use render_node::GlyphRegistry;
-
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct TerminalRendering {
@@ -16,7 +15,6 @@ pub struct TerminalRendering {
 }
 
 impl TerminalRendering {
-
     pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
         TerminalRendering {
             rendering,
@@ -42,7 +40,6 @@ impl Default for TerminalRendering {
     }
 }
 
-
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
@@ -56,7 +53,10 @@ impl Plugin for RenderPlugin {
 pub fn render_node(
     mut commands: Commands,
     windows: Query<&TerminalWindow>,
-    mut node_grids: Query<(Entity, &EntityGrid, Option<&mut TerminalRendering>), With<game_core::Node>>,
+    mut node_grids: Query<
+        (Entity, &EntityGrid, Option<&mut TerminalRendering>),
+        With<game_core::Node>,
+    >,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     frame_count: Res<FrameCount>,
     glyph_registry: Res<GlyphRegistry>,
@@ -69,21 +69,20 @@ pub fn render_node(
             let rendering = TerminalRendering::new(grid_rendering, frame_count.0);
             commands.get_entity(entity).unwrap().insert(rendering);
         }
-    } 
+    }
 }
 
 pub fn write_rendering_to_terminal(
     windows: Query<&TerminalWindow>,
     mut node_grids: Query<&TerminalRendering>,
 ) {
-
     for window in windows.iter() {
         // Future: get different write streams per window?
-        if let Some(tr) = window.render_target.and_then(|id|node_grids.get(id).ok()) {
+        if let Some(tr) = window.render_target.and_then(|id| node_grids.get(id).ok()) {
             let mut stdout = stdout();
             // TODO logic to not render if not necessary
             crossterm::queue!(
-                stdout, 
+                stdout,
                 crossterm::cursor::MoveTo(0, 0),
                 crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
             );
@@ -98,5 +97,4 @@ pub fn write_rendering_to_terminal(
             stdout.flush();
         }
     }
-
 }

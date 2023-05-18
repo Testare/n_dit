@@ -14,7 +14,7 @@ pub struct CharmiePlugin;
 
 #[derive(Component, Debug, getset::Setters, getset::Getters)]
 pub struct TerminalWindow {
-    #[getset(get="pub", set="pub")]
+    #[getset(get = "pub", set = "pub")]
     render_target: Option<Entity>,
 }
 

@@ -1,6 +1,6 @@
 use std::{fs::File, io::stdout, panic, time::Duration};
 
-use bevy::{prelude::*, app::ScheduleRunnerSettings};
+use bevy::{app::ScheduleRunnerSettings, prelude::*};
 use crossterm::{self, execute};
 use old_game_core::{
     error, loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory,
@@ -15,7 +15,6 @@ fn main() -> error::Result<()> {
     App::new()
         // .add_plugins(MinimalPlugins)
         .add_plugin(HierarchyPlugin)
-
         .add_plugin(bevy::core::TaskPoolPlugin::default())
         .add_plugin(TypeRegistrationPlugin)
         .add_plugin(bevy::time::TimePlugin)

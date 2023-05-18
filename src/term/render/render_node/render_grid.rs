@@ -1,12 +1,12 @@
-use game_core::{EntityGrid, NodePiece, Team};
+use super::registry::GlyphRegistry;
+use super::render_square;
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::TerminalWindow;
 use bevy::prelude::*;
+use game_core::{EntityGrid, NodePiece, Team};
 use itertools::Itertools;
 use std::cmp;
 use std::io::{stdout, Write};
-use super::registry::GlyphRegistry;
-use super::render_square;
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
@@ -135,8 +135,9 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map =
-        grid.point_map(|i, sprite| render_square(i, sprite, &node_pieces, glyph_registry, &draw_config));
+    let sprite_map = grid.point_map(|i, sprite| {
+        render_square(i, sprite, &node_pieces, glyph_registry, &draw_config)
+    });
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x() / 3;
@@ -207,10 +208,10 @@ pub fn render_grid(
                 if include_border {
                     let pivot_format = border_style_for(
                         &draw_config, // &available_moves,
-                                        // action_type,
-                                        // state,
-                                        // &border_x_range,
-                                        // &border_y_range,
+                                      // action_type,
+                                      // state,
+                                      // &border_x_range,
+                                      // &border_y_range,
                     );
                     border_line.push_str(
                         pivot_format
@@ -226,12 +227,12 @@ pub fn render_grid(
                 if include_space {
                     let border_style = border_style_for(
                         &draw_config, /*
-                                                                &available_moves,
-                                                                action_type,
-                                                                state,
-                                                                &border_x_range,
-                                                                &(y..=y),
-                                        */
+                                                              &available_moves,
+                                                              action_type,
+                                                              state,
+                                                              &border_x_range,
+                                                              &(y..=y),
+                                      */
                     );
                     space_line.push_str(
                         border_style
@@ -251,11 +252,11 @@ pub fn render_grid(
                             if include_border {
                                 let border_style = border_style_for(
                                     &draw_config, /*
-                                                    &available_moves,
-                                                    action_type,
-                                                    state,
-                                                    &(x..=x),
-                                                    &border_y_range, */
+                                                  &available_moves,
+                                                  action_type,
+                                                  state,
+                                                  &(x..=x),
+                                                  &border_y_range, */
                                 );
                                 border_line.push_str(
                                     border_style
@@ -271,10 +272,8 @@ pub fn render_grid(
                             }
                             if include_space {
                                 let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
-                                let square = sprite_map
-                                    .get(&pt)
-                                    .map(String::as_ref)
-                                    .unwrap_or_else(|| {
+                                let square =
+                                    sprite_map.get(&pt).map(String::as_ref).unwrap_or_else(|| {
                                         if grid.square_is_closed(pt) {
                                             CLOSED_SQUARE
                                         } else {
@@ -287,9 +286,7 @@ pub fn render_grid(
                                     );
                                 } else {
                                     space_line.push_str(
-                                        space_style
-                                            .apply(square.chars().next().unwrap())
-                                            .as_str(),
+                                        space_style.apply(square.chars().next().unwrap()).as_str(),
                                     );
                                 }
                             }
@@ -303,34 +300,28 @@ pub fn render_grid(
                 if include_border {
                     let border_style = border_style_for(
                         &draw_config, /*
-                                                                &available_moves,
-                                                                action_type,
-                                                                state,
-                                                                &(x..=x),
-                                                                &border_y_range,
-                                        */
+                                                              &available_moves,
+                                                              action_type,
+                                                              state,
+                                                              &(x..=x),
+                                                              &border_y_range,
+                                      */
                     );
                     border_line.push_str(
                         border_style
-                            .apply(
-                                BorderType::of(right1, right2).horizontal_border(&draw_config),
-                            )
+                            .apply(BorderType::of(right1, right2).horizontal_border(&draw_config))
                             .as_str(),
                     );
                 }
                 if include_space {
                     let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
-                    let square =
-                        sprite_map
-                            .get(&pt)
-                            .map(String::as_ref)
-                            .unwrap_or_else(|| {
-                                if grid.square_is_closed(pt) {
-                                    CLOSED_SQUARE
-                                } else {
-                                    OPEN_SQUARE
-                                }
-                            });
+                    let square = sprite_map.get(&pt).map(String::as_ref).unwrap_or_else(|| {
+                        if grid.square_is_closed(pt) {
+                            CLOSED_SQUARE
+                        } else {
+                            OPEN_SQUARE
+                        }
+                    });
                     // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                     space_line.push_str(space_style.apply(square).as_str());
                     if x == x_start && skip_x == 2 && square.chars().count() == 1 {
@@ -356,23 +347,23 @@ pub fn render_grid(
             })
             .collect();
 
-/*
-    let mut stdout = stdout();
-    crossterm::queue!(
-        stdout, 
-        crossterm::cursor::MoveTo(0, 0),
-        crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
-    );
-    for line in result.iter() {
-        crossterm::queue!(
-            stdout,
-            crossterm::style::Print(line.clone()),
-            crossterm::style::Print("\n"),
-            crossterm::cursor::MoveToColumn(0),
-        );
-    }
-    stdout.flush();
- */
+    /*
+       let mut stdout = stdout();
+       crossterm::queue!(
+           stdout,
+           crossterm::cursor::MoveTo(0, 0),
+           crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
+       );
+       for line in result.iter() {
+           crossterm::queue!(
+               stdout,
+               crossterm::style::Print(line.clone()),
+               crossterm::style::Print("\n"),
+               crossterm::cursor::MoveToColumn(0),
+           );
+       }
+       stdout.flush();
+    */
     return result;
 }
 

@@ -1,7 +1,7 @@
-use game_core::prelude::*;
-use game_core::{NodePiece, Team};
 use super::registry::GlyphRegistry;
 use crate::term::configuration::DrawConfiguration;
+use game_core::prelude::*;
+use game_core::{NodePiece, Team};
 
 const UNKNOWN_NODE_PIECE: &'static str = "??";
 const FILL_GLYPH: &'static str = "[]";
@@ -41,10 +41,15 @@ pub fn render_square(
     };
     style(sprite, node, key, position, configuration).apply(string)*/
 
-    let (node_piece, team_opt) = node_pieces.get(entity).expect("entities in Node EntityGrid should implement NodePiece");
-    
+    let (node_piece, team_opt) = node_pieces
+        .get(entity)
+        .expect("entities in Node EntityGrid should implement NodePiece");
+
     let glyph = if position == 0 {
-        node_piece_render_registry.get(node_piece.display_name()).cloned().unwrap_or_else(||UNKNOWN_NODE_PIECE.to_owned())
+        node_piece_render_registry
+            .get(node_piece.display_name())
+            .cloned()
+            .unwrap_or_else(|| UNKNOWN_NODE_PIECE.to_owned())
     } else {
         FILL_GLYPH.to_owned()
     };
