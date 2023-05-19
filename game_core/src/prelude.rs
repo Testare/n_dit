@@ -1,8 +1,10 @@
 pub use bevy::prelude::{
     apply_system_buffers,
+    Added,
     App,
     AddChild,
     BuildChildren,
+    Changed,
     Commands,
     Component,
     Deref,
@@ -24,6 +26,7 @@ pub use bevy::prelude::{
     UVec2,
     Vec2,
     With,
+    Without,
     World,
 
 };

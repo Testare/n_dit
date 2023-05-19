@@ -13,34 +13,6 @@ pub fn render_square(
     node_piece_render_registry: &GlyphRegistry,
     configuration: &DrawConfiguration,
 ) -> String {
-    /*let string = match sprite {
-        Sprite::AccessPoint(_) => String::from("&&"),
-        Sprite::Pickup(pickup) => configuration
-            .color_scheme()
-            .mon()
-            .apply(pickup.square_display()),
-        Sprite::Curio(curio) => {
-            if position == 0 {
-                String::from(curio.display())
-            } else if false {
-                // Logic to format the last square differently if position + 1 == max_size and the
-                // curio is selected, so that you can tell that moving will not grow the curio.
-                String::from("[]")
-            } else {
-                match configuration.tail_appearance() {
-                    FillMethod::NoFill => String::from("  "),
-                    FillMethod::Brackets => String::from("[]"),
-                    FillMethod::DotFill => String::from(".."),
-                    FillMethod::HeadCopy => String::from(curio.display()),
-                    FillMethod::Sequence => {
-                        format!("{:02}", position)
-                    }
-                }
-            }
-        }
-    };
-    style(sprite, node, key, position, configuration).apply(string)*/
-
     let (node_piece, team_opt) = node_pieces
         .get(entity)
         .expect("entities in Node EntityGrid should implement NodePiece");

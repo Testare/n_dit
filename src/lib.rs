@@ -93,6 +93,5 @@
 pub mod hld {}
 
 pub use old_game_core::GridMap;
-pub mod bevy_n;
 pub mod demo;
 pub mod term;

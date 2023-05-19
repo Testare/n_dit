@@ -7,6 +7,7 @@ use bevy::core::FrameCount;
 use game_core::prelude::*;
 use game_core::{self, EntityGrid, NodePiece, Team};
 use render_node::GlyphRegistry;
+use crate::term::node::NodeCursor;
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct TerminalRendering {
@@ -54,15 +55,15 @@ pub fn render_node(
     mut commands: Commands,
     windows: Query<&TerminalWindow>,
     mut node_grids: Query<
-        (Entity, &EntityGrid, Option<&mut TerminalRendering>),
+        (Entity, &EntityGrid, &NodeCursor, Option<&mut TerminalRendering>),
         With<game_core::Node>,
     >,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     frame_count: Res<FrameCount>,
     glyph_registry: Res<GlyphRegistry>,
 ) {
-    if let Some((entity, grid, rendering_opt)) = node_grids.iter_mut().next() {
-        let grid_rendering = render_node::render_grid(windows, grid, node_pieces, &glyph_registry);
+    if let Some((entity, grid, node_cursor, rendering_opt)) = node_grids.iter_mut().next() {
+        let grid_rendering = render_node::render_grid(windows, grid, node_cursor, node_pieces, &glyph_registry);
         if let Some(mut rendering) = rendering_opt {
             rendering.update(grid_rendering, frame_count.0);
         } else {
@@ -74,11 +75,11 @@ pub fn render_node(
 
 pub fn write_rendering_to_terminal(
     windows: Query<&TerminalWindow>,
-    mut node_grids: Query<&TerminalRendering>,
+    renderings: Query<&TerminalRendering>,
 ) {
     for window in windows.iter() {
         // Future: get different write streams per window?
-        if let Some(tr) = window.render_target.and_then(|id| node_grids.get(id).ok()) {
+        if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
             let mut stdout = stdout();
             // TODO logic to not render if not necessary
             crossterm::queue!(

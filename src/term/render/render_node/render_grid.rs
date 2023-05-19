@@ -2,11 +2,12 @@ use super::registry::GlyphRegistry;
 use super::render_square;
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::TerminalWindow;
+use crate::term::node::NodeCursor;
 use bevy::prelude::*;
 use game_core::{EntityGrid, NodePiece, Team};
 use itertools::Itertools;
 use std::cmp;
-use std::io::{stdout, Write};
+use std::ops::RangeInclusive;
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
@@ -93,16 +94,21 @@ impl BorderType {
 pub fn border_style_for(
     // available_moves: &Option<HashSet<Point>>,
     // available_moves_type: usize, // TODO something nicer
+    node_cursor: &NodeCursor,
+
     draw_config: &DrawConfiguration,
-    // x_range: &RangeInclusive<usize>,
-    // y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
+     x_range: &RangeInclusive<usize>,
+     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
 ) -> UiFormat {
     let color_scheme = draw_config.color_scheme();
-    /* let selected_square = state.selected_square();
-    let (selected_x, selected_y) = selected_square;
-    if x_range.contains(&selected_x) && y_range.contains(&selected_y) {
+
+    let NodeCursor(UVec2 { x: cursor_x, y: cursor_y }) = node_cursor;
+
+    // TODO optimized logic so we don't create a full set of points for every square
+    if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
         color_scheme.selected_square_border()
-        // TODO optimized logic so we don't create a full set of points for every square
+    }
+    /*
     } else if available_moves.is_some()
         && !available_moves
             .as_ref()
@@ -113,14 +119,16 @@ pub fn border_style_for(
             0 => color_scheme.possible_movement(),
             _ => color_scheme.attack_action(),
         }
-    } else {*/
-    color_scheme.grid_border_default()
-    // }
+    */
+    else {
+        color_scheme.grid_border_default()
+    }
 }
 
 pub fn render_grid(
     windows: Query<&TerminalWindow>,
     grid: &EntityGrid,
+    node_cursor: &NodeCursor,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
@@ -207,11 +215,12 @@ pub fn render_grid(
 
                 if include_border {
                     let pivot_format = border_style_for(
+                        node_cursor,
                         &draw_config, // &available_moves,
                                       // action_type,
                                       // state,
-                                      // &border_x_range,
-                                      // &border_y_range,
+                                      &border_x_range,
+                                      &border_y_range,
                     );
                     border_line.push_str(
                         pivot_format
@@ -226,13 +235,16 @@ pub fn render_grid(
 
                 if include_space {
                     let border_style = border_style_for(
+
+                        node_cursor,
                         &draw_config, /*
                                                               &available_moves,
                                                               action_type,
                                                               state,
+
+                                      */
                                                               &border_x_range,
                                                               &(y..=y),
-                                      */
                     );
                     space_line.push_str(
                         border_style
@@ -251,12 +263,14 @@ pub fn render_grid(
                             // Only half the square is rendered
                             if include_border {
                                 let border_style = border_style_for(
+                                    node_cursor,
                                     &draw_config, /*
                                                   &available_moves,
                                                   action_type,
                                                   state,
+                                                  */
                                                   &(x..=x),
-                                                  &border_y_range, */
+                                                  &border_y_range, 
                                 );
                                 border_line.push_str(
                                     border_style
@@ -271,7 +285,7 @@ pub fn render_grid(
                                 );
                             }
                             if include_space {
-                                let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
+                                let space_style = space_style_for(x, y, node_cursor, &draw_config);
                                 let square =
                                     sprite_map.get(&pt).map(String::as_ref).unwrap_or_else(|| {
                                         if grid.square_is_closed(pt) {
@@ -299,13 +313,14 @@ pub fn render_grid(
                 }
                 if include_border {
                     let border_style = border_style_for(
+                        node_cursor,
                         &draw_config, /*
                                                               &available_moves,
                                                               action_type,
                                                               state,
+                                      */
                                                               &(x..=x),
                                                               &border_y_range,
-                                      */
                     );
                     border_line.push_str(
                         border_style
@@ -314,7 +329,7 @@ pub fn render_grid(
                     );
                 }
                 if include_space {
-                    let space_style = UiFormat::NONE; // space_style_for(state, (x, y));
+                    let space_style = space_style_for(x, y, node_cursor, &draw_config);
                     let square = sprite_map.get(&pt).map(String::as_ref).unwrap_or_else(|| {
                         if grid.square_is_closed(pt) {
                             CLOSED_SQUARE
@@ -386,4 +401,17 @@ fn intersection_for_pivot(
     let west = border_type_bit(draw_config, left[0], left[1]) << 3;
 
     INTERSECTION_CHAR[north | east | south | west]
+}
+
+fn space_style_for(
+    x: usize,
+    y: usize,
+    node_cursor: &NodeCursor,
+    draw_config: &DrawConfiguration,
+) -> UiFormat {
+    if x as u32 == node_cursor.x && y as u32 == node_cursor.y {
+        draw_config.color_scheme().selected_square()
+    } else {
+        UiFormat::NONE
+    }
 }

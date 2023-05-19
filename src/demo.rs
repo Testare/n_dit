@@ -3,6 +3,7 @@ use game_core::prelude::*;
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
 use crate::term::{create_terminal_window, TerminalWindow};
+use crate::term::node::NodeCursor;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
@@ -47,8 +48,7 @@ fn demo_startup(mut commands: Commands, mut windows: Query<&mut TerminalWindow>)
 
 fn debug_key(
     mut inputs: EventReader<CrosstermEvent>,
-    nodes: Query<(Entity, &EntityGrid), With<Node>>,
-    mut windows: Query<&mut TerminalWindow>,
+    nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
 ) {
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {
@@ -56,13 +56,10 @@ fn debug_key(
             ..
         }) = input
         {
-            for mut window in windows.iter_mut() {
-                log::debug!("WINDOW: {:?}", window);
-                window.set_render_target(nodes.iter().next().map(|(entity, _)| entity));
-            }
             log::debug!("Debug event occured");
-            for (_, entity_grid) in nodes.iter() {
-                log::debug!("# Node");
+
+            for (_, entity_grid, cursor) in nodes.iter() {
+                log::debug!("# Node ({:?})", cursor);
                 for entry in entity_grid.entities() {
                     log::debug!("Entity: {:?}", entry);
                 }

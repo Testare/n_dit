@@ -1,7 +1,13 @@
 mod configuration;
 mod render;
+pub mod node;
 
-use bevy::prelude::*;
+mod prelude {
+    pub use game_core::prelude::*;
+    pub use crossterm::event::Event as CrosstermEvent;
+}
+
+use prelude::*;
 use crossterm::event::Event as CrosstermEvent;
 use crossterm::execute;
 use std::io::stdout;
@@ -161,7 +167,10 @@ impl Plugin for CharmiePlugin {
             .add_startup_system(create_terminal_window)
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
+            .add_system(node::node_on_focus)
+            .add_system(node::node_cursor_controls)
             .add_system(exit_key);
+
     }
 }
 
