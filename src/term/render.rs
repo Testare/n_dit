@@ -2,13 +2,13 @@ mod render_node;
 
 use std::io::{stdout, Write};
 
-use itertools::{Itertools, EitherOrBoth};
 use super::TerminalWindow;
+use crate::term::node::NodeCursor;
 use bevy::core::FrameCount;
 use game_core::prelude::*;
 use game_core::{self, EntityGrid, NodePiece, Team};
+use itertools::{EitherOrBoth, Itertools};
 use render_node::GlyphRegistry;
-use crate::term::node::NodeCursor;
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct TerminalRendering {
@@ -62,16 +62,15 @@ impl From<&TerminalRendering> for CachedTerminalRendering {
             last_update: value.last_update,
         }
     }
-
 }
 
-impl PartialEq<TerminalRendering> for CachedTerminalRendering{
+impl PartialEq<TerminalRendering> for CachedTerminalRendering {
     fn eq(&self, rhs: &TerminalRendering) -> bool {
         self.rendering.iter().eq(rhs.rendering.iter())
     }
 }
 
-impl PartialEq<CachedTerminalRendering> for TerminalRendering{
+impl PartialEq<CachedTerminalRendering> for TerminalRendering {
     fn eq(&self, rhs: &CachedTerminalRendering) -> bool {
         self.rendering.iter().eq(rhs.rendering.iter())
     }
@@ -91,7 +90,12 @@ pub fn render_node(
     mut commands: Commands,
     windows: Query<&TerminalWindow>,
     mut node_grids: Query<
-        (Entity, &EntityGrid, &NodeCursor, Option<&mut TerminalRendering>),
+        (
+            Entity,
+            &EntityGrid,
+            &NodeCursor,
+            Option<&mut TerminalRendering>,
+        ),
         With<game_core::Node>,
     >,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
@@ -99,7 +103,8 @@ pub fn render_node(
     glyph_registry: Res<GlyphRegistry>,
 ) {
     if let Some((entity, grid, node_cursor, rendering_opt)) = node_grids.iter_mut().next() {
-        let grid_rendering = render_node::render_grid(windows, grid, node_cursor, node_pieces, &glyph_registry);
+        let grid_rendering =
+            render_node::render_grid(windows, grid, node_cursor, node_pieces, &glyph_registry);
         if let Some(mut rendering) = rendering_opt {
             rendering.update(grid_rendering, frame_count.0);
         } else {
@@ -111,7 +116,11 @@ pub fn render_node(
 
 pub fn write_rendering_to_terminal(
     mut commands: Commands,
-    mut windows: Query<(Entity, &TerminalWindow, Option<&mut CachedTerminalRendering>)>,
+    mut windows: Query<(
+        Entity,
+        &TerminalWindow,
+        Option<&mut CachedTerminalRendering>,
+    )>,
     renderings: Query<&TerminalRendering>,
 ) {
     for (window_entity, window, cached_rendering_opt) in windows.iter_mut() {
@@ -122,20 +131,23 @@ pub fn write_rendering_to_terminal(
                     if cached_rendering.as_ref() == tr {
                         continue;
                     }
-                    let render_result = render_with_cache(&tr.rendering, &cached_rendering.rendering);
+                    let render_result =
+                        render_with_cache(&tr.rendering, &cached_rendering.rendering);
                     if let Result::Err(err) = render_result {
                         log::error!("Error occurred in rendering: {:?}", err);
                         continue;
                     }
                     cached_rendering.update_from(tr)
-                }, 
+                }
                 None => {
                     let render_result = render_with_cache(&tr.rendering, &[]);
                     if let Result::Err(err) = render_result {
                         log::error!("Error occurred in rendering (no-cache): {:?}", err);
                         continue;
                     }
-                    commands.entity(window_entity).insert(CachedTerminalRendering::from(tr));
+                    commands
+                        .entity(window_entity)
+                        .insert(CachedTerminalRendering::from(tr));
                 }
             }
             /*
@@ -160,9 +172,8 @@ pub fn write_rendering_to_terminal(
     }
 }
 
-
 /// Helper method
-fn render_with_cache(rendering: &[String], cached: &[String])-> std::io::Result<()> {
+fn render_with_cache(rendering: &[String], cached: &[String]) -> std::io::Result<()> {
     let mut stdout = stdout();
     for (line_num, line) in rendering.iter().zip_longest(cached.iter()).enumerate() {
         match line {
@@ -175,7 +186,7 @@ fn render_with_cache(rendering: &[String], cached: &[String])-> std::io::Result<
                         crossterm::style::Print(line_to_render.clone()),
                     )?;
                 }
-            },
+            }
             EitherOrBoth::Left(line_to_render) => {
                 log::debug!("Rendering line without cache: {}", line_num);
                 crossterm::queue!(
@@ -183,7 +194,7 @@ fn render_with_cache(rendering: &[String], cached: &[String])-> std::io::Result<
                     crossterm::cursor::MoveTo(0, line_num as u16),
                     crossterm::style::Print(line_to_render.clone()),
                 )?;
-            },
+            }
             EitherOrBoth::Right(_cached_line) => {
                 crossterm::queue!(
                     stdout,

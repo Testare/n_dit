@@ -1,8 +1,8 @@
 use super::registry::GlyphRegistry;
 use super::render_square;
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
-use crate::term::TerminalWindow;
 use crate::term::node::NodeCursor;
+use crate::term::TerminalWindow;
 use bevy::prelude::*;
 use game_core::{EntityGrid, NodePiece, Team};
 use itertools::Itertools;
@@ -97,12 +97,15 @@ pub fn border_style_for(
     node_cursor: &NodeCursor,
 
     draw_config: &DrawConfiguration,
-     x_range: &RangeInclusive<usize>,
-     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
+    x_range: &RangeInclusive<usize>,
+    y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
 ) -> UiFormat {
     let color_scheme = draw_config.color_scheme();
 
-    let NodeCursor(UVec2 { x: cursor_x, y: cursor_y }) = node_cursor;
+    let NodeCursor(UVec2 {
+        x: cursor_x,
+        y: cursor_y,
+    }) = node_cursor;
 
     // TODO optimized logic so we don't create a full set of points for every square
     if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
@@ -217,10 +220,10 @@ pub fn render_grid(
                     let pivot_format = border_style_for(
                         node_cursor,
                         &draw_config, // &available_moves,
-                                      // action_type,
-                                      // state,
-                                      &border_x_range,
-                                      &border_y_range,
+                        // action_type,
+                        // state,
+                        &border_x_range,
+                        &border_y_range,
                     );
                     border_line.push_str(
                         pivot_format
@@ -235,7 +238,6 @@ pub fn render_grid(
 
                 if include_space {
                     let border_style = border_style_for(
-
                         node_cursor,
                         &draw_config, /*
                                                               &available_moves,
@@ -243,8 +245,8 @@ pub fn render_grid(
                                                               state,
 
                                       */
-                                                              &border_x_range,
-                                                              &(y..=y),
+                        &border_x_range,
+                        &(y..=y),
                     );
                     space_line.push_str(
                         border_style
@@ -269,8 +271,8 @@ pub fn render_grid(
                                                   action_type,
                                                   state,
                                                   */
-                                                  &(x..=x),
-                                                  &border_y_range, 
+                                    &(x..=x),
+                                    &border_y_range,
                                 );
                                 border_line.push_str(
                                     border_style
@@ -319,8 +321,8 @@ pub fn render_grid(
                                                               action_type,
                                                               state,
                                       */
-                                                              &(x..=x),
-                                                              &border_y_range,
+                        &(x..=x),
+                        &border_y_range,
                     );
                     border_line.push_str(
                         border_style

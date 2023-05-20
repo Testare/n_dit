@@ -2,8 +2,8 @@ use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use game_core::prelude::*;
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
-use crate::term::{create_terminal_window, TerminalWindow};
 use crate::term::node::NodeCursor;
+use crate::term::{create_terminal_window, TerminalWindow};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;

@@ -1,15 +1,15 @@
 mod configuration;
-mod render;
 pub mod node;
+mod render;
 
 mod prelude {
-    pub use game_core::prelude::*;
     pub use crossterm::event::Event as CrosstermEvent;
+    pub use game_core::prelude::*;
 }
 
-use prelude::*;
 use crossterm::event::Event as CrosstermEvent;
 use crossterm::execute;
+use prelude::*;
 use std::io::stdout;
 use std::panic;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
@@ -170,7 +170,6 @@ impl Plugin for CharmiePlugin {
             .add_system(node::node_on_focus)
             .add_system(node::node_cursor_controls)
             .add_system(exit_key);
-
     }
 }
 
