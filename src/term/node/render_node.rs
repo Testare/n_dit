@@ -2,8 +2,8 @@ mod registry;
 mod render_grid;
 mod render_square;
 
-use crate::term::{TerminalWindow, render::TerminalRendering};
 pub use crate::term::prelude::*;
+use crate::term::{render::TerminalRendering, TerminalWindow};
 use bevy::core::FrameCount;
 use game_core::{EntityGrid, NodePiece, Team};
 pub use registry::GlyphRegistry;

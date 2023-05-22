@@ -10,7 +10,6 @@ pub struct TerminalRendering {
     last_update: u32,
 }
 
-
 #[derive(Component, FromReflect, Reflect)]
 pub struct CachedTerminalRendering {
     rendering: Vec<String>,
@@ -121,7 +120,7 @@ pub fn write_rendering_to_terminal(
 }
 
 /// Helper method, does the actual rendering. If this is called, it is assumed
-/// that the cache and rendering are not equal. The cached may be empty to just render 
+/// that the cache and rendering are not equal. The cached may be empty to just render
 /// the whole thing
 fn render_with_cache(rendering: &[String], cached: &[String]) -> std::io::Result<()> {
     let mut stdout = stdout();

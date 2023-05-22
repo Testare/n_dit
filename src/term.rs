@@ -16,6 +16,12 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+enum TerminalFocusMode {
+    #[default]
+    Node,
+}
+
 pub struct CharmiePlugin;
 
 #[derive(Component, Debug, getset::Setters, getset::Getters)]
@@ -163,7 +169,8 @@ impl Drop for TerminalWindow {
 impl Plugin for CharmiePlugin {
     fn build(&self, app: &mut App) {
         // TODO atty check
-        app.add_plugin(render::RenderPlugin::default())
+        app.add_state::<TerminalFocusMode>()
+            .add_plugin(render::RenderPlugin::default())
             .add_plugin(node::NodePlugin::default())
             .add_startup_system(create_terminal_window)
             .add_event::<CrosstermEvent>()
