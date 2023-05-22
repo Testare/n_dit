@@ -1,7 +1,7 @@
 use std::io::{stdout, Write};
 
 use super::TerminalWindow;
-use game_core::prelude::*;
+use crate::term::prelude::*;
 use itertools::{EitherOrBoth, Itertools};
 
 #[derive(Clone, Component, FromReflect, Reflect)]
@@ -34,6 +34,11 @@ impl TerminalRendering {
     pub fn rendering(&self) -> &[String] {
         &self.rendering
     }
+
+    pub fn clear(&mut self) {
+        self.last_update = 0;
+        self.rendering = Vec::new();
+    }
 }
 
 impl Plugin for RenderPlugin {
@@ -45,14 +50,22 @@ impl Plugin for RenderPlugin {
 pub fn write_rendering_to_terminal(
     window: Res<TerminalWindow>,
     renderings: Query<&TerminalRendering>,
+    mut inputs: EventReader<CrosstermEvent>,
     mut render_cache: Local<TerminalRendering>,
 ) {
+    // Clear cache on resize
+    for input in inputs.iter() {
+        if matches!(input, CrosstermEvent::Resize { .. }) {
+            render_cache.clear()
+        }
+    }
     if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
         if *render_cache == *tr {
             return;
         }
 
-        let render_result = render_with_cache(&tr.rendering, &render_cache.rendering);
+        let render_result =
+            render_with_cache(&tr.rendering, &render_cache.rendering, window.height());
         if let Result::Err(err) = render_result {
             log::error!("Error occurred in rendering: {:?}", err);
             return;
@@ -64,8 +77,13 @@ pub fn write_rendering_to_terminal(
 /// Helper method, does the actual rendering. If this is called, it is assumed
 /// that the cache and rendering are not equal. The cached may be empty to just render
 /// the whole thing
-fn render_with_cache(rendering: &[String], cached: &[String]) -> std::io::Result<()> {
+fn render_with_cache(
+    rendering: &[String],
+    cached: &[String],
+    term_height: usize,
+) -> std::io::Result<()> {
     let mut stdout = stdout();
+    let rendering_height = rendering.len();
     for (line_num, line) in rendering.iter().zip_longest(cached.iter()).enumerate() {
         match line {
             EitherOrBoth::Both(line_to_render, cached_line) => {
@@ -87,13 +105,16 @@ fn render_with_cache(rendering: &[String], cached: &[String]) -> std::io::Result
                 )?;
             }
             EitherOrBoth::Right(_cached_line) => {
-                crossterm::queue!(
-                    stdout,
-                    crossterm::cursor::MoveTo(0, line_num as u16),
-                    crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
-                )?;
+                break;
             }
         }
+    }
+    if rendering_height < term_height {
+        crossterm::queue!(
+            stdout,
+            crossterm::cursor::MoveTo(0, rendering_height as u16),
+            crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
+        )?;
     }
 
     crossterm::queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;

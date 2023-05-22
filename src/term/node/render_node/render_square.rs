@@ -31,3 +31,29 @@ pub fn render_square(
         Some(Team::Player) => configuration.color_scheme().player_team().apply(glyph),
     }
 }
+
+// Might want to change this to just accept a mutable Write reference to make more effecient.
+/*fn style(
+    sprite: &Sprite,
+    node: &Node,
+    key: usize,
+    position: usize,
+    draw_config: &DrawConfiguration,
+) -> UiFormat {
+    match sprite {
+        Sprite::Pickup(_) => draw_config.color_scheme().mon(),
+        Sprite::AccessPoint(_) => draw_config.color_scheme().access_point(),
+        Sprite::Curio(curio) => match curio.team() {
+            Team::PlayerTeam => {
+                if node.active_curio_key() == Some(key) {
+                    draw_config.color_scheme().player_team_active()
+                } else if curio.tapped() && position == 0 {
+                    draw_config.color_scheme().player_team_tapped()
+                } else {
+                    draw_config.color_scheme().player_team()
+                }
+            }
+            Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
+        },
+    }
+}*/

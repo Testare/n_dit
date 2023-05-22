@@ -28,6 +28,8 @@ pub struct CharmiePlugin;
 pub struct TerminalWindow {
     #[getset(get = "pub", set = "pub")]
     render_target: Option<Entity>,
+    #[getset(get = "pub", set)]
+    size: UVec2,
 }
 
 #[derive(Resource)]
@@ -42,15 +44,15 @@ struct TermEventListener {
 
 impl TerminalWindow {
     pub fn width(&self) -> usize {
-        100 // TODO Remove stub
+        self.size.x as usize
     }
 
     pub fn height(&self) -> usize {
-        100 // TODO remove stub
+        self.size.y as usize
     }
 
     pub fn scroll_x(&self) -> usize {
-        0 // TODO remove stub, allow negative
+        0 // TODO Move to Node logic
     }
     pub fn scroll_y(&self) -> usize {
         0
@@ -59,8 +61,13 @@ impl TerminalWindow {
     fn new() -> std::io::Result<TerminalWindow> {
         Self::reset_terminal_on_panic();
         Self::set_terminal_state()?;
+        let (size_width, size_height) = crossterm::terminal::size()?;
         Ok(TerminalWindow {
             render_target: None,
+            size: UVec2 {
+                x: size_width as u32,
+                y: size_width as u32,
+            },
         })
     }
 
@@ -183,6 +190,7 @@ impl Plugin for CharmiePlugin {
             .add_plugin(node::NodePlugin::default())
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
+            .add_system(terminal_size_adjustment)
             .add_system(exit_key);
     }
 }
@@ -228,6 +236,20 @@ fn term_event_listener(
         }
         Err(e) => {
             log::error!("Error with mutex in term_event_listener system: {:?}", e)
+        }
+    }
+}
+
+fn terminal_size_adjustment(
+    mut inputs: EventReader<CrosstermEvent>,
+    mut window: ResMut<TerminalWindow>,
+) {
+    for input in inputs.iter() {
+        if let CrosstermEvent::Resize(width, height) = input {
+            window.set_size(UVec2 {
+                x: *width as u32,
+                y: *height as u32,
+            });
         }
     }
 }

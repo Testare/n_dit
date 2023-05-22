@@ -18,32 +18,6 @@ const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
-// Might want to change this to just accept a mutable Write reference to make more effecient.
-/*fn style(
-    sprite: &Sprite,
-    node: &Node,
-    key: usize,
-    position: usize,
-    draw_config: &DrawConfiguration,
-) -> UiFormat {
-    match sprite {
-        Sprite::Pickup(_) => draw_config.color_scheme().mon(),
-        Sprite::AccessPoint(_) => draw_config.color_scheme().access_point(),
-        Sprite::Curio(curio) => match curio.team() {
-            Team::PlayerTeam => {
-                if node.active_curio_key() == Some(key) {
-                    draw_config.color_scheme().player_team_active()
-                } else if curio.tapped() && position == 0 {
-                    draw_config.color_scheme().player_team_tapped()
-                } else {
-                    draw_config.color_scheme().player_team()
-                }
-            }
-            Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
-        },
-    }
-}*/
-
 #[derive(PartialEq, Eq)]
 enum BorderType {
     Borderless = 0,
@@ -356,27 +330,10 @@ pub fn render_grid(
             .take(window.height())
             .map(|mut row| {
                 row.push_str(padding.as_str());
-                row //.green().to_string()
+                row
             })
             .collect();
 
-    /*
-       let mut stdout = stdout();
-       crossterm::queue!(
-           stdout,
-           crossterm::cursor::MoveTo(0, 0),
-           crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown)
-       );
-       for line in result.iter() {
-           crossterm::queue!(
-               stdout,
-               crossterm::style::Print(line.clone()),
-               crossterm::style::Print("\n"),
-               crossterm::cursor::MoveToColumn(0),
-           );
-       }
-       stdout.flush();
-    */
     return result;
 }
 
