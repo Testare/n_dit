@@ -1,8 +1,26 @@
+mod render_node;
+
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
 use bevy::reflect::{FromReflect, Reflect};
 use crossterm::event::{KeyCode, KeyEvent};
 use game_core::{EntityGrid, Node};
+
+use self::render_node::GlyphRegistry;
+
+
+#[derive(Default)]
+pub struct NodePlugin;
+
+impl Plugin for NodePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<GlyphRegistry>()
+            // In the future, these can be added to a state only for node
+            .add_system(node_on_focus)
+            .add_system(node_cursor_controls)
+            .add_system(render_node::render_node);
+    }
+}
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);

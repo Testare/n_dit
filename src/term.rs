@@ -2,7 +2,7 @@ mod configuration;
 pub mod node;
 mod render;
 
-mod prelude {
+pub mod prelude {
     pub use crossterm::event::Event as CrosstermEvent;
     pub use game_core::prelude::*;
 }
@@ -163,12 +163,11 @@ impl Drop for TerminalWindow {
 impl Plugin for CharmiePlugin {
     fn build(&self, app: &mut App) {
         // TODO atty check
-        app.add_plugin(render::RenderPlugin)
+        app.add_plugin(render::RenderPlugin::default())
+            .add_plugin(node::NodePlugin::default())
             .add_startup_system(create_terminal_window)
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
-            .add_system(node::node_on_focus)
-            .add_system(node::node_cursor_controls)
             .add_system(exit_key);
     }
 }
