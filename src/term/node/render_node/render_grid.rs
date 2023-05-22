@@ -129,16 +129,12 @@ pub fn border_style_for(
 }
 
 pub fn render_grid(
-    windows: Query<&TerminalWindow>,
+    window: Res<TerminalWindow>,
     grid: &EntityGrid,
     node_cursor: &NodeCursor,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
-    let window = windows
-        .iter()
-        .next()
-        .expect("TODO better handling of multiple windows?");
     // COPIED CODE
     // let draw_config = state.draw_config();
     let draw_config = DrawConfiguration::default();

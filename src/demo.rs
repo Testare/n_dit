@@ -3,23 +3,18 @@ use game_core::prelude::*;
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
 use crate::term::node::NodeCursor;
-use crate::term::{create_terminal_window, TerminalWindow};
+use crate::term::TerminalWindow;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_systems(
-            (apply_system_buffers, demo_startup)
-                .chain()
-                .after(create_terminal_window),
-        ) // TODO create a better label for core startup
-        .add_system(debug_key);
+        app.add_startup_system(demo_startup).add_system(debug_key);
     }
 }
 
-fn demo_startup(mut commands: Commands, mut windows: Query<&mut TerminalWindow>) {
+fn demo_startup(mut commands: Commands, mut window: ResMut<TerminalWindow>) {
     let node = commands
         .spawn((
             Node,
@@ -35,10 +30,8 @@ fn demo_startup(mut commands: Commands, mut windows: Query<&mut TerminalWindow>)
         })
         .id();
 
-    for mut window in windows.iter_mut() {
-        log::debug!("ADD NODE TO WINDOW RENDER TARGET");
-        window.set_render_target(Some(node));
-    }
+    log::debug!("ADD NODE TO WINDOW RENDER TARGET");
+    window.set_render_target(Some(node));
 
     // commands.get_entity(node).unwrap().insert(entity_grid);
     log::debug!("Demo startup executed");

@@ -4,17 +4,14 @@ use super::TerminalWindow;
 use game_core::prelude::*;
 use itertools::{EitherOrBoth, Itertools};
 
-#[derive(Component, FromReflect, Reflect)]
+#[derive(Clone, Component, FromReflect, Reflect)]
 pub struct TerminalRendering {
     rendering: Vec<String>,
     last_update: u32,
 }
 
-#[derive(Component, FromReflect, Reflect)]
-pub struct CachedTerminalRendering {
-    rendering: Vec<String>,
-    last_update: u32,
-}
+#[derive(Default)]
+pub struct RenderPlugin;
 
 impl TerminalRendering {
     pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
@@ -29,50 +26,15 @@ impl TerminalRendering {
         self.last_update = frame_count;
     }
 
-    pub fn rendering(&self) -> &[String] {
-        &self.rendering
-    }
-}
-
-impl Default for TerminalRendering {
-    fn default() -> Self {
-        TerminalRendering {
-            rendering: Vec::new(),
-            last_update: 0,
-        }
-    }
-}
-
-impl CachedTerminalRendering {
     fn update_from(&mut self, tr: &TerminalRendering) {
         self.rendering = tr.rendering.clone();
         self.last_update = tr.last_update;
     }
-}
 
-impl From<&TerminalRendering> for CachedTerminalRendering {
-    fn from(value: &TerminalRendering) -> Self {
-        CachedTerminalRendering {
-            rendering: value.rendering.clone(),
-            last_update: value.last_update,
-        }
+    pub fn rendering(&self) -> &[String] {
+        &self.rendering
     }
 }
-
-impl PartialEq<TerminalRendering> for CachedTerminalRendering {
-    fn eq(&self, rhs: &TerminalRendering) -> bool {
-        self.rendering.iter().eq(rhs.rendering.iter())
-    }
-}
-
-impl PartialEq<CachedTerminalRendering> for TerminalRendering {
-    fn eq(&self, rhs: &CachedTerminalRendering) -> bool {
-        self.rendering.iter().eq(rhs.rendering.iter())
-    }
-}
-
-#[derive(Default)]
-pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
@@ -81,41 +43,21 @@ impl Plugin for RenderPlugin {
 }
 
 pub fn write_rendering_to_terminal(
-    mut commands: Commands,
-    mut windows: Query<(
-        Entity,
-        &TerminalWindow,
-        Option<&mut CachedTerminalRendering>,
-    )>,
+    window: Res<TerminalWindow>,
     renderings: Query<&TerminalRendering>,
+    mut render_cache: Local<TerminalRendering>,
 ) {
-    for (window_entity, window, cached_rendering_opt) in windows.iter_mut() {
-        if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
-            match cached_rendering_opt {
-                Some(mut cached_rendering) => {
-                    if cached_rendering.as_ref() == tr {
-                        continue;
-                    }
-                    let render_result =
-                        render_with_cache(&tr.rendering, &cached_rendering.rendering);
-                    if let Result::Err(err) = render_result {
-                        log::error!("Error occurred in rendering: {:?}", err);
-                        continue;
-                    }
-                    cached_rendering.update_from(tr)
-                }
-                None => {
-                    let render_result = render_with_cache(&tr.rendering, &[]);
-                    if let Result::Err(err) = render_result {
-                        log::error!("Error occurred in rendering (no-cache): {:?}", err);
-                        continue;
-                    }
-                    commands
-                        .entity(window_entity)
-                        .insert(CachedTerminalRendering::from(tr));
-                }
-            }
+    if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
+        if *render_cache == *tr {
+            return;
         }
+
+        let render_result = render_with_cache(&tr.rendering, &render_cache.rendering);
+        if let Result::Err(err) = render_result {
+            log::error!("Error occurred in rendering: {:?}", err);
+            return;
+        }
+        render_cache.update_from(tr);
     }
 }
 
@@ -156,4 +98,19 @@ fn render_with_cache(rendering: &[String], cached: &[String]) -> std::io::Result
 
     crossterm::queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;
     stdout.flush()
+}
+
+impl Default for TerminalRendering {
+    fn default() -> Self {
+        TerminalRendering {
+            rendering: Vec::new(),
+            last_update: 0,
+        }
+    }
+}
+
+impl PartialEq<TerminalRendering> for TerminalRendering {
+    fn eq(&self, rhs: &TerminalRendering) -> bool {
+        self.rendering.iter().eq(rhs.rendering.iter())
+    }
 }

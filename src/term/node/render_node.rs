@@ -14,7 +14,7 @@ use super::NodeCursor;
 
 pub fn render_node(
     mut commands: Commands,
-    windows: Query<&TerminalWindow>,
+    window: Res<TerminalWindow>,
     mut node_grids: Query<
         (
             Entity,
@@ -30,7 +30,7 @@ pub fn render_node(
 ) {
     if let Some((entity, grid, node_cursor, rendering_opt)) = node_grids.iter_mut().next() {
         let grid_rendering =
-            render_grid::render_grid(windows, grid, node_cursor, node_pieces, &glyph_registry);
+            render_grid::render_grid(window, grid, node_cursor, node_pieces, &glyph_registry);
         if let Some(mut rendering) = rendering_opt {
             rendering.update(grid_rendering, frame_count.0);
         } else {

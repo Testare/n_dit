@@ -24,7 +24,7 @@ enum TerminalFocusMode {
 
 pub struct CharmiePlugin;
 
-#[derive(Component, Debug, getset::Setters, getset::Getters)]
+#[derive(Debug, Resource, getset::Setters, getset::Getters)]
 pub struct TerminalWindow {
     #[getset(get = "pub", set = "pub")]
     render_target: Option<Entity>,
@@ -153,6 +153,12 @@ impl Default for TermEventListener {
     }
 }
 
+impl Default for TerminalWindow {
+    fn default() -> Self {
+        Self::new().unwrap()
+    }
+}
+
 impl Drop for TerminalWindow {
     fn drop(&mut self) {
         match Self::reset_terminal_state() {
@@ -169,10 +175,12 @@ impl Drop for TerminalWindow {
 impl Plugin for CharmiePlugin {
     fn build(&self, app: &mut App) {
         // TODO atty check
-        app.add_state::<TerminalFocusMode>()
+        app.init_resource::<TermConfig>()
+            .init_resource::<TermEventListener>()
+            .init_resource::<TerminalWindow>()
+            .add_state::<TerminalFocusMode>()
             .add_plugin(render::RenderPlugin::default())
             .add_plugin(node::NodePlugin::default())
-            .add_startup_system(create_terminal_window)
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
             .add_system(exit_key);
@@ -180,15 +188,6 @@ impl Plugin for CharmiePlugin {
 }
 
 /// Systems
-
-pub fn create_terminal_window(mut commands: Commands) {
-    let terminal_window =
-        TerminalWindow::new().expect("Error occured while creating terminal window");
-    commands.init_resource::<TermConfig>();
-    commands.init_resource::<TermEventListener>();
-    commands.spawn(terminal_window);
-    log::debug!("Created loop schedule");
-}
 
 fn exit_key(
     term_config: Res<TermConfig>,

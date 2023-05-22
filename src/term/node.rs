@@ -26,18 +26,19 @@ impl Plugin for NodePlugin {
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct NodeViewScroll(pub UVec2);
+
 pub fn node_on_focus(
     mut commands: Commands,
-    terminal_windows: Query<&TerminalWindow, (Without<NodeCursor>, Changed<TerminalWindow>)>,
-    nodes: Query<Entity, With<Node>>,
+    terminal_window: Res<TerminalWindow>,
+    nodes: Query<Entity, (With<Node>, Without<NodeCursor>)>,
 ) {
-    for tw in terminal_windows.iter() {
-        if let Some(render_target) = tw.render_target() {
-            if nodes.contains(*render_target) {
-                commands
-                    .entity(*render_target)
-                    .insert(NodeCursor::default());
-            }
+    if let Some(render_target) = terminal_window.render_target() {
+        if nodes.contains(*render_target) {
+            commands
+                .entity(*render_target)
+                .insert(NodeCursor::default());
         }
     }
 }
