@@ -37,7 +37,6 @@ pub use bevy::prelude::{
     With,
     Without,
     World,
-
 };
 
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};

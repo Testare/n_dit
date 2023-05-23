@@ -1,7 +1,7 @@
 pub mod prelude;
 mod entity_grid;
-mod card;
-mod node;
+pub mod card;
+pub mod node;
 
 pub use node::*;
 

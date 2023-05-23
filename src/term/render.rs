@@ -88,7 +88,7 @@ fn render_with_cache(
         match line {
             EitherOrBoth::Both(line_to_render, cached_line) => {
                 if line_to_render != cached_line {
-                    log::debug!("Changed cache line, rendering: {}", line_num);
+                    log::trace!("Changed cache line, rendering: {}", line_num);
                     crossterm::queue!(
                         stdout,
                         crossterm::cursor::MoveTo(0, line_num as u16),
@@ -97,7 +97,7 @@ fn render_with_cache(
                 }
             }
             EitherOrBoth::Left(line_to_render) => {
-                log::debug!("Rendering line without cache: {}", line_num);
+                log::trace!("Rendering line without cache: {}", line_num);
                 crossterm::queue!(
                     stdout,
                     crossterm::cursor::MoveTo(0, line_num as u16),

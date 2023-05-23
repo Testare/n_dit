@@ -1,5 +1,5 @@
 use super::registry::GlyphRegistry;
-use super::render_square;
+use super::{RenderNodeDataItem, render_square};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::node::NodeCursor;
 use crate::term::TerminalWindow;
@@ -104,20 +104,23 @@ pub fn border_style_for(
 
 pub fn render_grid(
     window: Res<TerminalWindow>,
-    grid: &EntityGrid,
-    node_cursor: &NodeCursor,
-    node_pieces: Query<(&NodePiece, Option<&Team>)>,
+    node_data: &RenderNodeDataItem,
+    node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
     // COPIED CODE
     // let draw_config = state.draw_config();
+
+    let grid = node_data.grid;
+    let node_cursor = node_data.node_cursor;
+
     let draw_config = DrawConfiguration::default();
     let width = grid.width() as usize;
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
     let sprite_map = grid.point_map(|i, sprite| {
-        render_square(i, sprite, &node_pieces, glyph_registry, &draw_config)
+        render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
     });
 
     let str_width = width * 3 + 3;
@@ -324,17 +327,15 @@ pub fn render_grid(
         })
         .unzip();
     space_lines.truncate(height); // Still used for when the height isn't specified
-    let result: Vec<String> =
-        Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
+    Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
             .skip(skip_y)
             .take(window.height())
             .map(|mut row| {
-                row.push_str(padding.as_str());
+                // row.push_str(padding.as_str());
+                // TODO what is this padding for?
                 row
             })
-            .collect();
-
-    return result;
+            .collect()
 }
 
 fn intersection_for_pivot(
