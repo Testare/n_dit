@@ -8,6 +8,8 @@ use game_core::{EntityGrid, Node};
 
 use self::render_node::GlyphRegistry;
 
+use super::layout::TuiNode;
+
 #[derive(Default)]
 pub struct NodePlugin;
 
@@ -16,6 +18,7 @@ impl Plugin for NodePlugin {
         app.init_resource::<GlyphRegistry>()
             // In the future, these can be added to a state only for node
             .add_system(node_on_focus.in_schedule(OnEnter(TerminalFocusMode::Node)))
+            .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_systems(
                 (node_cursor_controls, render_node::render_node)
                     .in_set(OnUpdate(TerminalFocusMode::Node)),
@@ -66,4 +69,46 @@ pub fn node_cursor_controls(
             }
         }
     }
+}
+
+pub fn create_node_ui(
+    mut commands: Commands,
+    mut taffy: ResMut<super::layout::Taffy>
+) {
+    use taffy::prelude::*;
+    let root_commands = commands.spawn((
+            TuiNode::new(&mut taffy, taffy::prelude::Style {
+                size: Size{ 
+                    width: Dimension::Points(100.),
+                    height: Dimension::Points(100.),
+                },
+                ..default()
+            }),
+            Name::new("Node UI Root")
+        )).with_children(|root| {
+            root.spawn((
+                TuiNode::new(&mut taffy, taffy::prelude::Style {
+                    size: Size {
+                        width: Dimension::Points(13.),
+                        height: Dimension::Auto,
+                    },
+                    ..default()
+                }),
+                Name::new("Menu Bar")
+            ));
+
+            root.spawn((
+                TuiNode::new(&mut taffy, taffy::prelude::Style {
+                    size: Size {
+                        width: Dimension::Auto,
+                        height: Dimension::Auto,
+                    },
+                    flex_grow: 1.0,
+
+                    ..default()
+                }),
+
+                Name::new("Grid")
+            ));
+        });
 }

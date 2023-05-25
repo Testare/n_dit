@@ -1,6 +1,7 @@
 mod configuration;
 pub mod node;
 mod render;
+mod layout;
 
 pub mod prelude {
     pub use crossterm::event::Event as CrosstermEvent;
@@ -66,7 +67,7 @@ impl TerminalWindow {
             render_target: None,
             size: UVec2 {
                 x: size_width as u32,
-                y: size_width as u32,
+                y: size_height as u32,
             },
         })
     }
@@ -188,6 +189,7 @@ impl Plugin for CharmiePlugin {
             .add_state::<TerminalFocusMode>()
             .add_plugin(render::RenderPlugin::default())
             .add_plugin(node::NodePlugin::default())
+            .add_plugin(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
             .add_system(terminal_size_adjustment)
