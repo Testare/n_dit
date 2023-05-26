@@ -2,7 +2,7 @@ use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use game_core::prelude::*;
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
-use crate::term::node::NodeCursor;
+use crate::term::node::{NodeCursor, ShowNode};
 use crate::term::TerminalWindow;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
@@ -14,7 +14,9 @@ impl Plugin for DemoPlugin {
     }
 }
 
-fn demo_startup(mut commands: Commands, mut window: ResMut<TerminalWindow>) {
+fn demo_startup(mut commands: Commands,
+    mut load_node_writer: EventWriter<ShowNode>
+    ) {
     let node = commands
         .spawn((
             Node,
@@ -30,19 +32,19 @@ fn demo_startup(mut commands: Commands, mut window: ResMut<TerminalWindow>) {
         })
         .id();
 
-    log::debug!("ADD NODE TO WINDOW RENDER TARGET");
-    window.set_render_target(Some(node));
-
-    // commands.get_entity(node).unwrap().insert(entity_grid);
+    load_node_writer.send(ShowNode(node));
     log::debug!("Demo startup executed");
 }
-
-// TODO figure out how to add entity to GridMap well, custom Command?
 
 fn debug_key(
     mut inputs: EventReader<CrosstermEvent>,
     nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
+    window: Res<TerminalWindow>,
+    names: Query<&Name>,
 ) {
+    if let Some(rt) = window.render_target() {
+        log::debug!("Render target: {} ({:?})", names.get(*rt).map(|name|name.as_str()).unwrap_or("unnamed"), rt);
+    }
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {
             code: KeyCode::Char('d'),

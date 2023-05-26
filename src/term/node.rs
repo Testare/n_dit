@@ -10,18 +10,28 @@ use self::render_node::GlyphRegistry;
 
 use super::layout::TuiNode;
 
+
+#[derive(Debug)]
+pub struct ShowNode(pub Entity);
+
+#[derive(Debug, Deref, DerefMut, Resource, Default)]
+pub struct NodeFocus(pub Option<Entity>);
+
 #[derive(Default)]
 pub struct NodePlugin;
 
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
-            // In the future, these can be added to a state only for node
-            .add_system(node_on_focus.in_schedule(OnEnter(TerminalFocusMode::Node)))
+            .init_resource::<NodeFocus>()
+            .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_systems(
-                (node_cursor_controls, render_node::render_node)
-                    .in_set(OnUpdate(TerminalFocusMode::Node)),
+                (node_cursor_controls,
+                 render_node::render_grid_system.before(render_node::render_node),
+                 render_node::render_menu_system.before(render_node::render_node) ,
+                 render_node::render_node,
+                ).in_set(OnUpdate(TerminalFocusMode::Node)) 
             );
     }
 }
@@ -31,20 +41,6 @@ pub struct NodeCursor(pub UVec2);
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeViewScroll(pub UVec2);
-
-pub fn node_on_focus(
-    mut commands: Commands,
-    terminal_window: Res<TerminalWindow>,
-    nodes: Query<Entity, (With<Node>, Without<NodeCursor>)>,
-) {
-    if let Some(render_target) = terminal_window.render_target() {
-        if nodes.contains(*render_target) {
-            commands
-                .entity(*render_target)
-                .insert(NodeCursor::default());
-        }
-    }
-}
 
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid)>,
@@ -73,42 +69,60 @@ pub fn node_cursor_controls(
 
 pub fn create_node_ui(
     mut commands: Commands,
-    mut taffy: ResMut<super::layout::Taffy>
+    mut taffy: ResMut<super::layout::Taffy>,
+    mut show_node: EventReader<ShowNode>,
+    mut terminal_window: ResMut<TerminalWindow>,
+    mut node_focus: ResMut<NodeFocus>,
+    nodes_without_cursors: Query<(), (With<Node>, Without<NodeCursor>)>,
 ) {
     use taffy::prelude::*;
-    let root_commands = commands.spawn((
-            TuiNode::new(&mut taffy, taffy::prelude::Style {
-                size: Size{ 
-                    width: Dimension::Points(100.),
-                    height: Dimension::Points(100.),
-                },
-                ..default()
-            }),
-            Name::new("Node UI Root")
-        )).with_children(|root| {
-            root.spawn((
-                TuiNode::new(&mut taffy, taffy::prelude::Style {
-                    size: Size {
-                        width: Dimension::Points(13.),
-                        height: Dimension::Auto,
-                    },
-                    ..default()
-                }),
-                Name::new("Menu Bar")
-            ));
+    if let Some(ShowNode(node_id)) = show_node.iter().next() {
+        if nodes_without_cursors.contains(*node_id) {
+            commands
+                .entity(*node_id)
+                .insert(NodeCursor::default());
+        }
+        if (*node_focus).is_none() {
+            let render_root = commands.spawn((
+                    TuiNode::new(&mut taffy, taffy::prelude::Style {
+                        size: Size{ 
+                            width: Dimension::Points(100.),
+                            height: Dimension::Points(100.),
+                        },
+                        ..default()
+                    }),
+                    Name::new("Node UI Root"),
+                    render_node::RenderNode,
+                )).with_children(|root| {
+                    root.spawn((
+                        TuiNode::new(&mut taffy, taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Points(13.),
+                                height: Dimension::Auto,
+                            },
+                            ..default()
+                        }),
+                        Name::new("Menu Bar"),
+                        render_node::RenderMenu,
+                    ));
 
-            root.spawn((
-                TuiNode::new(&mut taffy, taffy::prelude::Style {
-                    size: Size {
-                        width: Dimension::Auto,
-                        height: Dimension::Auto,
-                    },
-                    flex_grow: 1.0,
+                    root.spawn((
+                        TuiNode::new(&mut taffy, taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Auto,
+                            },
+                            flex_grow: 1.0,
 
-                    ..default()
-                }),
+                            ..default()
+                        }),
 
-                Name::new("Grid")
-            ));
-        });
+                        Name::new("Grid"),
+                        render_node::RenderGrid,
+                    ));
+                }).id();
+            terminal_window.set_render_target(Some(render_root));
+        } 
+        *node_focus = NodeFocus(Some(*node_id));
+    }
 }

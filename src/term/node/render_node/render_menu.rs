@@ -1,10 +1,10 @@
 use game_core::{prelude::*, Team};
 use game_core::node::NodePiece;
-use super::RenderNodeDataItem;
+use super::RenderNodeDataReadOnlyItem;
 use unicode_width::UnicodeWidthStr;
 
 pub fn render_menu(
-    node_render_data: &RenderNodeDataItem,
+    node_render_data: &RenderNodeDataReadOnlyItem,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     bounds: UVec2,
 ) -> Vec<String> {

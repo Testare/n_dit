@@ -1,5 +1,5 @@
 use super::registry::GlyphRegistry;
-use super::{RenderNodeDataItem, render_square};
+use super::{RenderNodeDataReadOnlyItem, render_square};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::node::NodeCursor;
 use crate::term::TerminalWindow;
@@ -104,7 +104,7 @@ pub fn border_style_for(
 
 pub fn render_grid(
     window: Res<TerminalWindow>,
-    node_data: &RenderNodeDataItem,
+    node_data: &RenderNodeDataReadOnlyItem,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {

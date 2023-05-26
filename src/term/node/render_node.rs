@@ -15,6 +15,14 @@ use unicode_width::UnicodeWidthStr;
 
 use super::NodeCursor;
 
+#[derive(Component)]
+pub struct RenderGrid;
+
+#[derive(Component)]
+pub struct RenderMenu;
+
+#[derive(Component)]
+pub struct RenderNode;
 
 
 #[derive(WorldQuery)]
@@ -25,18 +33,38 @@ pub struct RenderNodeData {
     node_cursor: &'static NodeCursor,
 }
 
+pub fn render_grid_system(
+    mut commands: Commands,
+    window: Res<TerminalWindow>,
+    node_data: Query<RenderNodeData, With<game_core::Node>>,
+    node_pieces: Query<(&NodePiece, Option<&Team>)>,
+    glyph_registry: Res<GlyphRegistry>,
+    mut render_grid: Query<(Entity, Option<&mut TerminalRendering>), With<RenderGrid>>,
+    node_focus: Res<super::NodeFocus>,
+) {
+    if let Some(node_data) = node_focus.and_then(|node_id|node_data.get(node_id).ok()) {
+        // WIP
+
+        // let grid_rendering = render_grid::render_grid(window, &node_data, &node_pieces, &glyph_registry);
+    }
+}
+pub fn render_menu_system() {
+
+}
+
 pub fn render_node(
     mut commands: Commands,
     window: Res<TerminalWindow>,
-    mut node_grids: Query<
-        (RenderNodeData, Option<&mut TerminalRendering>),
+    node_grids: Query<
+        RenderNodeData,
         With<game_core::Node>,
     >,
+    mut render_node: Query<(Entity, Option<&mut TerminalRendering>), With<RenderNode>>,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     frame_count: Res<FrameCount>,
     glyph_registry: Res<GlyphRegistry>,
 ) {
-    if let Some((node_data, rendering_opt)) = node_grids.iter_mut().next() {
+    if let Some(node_data) = node_grids.iter().next() {
 
         let menu_width = 12;
         let grid_width = window.width() - menu_width;
@@ -74,11 +102,14 @@ pub fn render_node(
 
         }).collect();
 
-        if let Some(mut rendering) = rendering_opt {
-            rendering.update(merged_rendering, frame_count.0);
-        } else {
-            let rendering = TerminalRendering::new(merged_rendering, frame_count.0);
-            commands.get_entity(node_data.entity).unwrap().insert(rendering);
+        for (render_node_id, rendering_opt) in render_node.iter_mut() {
+            if let Some(mut rendering) = rendering_opt {
+                rendering.update(merged_rendering.clone(), frame_count.0);
+            } else {
+                let rendering = TerminalRendering::new(merged_rendering.clone(), frame_count.0);
+                commands.get_entity(render_node_id).unwrap().insert(rendering);
+            }
         }
+
     }
 }
