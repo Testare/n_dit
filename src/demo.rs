@@ -14,9 +14,7 @@ impl Plugin for DemoPlugin {
     }
 }
 
-fn demo_startup(mut commands: Commands,
-    mut load_node_writer: EventWriter<ShowNode>
-    ) {
+fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
     let node = commands
         .spawn((
             Node,
@@ -43,7 +41,14 @@ fn debug_key(
     names: Query<&Name>,
 ) {
     if let Some(rt) = window.render_target() {
-        log::debug!("Render target: {} ({:?})", names.get(*rt).map(|name|name.as_str()).unwrap_or("unnamed"), rt);
+        log::debug!(
+            "Render target: {} ({:?})",
+            names
+                .get(*rt)
+                .map(|name| name.as_str())
+                .unwrap_or("unnamed"),
+            rt
+        );
     }
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {

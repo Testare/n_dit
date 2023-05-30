@@ -1,5 +1,5 @@
 use super::registry::GlyphRegistry;
-use super::{RenderNodeDataReadOnlyItem, render_square};
+use super::{render_square, RenderNodeDataReadOnlyItem};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::node::NodeCursor;
 use crate::term::TerminalWindow;
@@ -119,9 +119,8 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|i, sprite| {
-        render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
-    });
+    let sprite_map = grid
+        .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x() / 3;
@@ -328,14 +327,14 @@ pub fn render_grid(
         .unzip();
     space_lines.truncate(height); // Still used for when the height isn't specified
     Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
-            .skip(skip_y)
-            .take(window.height())
-            .map(|mut row| {
-                // row.push_str(padding.as_str());
-                // TODO what is this padding for?
-                row
-            })
-            .collect()
+        .skip(skip_y)
+        .take(window.height())
+        .map(|mut row| {
+            // row.push_str(padding.as_str());
+            // TODO what is this padding for?
+            row
+        })
+        .collect()
 }
 
 fn intersection_for_pivot(

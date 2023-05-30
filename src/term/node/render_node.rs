@@ -1,7 +1,7 @@
 mod registry;
 mod render_grid;
-mod render_square;
 mod render_menu;
+mod render_square;
 
 pub use crate::term::prelude::*;
 use crate::term::{render::TerminalRendering, TerminalWindow};
@@ -27,7 +27,6 @@ pub struct RenderNode;
 #[derive(Component)]
 pub struct RenderTitleBar;
 
-
 #[derive(WorldQuery)]
 #[world_query(mutable)]
 pub struct RenderNodeData {
@@ -46,7 +45,7 @@ pub fn render_grid_system(
     mut render_grid: Query<(Entity, Option<&mut TerminalRendering>), With<RenderGrid>>,
     node_focus: Res<super::NodeFocus>,
 ) {
-    if let Some(node_data) = node_focus.and_then(|node_id|node_data.get(node_id).ok()) {
+    if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
         // WIP
         let grid_rendering =
             render_grid::render_grid(window, &node_data, &node_pieces, &glyph_registry);
@@ -57,7 +56,10 @@ pub fn render_grid_system(
             } else {
                 log::debug!("Adding grid rendering");
                 let rendering = TerminalRendering::new(grid_rendering.clone(), frame_count.0);
-                commands.get_entity(render_grid_id).unwrap().insert(rendering);
+                commands
+                    .get_entity(render_grid_id)
+                    .unwrap()
+                    .insert(rendering);
             }
         }
 
@@ -73,15 +75,19 @@ pub fn render_menu_system(
     mut render_menu: Query<(Entity, Option<&mut TerminalRendering>), With<RenderMenu>>,
     node_focus: Res<super::NodeFocus>,
 ) {
-    if let Some(node_data) = node_focus.and_then(|node_id|node_data.get(node_id).ok()) {
-        let menu_rendering = render_menu::render_menu(&node_data, &node_pieces, UVec2 { x:1, y: 1});
+    if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
+        let menu_rendering =
+            render_menu::render_menu(&node_data, &node_pieces, UVec2 { x: 1, y: 1 });
         for (render_menu_id, rendering_opt) in render_menu.iter_mut() {
             if let Some(mut rendering) = rendering_opt {
                 rendering.update(menu_rendering.clone(), frame_count.0);
             } else {
                 log::debug!("Adding menu rendering");
                 let rendering = TerminalRendering::new(menu_rendering.clone(), frame_count.0);
-                commands.get_entity(render_menu_id).unwrap().insert(rendering);
+                commands
+                    .get_entity(render_menu_id)
+                    .unwrap()
+                    .insert(rendering);
             }
         }
     }
@@ -95,7 +101,7 @@ pub fn render_title_bar_system(
     mut render_title_bar: Query<(Entity, Option<&mut TerminalRendering>), With<RenderTitleBar>>,
     // node_focus: Res<super::NodeFocus>,
 ) {
-    let rendered_text = vec!{"n_dit".to_owned()};
+    let rendered_text = vec!["n_dit".to_owned()];
     for (id, rendering_opt) in render_title_bar.iter_mut() {
         if let Some(mut rendering) = rendering_opt {
             rendering.update(rendered_text.clone(), frame_count.0);

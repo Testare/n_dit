@@ -1,9 +1,9 @@
+use super::{render::TerminalRendering, TerminalWindow};
 use crate::term::prelude::*;
 use bevy::core::FrameCount;
+use pad::PadStr;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
-use pad::PadStr;
-use super::{TerminalWindow, render::TerminalRendering};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum LayoutSet {
@@ -44,7 +44,11 @@ pub struct TuiCalculations {
 impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
-            .add_systems((taffy_follow_entity_model, calculate_layouts).chain().before(LayoutSet::RenderLeaves))
+            .add_systems(
+                (taffy_follow_entity_model, calculate_layouts)
+                    .chain()
+                    .before(LayoutSet::RenderLeaves),
+            )
             .add_system(render_layouts.in_set(LayoutSet::RenderRoots))
             .configure_set(LayoutSet::RenderLeaves.before(LayoutSet::RenderRoots));
     }
@@ -56,10 +60,8 @@ fn taffy_follow_entity_model(
     new_child_nodes: Query<(&NodeTty, &Children), Changed<Children>>,
 ) {
     for (parent, children) in new_child_nodes.iter() {
-        let children_nodes: Vec<taffy::node::Node> = nodes
-            .iter_many(children)
-            .map(|node| **node)
-            .collect();
+        let children_nodes: Vec<taffy::node::Node> =
+            nodes.iter_many(children).map(|node| **node).collect();
         taffy.set_children(**parent, &children_nodes).unwrap();
     }
 }
@@ -84,24 +86,26 @@ fn calculate_layouts(
         let size_changed = root_style.size != window_size;
 
         if size_changed {
-            taffy.set_style(**root, Style {
-                size: window_size,
-                ..root_style
-            }).unwrap();
-        }
-        if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
             taffy
-                .compute_layout(
+                .set_style(
                     **root,
-                    space.clone()
+                    Style {
+                        size: window_size,
+                        ..root_style
+                    },
                 )
                 .unwrap();
-            log::trace!("Recalculated Layout of root {:?}", taffy.layout(**root).unwrap());
-        } 
+        }
+        if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
+            taffy.compute_layout(**root, space.clone()).unwrap();
+            log::trace!(
+                "Recalculated Layout of root {:?}",
+                taffy.layout(**root).unwrap()
+            );
+        }
     }
-    for (node, name)  in tui_nodes.iter() {
+    for (node, name) in tui_nodes.iter() {
         log::debug!("{} layout: {:?}", name.as_str(), taffy.layout(**node));
-
     }
 }
 
@@ -111,7 +115,7 @@ pub fn render_layouts(
     frame_count: Res<FrameCount>,
     mut render_layouts: Query<(Entity, &NodeTty, Option<&mut TerminalRendering>), With<LayoutRoot>>,
     children: Query<&Children>,
-    child_renderings: Query<(&NodeTty, &TerminalRendering), Without<LayoutRoot>>
+    child_renderings: Query<(&NodeTty, &TerminalRendering), Without<LayoutRoot>>,
 ) {
     for (root_id, render_layout_node, rendering) in render_layouts.iter_mut() {
         struct LeafInfo<'a> {
@@ -125,20 +129,23 @@ pub fn render_layouts(
         }
 
         let leaves = collect_leaves(root_id, &children);
-        let mut rendered_leaves: Vec<LeafInfo> = child_renderings.iter_many(leaves).map(|(node, rendering)|{
-            let layout = taffy.layout(**node).unwrap();
-            LeafInfo {
-                rendering,
-                layout
-            }
-        }).collect();
+        let mut rendered_leaves: Vec<LeafInfo> = child_renderings
+            .iter_many(leaves)
+            .map(|(node, rendering)| {
+                let layout = taffy.layout(**node).unwrap();
+                LeafInfo { rendering, layout }
+            })
+            .collect();
         rendered_leaves.sort_by_cached_key(|leaf_info| {
-            (leaf_info.layout.location.x as u32, leaf_info.layout.location.y as u32)
+            (
+                leaf_info.layout.location.x as u32,
+                leaf_info.layout.location.y as u32,
+            )
         });
-        
+
         let root_layout = taffy.layout(**render_layout_node).unwrap();
         let root_width = root_layout.size.width as usize;
-        let mut rows = vec![RowInfo::default() ; root_layout.size.height as usize];
+        let mut rows = vec![RowInfo::default(); root_layout.size.height as usize];
         for leaf in rendered_leaves {
             let x_offset = leaf.layout.location.x as usize;
             let y_offset = leaf.layout.location.y as usize;
@@ -150,11 +157,15 @@ pub fn render_layouts(
                     current_row = row.text,
                     space = " ",
                     padding = x_offset - row_len,
-                    child_row = child_row);
+                    child_row = child_row
+                );
                 row.text = new_row_text;
             }
         }
-        let padded_rendering = rows.into_iter().map(|row| row.text.pad_to_width(root_width)).collect();
+        let padded_rendering = rows
+            .into_iter()
+            .map(|row| row.text.pad_to_width(root_width))
+            .collect();
 
         if let Some(mut rendering) = rendering {
             rendering.update(padded_rendering, frame_count.0);
@@ -163,7 +174,6 @@ pub fn render_layouts(
             let rendering = TerminalRendering::new(padded_rendering, frame_count.0);
             commands.get_entity(root_id).unwrap().insert(rendering);
         }
-
     }
 }
 
@@ -171,7 +181,10 @@ pub fn render_layouts(
 
 pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<Entity> {
     if let Ok(children) = children_query.get(root) {
-        children.into_iter().flat_map(|child|collect_leaves(*child, children_query)).collect()
+        children
+            .into_iter()
+            .flat_map(|child| collect_leaves(*child, children_query))
+            .collect()
     } else {
         vec![root]
     }

@@ -1,7 +1,7 @@
 mod configuration;
+mod layout;
 pub mod node;
 mod render;
-mod layout;
 
 pub mod prelude {
     pub use crossterm::event::Event as CrosstermEvent;
