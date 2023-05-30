@@ -1,5 +1,6 @@
 mod render_node;
 
+use crate::term::node::render_node::RenderTitleBar;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
 use bevy::reflect::{FromReflect, Reflect};
@@ -8,7 +9,7 @@ use game_core::{EntityGrid, Node};
 
 use self::render_node::GlyphRegistry;
 
-use super::layout::TuiNode;
+use super::layout::{NodeTty, LayoutSet};
 
 
 #[derive(Debug)]
@@ -26,12 +27,14 @@ impl Plugin for NodePlugin {
             .init_resource::<NodeFocus>()
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
+            .add_system(node_cursor_controls)
             .add_systems(
-                (node_cursor_controls,
-                 render_node::render_grid_system.before(render_node::render_node),
-                 render_node::render_menu_system.before(render_node::render_node) ,
-                 render_node::render_node,
+                (
+                 render_node::render_grid_system,
+                 render_node::render_menu_system,
+                 // render_node::render_title_bar_system,
                 ).in_set(OnUpdate(TerminalFocusMode::Node)) 
+                .in_set(LayoutSet::RenderLeaves)
             );
     }
 }
@@ -84,42 +87,69 @@ pub fn create_node_ui(
         }
         if (*node_focus).is_none() {
             let render_root = commands.spawn((
-                    TuiNode::new(&mut taffy, taffy::prelude::Style {
+                    NodeTty::new(&mut taffy, taffy::prelude::Style {
                         size: Size{ 
                             width: Dimension::Points(100.),
                             height: Dimension::Points(100.),
                         },
+                        flex_direction: FlexDirection::Column,
                         ..default()
                     }),
                     Name::new("Node UI Root"),
                     render_node::RenderNode,
+                    crate::term::layout::LayoutRoot
                 )).with_children(|root| {
                     root.spawn((
-                        TuiNode::new(&mut taffy, taffy::prelude::Style {
+                        NodeTty::new(&mut taffy, taffy::prelude::Style {
                             size: Size {
-                                width: Dimension::Points(13.),
-                                height: Dimension::Auto,
+                                width: Dimension::Auto,
+                                height: Dimension::Points(3.),
                             },
                             ..default()
                         }),
-                        Name::new("Menu Bar"),
-                        render_node::RenderMenu,
+                        Name::new("Node Title Bar"),
+                        render_node::RenderTitleBar,
                     ));
-
                     root.spawn((
-                        TuiNode::new(&mut taffy, taffy::prelude::Style {
+                        NodeTty::new(&mut taffy, taffy::prelude::Style {
                             size: Size {
                                 width: Dimension::Auto,
                                 height: Dimension::Auto,
                             },
-                            flex_grow: 1.0,
-
                             ..default()
                         }),
+                        Name::new("Node Content Pane"),
+                    )).with_children(|content_pane| {
+                        content_pane.spawn((
+                            NodeTty::new(&mut taffy, taffy::prelude::Style {
+                                size: Size {
+                                    width: Dimension::Points(13.),
+                                    height: Dimension::Auto,
+                                },
+                                ..default()
+                            }),
+                            Name::new("Menu Bar"),
+                            render_node::RenderMenu,
+                        ));
 
-                        Name::new("Grid"),
-                        render_node::RenderGrid,
-                    ));
+                        content_pane.spawn((
+                            NodeTty::new(&mut taffy, taffy::prelude::Style {
+                                size: Size {
+                                    width: Dimension::Auto,
+                                    height: Dimension::Auto,
+                                },
+                                border: Rect {
+                                    left: Dimension::Points(1.0),
+                                    ..default()
+                                },
+                                flex_grow: 1.0,
+
+                                ..default()
+                            }),
+                            Name::new("Grid"),
+                            render_node::RenderGrid,
+                        ));
+                    });
                 }).id();
             terminal_window.set_render_target(Some(render_root));
         } 

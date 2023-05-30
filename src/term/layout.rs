@@ -2,8 +2,14 @@ use crate::term::prelude::*;
 use bevy::core::FrameCount;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
+use pad::PadStr;
 use super::{TerminalWindow, render::TerminalRendering};
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum LayoutSet {
+    RenderLeaves,
+    RenderRoots,
+}
 
 #[derive(Default)]
 pub struct TaffyTuiLayoutPlugin;
@@ -12,20 +18,20 @@ pub struct TaffyTuiLayoutPlugin;
 pub struct Taffy(taffy::Taffy);
 
 #[derive(Component)]
-pub struct RenderedLayout;
+pub struct LayoutRoot;
 
 #[derive(Component, Debug, Deref, DerefMut)]
-pub struct TuiNode(taffy::node::Node);
+pub struct NodeTty(taffy::node::Node);
 
 // TODO Users use this instead of TuiNode, or a marker component. TuiNode added by systems, like
 // CalculatedSize
 #[derive(Component, Debug, Deref, DerefMut)]
-pub struct TuiStyle(taffy::prelude::Style);
+pub struct CalculatedLayoutTty(taffy::prelude::Layout);
 
-impl TuiNode {
+impl NodeTty {
     pub fn new(taffy: &mut Taffy, style: Style) -> Self {
         let node = taffy.new_leaf(style).unwrap();
-        TuiNode(node)
+        NodeTty(node)
     }
 }
 
@@ -38,18 +44,16 @@ pub struct TuiCalculations {
 impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
-            .add_systems((
-            taffy_follow_entity_model,
-            calculate_layouts,
-            render_layouts,
-        ).chain());
+            .add_systems((taffy_follow_entity_model, calculate_layouts).chain().before(LayoutSet::RenderLeaves))
+            .add_system(render_layouts.in_set(LayoutSet::RenderRoots))
+            .configure_set(LayoutSet::RenderLeaves.before(LayoutSet::RenderRoots));
     }
 }
 
 fn taffy_follow_entity_model(
     mut taffy: ResMut<Taffy>,
-    nodes: Query<&TuiNode>,
-    new_child_nodes: Query<(&TuiNode, &Children), Changed<Children>>,
+    nodes: Query<&NodeTty>,
+    new_child_nodes: Query<(&NodeTty, &Children), Changed<Children>>,
 ) {
     for (parent, children) in new_child_nodes.iter() {
         let children_nodes: Vec<taffy::node::Node> = nodes
@@ -63,8 +67,8 @@ fn taffy_follow_entity_model(
 fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
     window: Res<TerminalWindow>,
-    roots: Query<&TuiNode, Without<Parent>>,
-    tui_nodes: Query<(&TuiNode, &Name)>,
+    roots: Query<&NodeTty, Without<Parent>>,
+    tui_nodes: Query<(&NodeTty, &Name)>,
 ) {
     use taffy::prelude::*;
     let space = Size {
@@ -102,18 +106,22 @@ fn calculate_layouts(
 }
 
 pub fn render_layouts(
+    mut commands: Commands,
     taffy: Res<Taffy>,
     frame_count: Res<FrameCount>,
-    mut render_layouts: Query<(Entity, &TuiNode, &mut TerminalRendering), With<RenderedLayout>>,
+    mut render_layouts: Query<(Entity, &NodeTty, Option<&mut TerminalRendering>), With<LayoutRoot>>,
     children: Query<&Children>,
-    child_renderings: Query<(&TuiNode, &TerminalRendering), Without<RenderedLayout>>
+    child_renderings: Query<(&NodeTty, &TerminalRendering), Without<LayoutRoot>>
 ) {
-    // do nothing
-    for (root_id, render_layout_node, mut rendering) in render_layouts.iter_mut() {
-        use pad::PadStr;
+    for (root_id, render_layout_node, rendering) in render_layouts.iter_mut() {
         struct LeafInfo<'a> {
             rendering: &'a TerminalRendering,
             layout: &'a taffy::prelude::Layout,
+        }
+        #[derive(Default, Clone)]
+        struct RowInfo {
+            text: String,
+            // later might include padding/border/margin information
         }
 
         let leaves = collect_leaves(root_id, &children);
@@ -130,24 +138,31 @@ pub fn render_layouts(
         
         let root_layout = taffy.layout(**render_layout_node).unwrap();
         let root_width = root_layout.size.width as usize;
-        let mut rows = vec![String::default() ; root_layout.size.height as usize];
+        let mut rows = vec![RowInfo::default() ; root_layout.size.height as usize];
         for leaf in rendered_leaves {
             let x_offset = leaf.layout.location.x as usize;
             let y_offset = leaf.layout.location.y as usize;
             for (i, child_row) in leaf.rendering.rendering().iter().enumerate() {
                 let row = &mut rows[i + y_offset];
-                let row_len = UnicodeWidthStr::width(row.as_str());
-                let new_row_string = format!(
+                let row_len = UnicodeWidthStr::width(row.text.as_str());
+                let new_row_text = format!(
                     "{current_row}{space:padding$}{child_row}",
-                    current_row = row,
+                    current_row = row.text,
                     space = " ",
                     padding = x_offset - row_len,
                     child_row = child_row);
-                *row = new_row_string;
+                row.text = new_row_text;
             }
         }
-        let new_rendering = rows.into_iter().map(|row| row.pad_to_width(root_width)).collect();
-        rendering.update(new_rendering, frame_count.0);
+        let padded_rendering = rows.into_iter().map(|row| row.text.pad_to_width(root_width)).collect();
+
+        if let Some(mut rendering) = rendering {
+            rendering.update(padded_rendering, frame_count.0);
+        } else {
+            log::debug!("Adding layout rendering");
+            let rendering = TerminalRendering::new(padded_rendering, frame_count.0);
+            commands.get_entity(root_id).unwrap().insert(rendering);
+        }
 
     }
 }
