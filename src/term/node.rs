@@ -31,7 +31,7 @@ impl Plugin for NodePlugin {
                 (
                     render_node::render_grid_system,
                     render_node::render_menu_system,
-                    // render_node::render_title_bar_system,
+                    render_node::render_title_bar_system,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(LayoutSet::RenderLeaves),

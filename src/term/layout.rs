@@ -115,12 +115,14 @@ pub fn render_layouts(
     frame_count: Res<FrameCount>,
     mut render_layouts: Query<(Entity, &NodeTty, Option<&mut TerminalRendering>), With<LayoutRoot>>,
     children: Query<&Children>,
-    child_renderings: Query<(&NodeTty, &TerminalRendering), Without<LayoutRoot>>,
+    nodes: Query<&NodeTty>,
+    child_renderings: Query<&TerminalRendering, Without<LayoutRoot>>,
 ) {
     for (root_id, render_layout_node, rendering) in render_layouts.iter_mut() {
         struct LeafInfo<'a> {
             rendering: &'a TerminalRendering,
-            layout: &'a taffy::prelude::Layout,
+            x: u32,
+            y: u32,
         }
         #[derive(Default, Clone)]
         struct RowInfo {
@@ -128,30 +130,35 @@ pub fn render_layouts(
             // later might include padding/border/margin information
         }
 
-        let leaves = collect_leaves(root_id, &children);
-        let mut rendered_leaves: Vec<LeafInfo> = child_renderings
-            .iter_many(leaves)
-            .map(|(node, rendering)| {
-                let layout = taffy.layout(**node).unwrap();
-                LeafInfo { rendering, layout }
+        let mut leaves: Vec<LeafInfo> = collect_leaves(root_id, &children, &|id| {
+            let child_tty = nodes.get(id).unwrap();
+            let location = taffy.layout(**child_tty).unwrap().location;
+            UVec2 {
+                x: location.x as u32,
+                y: location.y as u32,
+            }
+        })
+        .into_iter()
+        .filter_map(|(pos_offset, id)| {
+            let rendering = child_renderings.get(id).ok()?;
+            Some(LeafInfo {
+                rendering,
+                x: pos_offset.x,
+                y: pos_offset.y,
             })
-            .collect();
-        rendered_leaves.sort_by_cached_key(|leaf_info| {
-            (
-                leaf_info.layout.location.x as u32,
-                leaf_info.layout.location.y as u32,
-            )
-        });
+        })
+        .collect();
+        leaves.sort_by_cached_key(|leaf_info| (leaf_info.x as u32, leaf_info.y as u32));
 
         let root_layout = taffy.layout(**render_layout_node).unwrap();
         let root_width = root_layout.size.width as usize;
         let mut rows = vec![RowInfo::default(); root_layout.size.height as usize];
-        for leaf in rendered_leaves {
-            let x_offset = leaf.layout.location.x as usize;
-            let y_offset = leaf.layout.location.y as usize;
+        for leaf in leaves {
+            let x_offset = leaf.x as usize;
+            let y_offset = leaf.y as usize;
             for (i, child_row) in leaf.rendering.rendering().iter().enumerate() {
                 let row = &mut rows[i + y_offset];
-                let row_len = UnicodeWidthStr::width(row.text.as_str());
+                let row_len = UnicodeWidthStr::width((*row).text.as_str());
                 let new_row_text = format!(
                     "{current_row}{space:padding$}{child_row}",
                     current_row = row.text,
@@ -179,6 +186,7 @@ pub fn render_layouts(
 
 // Helper function
 
+/*
 pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<Entity> {
     if let Ok(children) = children_query.get(root) {
         children
@@ -187,5 +195,37 @@ pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<En
             .collect()
     } else {
         vec![root]
+    }
+}*/
+
+pub fn collect_leaves<F: Fn(Entity) -> UVec2>(
+    root: Entity,
+    children_query: &Query<&Children>,
+    get_xy: &F,
+) -> Vec<(UVec2, Entity)> {
+    let rootxy @ UVec2 {
+        x: root_x,
+        y: root_y,
+    } = get_xy(root);
+    if let Ok(children) = children_query.get(root) {
+        children
+            .into_iter()
+            .flat_map(|child| {
+                // Actually, scrap this whole approach. Pass a Fn(Entity) -> UVec2 to get the point of each parent, and pass the accumulated point on to the the recursions
+                collect_leaves(*child, children_query, get_xy)
+                    .into_iter()
+                    .map(|(UVec2 { x, y }, id)| {
+                        (
+                            UVec2 {
+                                x: x + root_x,
+                                y: y + root_y,
+                            },
+                            id,
+                        )
+                    })
+            })
+            .collect()
+    } else {
+        vec![(rootxy, root)]
     }
 }
