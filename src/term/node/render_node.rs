@@ -7,11 +7,9 @@ pub use crate::term::prelude::*;
 use crate::term::{render::TerminalRendering, TerminalWindow};
 use bevy::{core::FrameCount, ecs::query::WorldQuery};
 use game_core::{EntityGrid, NodePiece, Team};
-use itertools::Itertools;
 pub use registry::GlyphRegistry;
 pub use render_grid::render_grid;
 pub use render_square::render_square;
-use unicode_width::UnicodeWidthStr;
 
 use super::NodeCursor;
 
@@ -95,18 +93,15 @@ pub fn render_menu_system(
 
 pub fn render_title_bar_system(
     mut commands: Commands,
-    // node_data: Query<RenderNodeData, With<game_core::Node>>,
-    // node_pieces: Query<(&NodePiece, Option<&Team>)>,
     frame_count: Res<FrameCount>,
     mut render_title_bar: Query<(Entity, Option<&mut TerminalRendering>), With<RenderTitleBar>>,
-    // node_focus: Res<super::NodeFocus>,
 ) {
     let rendered_text = vec!["n_dit".to_owned()];
     for (id, rendering_opt) in render_title_bar.iter_mut() {
         if let Some(mut rendering) = rendering_opt {
             rendering.update(rendered_text.clone(), frame_count.0);
         } else {
-            log::debug!("Adding menu rendering");
+            log::debug!("Adding title bar rendering");
             let rendering = TerminalRendering::new(rendered_text.clone(), frame_count.0);
             commands.get_entity(id).unwrap().insert(rendering);
         }

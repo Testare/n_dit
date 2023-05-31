@@ -10,7 +10,7 @@ use game_core::{EntityGrid, Node};
 
 use self::render_node::GlyphRegistry;
 
-use super::layout::{LayoutSet, NodeTty};
+use super::layout::LayoutSet;
 
 #[derive(Debug)]
 pub struct ShowNode(pub Entity);

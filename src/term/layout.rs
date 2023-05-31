@@ -14,16 +14,18 @@ pub enum LayoutSet {
 #[derive(Default)]
 pub struct TaffyTuiLayoutPlugin;
 
-// TODO make this private
 #[derive(Default, Deref, DerefMut, Resource)]
-pub struct Taffy(taffy::Taffy);
+struct Taffy(taffy::Taffy);
 
+/// Hidden component, ties Entity to Taffy Node
+#[derive(Component, Debug, Deref, DerefMut)]
+struct NodeTty(taffy::node::Node);
+
+/// Root of a layout. Is fitted to terminal
 #[derive(Component)]
 pub struct LayoutRoot;
 
-#[derive(Component, Debug, Deref, DerefMut)]
-pub struct NodeTty(taffy::node::Node);
-
+/// Part of a layout, defines the style
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct StyleTty(pub taffy::prelude::Style);
 
@@ -35,9 +37,19 @@ pub struct GlobalTranslationTty(UVec2);
 pub struct CalculatedSizeTty(UVec2);
 
 impl NodeTty {
-    pub fn new(taffy: &mut Taffy, style: Style) -> Self {
+    fn new(taffy: &mut Taffy, style: Style) -> Self {
         let node = taffy.new_leaf(style).unwrap();
         NodeTty(node)
+    }
+}
+
+impl CalculatedSizeTty {
+    fn width(&self) -> u32 {
+        self.0.x
+    }
+
+    fn height(&self) -> u32 {
+        self.0.y
     }
 }
 
@@ -52,6 +64,7 @@ impl Plugin for TaffyTuiLayoutPlugin {
         app.init_resource::<Taffy>()
             .add_systems(
                 (
+                    taffy_apply_style_updates,
                     taffy_new_style_components,
                     apply_system_buffers,
                     taffy_apply_hierarchy_updates,
@@ -79,6 +92,15 @@ fn taffy_new_style_components(
     }
 }
 
+fn taffy_apply_style_updates(
+    mut taffy: ResMut<Taffy>,
+    changed_styles: Query<(&NodeTty, &StyleTty), Changed<StyleTty>>,
+) {
+    for (node_id, style) in changed_styles.iter() {
+        (**taffy).set_style(**node_id, **style).unwrap()
+    }
+}
+
 fn taffy_apply_hierarchy_updates(
     mut taffy: ResMut<Taffy>,
     nodes: Query<&NodeTty>,
@@ -94,8 +116,14 @@ fn taffy_apply_hierarchy_updates(
 fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
     window: Res<TerminalWindow>,
-    roots: Query<&NodeTty, Without<Parent>>,
-    tui_nodes: Query<(&NodeTty, &Name)>,
+    roots: Query<(Entity, &NodeTty), Without<Parent>>,
+    children: Query<&Children>,
+    mut tui_nodes: Query<(
+        &NodeTty,
+        &mut CalculatedSizeTty,
+        &mut GlobalTranslationTty,
+        Option<&Name>,
+    )>,
 ) {
     use taffy::prelude::*;
     let space = Size {
@@ -106,7 +134,7 @@ fn calculate_layouts(
         width: Dimension::Points(window.width() as f32),
         height: Dimension::Points(window.height() as f32),
     };
-    for root in roots.iter() {
+    for (root_id, root) in roots.iter() {
         let root_style = taffy.style(**root).cloned().unwrap();
         let size_changed = root_style.size != window_size;
 
@@ -127,76 +155,67 @@ fn calculate_layouts(
                 "Recalculated Layout of root {:?}",
                 taffy.layout(**root).unwrap()
             );
+            update_layout_traversal(root_id, &children, UVec2::default(), &mut |id, offset| {
+                if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
+                    let layout = taffy.layout(**node).unwrap();
+                    log::trace!(
+                        "{} layout: {:?}",
+                        name_opt.map(|name| name.as_str()).unwrap_or("Unnamed"),
+                        layout
+                    );
+                    translation.0.x = layout.location.x as u32 + offset.x;
+                    translation.0.y = layout.location.y as u32 + offset.y;
+                    size.0.x = layout.size.width as u32;
+                    size.0.y = layout.size.height as u32;
+                    translation.0
+                } else {
+                    log::warn!("Child of TUI component without all TUI components, possible weird behavior: {:?}", id);
+                    offset
+                }
+            })
         }
-    }
-    for (node, name) in tui_nodes.iter() {
-        log::debug!("{} layout: {:?}", name.as_str(), taffy.layout(**node));
     }
 }
 
 pub fn render_layouts(
     mut commands: Commands,
-    taffy: Res<Taffy>,
     frame_count: Res<FrameCount>,
-    mut render_layouts: Query<(Entity, &NodeTty, Option<&mut TerminalRendering>), With<LayoutRoot>>,
+    mut render_layouts: Query<
+        (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),
+        With<LayoutRoot>,
+    >,
     children: Query<&Children>,
-    nodes: Query<&NodeTty>,
-    child_renderings: Query<&TerminalRendering, Without<LayoutRoot>>,
+    child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
-    for (root_id, render_layout_node, rendering) in render_layouts.iter_mut() {
-        struct LeafInfo<'a> {
-            rendering: &'a TerminalRendering,
-            x: u32,
-            y: u32,
-        }
-        #[derive(Default, Clone)]
-        struct RowInfo {
-            text: String,
-            // later might include padding/border/margin information
-        }
+    for (root_id, root_size, rendering) in render_layouts.iter_mut() {
+        let mut leaves: Vec<(&TerminalRendering, &GlobalTranslationTty)> =
+            collect_leaves(root_id, &children)
+                .into_iter()
+                .filter_map(|id| child_renderings.get(id).ok())
+                .collect();
+        leaves.sort_by_cached_key(|leaf_info| (leaf_info.1.x as u32, leaf_info.1.y as u32));
 
-        let mut leaves: Vec<LeafInfo> = collect_leaves(root_id, &children, &|id| {
-            let child_tty = nodes.get(id).unwrap();
-            let location = taffy.layout(**child_tty).unwrap().location;
-            UVec2 {
-                x: location.x as u32,
-                y: location.y as u32,
-            }
-        })
-        .into_iter()
-        .filter_map(|(pos_offset, id)| {
-            let rendering = child_renderings.get(id).ok()?;
-            Some(LeafInfo {
-                rendering,
-                x: pos_offset.x,
-                y: pos_offset.y,
-            })
-        })
-        .collect();
-        leaves.sort_by_cached_key(|leaf_info| (leaf_info.x as u32, leaf_info.y as u32));
-
-        let root_layout = taffy.layout(**render_layout_node).unwrap();
-        let root_width = root_layout.size.width as usize;
-        let mut rows = vec![RowInfo::default(); root_layout.size.height as usize];
+        let root_width = root_size.width() as usize;
+        let mut rows = vec![String::default(); root_size.height() as usize];
         for leaf in leaves {
-            let x_offset = leaf.x as usize;
-            let y_offset = leaf.y as usize;
-            for (i, child_row) in leaf.rendering.rendering().iter().enumerate() {
+            let x_offset = leaf.1.x as usize;
+            let y_offset = leaf.1.y as usize;
+            for (i, child_row) in leaf.0.rendering().iter().enumerate() {
                 let row = &mut rows[i + y_offset];
-                let row_len = UnicodeWidthStr::width((*row).text.as_str());
+                let row_len = UnicodeWidthStr::width(row.as_str());
                 let new_row_text = format!(
                     "{current_row}{space:padding$}{child_row}",
-                    current_row = row.text,
+                    current_row = row,
                     space = " ",
                     padding = x_offset - row_len,
                     child_row = child_row
                 );
-                row.text = new_row_text;
+                *row = new_row_text;
             }
         }
         let padded_rendering = rows
             .into_iter()
-            .map(|row| row.text.pad_to_width(root_width))
+            .map(|row| row.pad_to_width(root_width))
             .collect();
 
         if let Some(mut rendering) = rendering {
@@ -211,7 +230,20 @@ pub fn render_layouts(
 
 // Helper function
 
-/*
+fn update_layout_traversal<F: FnMut(Entity, UVec2) -> UVec2>(
+    current: Entity,
+    children_query: &Query<&Children>,
+    accumulated_offset: UVec2,
+    update_fn: &mut F,
+) {
+    let new_offset = update_fn(current, accumulated_offset);
+    if let Ok(children) = children_query.get(current) {
+        for child in children.into_iter() {
+            update_layout_traversal(*child, children_query, new_offset, update_fn);
+        }
+    }
+}
+
 pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<Entity> {
     if let Ok(children) = children_query.get(root) {
         children
@@ -220,37 +252,5 @@ pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<En
             .collect()
     } else {
         vec![root]
-    }
-}*/
-
-pub fn collect_leaves<F: Fn(Entity) -> UVec2>(
-    root: Entity,
-    children_query: &Query<&Children>,
-    get_xy: &F,
-) -> Vec<(UVec2, Entity)> {
-    let rootxy @ UVec2 {
-        x: root_x,
-        y: root_y,
-    } = get_xy(root);
-    if let Ok(children) = children_query.get(root) {
-        children
-            .into_iter()
-            .flat_map(|child| {
-                // Actually, scrap this whole approach. Pass a Fn(Entity) -> UVec2 to get the point of each parent, and pass the accumulated point on to the the recursions
-                collect_leaves(*child, children_query, get_xy)
-                    .into_iter()
-                    .map(|(UVec2 { x, y }, id)| {
-                        (
-                            UVec2 {
-                                x: x + root_x,
-                                y: y + root_y,
-                            },
-                            id,
-                        )
-                    })
-            })
-            .collect()
-    } else {
-        vec![(rootxy, root)]
     }
 }
