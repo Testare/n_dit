@@ -14,6 +14,7 @@ pub enum LayoutSet {
 #[derive(Default)]
 pub struct TaffyTuiLayoutPlugin;
 
+// TODO make this private
 #[derive(Default, Deref, DerefMut, Resource)]
 pub struct Taffy(taffy::Taffy);
 
@@ -23,10 +24,15 @@ pub struct LayoutRoot;
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct NodeTty(taffy::node::Node);
 
-// TODO Users use this instead of TuiNode, or a marker component. TuiNode added by systems, like
-// CalculatedSize
 #[derive(Component, Debug, Deref, DerefMut)]
-pub struct CalculatedLayoutTty(taffy::prelude::Layout);
+pub struct StyleTty(pub taffy::prelude::Style);
+
+// Actually these components probably should be part of render
+#[derive(Component, Debug, Default, Deref)]
+pub struct GlobalTranslationTty(UVec2);
+
+#[derive(Component, Debug, Default, Deref)]
+pub struct CalculatedSizeTty(UVec2);
 
 impl NodeTty {
     pub fn new(taffy: &mut Taffy, style: Style) -> Self {
@@ -45,7 +51,12 @@ impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
             .add_systems(
-                (taffy_follow_entity_model, calculate_layouts)
+                (
+                    taffy_new_style_components,
+                    apply_system_buffers,
+                    taffy_apply_hierarchy_updates,
+                    calculate_layouts,
+                )
                     .chain()
                     .before(LayoutSet::RenderLeaves),
             )
@@ -54,7 +65,21 @@ impl Plugin for TaffyTuiLayoutPlugin {
     }
 }
 
-fn taffy_follow_entity_model(
+fn taffy_new_style_components(
+    mut commands: Commands,
+    mut taffy: ResMut<Taffy>,
+    new_styles: Query<(Entity, &StyleTty), (Added<StyleTty>, Without<NodeTty>)>,
+) {
+    for (id, style) in new_styles.iter() {
+        commands.get_entity(id).unwrap().insert((
+            NodeTty::new(&mut taffy, **style),
+            CalculatedSizeTty::default(),
+            GlobalTranslationTty::default(),
+        ));
+    }
+}
+
+fn taffy_apply_hierarchy_updates(
     mut taffy: ResMut<Taffy>,
     nodes: Query<&NodeTty>,
     new_child_nodes: Query<(&NodeTty, &Children), Changed<Children>>,

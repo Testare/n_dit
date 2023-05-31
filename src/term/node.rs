@@ -1,5 +1,6 @@
 mod render_node;
 
+use crate::term::layout::StyleTty;
 use crate::term::node::render_node::RenderTitleBar;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
@@ -72,7 +73,6 @@ pub fn node_cursor_controls(
 
 pub fn create_node_ui(
     mut commands: Commands,
-    mut taffy: ResMut<super::layout::Taffy>,
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
     mut node_focus: ResMut<NodeFocus>,
@@ -86,82 +86,67 @@ pub fn create_node_ui(
         if (*node_focus).is_none() {
             let render_root = commands
                 .spawn((
-                    NodeTty::new(
-                        &mut taffy,
-                        taffy::prelude::Style {
-                            size: Size {
-                                width: Dimension::Points(100.),
-                                height: Dimension::Points(100.),
-                            },
-                            flex_direction: FlexDirection::Column,
-                            ..default()
+                    StyleTty(taffy::prelude::Style {
+                        size: Size {
+                            width: Dimension::Points(100.),
+                            height: Dimension::Points(100.),
                         },
-                    ),
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    }),
                     Name::new("Node UI Root"),
                     render_node::RenderNode,
                     crate::term::layout::LayoutRoot,
                 ))
                 .with_children(|root| {
                     root.spawn((
-                        NodeTty::new(
-                            &mut taffy,
-                            taffy::prelude::Style {
-                                size: Size {
-                                    width: Dimension::Auto,
-                                    height: Dimension::Points(3.),
-                                },
-                                ..default()
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Points(3.),
                             },
-                        ),
+                            ..default()
+                        }),
                         Name::new("Node Title Bar"),
                         render_node::RenderTitleBar,
                     ));
                     root.spawn((
-                        NodeTty::new(
-                            &mut taffy,
-                            taffy::prelude::Style {
-                                size: Size {
-                                    width: Dimension::Auto,
-                                    height: Dimension::Auto,
-                                },
-                                ..default()
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Auto,
                             },
-                        ),
+                            ..default()
+                        }),
                         Name::new("Node Content Pane"),
                     ))
                     .with_children(|content_pane| {
                         content_pane.spawn((
-                            NodeTty::new(
-                                &mut taffy,
-                                taffy::prelude::Style {
-                                    size: Size {
-                                        width: Dimension::Points(13.),
-                                        height: Dimension::Auto,
-                                    },
-                                    ..default()
+                            StyleTty(taffy::prelude::Style {
+                                size: Size {
+                                    width: Dimension::Points(13.),
+                                    height: Dimension::Auto,
                                 },
-                            ),
+                                ..default()
+                            }),
                             Name::new("Menu Bar"),
                             render_node::RenderMenu,
                         ));
 
                         content_pane.spawn((
-                            NodeTty::new(
-                                &mut taffy,
-                                taffy::prelude::Style {
-                                    size: Size {
-                                        width: Dimension::Auto,
-                                        height: Dimension::Auto,
-                                    },
-                                    border: Rect {
-                                        left: Dimension::Points(1.0),
-                                        ..default()
-                                    },
-                                    flex_grow: 1.0,
-
+                            StyleTty(taffy::prelude::Style {
+                                size: Size {
+                                    width: Dimension::Auto,
+                                    height: Dimension::Auto,
+                                },
+                                border: Rect {
+                                    left: Dimension::Points(1.0),
                                     ..default()
                                 },
-                            ),
+                                flex_grow: 1.0,
+
+                                ..default()
+                            }),
                             Name::new("Grid"),
                             render_node::RenderGrid,
                         ));
