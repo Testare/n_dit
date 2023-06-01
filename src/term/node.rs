@@ -115,6 +115,7 @@ pub fn create_node_ui(
                                 width: Dimension::Auto,
                                 height: Dimension::Auto,
                             },
+                            flex_grow: 1.0,
                             ..default()
                         }),
                         Name::new("Node Content Pane"),

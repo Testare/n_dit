@@ -63,8 +63,6 @@ pub fn render_grid_system(
                     .insert(rendering);
             }
         }
-
-        // let grid_rendering = render_grid::render_grid(window, &node_data, &node_pieces, &glyph_registry);
     }
 }
 

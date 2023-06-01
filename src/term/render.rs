@@ -65,6 +65,7 @@ pub fn write_rendering_to_terminal(
     mut render_cache: Local<TerminalRendering>,
 ) {
     // Clear cache on resize
+    // TODO BUG Occurs on resize if the resize shrinks the terminal vertically
     for input in inputs.iter() {
         if matches!(input, CrosstermEvent::Resize { .. }) {
             render_cache.clear()

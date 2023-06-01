@@ -110,8 +110,8 @@ pub fn render_grid(
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
-    // COPIED CODE
-    // let draw_config = state.draw_config();
+    // TODO Guardrail for when size is too small
+    // TODO Break DrawConfiguration down into parts and resources
 
     let grid = node_data.grid;
     let node_cursor = node_data.node_cursor;
@@ -126,16 +126,14 @@ pub fn render_grid(
 
     let str_width = width * 3 + 3;
     let x_start = window.scroll_x() / 3;
-    let x2 = cmp::min(width * 3 + 1, window.scroll_x() + window.width());
-    let padding_size = window.width() + window.scroll_x() - x2;
-    let padding = " ".repeat(padding_size);
+    let x2 = cmp::min(width * 3 + 1, window.scroll_x() + size.width() as usize);
 
     let x_end = (x2 - 1) / 3;
     let skip_x = window.scroll_x() % 3;
     let y_start = window.scroll_y() / 2;
-    let y_end = cmp::min(height, (window.scroll_y() + window.height() - 1) / 2);
+    let y_end = cmp::min(height, (window.scroll_y() + size.height() as usize - 1) / 2);
     let skip_y = window.scroll_y() % 2;
-    let keep_last_space = skip_y + window.height() % 2 == 0;
+    let keep_last_space = skip_y + size.height() as usize % 2 == 0;
 
     /*
         let mut action_type = 1;
@@ -156,7 +154,6 @@ pub fn render_grid(
         }
     */
     // let mut available_moves = None;
-    let mut action_type = 0;
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
         .map(|y| {
@@ -330,12 +327,7 @@ pub fn render_grid(
     space_lines.truncate(height); // Still used for when the height isn't specified
     Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
         .skip(skip_y)
-        .take(window.height())
-        .map(|mut row| {
-            // row.push_str(padding.as_str());
-            // TODO what is this padding for?
-            row
-        })
+        .take(size.height() as usize)
         .collect()
 }
 
