@@ -4,6 +4,14 @@ use super::TerminalWindow;
 use crate::term::prelude::*;
 use itertools::{EitherOrBoth, Itertools};
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum RenderTtySet {
+    CalculateLayout,
+    RenderComponents,
+    RenderLayouts,
+    RenderToTerminal,
+}
+
 #[derive(Clone, Component, FromReflect, Reflect)]
 pub struct TerminalRendering {
     rendering: Vec<String>,
@@ -11,7 +19,7 @@ pub struct TerminalRendering {
 }
 
 #[derive(Default)]
-pub struct RenderPlugin;
+pub struct RenderTtyPlugin;
 
 impl TerminalRendering {
     pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
@@ -41,9 +49,12 @@ impl TerminalRendering {
     }
 }
 
-impl Plugin for RenderPlugin {
+impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(write_rendering_to_terminal);
+        app.add_system(write_rendering_to_terminal.in_set(RenderTtySet::RenderToTerminal))
+            .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::RenderComponents))
+            .configure_set(RenderTtySet::RenderComponents.before(RenderTtySet::RenderLayouts))
+            .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
     }
 }
 

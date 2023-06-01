@@ -187,7 +187,7 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TermEventListener>()
             .init_resource::<TerminalWindow>()
             .add_state::<TerminalFocusMode>()
-            .add_plugin(render::RenderPlugin::default())
+            .add_plugin(render::RenderTtyPlugin::default())
             .add_plugin(node::NodePlugin::default())
             .add_plugin(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()

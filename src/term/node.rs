@@ -1,7 +1,6 @@
 mod render_node;
 
 use crate::term::layout::StyleTty;
-use crate::term::node::render_node::RenderTitleBar;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
 use bevy::reflect::{FromReflect, Reflect};
@@ -10,7 +9,7 @@ use game_core::{EntityGrid, Node};
 
 use self::render_node::GlyphRegistry;
 
-use super::layout::LayoutSet;
+use super::render::RenderTtySet;
 
 #[derive(Debug)]
 pub struct ShowNode(pub Entity);
@@ -35,7 +34,7 @@ impl Plugin for NodePlugin {
                     render_node::render_title_bar_system,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .in_set(LayoutSet::RenderLeaves),
+                    .in_set(RenderTtySet::RenderComponents),
             );
     }
 }

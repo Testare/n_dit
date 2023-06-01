@@ -1,15 +1,9 @@
-use super::{render::TerminalRendering, TerminalWindow};
+use super::{render::RenderTtySet, render::TerminalRendering, TerminalWindow};
 use crate::term::prelude::*;
 use bevy::core::FrameCount;
 use pad::PadStr;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
-
-#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
-pub enum LayoutSet {
-    RenderLeaves,
-    RenderRoots,
-}
 
 #[derive(Default)]
 pub struct TaffyTuiLayoutPlugin;
@@ -44,19 +38,13 @@ impl NodeTty {
 }
 
 impl CalculatedSizeTty {
-    fn width(&self) -> u32 {
+    pub fn width(&self) -> u32 {
         self.0.x
     }
 
-    fn height(&self) -> u32 {
+    pub fn height(&self) -> u32 {
         self.0.y
     }
-}
-
-#[derive(Component, Debug)]
-pub struct TuiCalculations {
-    pub size: UVec2,
-    pub transform: UVec2,
 }
 
 impl Plugin for TaffyTuiLayoutPlugin {
@@ -71,10 +59,9 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     calculate_layouts,
                 )
                     .chain()
-                    .before(LayoutSet::RenderLeaves),
+                    .in_set(RenderTtySet::CalculateLayout),
             )
-            .add_system(render_layouts.in_set(LayoutSet::RenderRoots))
-            .configure_set(LayoutSet::RenderLeaves.before(LayoutSet::RenderRoots));
+            .add_system(render_layouts.in_set(RenderTtySet::RenderLayouts));
     }
 }
 
@@ -158,7 +145,7 @@ fn calculate_layouts(
             update_layout_traversal(root_id, &children, UVec2::default(), &mut |id, offset| {
                 if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
                     let layout = taffy.layout(**node).unwrap();
-                    log::trace!(
+                    log::debug!(
                         "{} layout: {:?}",
                         name_opt.map(|name| name.as_str()).unwrap_or("Unnamed"),
                         layout
@@ -206,7 +193,7 @@ pub fn render_layouts(
                 let new_row_text = format!(
                     "{current_row}{space:padding$}{child_row}",
                     current_row = row,
-                    space = " ",
+                    space = "",
                     padding = x_offset - row_len,
                     child_row = child_row
                 );

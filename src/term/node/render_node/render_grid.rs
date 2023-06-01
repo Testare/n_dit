@@ -1,6 +1,7 @@
 use super::registry::GlyphRegistry;
 use super::{render_square, RenderNodeDataReadOnlyItem};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
+use crate::term::layout::CalculatedSizeTty;
 use crate::term::node::NodeCursor;
 use crate::term::TerminalWindow;
 use bevy::prelude::*;
@@ -103,7 +104,8 @@ pub fn border_style_for(
 }
 
 pub fn render_grid(
-    window: Res<TerminalWindow>,
+    window: &Res<TerminalWindow>,
+    size: &CalculatedSizeTty,
     node_data: &RenderNodeDataReadOnlyItem,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,

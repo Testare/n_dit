@@ -25,8 +25,11 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
             node.spawn((Mon(500), NodePiece::new("curio:hack"), Team::Player))
                 .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
-            node.spawn((Mon(700), NodePiece::new("pickup:card")))
-                .add_to_grid(node_id, vec![(3, 3)]);
+            node.spawn((
+                Mon(700),
+                NodePiece::new("pickup:cardofabunchofthingsletscutmeoff"),
+            ))
+            .add_to_grid(node_id, vec![(3, 3)]);
         })
         .id();
 
@@ -40,16 +43,6 @@ fn debug_key(
     window: Res<TerminalWindow>,
     names: Query<&Name>,
 ) {
-    if let Some(rt) = window.render_target() {
-        log::debug!(
-            "Render target: {} ({:?})",
-            names
-                .get(*rt)
-                .map(|name| name.as_str())
-                .unwrap_or("unnamed"),
-            rt
-        );
-    }
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {
             code: KeyCode::Char('d'),
