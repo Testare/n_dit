@@ -266,7 +266,7 @@ impl EntityGrid {
     }
 
     /// Returns a visualization of the grid using 0's for blocked squares, 1's for open but empty
-    /// squares, and item_keys for their respective squares.
+    /// squares, and numbers for each entity
     ///
     /// This map does not indicate what order the squares are in, and so could
     /// not be used to reconstruct a EntityGrid even if a list of entries is provided.
@@ -277,7 +277,7 @@ impl EntityGrid {
         // TODO IMMEDIATELY Need to map entities to different numbers for this number map
         let numbers: HashMap<Entity, usize> = self.entries.iter()
             .enumerate()
-            .map(|(i, (entity, _))|(*entity, i+2))
+            .map(|(i, (entity, _))| (*entity, i+2))
             .collect();
         self.grid
             .iter()
