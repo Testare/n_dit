@@ -63,7 +63,7 @@ pub fn node_cursor_controls(
                             if cursor.y * 2 < scroll.y {
                                 scroll.y = cursor.y * 2;
                             }
-                        },
+                        }
                         'h' | 'a' => {
                             cursor.x = cursor.x.saturating_sub(1);
                             if cursor.x * 3 < scroll.x {
@@ -78,8 +78,8 @@ pub fn node_cursor_controls(
                         }
                         'l' | 'd' => {
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
-                            if cursor.x * 3 + 3 > scroll.x + size.width() {
-                                scroll.x = cursor.x * 3 + 3 - size.width()
+                            if cursor.x * 3 + 4 > scroll.x + size.width() {
+                                scroll.x = cursor.x * 3 + 4 - size.width()
                             }
                         }
                         _ => {}

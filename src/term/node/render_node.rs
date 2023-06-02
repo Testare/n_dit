@@ -43,7 +43,12 @@ pub fn render_grid_system(
     frame_count: Res<FrameCount>,
     glyph_registry: Res<GlyphRegistry>,
     mut render_grid: Query<
-        (Entity, &CalculatedSizeTty, &NodeViewScroll, Option<&mut TerminalRendering>),
+        (
+            Entity,
+            &CalculatedSizeTty,
+            &NodeViewScroll,
+            Option<&mut TerminalRendering>,
+        ),
         With<GridUi>,
     >,
     node_focus: Res<super::NodeFocus>,

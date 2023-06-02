@@ -13,6 +13,7 @@ impl Default for GlyphRegistry {
                 ("mon", "$$"),
                 ("access_point", "@@"),
                 ("curio:hack", "hk"),
+                ("curio:death", "死"),
                 // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"
                 ("pickup:card", "🂠 "),
             ]

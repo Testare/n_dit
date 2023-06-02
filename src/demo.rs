@@ -25,11 +25,13 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
             node.spawn((Mon(500), NodePiece::new("curio:hack"), Team::Player))
                 .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
-            node.spawn((
-                Mon(700),
-                NodePiece::new("pickup:cardofabunchofthingsletscutmeoff"),
-            ))
-            .add_to_grid(node_id, vec![(3, 3)]);
+            node.spawn((Mon(700), NodePiece::new("pickup:card")))
+                .add_to_grid(node_id, vec![(3, 3)]);
+
+            node.spawn((Mon(500), NodePiece::new("curio:death"), Team::Enemy))
+                .add_to_grid(node_id, vec![(2, 5)]);
+            node.spawn((Mon(500), NodePiece::new("curio:death"), Team::Enemy))
+                .add_to_grid(node_id, vec![(12, 3)]);
         })
         .id();
 
