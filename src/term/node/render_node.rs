@@ -14,7 +14,7 @@ pub use render_square::render_square;
 use super::NodeCursor;
 
 #[derive(Component)]
-pub struct RenderGrid;
+pub struct GridUi;
 
 #[derive(Component)]
 pub struct RenderMenu;
@@ -24,6 +24,9 @@ pub struct RenderNode;
 
 #[derive(Component)]
 pub struct RenderTitleBar;
+
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct NodeViewScroll(pub UVec2);
 
 #[derive(WorldQuery)]
 #[world_query(mutable)]
@@ -35,23 +38,22 @@ pub struct RenderNodeData {
 
 pub fn render_grid_system(
     mut commands: Commands,
-    window: Res<TerminalWindow>,
     node_data: Query<RenderNodeData, With<game_core::Node>>,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     frame_count: Res<FrameCount>,
     glyph_registry: Res<GlyphRegistry>,
     mut render_grid: Query<
-        (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),
-        With<RenderGrid>,
+        (Entity, &CalculatedSizeTty, &NodeViewScroll, Option<&mut TerminalRendering>),
+        With<GridUi>,
     >,
     node_focus: Res<super::NodeFocus>,
 ) {
     if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
         // WIP
 
-        for (render_grid_id, size, rendering_opt) in render_grid.iter_mut() {
+        for (render_grid_id, size, scroll, rendering_opt) in render_grid.iter_mut() {
             let grid_rendering =
-                render_grid::render_grid(&window, size, &node_data, &node_pieces, &glyph_registry);
+                render_grid::render_grid(size, scroll, &node_data, &node_pieces, &glyph_registry);
             if let Some(mut rendering) = rendering_opt {
                 rendering.update(grid_rendering.clone(), frame_count.0);
             } else {

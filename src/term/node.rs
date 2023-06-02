@@ -1,14 +1,16 @@
 mod render_node;
 
 use crate::term::layout::StyleTty;
+use crate::term::node::render_node::NodeViewScroll;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
 use bevy::reflect::{FromReflect, Reflect};
 use crossterm::event::{KeyCode, KeyEvent};
 use game_core::{EntityGrid, Node};
 
-use self::render_node::GlyphRegistry;
+use self::render_node::{GlyphRegistry, GridUi};
 
+use super::layout::CalculatedSizeTty;
 use super::render::RenderTtySet;
 
 #[derive(Debug)]
@@ -42,28 +44,46 @@ impl Plugin for NodePlugin {
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
-pub struct NodeViewScroll(pub UVec2);
-
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid)>,
+    mut grid_ui_view: Query<(&CalculatedSizeTty, &mut NodeViewScroll), With<GridUi>>,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
     for (mut cursor, grid) in node_cursors.iter_mut() {
-        for input in inputs.iter() {
-            if let CrosstermEvent::Key(KeyEvent {
-                code: KeyCode::Char(input_char),
-                ..
-            }) = input
-            {
-                match input_char {
-                    'k' | 'w' => cursor.y = cursor.y.saturating_sub(1),
-                    'h' | 'a' => cursor.x = cursor.x.saturating_sub(1),
-                    'j' | 's' => {
-                        cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32)
+        if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
+            for input in inputs.iter() {
+                if let CrosstermEvent::Key(KeyEvent {
+                    code: KeyCode::Char(input_char),
+                    ..
+                }) = input
+                {
+                    match input_char {
+                        'k' | 'w' => {
+                            cursor.y = cursor.y.saturating_sub(1);
+                            if cursor.y * 2 < scroll.y {
+                                scroll.y = cursor.y * 2;
+                            }
+                        },
+                        'h' | 'a' => {
+                            cursor.x = cursor.x.saturating_sub(1);
+                            if cursor.x * 3 < scroll.x {
+                                scroll.x = cursor.x * 2;
+                            }
+                        }
+                        'j' | 's' => {
+                            cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32);
+                            if cursor.y * 2 + 2 > scroll.y + size.height() {
+                                scroll.y = cursor.y * 2 + 3 - size.height()
+                            }
+                        }
+                        'l' | 'd' => {
+                            cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
+                            if cursor.x * 3 + 3 > scroll.x + size.width() {
+                                scroll.x = cursor.x * 3 + 3 - size.width()
+                            }
+                        }
+                        _ => {}
                     }
-                    'l' | 'd' => cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32),
-                    _ => {}
                 }
             }
         }
@@ -144,11 +164,11 @@ pub fn create_node_ui(
                                     ..default()
                                 },
                                 flex_grow: 1.0,
-
                                 ..default()
                             }),
                             Name::new("Grid"),
-                            render_node::RenderGrid,
+                            render_node::GridUi,
+                            NodeViewScroll::default(),
                         ));
                     });
                 })

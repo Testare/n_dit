@@ -1,5 +1,5 @@
 use super::registry::GlyphRegistry;
-use super::{render_square, RenderNodeDataReadOnlyItem};
+use super::{render_square, RenderNodeDataReadOnlyItem, NodeViewScroll};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::node::NodeCursor;
@@ -104,8 +104,9 @@ pub fn border_style_for(
 }
 
 pub fn render_grid(
-    window: &Res<TerminalWindow>,
+    // window: &Res<TerminalWindow>,
     size: &CalculatedSizeTty,
+    scroll: &NodeViewScroll,
     node_data: &RenderNodeDataReadOnlyItem,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
@@ -125,14 +126,14 @@ pub fn render_grid(
         .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
-    let x_start = window.scroll_x() / 3;
-    let x2 = cmp::min(width * 3 + 1, window.scroll_x() + size.width() as usize);
+    let x_start = (scroll.x / 3) as usize;
+    let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width() as usize);
 
     let x_end = (x2 - 1) / 3;
-    let skip_x = window.scroll_x() % 3;
-    let y_start = window.scroll_y() / 2;
-    let y_end = cmp::min(height, (window.scroll_y() + size.height() as usize - 1) / 2);
-    let skip_y = window.scroll_y() % 2;
+    let skip_x = (scroll.x % 3) as usize;
+    let y_start = (scroll.y / 2) as usize;
+    let y_end = cmp::min(height, (scroll.y + size.height() / 2) as usize);
+    let skip_y = (scroll.y % 2) as usize;
     let keep_last_space = skip_y + size.height() as usize % 2 == 0;
 
     /*
@@ -187,7 +188,10 @@ pub fn render_grid(
 
                 let border_y_range = if y == 0 { 0..=0 } else { y - 1..=y };
 
-                if include_border {
+                let draw_first_char_in_line = skip_x == 0 || x != x_start;
+                let draw_second_char_in_line = skip_x != 2 || x != x_start;
+
+                if include_border && draw_first_char_in_line {
                     let pivot_format = border_style_for(
                         node_cursor,
                         &draw_config, // &available_moves,
@@ -207,7 +211,8 @@ pub fn render_grid(
                     );
                 }
 
-                if include_space {
+                if include_space && draw_first_char_in_line {
+                    // Add first vertical border
                     let border_style = border_style_for(
                         node_cursor,
                         &draw_config, /*
@@ -284,7 +289,7 @@ pub fn render_grid(
                         }
                     }
                 }
-                if include_border {
+                if include_border && draw_second_char_in_line {
                     let border_style = border_style_for(
                         node_cursor,
                         &draw_config, /*
@@ -301,7 +306,7 @@ pub fn render_grid(
                             .as_str(),
                     );
                 }
-                if include_space {
+                if include_space && draw_second_char_in_line {
                     let space_style = space_style_for(x, y, node_cursor, &draw_config);
                     let square = sprite_map.get(&pt).map(String::as_ref).unwrap_or_else(|| {
                         if grid.square_is_closed(pt) {
@@ -319,8 +324,8 @@ pub fn render_grid(
                 }
             }
             (
-                border_line.chars().skip(skip_x).collect(),
-                space_line.chars().skip(skip_x).collect(),
+                border_line,//.chars().skip(skip_x).collect(),
+                space_line, //.chars().skip(skip_x).collect(),
             )
         })
         .unzip();
