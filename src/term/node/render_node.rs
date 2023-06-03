@@ -11,6 +11,8 @@ pub use registry::GlyphRegistry;
 pub use render_grid::render_grid;
 pub use render_square::render_square;
 
+use self::render_menu::NodePieceMenuData;
+
 use super::NodeCursor;
 
 #[derive(Component)]
@@ -76,7 +78,7 @@ pub fn render_grid_system(
 pub fn render_menu_system(
     mut commands: Commands,
     node_data: Query<RenderNodeData, With<game_core::Node>>,
-    node_pieces: Query<(&NodePiece, Option<&Team>, Option<&Actions>)>,
+    node_pieces: Query<NodePieceMenuData>,
     frame_count: Res<FrameCount>,
     mut render_menu: Query<
         (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),

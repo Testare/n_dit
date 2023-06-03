@@ -1,5 +1,4 @@
 use super::registry::GlyphRegistry;
-use super::render_square::render_square_2;
 use super::{render_square, NodeViewScroll, RenderNodeDataReadOnlyItem};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
@@ -122,7 +121,7 @@ pub fn render_grid(
     let grid_map = grid.number_map();
 
     let sprite_map = grid.point_map(|i, sprite| {
-        render_square_2(i, sprite, node_pieces, glyph_registry, &draw_config)
+        render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
     });
 
     let str_width = width * 3 + 3;

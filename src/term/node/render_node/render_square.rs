@@ -6,33 +6,6 @@ use game_core::{NodePiece, Team};
 const UNKNOWN_NODE_PIECE: &'static str = "??";
 const FILL_GLYPH: &'static str = "[]";
 
-pub fn render_square(
-    position: usize,
-    entity: Entity,
-    node_pieces: &Query<(&NodePiece, Option<&Team>)>,
-    node_piece_render_registry: &GlyphRegistry,
-    configuration: &DrawConfiguration,
-) -> String {
-    let (node_piece, team_opt) = node_pieces
-        .get(entity)
-        .expect("entities in Node EntityGrid should implement NodePiece");
-
-    let glyph = if position == 0 {
-        node_piece_render_registry
-            .get(node_piece.display_name())
-            .cloned()
-            .unwrap_or_else(|| UNKNOWN_NODE_PIECE.to_owned())
-    } else {
-        FILL_GLYPH.to_owned()
-    };
-    match team_opt {
-        None => configuration.color_scheme().mon().apply(glyph),
-        Some(Team::Enemy) => configuration.color_scheme().enemy_team().apply(glyph),
-        Some(Team::Player) => configuration.color_scheme().player_team().apply(glyph),
-    }
-}
-
-// Might want to change this to just accept a mutable Write reference to make more effecient.
 /*fn style(
     sprite: &Sprite,
     node: &Node,
@@ -58,7 +31,7 @@ pub fn render_square(
     }
 }*/
 
-pub fn render_square_2(
+pub fn render_square(
     position: usize,
     entity: Entity,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
@@ -71,7 +44,7 @@ pub fn render_square_2(
 
     let glyph = if position == 0 {
         node_piece_render_registry
-            .get(node_piece.display_name())
+            .get(node_piece.display_id())
             .cloned()
             .unwrap_or_else(|| UNKNOWN_NODE_PIECE.to_owned())
     } else {

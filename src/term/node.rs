@@ -13,9 +13,11 @@ use self::render_node::{GlyphRegistry, GridUi};
 use super::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use super::render::RenderTtySet;
 
+/// Event that tells us to show a specific Node entity
 #[derive(Debug)]
 pub struct ShowNode(pub Entity);
 
+/// If there are multiple Nodes, this is the node that is being rendered to the screen
 #[derive(Debug, Deref, DerefMut, Resource, Default)]
 pub struct NodeFocus(pub Option<Entity>);
 
@@ -99,9 +101,8 @@ pub fn node_cursor_controls(
                         row,
                         modifiers,
                     }) => {
-                        let contained = size.contains_mouse_event(translation, event);
-                        log::debug!("Mouse event! {} {:?}", if contained { "(contained)" } else { "" }, event);
-                        if contained {
+                        let grid_contained = size.contains_mouse_event(translation, event);
+                        if grid_contained {
                             match *kind {
                                 MouseEventKind::Moved if modifiers.contains ( KeyModifiers::SHIFT) => {
                                     let new_x = ((*column as u32) + scroll.x - translation.x)/3;
@@ -116,10 +117,11 @@ pub fn node_cursor_controls(
                                     let new_y = ((*row as u32) + scroll.y - translation.y)/2;
                                     if new_x < grid.width() && new_y < grid.height() {
                                         if cursor.x == new_x && cursor.y == new_y {
-                                            log::debug!("ACTIVATE!")
+                                            log::debug!("Click again on selected square")
+                                        } else {
+                                            cursor.x = new_x;
+                                            cursor.y = new_y;
                                         }
-                                        cursor.x = new_x;
-                                        cursor.y = new_y;
                                     }
 
                                 }

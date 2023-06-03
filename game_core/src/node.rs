@@ -1,6 +1,5 @@
 use super::NDitError;
 use crate::prelude::*;
-use old_game_core::GridMap;
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
@@ -8,7 +7,7 @@ pub struct Node;
 #[derive(Component, Reflect, getset::Getters)]
 pub struct NodePiece {
     #[getset(get="pub")]
-    display_name: String,
+    display_id: String,
 }
 
 #[derive(Component, Reflect)]
@@ -16,16 +15,19 @@ pub struct Mon(pub u32);
 
 #[derive(Component, Reflect)]
 struct AccessPoint {
-    card: Entity, // Display card data to load
+    card: Option<Entity>, // Display card data to load
 }
 
 #[derive(Component, Reflect)]
-struct Curio {
-    max_size: usize,
-    speed: usize,
-    owner: Entity,
-    card: Entity,
+pub struct Curio {
+    // owner: Entity, // Potential replacement for Team mechanism
+    card: Option<Entity>,
+    name: String,
 }
+
+#[derive(Component, Deref, Reflect)]
+pub struct Description(String);
+
 
 #[derive(Component, Debug, Deref, FromReflect, Reflect)]
 pub struct Actions(Vec<Action>);
@@ -34,9 +36,17 @@ pub struct Actions(Vec<Action>);
 pub struct Action {
     pub name: String,
     pub range: usize,
+    pub description: String,
     // effect
     // desc
 }
+
+#[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+pub struct MovementSpeed(pub u32);
+
+#[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+pub struct MaximumSize(pub u32);
+
     
 
 #[derive(Clone, Component, Debug, FromReflect, Reflect)]
@@ -48,7 +58,7 @@ pub enum Team {
 impl NodePiece {
     pub fn new(display_name: &str) -> Self {
         NodePiece {
-            display_name: display_name.to_owned(),
+            display_id: display_name.to_owned(),
         }
     }
 }
@@ -56,5 +66,31 @@ impl NodePiece {
 impl Actions {
     pub fn new(actions: Vec<Action>) -> Self {
         Actions(actions)
+    }
+}
+
+impl Description {
+    pub fn new<S: Into<String>>(description: S) -> Self {
+        Description(description.into())
+    }
+}
+
+impl Curio {
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Curio {
+            name: name.into(),
+            card: None
+        }
+    }
+
+    pub fn new_with_card<S: Into<String>>(name: S, card: Entity) -> Self {
+        Curio {
+            name: name.into(),
+            card: Some(card),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 }

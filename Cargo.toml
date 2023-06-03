@@ -23,6 +23,7 @@ crossterm = { version = "0.20.0", features = ["event-stream"] }
 taffy = "0.2"
 bevy = "0.10"
 thiserror = "1.0.40"
+textwrap = "0.16.0"
 
 # Use for "cargo flamegraph"
 # [profile.release]

@@ -6,6 +6,7 @@ use itertools::{EitherOrBoth, Itertools};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum RenderTtySet {
+    AdjustLayoutStyle,
     CalculateLayout,
     RenderComponents,
     RenderLayouts,
@@ -52,6 +53,7 @@ impl TerminalRendering {
 impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(write_rendering_to_terminal.in_set(RenderTtySet::RenderToTerminal))
+            .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
             .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::RenderComponents))
             .configure_set(RenderTtySet::RenderComponents.before(RenderTtySet::RenderLayouts))
             .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
