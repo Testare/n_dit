@@ -6,7 +6,7 @@ mod render_square;
 pub use crate::term::prelude::*;
 use crate::term::{layout::CalculatedSizeTty, render::TerminalRendering, TerminalWindow};
 use bevy::{core::FrameCount, ecs::query::WorldQuery};
-use game_core::{EntityGrid, NodePiece, Team, Actions};
+use game_core::{Actions, EntityGrid, NodePiece, Team};
 pub use registry::GlyphRegistry;
 pub use render_grid::render_grid;
 pub use render_square::render_square;

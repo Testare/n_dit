@@ -2,7 +2,7 @@ use crate::term::layout::CalculatedSizeTty;
 
 use super::RenderNodeDataReadOnlyItem;
 use game_core::node::NodePiece;
-use game_core::{prelude::*, Team, Actions};
+use game_core::{prelude::*, Actions, Team};
 use pad::PadStr;
 
 pub fn render_menu(
@@ -21,22 +21,18 @@ pub fn render_menu(
         let mut unbound_vec = vec![
             Some(selected_piece.display_name().clone()),
             Some(format!("{0:-^1$}", "-", bounds.width())),
-            team.map(|team|format!("Team: {:?}", team)),
-            team.map(|_|"".to_owned()),
+            team.map(|team| format!("Team: {:?}", team)),
+            team.map(|_| "".to_owned()),
         ];
         if let Some(actions) = actions {
             for action in actions.iter() {
-                unbound_vec.push(
-                    Some(action.name.clone())
-                );
+                unbound_vec.push(Some(action.name.clone()));
             }
-
-
         }
 
         unbound_vec
             .into_iter()
-            .filter_map(|str|Some(str?.with_exact_width(bounds.width())))
+            .filter_map(|str| Some(str?.with_exact_width(bounds.width())))
             .collect()
     } else {
         vec![]

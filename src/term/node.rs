@@ -53,7 +53,10 @@ pub fn node_cursor_controls(
         if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
             for input in inputs.iter() {
                 match input {
-                    CrosstermEvent::Key(KeyEvent { code: KeyCode::Char(input_char), .. }) => match input_char {
+                    CrosstermEvent::Key(KeyEvent {
+                        code: KeyCode::Char(input_char),
+                        ..
+                    }) => match input_char {
                         'k' | 'w' => {
                             cursor.y = cursor.y.saturating_sub(1);
                             if cursor.y * 2 < scroll.y {
@@ -77,19 +80,20 @@ pub fn node_cursor_controls(
                             if cursor.x * 3 + 4 > scroll.x + size.width32() {
                                 scroll.x = cursor.x * 3 + 4 - size.width32()
                             }
-                        },
+                        }
                         _ => {}
                     },
                     CrosstermEvent::Resize(..) => {
-                        scroll.x = scroll.x
+                        scroll.x = scroll
+                            .x
                             .min((grid.width() * 3 + 1).saturating_sub(size.width32()))
                             .max((cursor.x * 3 + 4).saturating_sub(size.width32()));
-                        scroll.y = scroll.y
+                        scroll.y = scroll
+                            .y
                             .min((grid.height() * 2 + 1).saturating_sub(size.height32()))
                             .max((cursor.y * 2 + 3).saturating_sub(size.height32()));
-
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }

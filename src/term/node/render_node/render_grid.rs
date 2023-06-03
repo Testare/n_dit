@@ -1,6 +1,6 @@
 use super::registry::GlyphRegistry;
 use super::render_square::render_square_2;
-use super::{render_square, RenderNodeDataReadOnlyItem, NodeViewScroll};
+use super::{render_square, NodeViewScroll, RenderNodeDataReadOnlyItem};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::node::NodeCursor;
@@ -121,8 +121,9 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid
-        .point_map(|i, sprite| render_square_2(i, sprite, node_pieces, glyph_registry, &draw_config));
+    let sprite_map = grid.point_map(|i, sprite| {
+        render_square_2(i, sprite, node_pieces, glyph_registry, &draw_config)
+    });
 
     let str_width = width * 3 + 3;
 
@@ -191,7 +192,8 @@ pub fn render_grid(
                 let border_y_range = if y == 0 { 0..=0 } else { y - 1..=y };
 
                 let render_left_border = x != x_start || skip_x == 0;
-                let render_half_space = (x == x_start && skip_x == 2) || (x == x_end && drop_x == 1);
+                let render_half_space =
+                    (x == x_start && skip_x == 2) || (x == x_end && drop_x == 1);
                 let render_full_space = x != x_end || drop_x == 0; // && (x != x_start || skip_x != 2), but the "else" block handles that case
 
                 if render_left_border {
@@ -219,11 +221,11 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                                                &available_moves,
-                                                                action_type,
-                                                                state,
+                                                                  &available_moves,
+                                                                  action_type,
+                                                                  state,
 
-                                        */
+                                          */
                             &border_x_range,
                             &(y..=y),
                         );
@@ -239,10 +241,10 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                            &available_moves,
-                                            action_type,
-                                            state,
-                                            */
+                                          &available_moves,
+                                          action_type,
+                                          state,
+                                          */
                             &(x..=x),
                             &border_y_range,
                         );
@@ -260,8 +262,10 @@ pub fn render_grid(
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
-                        let (square_style, square) =
-                            sprite_map.get(&pt).map(|(style, square)| (style, square.as_ref())).unwrap_or_else(|| {
+                        let (square_style, square) = sprite_map
+                            .get(&pt)
+                            .map(|(style, square)| (style, square.as_ref()))
+                            .unwrap_or_else(|| {
                                 if grid.square_is_closed(pt) {
                                     (&UiFormat::NONE, CLOSED_SQUARE)
                                 } else {
@@ -270,12 +274,17 @@ pub fn render_grid(
                             });
                         if square.chars().count() == 1 {
                             space_line.push_str(
-                                space_style.apply(square_style.apply(draw_config.half_char())).as_str(),
+                                space_style
+                                    .apply(square_style.apply(draw_config.half_char()))
+                                    .as_str(),
                             );
                         } else {
                             // Whether we are getting the left half or the right half
                             let char_index = if x == x_start { 1 } else { 0 };
-                            let half_char = square.chars().nth(char_index).expect("there should be at least 2 characters");
+                            let half_char = square
+                                .chars()
+                                .nth(char_index)
+                                .expect("there should be at least 2 characters");
 
                             space_line.push_str(
                                 space_style.apply(square_style.apply(half_char)).as_str(),
@@ -287,28 +296,33 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                                                &available_moves,
-                                                                action_type,
-                                                                state,
-                                        */
+                                                                  &available_moves,
+                                                                  action_type,
+                                                                  state,
+                                          */
                             &(x..=x),
                             &border_y_range,
                         );
                         border_line.push_str(
                             border_style
-                                .apply(BorderType::of(right1, right2).horizontal_border(&draw_config))
+                                .apply(
+                                    BorderType::of(right1, right2).horizontal_border(&draw_config),
+                                )
                                 .as_str(),
                         );
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
-                        let (square_style, square) = sprite_map.get(&pt).map(|(style, square)| (style, square.as_str())).unwrap_or_else(|| {
-                            if grid.square_is_closed(pt) {
-                                (&UiFormat::NONE, CLOSED_SQUARE)
-                            } else {
-                                (&UiFormat::NONE, OPEN_SQUARE)
-                            }
-                        });
+                        let (square_style, square) = sprite_map
+                            .get(&pt)
+                            .map(|(style, square)| (style, square.as_str()))
+                            .unwrap_or_else(|| {
+                                if grid.square_is_closed(pt) {
+                                    (&UiFormat::NONE, CLOSED_SQUARE)
+                                } else {
+                                    (&UiFormat::NONE, OPEN_SQUARE)
+                                }
+                            });
                         // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                         // TODO Instead of applying two styles, compose the styles then apply
                         space_line.push_str(space_style.apply(square_style.apply(square)).as_str());
