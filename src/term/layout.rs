@@ -38,12 +38,20 @@ impl NodeTty {
 }
 
 impl CalculatedSizeTty {
-    pub fn width(&self) -> u32 {
+    pub fn width32(&self) -> u32 {
         self.0.x
     }
 
-    pub fn height(&self) -> u32 {
+    pub fn height32(&self) -> u32 {
         self.0.y
+    }
+
+    pub fn width(&self) -> usize {
+        self.0.x as usize
+    }
+
+    pub fn height(&self) -> usize {
+        self.0.y as usize
     }
 }
 
@@ -182,8 +190,8 @@ pub fn render_layouts(
                 .collect();
         leaves.sort_by_cached_key(|leaf_info| (leaf_info.1.x as u32, leaf_info.1.y as u32));
 
-        let root_width = root_size.width() as usize;
-        let mut rows = vec![String::default(); root_size.height() as usize];
+        let root_width = root_size.width32() as usize;
+        let mut rows = vec![String::default(); root_size.height32() as usize];
         for leaf in leaves {
             let x_offset = leaf.1.x as usize;
             let y_offset = leaf.1.y as usize;

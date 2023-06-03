@@ -68,25 +68,25 @@ pub fn node_cursor_controls(
                         }
                         'j' | 's' => {
                             cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32);
-                            if cursor.y * 2 + 3 > scroll.y + size.height() {
-                                scroll.y = cursor.y * 2 + 3 - size.height()
+                            if cursor.y * 2 + 3 > scroll.y + size.height32() {
+                                scroll.y = cursor.y * 2 + 3 - size.height32()
                             }
                         }
                         'l' | 'd' => {
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
-                            if cursor.x * 3 + 4 > scroll.x + size.width() {
-                                scroll.x = cursor.x * 3 + 4 - size.width()
+                            if cursor.x * 3 + 4 > scroll.x + size.width32() {
+                                scroll.x = cursor.x * 3 + 4 - size.width32()
                             }
                         },
                         _ => {}
                     },
                     CrosstermEvent::Resize(..) => {
                         scroll.x = scroll.x
-                            .min((grid.width() * 3 + 1).saturating_sub(size.width()))
-                            .max((cursor.x * 3 + 4).saturating_sub(size.width()));
+                            .min((grid.width() * 3 + 1).saturating_sub(size.width32()))
+                            .max((cursor.x * 3 + 4).saturating_sub(size.width32()));
                         scroll.y = scroll.y
-                            .min((grid.height() * 2 + 1).saturating_sub(size.height()))
-                            .max((cursor.y * 2 + 3).saturating_sub(size.height()));
+                            .min((grid.height() * 2 + 1).saturating_sub(size.height32()))
+                            .max((cursor.y * 2 + 3).saturating_sub(size.height32()));
 
                     },
                     _ => {},

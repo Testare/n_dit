@@ -1,6 +1,6 @@
 use super::registry::GlyphRegistry;
 use super::render_square::render_square_2;
-use super::{render_square, NodeViewScroll, RenderNodeDataReadOnlyItem};
+use super::{render_square, RenderNodeDataReadOnlyItem, NodeViewScroll};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::node::NodeCursor;
@@ -121,23 +121,22 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|i, sprite| {
-        render_square_2(i, sprite, node_pieces, glyph_registry, &draw_config)
-    });
+    let sprite_map = grid
+        .point_map(|i, sprite| render_square_2(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
 
     let x_start = (scroll.x / 3) as usize;
     // The highest x value to be on screen, in character columns
-    let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width() as usize);
+    let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width32() as usize);
     let x_end = (x2 - 1) / 3;
     let skip_x = (scroll.x % 3) as usize; // Number of character columns to skip on first grid column
     let drop_x = (3 - (x2 % 3)) % 3;
 
     let y_start = (scroll.y / 2) as usize;
-    let y_end = cmp::min(height, (scroll.y + size.height() / 2) as usize);
+    let y_end = cmp::min(height, (scroll.y + size.height32() / 2) as usize);
     let skip_y = (scroll.y % 2) as usize;
-    let keep_last_space = skip_y + size.height() as usize % 2 == 0;
+    let keep_last_space = skip_y + size.height32() as usize % 2 == 0;
 
     /*
         let mut action_type = 1;
@@ -192,8 +191,7 @@ pub fn render_grid(
                 let border_y_range = if y == 0 { 0..=0 } else { y - 1..=y };
 
                 let render_left_border = x != x_start || skip_x == 0;
-                let render_half_space =
-                    (x == x_start && skip_x == 2) || (x == x_end && drop_x == 1);
+                let render_half_space = (x == x_start && skip_x == 2) || (x == x_end && drop_x == 1);
                 let render_full_space = x != x_end || drop_x == 0; // && (x != x_start || skip_x != 2), but the "else" block handles that case
 
                 if render_left_border {
@@ -221,11 +219,11 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                                                  &available_moves,
-                                                                  action_type,
-                                                                  state,
+                                                                &available_moves,
+                                                                action_type,
+                                                                state,
 
-                                          */
+                                        */
                             &border_x_range,
                             &(y..=y),
                         );
@@ -241,10 +239,10 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                          &available_moves,
-                                          action_type,
-                                          state,
-                                          */
+                                            &available_moves,
+                                            action_type,
+                                            state,
+                                            */
                             &(x..=x),
                             &border_y_range,
                         );
@@ -262,10 +260,8 @@ pub fn render_grid(
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
-                        let (square_style, square) = sprite_map
-                            .get(&pt)
-                            .map(|(style, square)| (style, square.as_ref()))
-                            .unwrap_or_else(|| {
+                        let (square_style, square) =
+                            sprite_map.get(&pt).map(|(style, square)| (style, square.as_ref())).unwrap_or_else(|| {
                                 if grid.square_is_closed(pt) {
                                     (&UiFormat::NONE, CLOSED_SQUARE)
                                 } else {
@@ -274,17 +270,12 @@ pub fn render_grid(
                             });
                         if square.chars().count() == 1 {
                             space_line.push_str(
-                                space_style
-                                    .apply(square_style.apply(draw_config.half_char()))
-                                    .as_str(),
+                                space_style.apply(square_style.apply(draw_config.half_char())).as_str(),
                             );
                         } else {
                             // Whether we are getting the left half or the right half
                             let char_index = if x == x_start { 1 } else { 0 };
-                            let half_char = square
-                                .chars()
-                                .nth(char_index)
-                                .expect("there should be at least 2 characters");
+                            let half_char = square.chars().nth(char_index).expect("there should be at least 2 characters");
 
                             space_line.push_str(
                                 space_style.apply(square_style.apply(half_char)).as_str(),
@@ -296,33 +287,28 @@ pub fn render_grid(
                         let border_style = border_style_for(
                             node_cursor,
                             &draw_config, /*
-                                                                  &available_moves,
-                                                                  action_type,
-                                                                  state,
-                                          */
+                                                                &available_moves,
+                                                                action_type,
+                                                                state,
+                                        */
                             &(x..=x),
                             &border_y_range,
                         );
                         border_line.push_str(
                             border_style
-                                .apply(
-                                    BorderType::of(right1, right2).horizontal_border(&draw_config),
-                                )
+                                .apply(BorderType::of(right1, right2).horizontal_border(&draw_config))
                                 .as_str(),
                         );
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
-                        let (square_style, square) = sprite_map
-                            .get(&pt)
-                            .map(|(style, square)| (style, square.as_str()))
-                            .unwrap_or_else(|| {
-                                if grid.square_is_closed(pt) {
-                                    (&UiFormat::NONE, CLOSED_SQUARE)
-                                } else {
-                                    (&UiFormat::NONE, OPEN_SQUARE)
-                                }
-                            });
+                        let (square_style, square) = sprite_map.get(&pt).map(|(style, square)| (style, square.as_str())).unwrap_or_else(|| {
+                            if grid.square_is_closed(pt) {
+                                (&UiFormat::NONE, CLOSED_SQUARE)
+                            } else {
+                                (&UiFormat::NONE, OPEN_SQUARE)
+                            }
+                        });
                         // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                         // TODO Instead of applying two styles, compose the styles then apply
                         space_line.push_str(space_style.apply(square_style.apply(square)).as_str());
@@ -335,7 +321,7 @@ pub fn render_grid(
     space_lines.truncate(height); // Still used for when the height isn't specified
     Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
         .skip(skip_y)
-        .take(size.height() as usize)
+        .take(size.height32() as usize)
         .collect()
 }
 

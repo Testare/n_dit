@@ -27,7 +27,19 @@ struct Curio {
     card: Entity,
 }
 
-#[derive(Clone, Component, FromReflect, Reflect)]
+#[derive(Component, Debug, Deref, FromReflect, Reflect)]
+pub struct Actions(Vec<Action>);
+
+#[derive(Debug, FromReflect, Reflect, )]
+pub struct Action {
+    pub name: String,
+    pub range: usize,
+    // effect
+    // desc
+}
+    
+
+#[derive(Clone, Component, Debug, FromReflect, Reflect)]
 pub enum Team {
     Enemy,
     Player,
@@ -38,5 +50,11 @@ impl NodePiece {
         NodePiece {
             display_name: display_name.to_owned(),
         }
+    }
+}
+
+impl Actions {
+    pub fn new(actions: Vec<Action>) -> Self {
+        Actions(actions)
     }
 }

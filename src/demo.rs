@@ -1,5 +1,5 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
-use game_core::prelude::*;
+use game_core::{prelude::*, Actions, Action};
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
 use crate::term::node::{NodeCursor, ShowNode};
@@ -23,7 +23,17 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .with_children(|node| {
             let node_id = node.parent_entity();
 
-            node.spawn((Mon(500), NodePiece::new("curio:hack"), Team::Player))
+            node.spawn((
+                NodePiece::new("curio:hack"), 
+                Team::Player,
+                Actions::new(vec![
+                    Action {
+                        name: "Slice".to_owned(),
+                        range: 1,
+                    }
+                ])
+
+            ))
                 .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
             node.spawn((Mon(700), NodePiece::new("pickup:card")))
                 .add_to_grid(node_id, vec![(3, 3)]);
