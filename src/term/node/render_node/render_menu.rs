@@ -14,7 +14,6 @@ pub fn render_menu(
         .grid
         .item_at(**node_render_data.node_cursor)
     {
-        log::debug!("bounds: {:?}", bounds);
         let (selected_piece, team, actions) = node_pieces
             .get(selected_entity)
             .expect("entities in entity grid should have NodePiece components");

@@ -129,7 +129,7 @@ pub fn render_grid(
 
     let x_start = (scroll.x / 3) as usize;
     // The highest x value to be on screen, in character columns
-    let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width32() as usize);
+    let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width());
     let x_end = (x2 - 1) / 3;
     let skip_x = (scroll.x % 3) as usize; // Number of character columns to skip on first grid column
     let drop_x = (3 - (x2 % 3)) % 3;
@@ -137,7 +137,7 @@ pub fn render_grid(
     let y_start = (scroll.y / 2) as usize;
     let y_end = cmp::min(height, (scroll.y + size.height32() / 2) as usize);
     let skip_y = (scroll.y % 2) as usize;
-    let keep_last_space = skip_y + size.height32() as usize % 2 == 0;
+    let keep_last_space = skip_y + size.height() % 2 == 0;
 
     /*
         let mut action_type = 1;
@@ -335,7 +335,7 @@ pub fn render_grid(
     space_lines.truncate(height); // Still used for when the height isn't specified
     Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
         .skip(skip_y)
-        .take(size.height32() as usize)
+        .take(size.height())
         .collect()
 }
 

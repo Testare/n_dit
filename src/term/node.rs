@@ -5,12 +5,12 @@ use crate::term::node::render_node::NodeViewScroll;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
 use bevy::reflect::{FromReflect, Reflect};
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind, KeyModifiers, MouseButton};
 use game_core::{EntityGrid, Node};
 
 use self::render_node::{GlyphRegistry, GridUi};
 
-use super::layout::CalculatedSizeTty;
+use super::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use super::render::RenderTtySet;
 
 #[derive(Debug)]
@@ -46,11 +46,11 @@ pub struct NodeCursor(pub UVec2);
 
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid)>,
-    mut grid_ui_view: Query<(&CalculatedSizeTty, &mut NodeViewScroll), With<GridUi>>,
+    mut grid_ui_view: Query<(&CalculatedSizeTty, &GlobalTranslationTty, &mut NodeViewScroll), With<GridUi>>,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
     for (mut cursor, grid) in node_cursors.iter_mut() {
-        if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
+        if let Ok((size, translation, mut scroll)) = grid_ui_view.get_single_mut() {
             for input in inputs.iter() {
                 match input {
                     CrosstermEvent::Key(KeyEvent {
@@ -92,6 +92,40 @@ pub fn node_cursor_controls(
                             .y
                             .min((grid.height() * 2 + 1).saturating_sub(size.height32()))
                             .max((cursor.y * 2 + 3).saturating_sub(size.height32()));
+                    },
+                    CrosstermEvent::Mouse(event@MouseEvent {
+                        kind,
+                        column,
+                        row,
+                        modifiers,
+                    }) => {
+                        let contained = size.contains_mouse_event(translation, event);
+                        log::debug!("Mouse event! {} {:?}", if contained { "(contained)" } else { "" }, event);
+                        if contained {
+                            match *kind {
+                                MouseEventKind::Moved if modifiers.contains ( KeyModifiers::SHIFT) => {
+                                    let new_x = ((*column as u32) + scroll.x - translation.x)/3;
+                                    let new_y = ((*row as u32) + scroll.y - translation.y)/2;
+                                    if new_x < grid.width() && new_y < grid.height() {
+                                        cursor.x = new_x;
+                                        cursor.y = new_y;
+                                    }
+                                },
+                                MouseEventKind::Down(MouseButton::Left) => {
+                                    let new_x = ((*column as u32) + scroll.x - translation.x)/3;
+                                    let new_y = ((*row as u32) + scroll.y - translation.y)/2;
+                                    if new_x < grid.width() && new_y < grid.height() {
+                                        if cursor.x == new_x && cursor.y == new_y {
+                                            log::debug!("ACTIVATE!")
+                                        }
+                                        cursor.x = new_x;
+                                        cursor.y = new_y;
+                                    }
+
+                                }
+                                _ => {}
+                            }
+                        }
                     }
                     _ => {}
                 }
