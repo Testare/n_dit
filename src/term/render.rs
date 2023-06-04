@@ -2,7 +2,10 @@ use std::io::{stdout, Write};
 
 use super::TerminalWindow;
 use crate::term::prelude::*;
-use bevy::{core::FrameCount, ecs::system::{EntityCommands, EntityCommand}};
+use bevy::{
+    core::FrameCount,
+    ecs::system::{EntityCommand, EntityCommands},
+};
 use itertools::{EitherOrBoth, Itertools};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -158,19 +161,22 @@ pub trait UpdateRendering {
 
 struct UpdateRenderCommand(Vec<String>);
 
-impl <'w, 's, 'a> UpdateRendering for EntityCommands<'w, 's, 'a> {
+impl<'w, 's, 'a> UpdateRendering for EntityCommands<'w, 's, 'a> {
     fn update_rendering(&mut self, rendering: Vec<String>) -> &mut Self {
         self.add(UpdateRenderCommand(rendering));
         self
     }
 }
 
-impl <'w, 's, 'a> UpdateRendering for Option<EntityCommands<'w, 's, 'a>> {
+impl<'w, 's, 'a> UpdateRendering for Option<EntityCommands<'w, 's, 'a>> {
     fn update_rendering(&mut self, rendering: Vec<String>) -> &mut Self {
         if let Some(entity) = self {
             entity.add(UpdateRenderCommand(rendering));
         } else {
-            log::warn!("Unable to update rendering for entity (Rendering: {:?})", rendering);
+            log::warn!(
+                "Unable to update rendering for entity (Rendering: {:?})",
+                rendering
+            );
         }
         self
     }
@@ -178,7 +184,10 @@ impl <'w, 's, 'a> UpdateRendering for Option<EntityCommands<'w, 's, 'a>> {
 
 impl EntityCommand for UpdateRenderCommand {
     fn write(self, id: Entity, world: &mut World) {
-        let frame_count = world.get_resource::<FrameCount>().expect("frame count needed for rendering").0;
+        let frame_count = world
+            .get_resource::<FrameCount>()
+            .expect("frame count needed for rendering")
+            .0;
         let mut entity = world.entity_mut(id);
         if let Some(mut tr) = entity.get_mut::<TerminalRendering>() {
             if tr.rendering().iter().ne(self.0.iter()) {
@@ -187,6 +196,5 @@ impl EntityCommand for UpdateRenderCommand {
         } else {
             entity.insert(TerminalRendering::new(self.0, frame_count));
         }
-
     }
 }

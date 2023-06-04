@@ -5,7 +5,7 @@ use crate::term::node::render_node::NodeViewScroll;
 use crate::term::prelude::*;
 use crate::term::{TerminalFocusMode, TerminalWindow};
 use bevy::reflect::{FromReflect, Reflect};
-use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind, KeyModifiers, MouseButton};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use game_core::{EntityGrid, Node};
 
 use self::render_node::{GlyphRegistry, GridUi};
@@ -48,7 +48,14 @@ pub struct NodeCursor(pub UVec2);
 
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid)>,
-    mut grid_ui_view: Query<(&CalculatedSizeTty, &GlobalTranslationTty, &mut NodeViewScroll), With<GridUi>>,
+    mut grid_ui_view: Query<
+        (
+            &CalculatedSizeTty,
+            &GlobalTranslationTty,
+            &mut NodeViewScroll,
+        ),
+        With<GridUi>,
+    >,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
     for (mut cursor, grid) in node_cursors.iter_mut() {
@@ -94,27 +101,31 @@ pub fn node_cursor_controls(
                             .y
                             .min((grid.height() * 2 + 1).saturating_sub(size.height32()))
                             .max((cursor.y * 2 + 3).saturating_sub(size.height32()));
-                    },
-                    CrosstermEvent::Mouse(event@MouseEvent {
-                        kind,
-                        column,
-                        row,
-                        modifiers,
-                    }) => {
+                    }
+                    CrosstermEvent::Mouse(
+                        event @ MouseEvent {
+                            kind,
+                            column,
+                            row,
+                            modifiers,
+                        },
+                    ) => {
                         let grid_contained = size.contains_mouse_event(translation, event);
                         if grid_contained {
                             match *kind {
-                                MouseEventKind::Moved if modifiers.contains ( KeyModifiers::SHIFT) => {
-                                    let new_x = ((*column as u32) + scroll.x - translation.x)/3;
-                                    let new_y = ((*row as u32) + scroll.y - translation.y)/2;
+                                MouseEventKind::Moved
+                                    if modifiers.contains(KeyModifiers::SHIFT) =>
+                                {
+                                    let new_x = ((*column as u32) + scroll.x - translation.x) / 3;
+                                    let new_y = ((*row as u32) + scroll.y - translation.y) / 2;
                                     if new_x < grid.width() && new_y < grid.height() {
                                         cursor.x = new_x;
                                         cursor.y = new_y;
                                     }
-                                },
+                                }
                                 MouseEventKind::Down(MouseButton::Left) => {
-                                    let new_x = ((*column as u32) + scroll.x - translation.x)/3;
-                                    let new_y = ((*row as u32) + scroll.y - translation.y)/2;
+                                    let new_x = ((*column as u32) + scroll.x - translation.x) / 3;
+                                    let new_y = ((*row as u32) + scroll.y - translation.y) / 2;
                                     if new_x < grid.width() && new_y < grid.height() {
                                         if cursor.x == new_x && cursor.y == new_y {
                                             log::debug!("Click again on selected square")
@@ -123,7 +134,6 @@ pub fn node_cursor_controls(
                                             cursor.y = new_y;
                                         }
                                     }
-
                                 }
                                 _ => {}
                             }

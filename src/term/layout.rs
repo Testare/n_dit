@@ -54,15 +54,19 @@ impl CalculatedSizeTty {
         self.0.y as usize
     }
 
-    pub fn contains_mouse_event(&self, translation: &GlobalTranslationTty, event: &crossterm::event::MouseEvent) -> bool {
+    pub fn contains_mouse_event(
+        &self,
+        translation: &GlobalTranslationTty,
+        event: &crossterm::event::MouseEvent,
+    ) -> bool {
         // TODO better pattern would to probably make "LayoutEvents" for mouse events
         // For example, using this does not take into account if there are multiple render layouts that aren't being rendered
         // It also insulates us from crossterm changing how things work
         let (column32, row32) = (event.column as u32, event.row as u32);
-        translation.x <= column32 
+        translation.x <= column32
             && column32 < (translation.x + self.width32())
             && translation.y <= row32
-            && row32 < (translation.y  + self.height32()) 
+            && row32 < (translation.y + self.height32())
     }
 }
 

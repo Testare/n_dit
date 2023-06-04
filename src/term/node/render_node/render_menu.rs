@@ -3,7 +3,7 @@ use crate::term::layout::CalculatedSizeTty;
 use super::RenderNodeDataReadOnlyItem;
 use bevy::ecs::query::WorldQuery;
 use game_core::node::NodePiece;
-use game_core::{prelude::*, Actions, Team, Mon, Description, MovementSpeed, MaximumSize, Curio};
+use game_core::{prelude::*, Actions, Curio, Description, MaximumSize, Mon, MovementSpeed, Team};
 use pad::PadStr;
 
 #[derive(WorldQuery)]
@@ -37,21 +37,24 @@ pub fn render_menu(
             // selected.team.map(|_| "".to_owned()),
         ];
 
-        if let Some(name) = selected.curio.map(Curio::name).or_else(|| selected.mon.and(Some("Mon"))).map(str::to_owned) {
+        if let Some(name) = selected
+            .curio
+            .map(Curio::name)
+            .or_else(|| selected.mon.and(Some("Mon")))
+            .map(str::to_owned)
+        {
             unbound_vec.push(name);
         }
 
         if selected.max_size.is_some() || selected.speed.is_some() {
-
             unbound_vec.push(format!("{0:-<1$}", "-Stats", size.width()));
-            if let Some(max_size) = selected.max_size{
+            if let Some(max_size) = selected.max_size {
                 let size = node_render_data.grid.len_of(selected_entity);
                 unbound_vec.push(format!("Size:  {}/{}", size, **max_size));
             }
             if let Some(speed) = selected.speed {
                 unbound_vec.push(format!("Speed: {}", **speed));
             }
-
         }
         if let Some(actions) = selected.actions {
             unbound_vec.push(format!("{0:-<1$}", "-Actions", size.width()));
@@ -65,7 +68,6 @@ pub fn render_menu(
             let wrapped_desc = textwrap::wrap(description.as_str(), size.width());
             for desc_line in wrapped_desc.into_iter() {
                 unbound_vec.push(desc_line.into_owned());
-
             }
         }
         unbound_vec

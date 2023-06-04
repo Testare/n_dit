@@ -120,9 +120,8 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|i, sprite| {
-        render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
-    });
+    let sprite_map = grid
+        .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
 

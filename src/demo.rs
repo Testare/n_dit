@@ -1,5 +1,5 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
-use game_core::{prelude::*, Action, Actions, Description, MaximumSize, MovementSpeed, Curio};
+use game_core::{prelude::*, Action, Actions, Curio, Description, MaximumSize, MovementSpeed};
 use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
 
 use crate::term::node::{NodeCursor, ShowNode};
