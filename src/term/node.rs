@@ -8,6 +8,7 @@ use bevy::reflect::{FromReflect, Reflect};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use game_core::{EntityGrid, Node};
 
+use self::render_node::render_menu::calculate_action_menu_style;
 use self::render_node::{GlyphRegistry, GridUi};
 
 use super::layout::{CalculatedSizeTty, GlobalTranslationTty};
@@ -24,21 +25,31 @@ pub struct NodeFocus(pub Option<Entity>);
 #[derive(Default)]
 pub struct NodePlugin;
 
+#[derive(Component, Debug, Deref)]
+pub struct SelectedEntity(pub Option<Entity>);
+
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
             .init_resource::<NodeFocus>()
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
-            .add_system(node_cursor_controls.after(RenderTtySet::CalculateLayout))
+            .add_system(node_cursor_controls.before(RenderTtySet::CalculateLayout))
+            .add_system(
+                (calculate_action_menu_style)
+                    .in_set(OnUpdate(TerminalFocusMode::Node))
+                    .in_set(RenderTtySet::PreCalculateLayout),
+            )
             .add_systems(
                 (
                     render_node::render_grid_system,
                     render_node::render_menu_system,
                     render_node::render_title_bar_system,
+                    render_node::render_menu::action_menu,
+                    render_node::render_menu::description,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .in_set(RenderTtySet::RenderComponents),
+                    .in_set(RenderTtySet::PostCalculateLayout),
             );
     }
 }
@@ -47,7 +58,7 @@ impl Plugin for NodePlugin {
 pub struct NodeCursor(pub UVec2);
 
 pub fn node_cursor_controls(
-    mut node_cursors: Query<(&mut NodeCursor, &EntityGrid)>,
+    mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedEntity)>,
     mut grid_ui_view: Query<
         (
             &CalculatedSizeTty,
@@ -58,7 +69,7 @@ pub fn node_cursor_controls(
     >,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
-    for (mut cursor, grid) in node_cursors.iter_mut() {
+    for (mut cursor, grid, mut selected_entity) in node_cursors.iter_mut() {
         if let Ok((size, translation, mut scroll)) = grid_ui_view.get_single_mut() {
             for input in inputs.iter() {
                 match input {
@@ -143,6 +154,10 @@ pub fn node_cursor_controls(
                 }
             }
         }
+        let now_selected_entity = grid.item_at(**cursor);
+        if selected_entity.0 != now_selected_entity {
+            selected_entity.0 = now_selected_entity;
+        }
     }
 }
 
@@ -151,12 +166,15 @@ pub fn create_node_ui(
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
     mut node_focus: ResMut<NodeFocus>,
-    nodes_without_cursors: Query<(), (With<Node>, Without<NodeCursor>)>,
+    nodes_without_cursors: Query<&EntityGrid, (With<Node>, Without<NodeCursor>)>,
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode(node_id)) = show_node.iter().next() {
-        if nodes_without_cursors.contains(*node_id) {
-            commands.entity(*node_id).insert(NodeCursor::default());
+        if let Ok(grid) = nodes_without_cursors.get(*node_id) {
+            commands.entity(*node_id).insert((
+                NodeCursor::default(),
+                SelectedEntity(grid.item_at(default())),
+            ));
         }
         if (*node_focus).is_none() {
             let render_root = commands
@@ -197,17 +215,61 @@ pub fn create_node_ui(
                         Name::new("Node Content Pane"),
                     ))
                     .with_children(|content_pane| {
-                        content_pane.spawn((
-                            StyleTty(taffy::prelude::Style {
-                                size: Size {
-                                    width: Dimension::Points(13.),
-                                    height: Dimension::Auto,
-                                },
-                                ..default()
-                            }),
-                            Name::new("Menu Bar"),
-                            render_node::RenderMenu,
-                        ));
+                        content_pane
+                            .spawn((
+                                StyleTty(taffy::prelude::Style {
+                                    size: Size {
+                                        width: Dimension::Points(13.),
+                                        height: Dimension::Auto,
+                                    },
+                                    flex_direction: FlexDirection::Column,
+                                    ..default()
+                                }),
+                                Name::new("Menu Bar"),
+                            ))
+                            .with_children(|menu_bar| {
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        display: Display::None,
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Auto,
+                                        },
+                                        flex_grow: 3.0,
+                                        ..default()
+                                    }),
+                                    render_node::RenderMenu,
+                                    Name::new("OldMenu"),
+                                ));
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        display: Display::None,
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Points(0.0),
+                                        },
+                                        margin: Rect {
+                                            bottom: Dimension::Points(1.0),
+                                            ..Default::default()
+                                        },
+                                        ..default()
+                                    }),
+                                    render_node::render_menu::MenuUiActions,
+                                    Name::new("Actions Menu"),
+                                ));
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Points(10.0),
+                                        },
+                                        flex_grow: 1.0,
+                                        ..default()
+                                    }),
+                                    render_node::render_menu::MenuUiDescription,
+                                    Name::new("DescriptionMenu"),
+                                ));
+                            });
 
                         content_pane.spawn((
                             StyleTty(taffy::prelude::Style {

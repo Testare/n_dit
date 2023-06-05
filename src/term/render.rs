@@ -11,8 +11,9 @@ use itertools::{EitherOrBoth, Itertools};
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum RenderTtySet {
     AdjustLayoutStyle,
+    PreCalculateLayout,
     CalculateLayout,
-    RenderComponents,
+    PostCalculateLayout,
     RenderLayouts,
     RenderToTerminal,
 }
@@ -56,11 +57,15 @@ impl TerminalRendering {
 
 impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(write_rendering_to_terminal.in_set(RenderTtySet::RenderToTerminal))
-            .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
-            .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::RenderComponents))
-            .configure_set(RenderTtySet::RenderComponents.before(RenderTtySet::RenderLayouts))
-            .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
+        app.add_systems(
+            (apply_system_buffers, write_rendering_to_terminal)
+                .in_set(RenderTtySet::RenderToTerminal),
+        )
+        .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
+        .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
+        .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))
+        .configure_set(RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts))
+        .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
     }
 }
 

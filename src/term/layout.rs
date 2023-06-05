@@ -264,3 +264,17 @@ pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<En
         vec![root]
     }
 }
+
+pub trait FitToSize {
+    fn fit_to_size(self, size: &CalculatedSizeTty) -> Self;
+}
+
+impl FitToSize for Vec<String> {
+    fn fit_to_size(mut self, size: &CalculatedSizeTty) -> Self {
+        self.truncate(size.height());
+        for line in self.iter_mut() {
+            *line = line.with_exact_width(size.width())
+        }
+        self
+    }
+}

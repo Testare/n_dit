@@ -1,6 +1,6 @@
 mod registry;
 mod render_grid;
-mod render_menu;
+pub mod render_menu;
 mod render_square;
 
 use bevy::ecs::query::WorldQuery;
@@ -16,7 +16,7 @@ use game_core::{EntityGrid, NodePiece, Team};
 
 use self::render_menu::NodePieceMenuData;
 
-use super::NodeCursor;
+use super::{NodeCursor, SelectedEntity};
 
 #[derive(Component)]
 pub struct GridUi;
@@ -39,6 +39,7 @@ pub struct RenderNodeData {
     entity: Entity,
     grid: &'static EntityGrid,
     node_cursor: &'static NodeCursor,
+    selected_entity: &'static SelectedEntity,
 }
 
 pub fn render_grid_system(

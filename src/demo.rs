@@ -37,8 +37,12 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 MovementSpeed(2),
             ))
             .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
-            node.spawn((Mon(700), NodePiece::new("pickup:card")))
-                .add_to_grid(node_id, vec![(3, 3)]);
+            node.spawn((
+                Mon(700),
+                NodePiece::new("pickup:card"),
+                Description::new("A card! Get this card! /it;s a good card! A very good card!"),
+            ))
+            .add_to_grid(node_id, vec![(3, 3)]);
 
             node.spawn((Mon(500), NodePiece::new("curio:death"), Team::Enemy))
                 .add_to_grid(node_id, vec![(2, 5)]);
