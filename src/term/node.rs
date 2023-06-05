@@ -35,13 +35,14 @@ impl Plugin for NodePlugin {
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(node_cursor_controls.before(RenderTtySet::CalculateLayout))
-            .add_system(
-                (calculate_action_menu_style)
+            .add_systems(
+                (calculate_action_menu_style,)
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
             )
             .add_systems(
                 (
+                    adjust_scroll.before(render_node::render_grid_system),
                     render_node::render_grid_system,
                     render_node::render_menu_system,
                     render_node::render_title_bar_system,
@@ -57,20 +58,47 @@ impl Plugin for NodePlugin {
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
+pub fn adjust_scroll(
+    mut node_cursors: Query<(&NodeCursor, &EntityGrid)>,
+    mut grid_ui_view: Query<
+        (
+            &CalculatedSizeTty,
+            &mut NodeViewScroll,
+        ),
+        With<GridUi>,
+    >,
+) {
+
+    for (cursor, grid) in node_cursors.iter_mut() {
+        if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
+                scroll.x = scroll
+                    .x
+                    .min(cursor.x * 3) // Keeps node cursor from going off the left
+                    .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
+                    .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
+                scroll.y = scroll
+                    .y
+                    .min(cursor.y * 2) // Keeps node cursor from going off the right
+                    .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
+                    .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
+            }
+        }
+}
+
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedEntity)>,
     mut grid_ui_view: Query<
         (
             &CalculatedSizeTty,
             &GlobalTranslationTty,
-            &mut NodeViewScroll,
+            &NodeViewScroll,
         ),
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
     for (mut cursor, grid, mut selected_entity) in node_cursors.iter_mut() {
-        if let Ok((size, translation, mut scroll)) = grid_ui_view.get_single_mut() {
+        if let Ok((size, translation, scroll)) = grid_ui_view.get_single_mut() {
             for input in inputs.iter() {
                 match input {
                     CrosstermEvent::Key(KeyEvent {
@@ -79,40 +107,18 @@ pub fn node_cursor_controls(
                     }) => match input_char {
                         'k' | 'w' => {
                             cursor.y = cursor.y.saturating_sub(1);
-                            if cursor.y * 2 < scroll.y {
-                                scroll.y = cursor.y * 2;
-                            }
                         }
                         'h' | 'a' => {
                             cursor.x = cursor.x.saturating_sub(1);
-                            if cursor.x * 3 < scroll.x {
-                                scroll.x = cursor.x * 3;
-                            }
                         }
                         'j' | 's' => {
                             cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32);
-                            if cursor.y * 2 + 3 > scroll.y + size.height32() {
-                                scroll.y = cursor.y * 2 + 3 - size.height32()
-                            }
                         }
                         'l' | 'd' => {
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
-                            if cursor.x * 3 + 4 > scroll.x + size.width32() {
-                                scroll.x = cursor.x * 3 + 4 - size.width32()
-                            }
                         }
                         _ => {}
                     },
-                    CrosstermEvent::Resize(..) => {
-                        scroll.x = scroll
-                            .x
-                            .min((grid.width() * 3 + 1).saturating_sub(size.width32()))
-                            .max((cursor.x * 3 + 4).saturating_sub(size.width32()));
-                        scroll.y = scroll
-                            .y
-                            .min((grid.height() * 2 + 1).saturating_sub(size.height32()))
-                            .max((cursor.y * 2 + 3).saturating_sub(size.height32()));
-                    }
                     CrosstermEvent::Mouse(
                         event @ MouseEvent {
                             kind,

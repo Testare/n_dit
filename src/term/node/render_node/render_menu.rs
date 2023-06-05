@@ -22,6 +22,22 @@ pub struct NodePieceMenuData {
     max_size: Option<&'static MaximumSize>,
 }
 
+
+
+#[derive(Component, Debug)]
+pub struct MenuUiLabel;
+
+#[derive(Component, Debug)]
+pub struct MenuUiStats;
+
+#[derive(Component, Debug)]
+pub struct MenuUiActions;
+
+#[derive(Component, Debug)]
+pub struct MenuUiDescription;
+
+
+
 pub fn render_menu(
     node_render_data: &RenderNodeDataReadOnlyItem,
     node_pieces: &Query<NodePieceMenuData>,
@@ -89,12 +105,6 @@ pub fn render_menu(
     // Get Entity from that position
     // Determine if it is a curio (friendly or not), pickup, or access point
 }
-
-#[derive(Component, Debug)]
-pub struct MenuUiActions;
-
-#[derive(Component, Debug)]
-pub struct MenuUiDescription;
 
 pub fn calculate_action_menu_style(
     node_data: Query<RenderNodeData>,
