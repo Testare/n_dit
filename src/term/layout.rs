@@ -210,7 +210,6 @@ pub fn render_layouts(
         for leaf in leaves {
             let x_offset = leaf.1.x as usize;
             let y_offset = leaf.1.y as usize;
-            log::debug!("Layout element at {:?} - len {}", leaf.1, leaf.0.rendering().len());
             for (i, child_row) in leaf.0.rendering().iter().enumerate() {
                 let row = &mut rows[i + y_offset];
                 let row_len = UnicodeWidthStr::width(row.as_str());
