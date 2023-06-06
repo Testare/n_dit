@@ -8,7 +8,7 @@ use bevy::reflect::{FromReflect, Reflect};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use game_core::{EntityGrid, Node};
 
-use self::render_node::render_menu::calculate_action_menu_style;
+use self::render_node::render_menu::{calculate_action_menu_style, MenuUiActions, Submenu};
 use self::render_node::{GlyphRegistry, GridUi};
 
 use super::layout::{CalculatedSizeTty, GlobalTranslationTty};
@@ -35,18 +35,19 @@ impl Plugin for NodePlugin {
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(node_cursor_controls.before(RenderTtySet::CalculateLayout))
-            .add_systems(
+            .add_systems(MenuUiActions::get_systems())
+            /*.add_systems(
                 (calculate_action_menu_style,)
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
-            )
+            )*/
             .add_systems(
                 (
                     adjust_scroll.before(render_node::render_grid_system),
                     render_node::render_grid_system,
                     render_node::render_menu_system,
                     render_node::render_title_bar_system,
-                    render_node::render_menu::action_menu,
+                    // render_node::render_menu::action_menu,
                     render_node::render_menu::description,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))

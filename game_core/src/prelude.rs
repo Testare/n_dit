@@ -41,6 +41,7 @@ pub use bevy::prelude::{
     States,
     State,
     SystemSet,
+    SystemParamFunction,
     UVec2,
     Vec2,
     With,
