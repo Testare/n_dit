@@ -1,13 +1,23 @@
+mod render_square;
+
 use super::registry::GlyphRegistry;
-use super::{render_square, NodeUiQReadOnlyItem, NodeViewScroll};
+use super::{NodeUiQReadOnlyItem, NodeFocus, NodeUiQ};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::node_ui::NodeCursor;
+use crate::term::render::UpdateRendering;
 use bevy::prelude::*;
-use game_core::{NodePiece, Team};
+use game_core::{NodePiece, Team, EntityGrid};
 use itertools::Itertools;
 use std::cmp;
 use std::ops::RangeInclusive;
+
+
+#[derive(Component)]
+pub struct GridUi;
+
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct NodeViewScroll(pub UVec2);
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
@@ -102,6 +112,48 @@ pub fn border_style_for(
     }
 }
 
+pub fn adjust_scroll(
+    mut node_cursors: Query<(&NodeCursor, &EntityGrid)>,
+    mut grid_ui_view: Query<(&CalculatedSizeTty, &mut NodeViewScroll), With<GridUi>>,
+) {
+    for (cursor, grid) in node_cursors.iter_mut() {
+        if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
+            scroll.x = scroll
+                .x
+                .min(cursor.x * 3) // Keeps node cursor from going off the left
+                .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
+                .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
+            scroll.y = scroll
+                .y
+                .min(cursor.y * 2) // Keeps node cursor from going off the right
+                .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
+                .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
+        }
+    }
+}
+
+pub fn render_grid_system(
+    mut commands: Commands,
+    node_data: Query<NodeUiQ, With<game_core::Node>>,
+    node_pieces: Query<(&NodePiece, Option<&Team>)>,
+    glyph_registry: Res<GlyphRegistry>,
+    render_grid_q: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll), With<GridUi>>,
+    node_focus: Res<NodeFocus>,
+) {
+    if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
+        if let Ok((render_grid_id, size, scroll)) = render_grid_q.get_single() {
+            let grid_rendering =
+                render_grid(size, scroll, &node_data, &node_pieces, &glyph_registry);
+
+            commands
+                .get_entity(render_grid_id)
+                .unwrap()
+                .update_rendering(grid_rendering);
+        }
+    }
+}
+
+
 pub fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &NodeViewScroll,
@@ -109,7 +161,6 @@ pub fn render_grid(
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
-    // TODO Guardrail for when size is too small
     // TODO Break DrawConfiguration down into parts and resources
 
     let grid = node_data.grid;
@@ -121,7 +172,7 @@ pub fn render_grid(
     let grid_map = grid.number_map();
 
     let sprite_map = grid
-        .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
+        .point_map(|i, sprite| render_square::render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
 

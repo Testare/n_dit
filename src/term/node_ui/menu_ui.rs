@@ -1,5 +1,5 @@
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
-use crate::term::node_ui::render_node::NodeUiQ;
+use crate::term::node_ui::NodeUiQ;
 use crate::term::node_ui::NodeFocus;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 use crate::term::TerminalFocusMode;
@@ -152,16 +152,23 @@ impl SimpleSubmenu for MenuUiActions {
 
 impl NodeUi for MenuUiDescription {
     fn style_update_system() -> Option<SystemAppConfig> {
-        Some((| node_data: Query<NodeUiQ>,
+        let mut last_nonzero_width: usize = 13; // TODO define constant for default width
+
+        Some((move | node_data: Query<NodeUiQ>,
             node_focus: Res<NodeFocus>,
             node_pieces: Query<NodePieceQ>,
-            mut ui: Query<(&mut StyleTty, &CalculatedSizeTty), With<MenuUiDescription>> | {
+            mut ui: Query<(&mut StyleTty, &CalculatedSizeTty), With<MenuUiDescription>>
+            | {
+            
 
             if let Ok((mut style, size)) = ui.get_single_mut() {
+                if size.width() != 0 {
+                    last_nonzero_width = size.width();
+                }
                 let new_height = selected_piece_data(&node_data, node_focus, &node_pieces)
                     .and_then(|selected| {
                         // We use current size width here as an estimate, this might cause flickering if the menu changes width
-                        Some(textwrap::wrap(selected.description?.as_str(), size.width()).len() as f32 + 1.0)
+                        Some(textwrap::wrap(selected.description?.as_str(), last_nonzero_width).len() as f32 + 1.0)
                     })
                     .unwrap_or(0.0);
                 if Dimension::Points(new_height) != style.min_size.height {

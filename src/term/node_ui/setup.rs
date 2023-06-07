@@ -1,8 +1,9 @@
-use game_core::{prelude::*, EntityGrid, Node};
+use game_core::{EntityGrid, Node};
 
 use crate::term::{
+    prelude::*,
     layout::StyleTty,
-    node_ui::{render_node::NodeViewScroll, SelectedEntity},
+    node_ui::{SelectedEntity, grid_ui::{GridUi, NodeViewScroll}},
     TerminalWindow,
 };
 
@@ -35,7 +36,6 @@ pub fn create_node_ui(
                         ..default()
                     }),
                     Name::new("Node UI Root"),
-                    super::render_node::NodeUiRoot,
                     crate::term::layout::LayoutRoot,
                 ))
                 .with_children(|root| {
@@ -49,7 +49,7 @@ pub fn create_node_ui(
                             ..default()
                         }),
                         Name::new("Node Title Bar"),
-                        super::render_node::TitleBarUi,
+                        super::titlebar_ui::TitleBarUi,
                     ));
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
@@ -85,7 +85,7 @@ pub fn create_node_ui(
                                         },
                                         ..default()
                                     }),
-                                    super::render_node::render_menu::MenuUiLabel,
+                                    super::menu_ui::MenuUiLabel,
                                     Name::new("Menu Label"),
                                 ));
                                 menu_bar.spawn((
@@ -97,7 +97,7 @@ pub fn create_node_ui(
                                         },
                                         ..default()
                                     }),
-                                    super::render_node::render_menu::MenuUiStats,
+                                    super::menu_ui::MenuUiStats,
                                     Name::new("Menu Stats"),
                                 ));
                                 menu_bar.spawn((
@@ -109,7 +109,7 @@ pub fn create_node_ui(
                                         },
                                         ..default()
                                     }),
-                                    super::render_node::render_menu::MenuUiActions,
+                                    super::menu_ui::MenuUiActions,
                                     Name::new("Actions Menu"),
                                 ));
                                 menu_bar.spawn((
@@ -122,7 +122,7 @@ pub fn create_node_ui(
                                         flex_grow: 1.0,
                                         ..default()
                                     }),
-                                    super::render_node::render_menu::MenuUiDescription,
+                                    super::menu_ui::MenuUiDescription,
                                     Name::new("DescriptionMenu"),
                                 ));
                             });
@@ -141,7 +141,7 @@ pub fn create_node_ui(
                                 ..default()
                             }),
                             Name::new("Grid"),
-                            super::render_node::GridUi,
+                            GridUi,
                             NodeViewScroll::default(),
                         ));
                     });

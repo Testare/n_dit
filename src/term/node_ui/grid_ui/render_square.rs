@@ -1,4 +1,4 @@
-use super::registry::GlyphRegistry;
+use super::super::registry::GlyphRegistry;
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use game_core::prelude::*;
 use game_core::{NodePiece, Team};
