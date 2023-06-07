@@ -335,7 +335,6 @@ pub fn render_grid(
         .skip(skip_y)
         .take(size.height())
         .collect()
-    
 }
 
 fn intersection_for_pivot(

@@ -63,24 +63,6 @@ pub fn render_grid_system(
     }
 }
 
-pub fn render_menu_system(
-    mut commands: Commands,
-    node_data: Query<RenderNodeData, With<game_core::Node>>,
-    node_pieces: Query<NodePieceMenuData>,
-    render_menu: Query<(Entity, &CalculatedSizeTty), With<RenderMenu>>,
-    node_focus: Res<super::NodeFocus>,
-) {
-    if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
-        if let Ok((render_menu_id, size)) = render_menu.get_single() {
-            let menu_rendering = render_menu::render_menu(&node_data, &node_pieces, size);
-            commands
-                .get_entity(render_menu_id)
-                .unwrap()
-                .update_rendering(menu_rendering);
-        }
-    }
-}
-
 pub fn render_title_bar_system(
     mut commands: Commands,
     render_title_bar: Query<Entity, With<RenderTitleBar>>,

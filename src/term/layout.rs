@@ -84,7 +84,11 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     .chain()
                     .in_set(RenderTtySet::CalculateLayout),
             )
-            .add_systems((apply_system_buffers, render_layouts).chain().in_set(RenderTtySet::RenderLayouts));
+            .add_systems(
+                (apply_system_buffers, render_layouts)
+                    .chain()
+                    .in_set(RenderTtySet::RenderLayouts),
+            );
     }
 }
 
@@ -161,18 +165,16 @@ fn calculate_layouts(
         }
         if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
             taffy.compute_layout(**root, space.clone()).unwrap();
-            log::trace!(
+            log::debug!(
                 "Recalculated Layout of root {:?}",
                 taffy.layout(**root).unwrap()
             );
             update_layout_traversal(root_id, &children, UVec2::default(), &mut |id, offset| {
                 if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
                     let layout = taffy.layout(**node).unwrap();
-                    log::debug!(
-                        "{} layout: {:?}",
-                        name_opt.map(|name| name.as_str()).unwrap_or("Unnamed"),
-                        layout
-                    );
+                    if let Some(name) = name_opt {
+                        log::debug!("{} layout: {:?}", name.as_str(), layout);
+                    }
                     translation.0.x = layout.location.x as u32 + offset.x;
                     translation.0.y = layout.location.y as u32 + offset.y;
                     size.0.x = layout.size.width as u32;
@@ -211,6 +213,9 @@ pub fn render_layouts(
             let x_offset = leaf.1.x as usize;
             let y_offset = leaf.1.y as usize;
             for (i, child_row) in leaf.0.rendering().iter().enumerate() {
+                if i + y_offset >= root_size.height() {
+                    break;
+                }
                 let row = &mut rows[i + y_offset];
                 let row_len = UnicodeWidthStr::width(row.as_str());
                 let new_row_text = format!(

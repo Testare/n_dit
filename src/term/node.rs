@@ -8,7 +8,9 @@ use bevy::reflect::{FromReflect, Reflect};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use game_core::{EntityGrid, Node};
 
-use self::render_node::render_menu::{calculate_action_menu_style, MenuUiActions, Submenu};
+use self::render_node::render_menu::{
+    MenuUiActions, MenuUiDescription, MenuUiLabel, MenuUiStats, Submenu,
+};
 use self::render_node::{GlyphRegistry, GridUi};
 
 use super::layout::{CalculatedSizeTty, GlobalTranslationTty};
@@ -35,7 +37,10 @@ impl Plugin for NodePlugin {
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(node_cursor_controls.before(RenderTtySet::CalculateLayout))
-            .add_systems(MenuUiActions::get_systems())
+            .add_systems(MenuUiActions::get_ui_systems())
+            .add_systems(MenuUiLabel::get_ui_systems())
+            .add_systems(MenuUiStats::get_ui_systems())
+            .add_systems(MenuUiDescription::get_ui_systems())
             /*.add_systems(
                 (calculate_action_menu_style,)
                     .in_set(OnUpdate(TerminalFocusMode::Node))
@@ -45,10 +50,9 @@ impl Plugin for NodePlugin {
                 (
                     adjust_scroll.before(render_node::render_grid_system),
                     render_node::render_grid_system,
-                    render_node::render_menu_system,
                     render_node::render_title_bar_system,
                     // render_node::render_menu::action_menu,
-                    render_node::render_menu::description,
+                    // render_node::render_menu::description,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PostCalculateLayout),
@@ -61,39 +65,28 @@ pub struct NodeCursor(pub UVec2);
 
 pub fn adjust_scroll(
     mut node_cursors: Query<(&NodeCursor, &EntityGrid)>,
-    mut grid_ui_view: Query<
-        (
-            &CalculatedSizeTty,
-            &mut NodeViewScroll,
-        ),
-        With<GridUi>,
-    >,
+    mut grid_ui_view: Query<(&CalculatedSizeTty, &mut NodeViewScroll), With<GridUi>>,
 ) {
-
     for (cursor, grid) in node_cursors.iter_mut() {
         if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
-                scroll.x = scroll
-                    .x
-                    .min(cursor.x * 3) // Keeps node cursor from going off the left
-                    .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
-                    .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
-                scroll.y = scroll
-                    .y
-                    .min(cursor.y * 2) // Keeps node cursor from going off the right
-                    .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
-                    .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
-            }
+            scroll.x = scroll
+                .x
+                .min(cursor.x * 3) // Keeps node cursor from going off the left
+                .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
+                .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
+            scroll.y = scroll
+                .y
+                .min(cursor.y * 2) // Keeps node cursor from going off the right
+                .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
+                .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
         }
+    }
 }
 
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedEntity)>,
     mut grid_ui_view: Query<
-        (
-            &CalculatedSizeTty,
-            &GlobalTranslationTty,
-            &NodeViewScroll,
-        ),
+        (&CalculatedSizeTty, &GlobalTranslationTty, &NodeViewScroll),
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
@@ -248,6 +241,7 @@ pub fn create_node_ui(
                                     render_node::RenderMenu,
                                     Name::new("OldMenu"),
                                 ));
+
                                 menu_bar.spawn((
                                     StyleTty(taffy::prelude::Style {
                                         display: Display::None,
@@ -255,9 +249,29 @@ pub fn create_node_ui(
                                             width: Dimension::Auto,
                                             height: Dimension::Points(0.0),
                                         },
-                                        margin: Rect {
-                                            bottom: Dimension::Points(1.0),
-                                            ..Default::default()
+                                        ..default()
+                                    }),
+                                    render_node::render_menu::MenuUiLabel,
+                                    Name::new("Menu Label"),
+                                ));
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        display: Display::None,
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Points(0.0),
+                                        },
+                                        ..default()
+                                    }),
+                                    render_node::render_menu::MenuUiStats,
+                                    Name::new("Menu Stats"),
+                                ));
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        display: Display::None,
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Points(0.0),
                                         },
                                         ..default()
                                     }),
