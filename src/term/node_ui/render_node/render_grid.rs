@@ -1,8 +1,8 @@
 use super::registry::GlyphRegistry;
-use super::{render_square, NodeViewScroll, RenderNodeDataReadOnlyItem};
+use super::{render_square, NodeUiQReadOnlyItem, NodeViewScroll};
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
-use crate::term::node::NodeCursor;
+use crate::term::node_ui::NodeCursor;
 use bevy::prelude::*;
 use game_core::{NodePiece, Team};
 use itertools::Itertools;
@@ -105,7 +105,7 @@ pub fn border_style_for(
 pub fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &NodeViewScroll,
-    node_data: &RenderNodeDataReadOnlyItem,
+    node_data: &NodeUiQReadOnlyItem,
     node_pieces: &Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {

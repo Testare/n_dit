@@ -1,10 +1,10 @@
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
-use crate::term::node::render_node::RenderNodeData;
-use crate::term::node::NodeFocus;
+use crate::term::node_ui::render_node::NodeUiQ;
+use crate::term::node_ui::NodeFocus;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 use crate::term::TerminalFocusMode;
 
-use super::RenderNodeDataReadOnlyItem;
+use super::NodeUiQReadOnlyItem;
 use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use game_core::node::NodePiece;
@@ -12,7 +12,7 @@ use game_core::{prelude::*, Actions, Curio, Description, MaximumSize, Mon, Movem
 use taffy::style::Dimension;
 
 #[derive(WorldQuery)]
-pub struct NodePieceMenuData {
+pub struct NodePieceQ {
     piece: &'static NodePiece,
     team: Option<&'static Team>,
     curio: Option<&'static Curio>,
@@ -23,14 +23,14 @@ pub struct NodePieceMenuData {
     max_size: Option<&'static MaximumSize>,
 }
 
-pub trait Submenu {
-    fn get_style_update_system() -> Option<SystemAppConfig>;
-    fn get_render_system() -> SystemAppConfig;
-    fn get_ui_systems() -> SystemAppConfigs {
-        let render_system = Self::get_render_system()
+pub trait NodeUi {
+    fn style_update_system() -> Option<SystemAppConfig>;
+    fn render_system() -> SystemAppConfig;
+    fn ui_systems() -> SystemAppConfigs {
+        let render_system = Self::render_system()
             .in_set(RenderTtySet::PostCalculateLayout)
             .in_set(OnUpdate(TerminalFocusMode::Node));
-        if let Some(update_system) = Self::get_style_update_system() {
+        if let Some(update_system) = Self::style_update_system() {
             (
                 render_system,
                 update_system
@@ -45,11 +45,11 @@ pub trait Submenu {
 }
 
 trait SimpleSubmenu {
-    fn height(selected: &NodePieceMenuDataItem<'_>) -> Option<usize>;
+    fn height(selected: &NodePieceQItem<'_>) -> Option<usize>;
     fn render(
-        selected: &NodePieceMenuDataItem<'_>,
+        selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        node_data: &RenderNodeDataReadOnlyItem,
+        node_data: &NodeUiQReadOnlyItem,
     ) -> Option<Vec<String>>;
 }
 
@@ -66,7 +66,7 @@ pub struct MenuUiActions;
 pub struct MenuUiDescription;
 
 impl SimpleSubmenu for MenuUiLabel {
-    fn height(selected: &NodePieceMenuDataItem<'_>) -> Option<usize> {
+    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         if selected.curio.is_some() {
             Some(3)
         } else {
@@ -75,9 +75,9 @@ impl SimpleSubmenu for MenuUiLabel {
     }
 
     fn render(
-        selected: &NodePieceMenuDataItem<'_>,
+        selected: &NodePieceQItem<'_>,
         _size: &CalculatedSizeTty,
-        _node_data: &RenderNodeDataReadOnlyItem,
+        _node_data: &NodeUiQReadOnlyItem,
     ) -> Option<Vec<String>> {
         let mut label = vec![selected.piece.display_id().clone()];
 
@@ -94,7 +94,7 @@ impl SimpleSubmenu for MenuUiLabel {
 }
 
 impl SimpleSubmenu for MenuUiStats {
-    fn height(selected: &NodePieceMenuDataItem<'_>) -> Option<usize> {
+    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let stats_to_display = if selected.max_size.is_some() { 1 } else { 0 }
             + if selected.speed.is_some() { 1 } else { 0 };
         if stats_to_display > 0 {
@@ -105,9 +105,9 @@ impl SimpleSubmenu for MenuUiStats {
     }
 
     fn render(
-        selected: &NodePieceMenuDataItem<'_>,
+        selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        node_data: &RenderNodeDataReadOnlyItem,
+        node_data: &NodeUiQReadOnlyItem,
     ) -> Option<Vec<String>> {
         if selected.max_size.is_some() || selected.speed.is_some() {
             let mut stats = vec![format!("{0:-<1$}", "-Stats", size.width())];
@@ -131,15 +131,15 @@ impl SimpleSubmenu for MenuUiStats {
 }
 
 impl SimpleSubmenu for MenuUiActions {
-    fn height(selected: &NodePieceMenuDataItem<'_>) -> Option<usize> {
+    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let actions = selected.actions.as_deref()?;
         Some(actions.len() + 1)
     }
 
     fn render(
-        selected: &NodePieceMenuDataItem<'_>,
+        selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        _node_data: &RenderNodeDataReadOnlyItem,
+        _node_data: &NodeUiQReadOnlyItem,
     ) -> Option<Vec<String>> {
         let actions = selected.actions.as_deref()?;
         let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
@@ -150,11 +150,11 @@ impl SimpleSubmenu for MenuUiActions {
     }
 }
 
-impl Submenu for MenuUiDescription {
-    fn get_style_update_system() -> Option<SystemAppConfig> {
-        Some((| node_data: Query<RenderNodeData>,
+impl NodeUi for MenuUiDescription {
+    fn style_update_system() -> Option<SystemAppConfig> {
+        Some((| node_data: Query<NodeUiQ>,
             node_focus: Res<NodeFocus>,
-            node_pieces: Query<NodePieceMenuData>,
+            node_pieces: Query<NodePieceQ>,
             mut ui: Query<(&mut StyleTty, &CalculatedSizeTty), With<MenuUiDescription>> | {
 
             if let Ok((mut style, size)) = ui.get_single_mut() {
@@ -171,7 +171,7 @@ impl Submenu for MenuUiDescription {
                         taffy::style::Display::None
                     } else {
                         // Give a little extra for padding if we can
-                        style.size.height = Dimension::Points(new_height + 1.0);
+                        style.size.height = Dimension::Points(new_height);
                         taffy::style::Display::Flex
                     };
                 }
@@ -179,10 +179,10 @@ impl Submenu for MenuUiDescription {
         }).into_app_config())
     }
 
-    fn get_render_system() -> SystemAppConfig {
-        (|node_data: Query<RenderNodeData>,
+    fn render_system() -> SystemAppConfig {
+        (|node_data: Query<NodeUiQ>,
           node_focus: Res<NodeFocus>,
-          node_pieces: Query<NodePieceMenuData>,
+          node_pieces: Query<NodePieceQ>,
           mut commands: Commands,
           ui: Query<(Entity, &CalculatedSizeTty), With<MenuUiDescription>>| {
             if let Ok((id, size)) = ui.get_single() {
@@ -207,21 +207,21 @@ impl Submenu for MenuUiDescription {
     }
 }
 
-impl<S: SimpleSubmenu + Component> Submenu for S {
-    fn get_style_update_system() -> Option<SystemAppConfig> {
+impl<S: SimpleSubmenu + Component> NodeUi for S {
+    fn style_update_system() -> Option<SystemAppConfig> {
         Some(style_simple_submenu::<S>.into_app_config())
     }
 
-    fn get_render_system() -> SystemAppConfig {
+    fn render_system() -> SystemAppConfig {
         render_simple_submenu::<S>.into_app_config()
     }
 }
 
 /// System for adjusting the height of a simple submenu
 fn style_simple_submenu<T: SimpleSubmenu + Component>(
-    node_data: Query<RenderNodeData>,
+    node_data: Query<NodeUiQ>,
     node_focus: Res<NodeFocus>,
-    node_pieces: Query<NodePieceMenuData>,
+    node_pieces: Query<NodePieceQ>,
     mut ui: Query<&mut StyleTty, With<T>>,
 ) {
     if let Ok((mut style)) = ui.get_single_mut() {
@@ -244,9 +244,9 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
 
 /// System for rendering a simple submenu
 fn render_simple_submenu<T: SimpleSubmenu + Component>(
-    node_data: Query<RenderNodeData>,
+    node_data: Query<NodeUiQ>,
     node_focus: Res<NodeFocus>,
-    node_pieces: Query<NodePieceMenuData>,
+    node_pieces: Query<NodePieceQ>,
     mut commands: Commands,
     ui: Query<(Entity, &CalculatedSizeTty), With<T>>,
 ) {
@@ -266,10 +266,10 @@ fn render_simple_submenu<T: SimpleSubmenu + Component>(
 
 /// Helper method, since most submenus depend on getting the selected entity in the grid
 fn selected_piece_data<'a>(
-    node_data: &Query<RenderNodeData>,
+    node_data: &Query<NodeUiQ>,
     node_focus: Res<NodeFocus>,
-    node_pieces: &'a Query<NodePieceMenuData>,
-) -> Option<NodePieceMenuDataItem<'a>> {
+    node_pieces: &'a Query<NodePieceQ>,
+) -> Option<NodePieceQItem<'a>> {
     node_focus.and_then(|node_id| {
         let node_data = node_data.get(node_id).ok()?;
         let selected = node_pieces.get((**node_data.selected_entity)?).ok()?;

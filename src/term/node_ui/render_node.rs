@@ -14,28 +14,23 @@ use crate::term::layout::CalculatedSizeTty;
 use crate::term::render::UpdateRendering;
 use game_core::{EntityGrid, NodePiece, Team};
 
-use self::render_menu::NodePieceMenuData;
-
 use super::{NodeCursor, SelectedEntity};
 
 #[derive(Component)]
 pub struct GridUi;
 
 #[derive(Component)]
-pub struct RenderMenu;
+pub struct NodeUiRoot;
 
 #[derive(Component)]
-pub struct RenderNode;
-
-#[derive(Component)]
-pub struct RenderTitleBar;
+pub struct TitleBarUi;
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeViewScroll(pub UVec2);
 
 #[derive(WorldQuery)]
 #[world_query(mutable)]
-pub struct RenderNodeData {
+pub struct NodeUiQ {
     entity: Entity,
     grid: &'static EntityGrid,
     node_cursor: &'static NodeCursor,
@@ -44,7 +39,7 @@ pub struct RenderNodeData {
 
 pub fn render_grid_system(
     mut commands: Commands,
-    node_data: Query<RenderNodeData, With<game_core::Node>>,
+    node_data: Query<NodeUiQ, With<game_core::Node>>,
     node_pieces: Query<(&NodePiece, Option<&Team>)>,
     glyph_registry: Res<GlyphRegistry>,
     render_grid: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll), With<GridUi>>,
@@ -65,7 +60,7 @@ pub fn render_grid_system(
 
 pub fn render_title_bar_system(
     mut commands: Commands,
-    render_title_bar: Query<Entity, With<RenderTitleBar>>,
+    render_title_bar: Query<Entity, With<TitleBarUi>>,
 ) {
     let rendered_text = vec!["n_dit".to_owned()];
     if let Ok(id) = render_title_bar.get_single() {

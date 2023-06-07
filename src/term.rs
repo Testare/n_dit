@@ -1,6 +1,6 @@
 mod configuration;
 mod layout;
-pub mod node;
+pub mod node_ui;
 mod render;
 
 pub mod prelude {
@@ -188,7 +188,7 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TerminalWindow>()
             .add_state::<TerminalFocusMode>()
             .add_plugin(render::RenderTtyPlugin::default())
-            .add_plugin(node::NodePlugin::default())
+            .add_plugin(node_ui::NodePlugin::default())
             .add_plugin(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()
             .add_system(term_event_listener)
