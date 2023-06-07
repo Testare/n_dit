@@ -1,4 +1,5 @@
 use std::io::{stdout, Write};
+use std::time::{Duration, Instant};
 
 use super::TerminalWindow;
 use crate::term::prelude::*;
@@ -7,6 +8,8 @@ use bevy::{
     ecs::system::{EntityCommand, EntityCommands},
 };
 use itertools::{EitherOrBoth, Itertools};
+
+const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum RenderTtySet {
@@ -23,6 +26,10 @@ pub struct TerminalRendering {
     rendering: Vec<String>,
     last_update: u32,
 }
+
+#[derive(Resource, Deref, DerefMut, Default)]
+pub struct RenderPause(Option<Instant>);
+
 
 #[derive(Default)]
 pub struct RenderTtyPlugin;
@@ -57,10 +64,14 @@ impl TerminalRendering {
 
 impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.init_resource::<RenderPause>()
+            .add_systems(
             (apply_system_buffers, write_rendering_to_terminal)
                 .in_set(RenderTtySet::RenderToTerminal),
         )
+            .add_system(
+                (pause_rendering_on_resize).in_base_set(CoreSet::PreUpdate)
+            )
         .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
         .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
         .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))
@@ -69,17 +80,38 @@ impl Plugin for RenderTtyPlugin {
     }
 }
 
+pub fn pause_rendering_on_resize(
+    mut event_reader: EventReader<CrosstermEvent>,
+    mut render_pause: ResMut<RenderPause>
+) {
+    for event in event_reader.iter() {
+        if matches!(event, CrosstermEvent::Resize { .. }) {
+            **render_pause = Some(Instant::now() + Duration::from_millis(PAUSE_RENDERING_ON_RESIZE_MILLIS));
+        }
+    }
+}
+
+
 pub fn write_rendering_to_terminal(
     window: Res<TerminalWindow>,
     renderings: Query<&TerminalRendering>,
     mut inputs: EventReader<CrosstermEvent>,
     mut render_cache: Local<TerminalRendering>,
+    mut render_pause: ResMut<RenderPause>,
 ) {
     // Clear cache on resize
-    // TODO BUG Occurs on resize if the resize shrinks the terminal vertically
+    if let RenderPause(Some(pause_render_until)) = *render_pause {
+        let now = Instant::now();
+        if pause_render_until > now {
+            return; // Do not render
+        } else {
+            render_cache.clear();
+            crossterm::queue!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All)).unwrap();
+            **render_pause = None;
+        }
+    }
     for input in inputs.iter() {
         if matches!(input, CrosstermEvent::Resize { .. }) {
-            render_cache.clear()
         }
     }
     if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
