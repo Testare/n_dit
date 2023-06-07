@@ -10,6 +10,7 @@ pub use bevy::prelude::{
     Commands,
     Component,
     CoreSet,
+    DebugName,
     Deref,
     DerefMut,
     Entity,

@@ -36,7 +36,7 @@ impl Plugin for NodePlugin {
             .init_resource::<NodeFocus>()
             .add_event::<ShowNode>()
             .add_system(create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
-            .add_system(node_cursor_controls.before(RenderTtySet::CalculateLayout))
+            .add_system(node_cursor_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(MenuUiActions::get_ui_systems())
             .add_systems(MenuUiLabel::get_ui_systems())
             .add_systems(MenuUiStats::get_ui_systems())
