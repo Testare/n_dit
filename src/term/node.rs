@@ -41,18 +41,11 @@ impl Plugin for NodePlugin {
             .add_systems(MenuUiLabel::get_ui_systems())
             .add_systems(MenuUiStats::get_ui_systems())
             .add_systems(MenuUiDescription::get_ui_systems())
-            /*.add_systems(
-                (calculate_action_menu_style,)
-                    .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .in_set(RenderTtySet::PreCalculateLayout),
-            )*/
             .add_systems(
                 (
                     adjust_scroll.before(render_node::render_grid_system),
                     render_node::render_grid_system,
                     render_node::render_title_bar_system,
-                    // render_node::render_menu::action_menu,
-                    // render_node::render_menu::description,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PostCalculateLayout),

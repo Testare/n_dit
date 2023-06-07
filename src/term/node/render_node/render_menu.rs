@@ -24,9 +24,6 @@ pub struct NodePieceMenuData {
 }
 
 pub trait Submenu {
-    // Render System
-    // Optional height system
-    // get systems
     fn get_style_update_system() -> Option<SystemAppConfig>;
     fn get_render_system() -> SystemAppConfig;
     fn get_ui_systems() -> SystemAppConfigs {
@@ -115,7 +112,6 @@ impl SimpleSubmenu for MenuUiStats {
         if selected.max_size.is_some() || selected.speed.is_some() {
             let mut stats = vec![format!("{0:-<1$}", "-Stats", size.width())];
             if let Some(max_size) = selected.max_size {
-                // TODO
                 let size = node_data.grid.len_of(
                     node_data
                         .selected_entity
@@ -211,32 +207,6 @@ impl Submenu for MenuUiDescription {
     }
 }
 
-// Make impl SubMenu for MenuUiDescription
-pub fn description(
-    node_data: Query<RenderNodeData>,
-    node_focus: Res<NodeFocus>,
-    node_pieces: Query<NodePieceMenuData>,
-    mut commands: Commands,
-    ui: Query<(Entity, &CalculatedSizeTty), With<MenuUiDescription>>,
-) {
-    if let Ok((id, size)) = ui.get_single() {
-        let rendering = selected_piece_data(&node_data, node_focus, &node_pieces)
-            .and_then(|selected| {
-                let wrapped_desc = textwrap::wrap(selected.description?.as_str(), size.width());
-                let mut menu = vec![format!("{0:-<1$}", "-Desc", size.width())];
-                for desc_line in wrapped_desc.into_iter() {
-                    menu.push(desc_line.into_owned());
-                }
-                Some(menu)
-            })
-            .unwrap_or_default();
-
-        commands
-            .entity(id)
-            .update_rendering(rendering.fit_to_size(size));
-    }
-}
-
 impl<S: SimpleSubmenu + Component> Submenu for S {
     fn get_style_update_system() -> Option<SystemAppConfig> {
         Some(style_simple_submenu::<S>.into_app_config())
@@ -294,7 +264,8 @@ fn render_simple_submenu<T: SimpleSubmenu + Component>(
     }
 }
 
-pub fn selected_piece_data<'a>(
+/// Helper method, since most submenus depend on getting the selected entity in the grid
+fn selected_piece_data<'a>(
     node_data: &Query<RenderNodeData>,
     node_focus: Res<NodeFocus>,
     node_pieces: &'a Query<NodePieceMenuData>,
