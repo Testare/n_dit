@@ -1,18 +1,18 @@
+mod grid_ui;
 mod inputs;
+mod menu_ui;
+mod registry;
 mod setup;
 mod titlebar_ui;
-mod menu_ui;
-mod grid_ui;
-mod registry;
 
 use crate::term::{prelude::*, TerminalFocusMode};
 use bevy::ecs::query::WorldQuery;
+use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
-use game_core::EntityGrid;
+use bevy::utils::HashSet;
+use game_core::{EntityGrid, Node};
 
-use self::menu_ui::{
-    MenuUiActions, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi,
-};
+use self::menu_ui::{MenuUiActions, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi};
 
 use registry::GlyphRegistry;
 
@@ -34,6 +34,9 @@ pub struct NodeUiPlugin;
 #[derive(Component, Debug, Deref)]
 pub struct SelectedEntity(pub Option<Entity>);
 
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct AvailableMoves(HashSet<UVec2>);
+
 /// Cursor that the user controls to select pieces in the node
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
@@ -48,14 +51,30 @@ pub struct NodeUiQ {
     selected_entity: &'static SelectedEntity,
 }
 
-impl Plugin for NodeUiPlugin {
+#[derive(SystemParam)]
+pub struct NodeUiDataParam<'w, 's> {
+    query: Query<'w, 's, NodeUiQ, With<Node>>,
+    node_focus: Res<'w, NodeFocus>,
+}
 
+impl<'w, 's> NodeUiDataParam<'w, 's> {
+    fn node_data(&self) -> Option<NodeUiQReadOnlyItem> {
+        self.query.get((**self.node_focus)?).ok()
+    }
+}
+
+impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
             .init_resource::<NodeFocus>()
             .add_event::<ShowNode>()
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
+            .add_systems(
+                (grid_ui::adjust_available_moves,)
+                    .in_set(OnUpdate(TerminalFocusMode::Node))
+                    .in_set(RenderTtySet::PreCalculateLayout),
+            )
             .add_systems(MenuUiActions::ui_systems())
             .add_systems(MenuUiLabel::ui_systems())
             .add_systems(MenuUiStats::ui_systems())

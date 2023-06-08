@@ -1,9 +1,12 @@
 use game_core::{EntityGrid, Node};
 
 use crate::term::{
-    prelude::*,
     layout::StyleTty,
-    node_ui::{SelectedEntity, grid_ui::{GridUi, NodeViewScroll}},
+    node_ui::{
+        grid_ui::{GridUi, NodeViewScroll},
+        AvailableMoves, SelectedEntity,
+    },
+    prelude::*,
     TerminalWindow,
 };
 
@@ -22,6 +25,7 @@ pub fn create_node_ui(
             commands.entity(*node_id).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
+                AvailableMoves::default(),
             ));
         }
         if (*node_focus).is_none() {

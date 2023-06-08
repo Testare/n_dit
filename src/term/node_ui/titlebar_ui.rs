@@ -2,7 +2,6 @@ use game_core::prelude::*;
 
 use crate::term::render::UpdateRendering;
 
-
 #[derive(Component)]
 pub struct TitleBarUi;
 

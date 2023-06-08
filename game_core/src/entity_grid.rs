@@ -701,6 +701,11 @@ impl EntityGrid {
     pub fn width(&self) -> u32 {
         self.width
     }
+
+    pub fn bounds(&self) -> UVec2 {
+        UVec2{ x: self.width, y: self.height }
+    }
+
 }
 
 impl From<Vec<Vec<bool>>> for EntityGrid {

@@ -1,17 +1,17 @@
+mod borders;
 mod render_square;
 
+use self::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::registry::GlyphRegistry;
-use super::{NodeUiQReadOnlyItem, NodeFocus, NodeUiQ};
-use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
+use super::{AvailableMoves, NodeCursor, NodeFocus, NodeUiDataParam, NodeUiQ, NodeUiQReadOnlyItem};
+use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
-use crate::term::node_ui::NodeCursor;
+use crate::term::prelude::*;
 use crate::term::render::UpdateRendering;
-use bevy::prelude::*;
-use game_core::{NodePiece, Team, EntityGrid};
+use bevy::ecs::query::WorldQuery;
+use game_core::{Direction, EntityGrid, MovementSpeed, NodePiece, Team};
 use itertools::Itertools;
 use std::cmp;
-use std::ops::RangeInclusive;
-
 
 #[derive(Component)]
 pub struct GridUi;
@@ -21,96 +21,6 @@ pub struct NodeViewScroll(pub UVec2);
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
-const ZWSP: char = '\u{200B}';
-const EXAMPLE: char = '死';
-
-const INTERSECTION_CHAR: [char; 16] = [
-    ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
-];
-
-#[derive(PartialEq, Eq)]
-enum BorderType {
-    Borderless = 0,
-    Bordered = 1,
-    Linked = 2,
-}
-
-impl BorderType {
-    fn of(lhs: usize, rhs: usize) -> BorderType {
-        if lhs != rhs {
-            BorderType::Bordered
-        } else {
-            match lhs {
-                0 => BorderType::Borderless,
-                1 => BorderType::Bordered,
-                _ => BorderType::Linked,
-            }
-        }
-    }
-
-    fn horizontal_border(&self, draw_config: &DrawConfiguration) -> &'static str {
-        match self {
-            BorderType::Borderless => "  ",
-            BorderType::Bordered => "──",
-            BorderType::Linked => match draw_config.border_appearance() {
-                DrawType::BorderlessLink => "  ",
-                DrawType::CrossLink1 => "╫─",
-                DrawType::CrossLink2 => "┤├",
-                DrawType::CrossLink3 => "┼┼",
-                DrawType::DotLink => "..",
-            },
-        }
-    }
-
-    fn vertical_border(&self, draw_config: &DrawConfiguration) -> char {
-        match self {
-            BorderType::Borderless => ' ',
-            BorderType::Bordered => '│',
-            BorderType::Linked => match draw_config.border_appearance() {
-                DrawType::BorderlessLink => ' ',
-                DrawType::DotLink => '.',
-                _ => '╪',
-            },
-        }
-    }
-}
-
-pub fn border_style_for(
-    // available_moves: &Option<HashSet<Point>>,
-    // available_moves_type: usize, // TODO something nicer
-    node_cursor: &NodeCursor,
-
-    draw_config: &DrawConfiguration,
-    x_range: &RangeInclusive<usize>,
-    y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
-) -> UiFormat {
-    let color_scheme = draw_config.color_scheme();
-
-    let NodeCursor(UVec2 {
-        x: cursor_x,
-        y: cursor_y,
-    }) = node_cursor;
-
-    // TODO optimized logic so we don't create a full set of points for every square
-    if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
-        color_scheme.selected_square_border()
-    }
-    /*
-    } else if available_moves.is_some()
-        && !available_moves
-            .as_ref()
-            .unwrap()
-            .is_disjoint(&points_in_range(x_range, y_range))
-    {
-        match available_moves_type {
-            0 => color_scheme.possible_movement(),
-            _ => color_scheme.attack_action(),
-        }
-    */
-    else {
-        color_scheme.grid_border_default()
-    }
-}
 
 pub fn adjust_scroll(
     mut node_cursors: Query<(&NodeCursor, &EntityGrid)>,
@@ -132,15 +42,57 @@ pub fn adjust_scroll(
     }
 }
 
+pub fn adjust_available_moves(
+    mut moves_to_recalculate: Query<&mut AvailableMoves, Changed<NodeCursor>>,
+    node_ui_data: NodeUiDataParam,
+    node_pieces: Query<&MovementSpeed, With<NodePiece>>,
+) {
+    for mut available_moves in moves_to_recalculate.iter_mut() {
+        let new_moves = node_ui_data
+            .node_data()
+            .and_then(|node_data| {
+                let entity = (**node_data.selected_entity)?;
+                let speed = node_pieces.get(entity).ok()?;
+                let moves = **speed /* - MovesTaken TODO only if not tapped */;
+                let mut points_set = HashSet::new();
+                let head = node_data
+                    .grid
+                    .head(entity)
+                    .expect("a selected entity should exist in the grid map with a head");
+
+                possible_moves_recur(
+                    head,
+                    &mut points_set,
+                    moves,
+                    node_data.grid.bounds(),
+                    entity,
+                    &node_data,
+                );
+                Some(points_set)
+            })
+            .unwrap_or_default();
+        if **available_moves != new_moves {
+            **available_moves = new_moves;
+            log::debug!("Available moves updated: {:?}", available_moves);
+        }
+    }
+}
+
+#[derive(WorldQuery)]
+pub struct NodePieceQ {
+    piece: &'static NodePiece,
+    team: Option<&'static Team>,
+    speed: Option<&'static MovementSpeed>,
+}
+
 pub fn render_grid_system(
     mut commands: Commands,
-    node_data: Query<NodeUiQ, With<game_core::Node>>,
-    node_pieces: Query<(&NodePiece, Option<&Team>)>,
+    node_ui_data: NodeUiDataParam,
+    node_pieces: Query<NodePieceQ>,
     glyph_registry: Res<GlyphRegistry>,
     render_grid_q: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll), With<GridUi>>,
-    node_focus: Res<NodeFocus>,
 ) {
-    if let Some(node_data) = node_focus.and_then(|node_id| node_data.get(node_id).ok()) {
+    if let Some(node_data) = node_ui_data.node_data() {
         if let Ok((render_grid_id, size, scroll)) = render_grid_q.get_single() {
             let grid_rendering =
                 render_grid(size, scroll, &node_data, &node_pieces, &glyph_registry);
@@ -153,12 +105,11 @@ pub fn render_grid_system(
     }
 }
 
-
-pub fn render_grid(
+fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &NodeViewScroll,
     node_data: &NodeUiQReadOnlyItem,
-    node_pieces: &Query<(&NodePiece, Option<&Team>)>,
+    node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
 ) -> Vec<String> {
     // TODO Break DrawConfiguration down into parts and resources
@@ -171,8 +122,9 @@ pub fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid
-        .point_map(|i, sprite| render_square::render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
+    let sprite_map = grid.point_map(|i, sprite| {
+        render_square::render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
+    });
 
     let str_width = width * 3 + 3;
 
@@ -388,27 +340,6 @@ pub fn render_grid(
         .collect()
 }
 
-fn intersection_for_pivot(
-    left: &[usize; 2],
-    right: &[usize; 2],
-    draw_config: &DrawConfiguration,
-) -> char {
-    #[inline]
-    fn border_type_bit(config: &DrawConfiguration, one: usize, the_other: usize) -> usize {
-        if config.border_appearance() == DrawType::BorderlessLink {
-            usize::from(BorderType::of(one, the_other) == BorderType::Bordered)
-        } else {
-            usize::from(BorderType::of(one, the_other) != BorderType::Borderless)
-        }
-    }
-    let north = border_type_bit(draw_config, left[0], right[0]);
-    let east = border_type_bit(draw_config, right[0], right[1]) << 1;
-    let south = border_type_bit(draw_config, left[1], right[1]) << 2;
-    let west = border_type_bit(draw_config, left[0], left[1]) << 3;
-
-    INTERSECTION_CHAR[north | east | south | west]
-}
-
 fn space_style_for(
     x: usize,
     y: usize,
@@ -419,5 +350,34 @@ fn space_style_for(
         draw_config.color_scheme().selected_square()
     } else {
         UiFormat::NONE
+    }
+}
+
+fn possible_moves_recur(
+    pt: UVec2,
+    points_set: &mut HashSet<UVec2>,
+    moves: u32,
+    bounds: UVec2,
+    id: Entity,
+    node_data: &NodeUiQReadOnlyItem,
+) {
+    if moves == 0 {
+        return;
+    }
+    for dir in Direction::ALL_DIRECTIONS.iter() {
+        let next_pt = (pt + *dir).min(bounds);
+        if points_set.contains(&next_pt) {
+            continue;
+        }
+        let can_move_to_pt = node_data.grid.square_is_free(next_pt)
+            || node_data
+                .grid
+                .item_at(next_pt)
+                .map(|pt_id| id == pt_id)
+                .unwrap_or(false);
+        if can_move_to_pt {
+            points_set.insert(next_pt);
+            possible_moves_recur(next_pt, points_set, moves - 1, bounds, id, node_data);
+        }
     }
 }

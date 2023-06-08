@@ -49,5 +49,6 @@ pub use bevy::prelude::{
     Without,
     World,
 };
+pub use bevy::utils::HashSet;
 
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};

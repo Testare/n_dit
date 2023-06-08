@@ -47,6 +47,8 @@ pub struct MovementSpeed(pub u32);
 #[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MaximumSize(pub u32);
 
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct MovesTaken(pub u32);
     
 
 #[derive(Clone, Component, Debug, FromReflect, Reflect)]

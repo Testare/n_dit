@@ -1,12 +1,13 @@
+use super::registry::GlyphRegistry;
+use super::NodeUiDataParam;
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
-use crate::term::node_ui::NodeUiQ;
 use crate::term::node_ui::NodeFocus;
+use crate::term::node_ui::NodeUiQ;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 use crate::term::TerminalFocusMode;
-
-use super::NodeUiQReadOnlyItem;
 use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
+use bevy::ecs::system::{StaticSystemParam, SystemParam};
 use game_core::node::NodePiece;
 use game_core::{prelude::*, Actions, Curio, Description, MaximumSize, Mon, MovementSpeed, Team};
 use taffy::style::Dimension;
@@ -45,11 +46,13 @@ pub trait NodeUi {
 }
 
 trait SimpleSubmenu {
+    type RenderSystemParam: SystemParam;
+
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize>;
-    fn render(
+    fn render<'w, 's>(
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        node_data: &NodeUiQReadOnlyItem,
+        sys_param: <Self::RenderSystemParam as SystemParam>::Item<'w, 's>,
     ) -> Option<Vec<String>>;
 }
 
@@ -66,20 +69,23 @@ pub struct MenuUiActions;
 pub struct MenuUiDescription;
 
 impl SimpleSubmenu for MenuUiLabel {
-    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
-        if selected.curio.is_some() {
-            Some(3)
-        } else {
-            Some(2)
-        }
+    type RenderSystemParam = Res<'static, GlyphRegistry>;
+    fn height(_: &NodePieceQItem<'_>) -> Option<usize> {
+        Some(2)
     }
 
-    fn render(
+    fn render<'w, 's>(
         selected: &NodePieceQItem<'_>,
         _size: &CalculatedSizeTty,
-        _node_data: &NodeUiQReadOnlyItem,
+        glyph_registry: <Self::RenderSystemParam as SystemParam>::Item<'w, 's>,
     ) -> Option<Vec<String>> {
-        let mut label = vec![selected.piece.display_id().clone()];
+        let display_name = selected.piece.display_id();
+        let glyph = (**glyph_registry)
+            .get(display_name)
+            .map(|s| s.as_str())
+            .unwrap_or("??");
+
+        let mut label = vec![format!("[{}]", glyph)];
 
         if let Some(name) = selected
             .curio
@@ -94,6 +100,8 @@ impl SimpleSubmenu for MenuUiLabel {
 }
 
 impl SimpleSubmenu for MenuUiStats {
+    type RenderSystemParam = NodeUiDataParam<'static, 'static>;
+
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let stats_to_display = if selected.max_size.is_some() { 1 } else { 0 }
             + if selected.speed.is_some() { 1 } else { 0 };
@@ -104,14 +112,15 @@ impl SimpleSubmenu for MenuUiStats {
         }
     }
 
-    fn render(
+    fn render<'w, 's>(
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        node_data: &NodeUiQReadOnlyItem,
+        node_ui_data: <Self::RenderSystemParam as SystemParam>::Item<'w, 's>,
     ) -> Option<Vec<String>> {
         if selected.max_size.is_some() || selected.speed.is_some() {
             let mut stats = vec![format!("{0:-<1$}", "-Stats", size.width())];
             if let Some(max_size) = selected.max_size {
+                let node_data = node_ui_data.node_data()?;
                 let size = node_data.grid.len_of(
                     node_data
                         .selected_entity
@@ -131,6 +140,8 @@ impl SimpleSubmenu for MenuUiStats {
 }
 
 impl SimpleSubmenu for MenuUiActions {
+    type RenderSystemParam = ();
+
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let actions = selected.actions.as_deref()?;
         Some(actions.len() + 1)
@@ -139,7 +150,7 @@ impl SimpleSubmenu for MenuUiActions {
     fn render(
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        _node_data: &NodeUiQReadOnlyItem,
+        _: (),
     ) -> Option<Vec<String>> {
         let actions = selected.actions.as_deref()?;
         let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
@@ -231,7 +242,7 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
     node_pieces: Query<NodePieceQ>,
     mut ui: Query<&mut StyleTty, With<T>>,
 ) {
-    if let Ok((mut style)) = ui.get_single_mut() {
+    if let Ok(mut style) = ui.get_single_mut() {
         let new_height = selected_piece_data(&node_data, node_focus, &node_pieces)
             .and_then(|selected| Some(T::height(&selected)? as f32))
             .unwrap_or(0.0);
@@ -250,19 +261,20 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
 }
 
 /// System for rendering a simple submenu
-fn render_simple_submenu<T: SimpleSubmenu + Component>(
+fn render_simple_submenu<'w, 's, T: SimpleSubmenu + Component>(
     node_data: Query<NodeUiQ>,
     node_focus: Res<NodeFocus>,
     node_pieces: Query<NodePieceQ>,
     mut commands: Commands,
     ui: Query<(Entity, &CalculatedSizeTty), With<T>>,
+    render_param: StaticSystemParam<'w, 's, T::RenderSystemParam>,
 ) {
     if let Ok((id, size)) = ui.get_single() {
         let rendering = node_focus
             .and_then(|node_id| {
                 let node_data = node_data.get(node_id).ok()?;
                 let selected = node_pieces.get((**node_data.selected_entity)?).ok()?;
-                T::render(&selected, &size, &node_data)
+                T::render(&selected, &size, render_param.into_inner())
             })
             .unwrap_or_default();
         commands
