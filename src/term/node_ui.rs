@@ -49,6 +49,7 @@ pub struct NodeUiQ {
     grid: &'static EntityGrid,
     node_cursor: &'static NodeCursor,
     selected_entity: &'static SelectedEntity,
+    available_moves: &'static AvailableMoves,
 }
 
 #[derive(SystemParam)]

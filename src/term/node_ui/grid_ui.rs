@@ -9,7 +9,7 @@ use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
 use crate::term::render::UpdateRendering;
 use bevy::ecs::query::WorldQuery;
-use game_core::{Direction, EntityGrid, MovementSpeed, NodePiece, Team};
+use game_core::{Direction, EntityGrid, Mon, MovementSpeed, NodePiece, Team};
 use itertools::Itertools;
 use std::cmp;
 
@@ -43,38 +43,46 @@ pub fn adjust_scroll(
 }
 
 pub fn adjust_available_moves(
-    mut moves_to_recalculate: Query<&mut AvailableMoves, Changed<NodeCursor>>,
-    node_ui_data: NodeUiDataParam,
+    mut moves_params: ParamSet<(
+        Query<&mut AvailableMoves, Changed<NodeCursor>>,
+        NodeUiDataParam,
+    )>,
+    pickup_query: Query<(), With<Mon>>,
     node_pieces: Query<&MovementSpeed, With<NodePiece>>,
 ) {
-    for mut available_moves in moves_to_recalculate.iter_mut() {
-        let new_moves = node_ui_data
-            .node_data()
-            .and_then(|node_data| {
-                let entity = (**node_data.selected_entity)?;
-                let speed = node_pieces.get(entity).ok()?;
-                let moves = **speed /* - MovesTaken TODO only if not tapped */;
-                let mut points_set = HashSet::new();
-                let head = node_data
-                    .grid
-                    .head(entity)
-                    .expect("a selected entity should exist in the grid map with a head");
+    if moves_params.p0().is_empty() {
+        return;
+    }
+    let node_ui_data = moves_params.p1();
+    let new_moves = node_ui_data
+        .node_data()
+        .and_then(|node_data| {
+            let entity = (**node_data.selected_entity)?;
+            let speed = node_pieces.get(entity).ok()?;
+            let moves = **speed /* - MovesTaken TODO only if not tapped */;
+            let mut points_set = HashSet::new();
+            let head = node_data
+                .grid
+                .head(entity)
+                .expect("a selected entity should exist in the grid map with a head");
 
-                possible_moves_recur(
-                    head,
-                    &mut points_set,
-                    moves,
-                    node_data.grid.bounds(),
-                    entity,
-                    &node_data,
-                );
-                Some(points_set)
-            })
-            .unwrap_or_default();
-        if **available_moves != new_moves {
-            **available_moves = new_moves;
-            log::debug!("Available moves updated: {:?}", available_moves);
-        }
+            possible_moves_recur(
+                head,
+                &mut points_set,
+                &pickup_query,
+                moves,
+                node_data.grid.bounds(),
+                entity,
+                &node_data,
+            );
+            Some(points_set)
+        })
+        .unwrap_or_default();
+    let mut available_moves_param = moves_params.p0();
+    let mut available_moves = available_moves_param.single_mut();
+    if **available_moves != new_moves {
+        **available_moves = new_moves;
+        log::debug!("Available moves updated: {:?}", available_moves);
     }
 }
 
@@ -200,7 +208,7 @@ fn render_grid(
                 if render_left_border {
                     if include_border {
                         let pivot_format = border_style_for(
-                            node_cursor,
+                            &node_data,
                             &draw_config, // &available_moves,
                             // action_type,
                             // state,
@@ -220,7 +228,7 @@ fn render_grid(
                     if include_space {
                         // Add first vertical border
                         let border_style = border_style_for(
-                            node_cursor,
+                            &node_data,
                             &draw_config, /*
                                                                   &available_moves,
                                                                   action_type,
@@ -240,7 +248,7 @@ fn render_grid(
                 if render_half_space {
                     if include_border {
                         let border_style = border_style_for(
-                            node_cursor,
+                            &node_data,
                             &draw_config, /*
                                           &available_moves,
                                           action_type,
@@ -295,7 +303,7 @@ fn render_grid(
                 } else if render_full_space {
                     if include_border {
                         let border_style = border_style_for(
-                            node_cursor,
+                            &node_data,
                             &draw_config, /*
                                                                   &available_moves,
                                                                   action_type,
@@ -356,6 +364,7 @@ fn space_style_for(
 fn possible_moves_recur(
     pt: UVec2,
     points_set: &mut HashSet<UVec2>,
+    pickup_query: &Query<(), With<Mon>>,
     moves: u32,
     bounds: UVec2,
     id: Entity,
@@ -373,11 +382,20 @@ fn possible_moves_recur(
             || node_data
                 .grid
                 .item_at(next_pt)
-                .map(|pt_id| id == pt_id)
+                .map(|pt_id| id == pt_id || pickup_query.contains(pt_id))
                 .unwrap_or(false);
+        // TODO If this is a pickup, it also works
         if can_move_to_pt {
             points_set.insert(next_pt);
-            possible_moves_recur(next_pt, points_set, moves - 1, bounds, id, node_data);
+            possible_moves_recur(
+                next_pt,
+                points_set,
+                pickup_query,
+                moves - 1,
+                bounds,
+                id,
+                node_data,
+            );
         }
     }
 }

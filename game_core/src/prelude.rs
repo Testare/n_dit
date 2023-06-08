@@ -45,7 +45,8 @@ pub use bevy::prelude::{
     SystemParamFunction,
     UVec2,
     Vec2,
-    With,
+    With, 
+    ParamSet,
     Without,
     World,
 };

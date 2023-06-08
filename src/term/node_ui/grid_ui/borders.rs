@@ -1,10 +1,10 @@
 use std::ops::RangeInclusive;
 
-use bevy::prelude::UVec2;
+use crate::term::prelude::*;
 
 use crate::term::{
     configuration::{DrawConfiguration, DrawType, UiFormat},
-    node_ui::NodeCursor,
+    node_ui::{NodeCursor, NodeUiQ, NodeUiQReadOnlyItem},
 };
 
 const INTERSECTION_CHAR: [char; 16] = [
@@ -61,10 +61,11 @@ impl BorderType {
 pub fn border_style_for(
     // available_moves: &Option<HashSet<Point>>,
     // available_moves_type: usize, // TODO something nicer
-    node_cursor: &NodeCursor,
+    // node_cursor: &NodeCursor,
+    node_data: &NodeUiQReadOnlyItem,
 
     draw_config: &DrawConfiguration,
-    x_range: &RangeInclusive<usize>,
+    x_range: &RangeInclusive<usize>, // TODO usize -> u32?
     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
 ) -> UiFormat {
     let color_scheme = draw_config.color_scheme();
@@ -72,25 +73,19 @@ pub fn border_style_for(
     let NodeCursor(UVec2 {
         x: cursor_x,
         y: cursor_y,
-    }) = node_cursor;
+    }) = node_data.node_cursor;
 
     // TODO optimized logic so we don't create a full set of points for every square
     if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
         color_scheme.selected_square_border()
     }
-    /*
-    } else if available_moves.is_some()
-        && !available_moves
-            .as_ref()
-            .unwrap()
-            .is_disjoint(&points_in_range(x_range, y_range))
+    // else if check attacks are selected and range
+    // color_scheme.attack_action(),
+    else if !node_data.available_moves.is_empty()
+        && !points_in_range(x_range, y_range).is_disjoint(node_data.available_moves)
     {
-        match available_moves_type {
-            0 => color_scheme.possible_movement(),
-            _ => color_scheme.attack_action(),
-        }
-    */
-    else {
+        color_scheme.possible_movement()
+    } else {
         color_scheme.grid_border_default()
     }
 }
@@ -114,4 +109,20 @@ pub fn intersection_for_pivot(
     let west = border_type_bit(draw_config, left[0], left[1]) << 3;
 
     INTERSECTION_CHAR[north | east | south | west]
+}
+
+fn points_in_range(
+    x_range: &RangeInclusive<usize>,
+    y_range: &RangeInclusive<usize>,
+) -> HashSet<UVec2> {
+    let mut set = HashSet::default();
+    for x in x_range.clone() {
+        for y in y_range.clone() {
+            set.insert(UVec2 {
+                x: x as u32,
+                y: y as u32,
+            });
+        }
+    }
+    set
 }
