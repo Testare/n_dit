@@ -12,7 +12,9 @@ use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
 use game_core::{EntityGrid, Node};
 
-use self::menu_ui::{MenuUiActions, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi};
+use self::menu_ui::{
+    MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi,
+};
 
 use registry::GlyphRegistry;
 
@@ -76,8 +78,9 @@ impl Plugin for NodeUiPlugin {
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
             )
-            .add_systems(MenuUiActions::ui_systems())
             .add_systems(MenuUiLabel::ui_systems())
+            .add_systems(MenuUiCardSelection::ui_systems())
+            .add_systems(MenuUiActions::ui_systems())
             .add_systems(MenuUiStats::ui_systems())
             .add_systems(MenuUiDescription::ui_systems())
             .add_systems(

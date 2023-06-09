@@ -10,8 +10,11 @@ use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 use game_core::node::NodePiece;
 use game_core::{
-    prelude::*, AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, Mon,
-    MovementSpeed, MovesTaken, Pickup, Team,
+    card::{Card, Deck},
+    player::PlayerN,
+    prelude::*,
+    AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, Mon, MovementSpeed,
+    MovesTaken, Pickup, Team,
 };
 use taffy::style::Dimension;
 
@@ -28,6 +31,12 @@ pub struct NodePieceQ {
     moves_taken: Option<&'static MovesTaken>,
     is_tapped: Option<&'static IsTapped>,
     access_point: Option<&'static AccessPoint>,
+}
+
+#[derive(SystemParam)]
+pub struct DeckInfoParam<'w, 's, const P: usize> {
+    cards: Query<'w, 's, &'static Card>,
+    deck: Query<'w, 's, &'static Deck, With<PlayerN<P>>>,
 }
 
 pub trait NodeUi {
@@ -66,6 +75,9 @@ trait SimpleSubmenu {
 pub struct MenuUiLabel;
 
 #[derive(Component, Debug)]
+pub struct MenuUiCardSelection;
+
+#[derive(Component, Debug)]
 pub struct MenuUiStats;
 
 #[derive(Component, Debug)]
@@ -73,9 +85,6 @@ pub struct MenuUiActions;
 
 #[derive(Component, Debug)]
 pub struct MenuUiDescription;
-
-#[derive(Component, Debug)]
-pub struct MenuUiCardSelection;
 
 impl SimpleSubmenu for MenuUiLabel {
     type RenderSystemParam = Res<'static, GlyphRegistry>;
@@ -121,6 +130,48 @@ impl SimpleSubmenu for MenuUiLabel {
             label.push(name);
         }
         Some(label)
+    }
+}
+
+impl SimpleSubmenu for MenuUiCardSelection {
+    type RenderSystemParam = DeckInfoParam<'static, 'static, 0>;
+    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
+        // TODO This menu should definitely scale up/down with UI size, might not be able to use
+        // SimpleSubmenu for this
+        selected.access_point.and(Some(5))
+    }
+
+    fn render<'w, 's>(
+        selected: &NodePieceQItem<'_>,
+        size: &CalculatedSizeTty,
+        player_deck_info: DeckInfoParam<'w, 's, 0>,
+    ) -> Option<Vec<String>> {
+        selected.access_point?;
+        let deck_of_player_0 = player_deck_info.deck.get_single().ok()?;
+        // TODO ensure order, enable scrolling, possibly cache this card list, handle non-cards in deck
+        let cards: Vec<String> = deck_of_player_0
+            .cards_with_count()
+            .map(|(id, count)| {
+                let name = player_deck_info
+                    .cards
+                    .get(id)
+                    .map(|card| card.name_or_nickname())
+                    .unwrap_or("NotACard");
+                format!(
+                    "{name:width$}x{count}",
+                    name = name,
+                    width = 10,
+                    count = count
+                )
+            })
+            .collect();
+
+        let mut cards_menu = vec![format!("{0:-<1$}", "-Cards", size.width())];
+        let scroll = 0;
+        for card in cards.into_iter().skip(scroll).take(size.height()) {
+            cards_menu.push(card);
+        }
+        Some(cards_menu)
     }
 }
 

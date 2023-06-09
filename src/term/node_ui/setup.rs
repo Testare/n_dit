@@ -101,6 +101,18 @@ pub fn create_node_ui(
                                         },
                                         ..default()
                                     }),
+                                    super::menu_ui::MenuUiCardSelection,
+                                    Name::new("Menu Card Selection"),
+                                ));
+                                menu_bar.spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        display: Display::None,
+                                        min_size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Points(0.0),
+                                        },
+                                        ..default()
+                                    }),
                                     super::menu_ui::MenuUiStats,
                                     Name::new("Menu Stats"),
                                 ));

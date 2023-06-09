@@ -1,7 +1,10 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use game_core::{
-    prelude::*, AccessPoint, Action, Actions, Curio, Description, IsTapped, MaximumSize,
-    MovementSpeed, MovesTaken, Pickup,
+    card::{Card, Deck},
+    player::PlayerBundle,
+    prelude::*,
+    AccessPoint, Action, Actions, Curio, Description, IsTapped, MaximumSize, MovementSpeed,
+    MovesTaken, Pickup,
 };
 use game_core::{EntityGrid, Node, NodePiece, Team};
 
@@ -18,7 +21,15 @@ impl Plugin for DemoPlugin {
 }
 
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
-    let example_card = commands.spawn(()).id();
+    let example_card = commands
+        .spawn((Card::new("Hack"), Description::new("Basic attack program")))
+        .id();
+    let player0 = commands
+        .spawn((
+            PlayerBundle::<0>::default(),
+            Deck::new().with_card(example_card).with_card(example_card),
+        ))
+        .id();
     let node = commands
         .spawn((
             Node,
