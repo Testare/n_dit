@@ -1,6 +1,9 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
-use game_core::{prelude::*, Action, Actions, Curio, Description, MaximumSize, MovementSpeed};
-use game_core::{EntityGrid, Mon, Node, NodePiece, Team};
+use game_core::{
+    prelude::*, AccessPoint, Action, Actions, Curio, Description, IsTapped, MaximumSize,
+    MovementSpeed, MovesTaken, Pickup,
+};
+use game_core::{EntityGrid, Node, NodePiece, Team};
 
 use crate::term::node_ui::{NodeCursor, ShowNode};
 use crate::term::TerminalWindow;
@@ -15,6 +18,7 @@ impl Plugin for DemoPlugin {
 }
 
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
+    let example_card = commands.spawn(()).id();
     let node = commands
         .spawn((
             Node,
@@ -34,20 +38,35 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 }]),
                 Description::new("Basic attack program"),
                 MaximumSize(4),
-                MovementSpeed(2),
+                MovementSpeed(3),
+                MovesTaken(1),
+                IsTapped(false),
             ))
-            .add_to_grid(node_id, vec![(4, 4), (4, 3)]);
+            .add_to_grid(node_id, vec![(5, 4), (5, 3)]);
+
+            node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
+                .add_to_grid(node_id, vec![(6, 2)]);
             node.spawn((
-                Mon(700),
+                Pickup::Card(example_card),
                 NodePiece::new("pickup:card"),
                 Description::new("A card! Get this card! /it;s a good card! A very good card!"),
             ))
-            .add_to_grid(node_id, vec![(3, 3)]);
+            .add_to_grid(node_id, vec![(4, 3)]);
 
-            node.spawn((Mon(500), NodePiece::new("curio:death"), Team::Enemy))
-                .add_to_grid(node_id, vec![(2, 5)]);
-            node.spawn((Mon(500), NodePiece::new("curio:death"), Team::Enemy))
-                .add_to_grid(node_id, vec![(12, 3)]);
+            node.spawn((
+                NodePiece::new("curio:death"),
+                Team::Enemy,
+                MovementSpeed(2),
+                IsTapped(true),
+            ))
+            .add_to_grid(node_id, vec![(2, 5)]);
+            node.spawn((
+                NodePiece::new("curio:death"),
+                Team::Enemy,
+                MovementSpeed(2),
+                IsTapped(false),
+            ))
+            .add_to_grid(node_id, vec![(12, 3)]);
         })
         .id();
 

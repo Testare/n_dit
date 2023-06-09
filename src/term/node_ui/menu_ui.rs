@@ -9,7 +9,10 @@ use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 use game_core::node::NodePiece;
-use game_core::{prelude::*, Actions, Curio, Description, MaximumSize, Mon, MovementSpeed, Team};
+use game_core::{
+    prelude::*, AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, Mon,
+    MovementSpeed, MovesTaken, Pickup, Team,
+};
 use taffy::style::Dimension;
 
 #[derive(WorldQuery)]
@@ -17,11 +20,14 @@ pub struct NodePieceQ {
     piece: &'static NodePiece,
     team: Option<&'static Team>,
     curio: Option<&'static Curio>,
-    mon: Option<&'static Mon>,
+    pickup: Option<&'static Pickup>,
     actions: Option<&'static Actions>,
     description: Option<&'static Description>,
     speed: Option<&'static MovementSpeed>,
     max_size: Option<&'static MaximumSize>,
+    moves_taken: Option<&'static MovesTaken>,
+    is_tapped: Option<&'static IsTapped>,
+    access_point: Option<&'static AccessPoint>,
 }
 
 pub trait NodeUi {
@@ -68,6 +74,9 @@ pub struct MenuUiActions;
 #[derive(Component, Debug)]
 pub struct MenuUiDescription;
 
+#[derive(Component, Debug)]
+pub struct MenuUiCardSelection;
+
 impl SimpleSubmenu for MenuUiLabel {
     type RenderSystemParam = Res<'static, GlyphRegistry>;
     fn height(_: &NodePieceQItem<'_>) -> Option<usize> {
@@ -85,12 +94,28 @@ impl SimpleSubmenu for MenuUiLabel {
             .map(|s| s.as_str())
             .unwrap_or("??");
 
-        let mut label = vec![format!("[{}]", glyph)];
+        let is_tapped = selected
+            .is_tapped
+            .map(|is_tapped| **is_tapped)
+            .unwrap_or(false);
 
-        if let Some(name) = selected
+        let mut label = vec![format!(
+            "[{}]{}",
+            glyph,
+            if is_tapped { " (tapped)" } else { "" }
+        )];
+        if selected.access_point.is_some() {
+            label.push("Access Point".to_owned());
+        } else if let Some(name) = selected
             .curio
             .map(Curio::name)
-            .or_else(|| selected.mon.and(Some("Mon")))
+            .or_else(|| {
+                selected.pickup.map(|pickup| match pickup {
+                    Pickup::Mon(_) => "Mon",
+                    Pickup::Card(_) => "Card: ??",
+                    Pickup::Item(_) => "Item: ??",
+                })
+            })
             .map(str::to_owned)
         {
             label.push(name);
@@ -128,8 +153,15 @@ impl SimpleSubmenu for MenuUiStats {
                 );
                 stats.push(format!("Size:  {}/{}", size, **max_size));
             }
-            if let Some(speed) = selected.speed {
+            /*if let Some(speed) = selected.speed {
                 stats.push(format!("Speed: {}", **speed));
+            }*/
+            if let Some(speed) = selected.speed {
+                let moves_taken = selected
+                    .moves_taken
+                    .map(|moves_taken| **moves_taken)
+                    .unwrap_or(0);
+                stats.push(format!("Moves: {}/{}", moves_taken, **speed));
             }
 
             Some(stats)

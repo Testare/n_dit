@@ -9,7 +9,10 @@ use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
 use crate::term::render::UpdateRendering;
 use bevy::ecs::query::WorldQuery;
-use game_core::{Direction, EntityGrid, Mon, MovementSpeed, NodePiece, Team};
+use game_core::{
+    AccessPoint, Direction, EntityGrid, IsTapped, Mon, MovementSpeed, MovesTaken, NodePiece,
+    Pickup, Team,
+};
 use itertools::Itertools;
 use std::cmp;
 
@@ -47,8 +50,8 @@ pub fn adjust_available_moves(
         Query<&mut AvailableMoves, Changed<NodeCursor>>,
         NodeUiDataParam,
     )>,
-    pickup_query: Query<(), With<Mon>>,
-    node_pieces: Query<&MovementSpeed, With<NodePiece>>,
+    pickup_query: Query<(), With<Pickup>>,
+    node_pieces: Query<(&MovementSpeed, Option<&MovesTaken>, Option<&IsTapped>), With<NodePiece>>,
 ) {
     if moves_params.p0().is_empty() {
         return;
@@ -58,8 +61,11 @@ pub fn adjust_available_moves(
         .node_data()
         .and_then(|node_data| {
             let entity = (**node_data.selected_entity)?;
-            let speed = node_pieces.get(entity).ok()?;
-            let moves = **speed /* - MovesTaken TODO only if not tapped */;
+            let (speed, moves_taken, tapped) = node_pieces.get(entity).ok()?;
+            if matches!(tapped, Some(IsTapped(true))) {
+                return None;
+            }
+            let moves = (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
             let mut points_set = HashSet::new();
             let head = node_data
                 .grid
@@ -91,6 +97,8 @@ pub struct NodePieceQ {
     piece: &'static NodePiece,
     team: Option<&'static Team>,
     speed: Option<&'static MovementSpeed>,
+    is_tapped: Option<&'static IsTapped>,
+    access_point: Option<&'static AccessPoint>,
 }
 
 pub fn render_grid_system(
@@ -147,26 +155,6 @@ fn render_grid(
     let y_end = cmp::min(height, (scroll.y + size.height32() / 2) as usize);
     let skip_y = (scroll.y % 2) as usize;
     let keep_last_space = skip_y + size.height() % 2 == 0;
-
-    /*
-        let mut action_type = 1;
-
-        let mut available_moves: Option<HashSet<Point>> = node.with_active_curio(|curio| {
-            state
-                .selected_action_index()
-                .and_then(|action_index| action_index.checked_sub(1)) // Compensate for "No Action" option
-                .and_then(|action_index| curio.range_of_action(action_index))
-                .map(|point_set| point_set.into_set())
-        });
-
-        if available_moves.is_none() {
-            action_type = 0;
-            available_moves = node.with_curio_at(state.selected_square(), |curio| {
-                curio.possible_moves().into_set()
-            });
-        }
-    */
-    // let mut available_moves = None;
 
     let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
         .map(|y| {
@@ -364,7 +352,7 @@ fn space_style_for(
 fn possible_moves_recur(
     pt: UVec2,
     points_set: &mut HashSet<UVec2>,
-    pickup_query: &Query<(), With<Mon>>,
+    pickup_query: &Query<(), With<Pickup>>,
     moves: u32,
     bounds: UVec2,
     id: Entity,

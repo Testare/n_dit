@@ -1,6 +1,6 @@
 use super::super::registry::GlyphRegistry;
 use crate::term::configuration::{DrawConfiguration, UiFormat};
-use game_core::prelude::*;
+use game_core::{prelude::*, IsTapped};
 use game_core::{NodePiece, Team};
 
 const UNKNOWN_NODE_PIECE: &'static str = "??";
@@ -50,11 +50,19 @@ pub fn render_square(
     } else {
         FILL_GLYPH.to_owned()
     };
-    match node_piece.team {
-        None => (configuration.color_scheme().mon(), glyph),
-        Some(Team::Enemy) => (configuration.color_scheme().enemy_team(), glyph),
-        Some(Team::Player) => (configuration.color_scheme().player_team(), glyph),
-    }
+    let format = if node_piece.access_point.is_some() {
+        configuration.color_scheme().access_point()
+    } else {
+        match (node_piece.is_tapped, node_piece.team) {
+            (_, None) => configuration.color_scheme().mon(),
+            (_, Some(Team::Enemy)) => configuration.color_scheme().enemy_team(),
+            (Some(IsTapped(true)), Some(Team::Player)) => {
+                configuration.color_scheme().player_team_tapped()
+            }
+            (_, Some(Team::Player)) => configuration.color_scheme().player_team(),
+        }
+    };
+    (format, glyph)
 }
 
 // Might want to change this to just accept a mutable Write reference to make more effecient.

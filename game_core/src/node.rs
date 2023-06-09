@@ -10,11 +10,18 @@ pub struct NodePiece {
     display_id: String,
 }
 
-#[derive(Component, Reflect)]
+#[derive(FromReflect, Reflect)]
 pub struct Mon(pub u32);
 
 #[derive(Component, Reflect)]
-struct AccessPoint {
+pub enum Pickup {
+    Mon(Mon),
+    Card(Entity),
+    Item(Entity)
+}
+
+#[derive(Component, Reflect, Default)]
+pub struct AccessPoint {
     card: Option<Entity>, // Display card data to load
 }
 
@@ -49,6 +56,13 @@ pub struct MaximumSize(pub u32);
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MovesTaken(pub u32);
+
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct IsTapped(pub bool);
+
+// Should it be "IsActivated" or should a node have an "ActivatedPiece" 
+#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+pub struct ActivatedPiece(Option<Entity>);
     
 
 #[derive(Clone, Component, Debug, FromReflect, Reflect)]

@@ -51,5 +51,6 @@ pub use bevy::prelude::{
     World,
 };
 pub use bevy::utils::HashSet;
+pub use bevy::utils::HashMap;
 
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};

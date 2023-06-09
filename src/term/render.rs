@@ -30,7 +30,6 @@ pub struct TerminalRendering {
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct RenderPause(Option<Instant>);
 
-
 #[derive(Default)]
 pub struct RenderTtyPlugin;
 
@@ -66,31 +65,29 @@ impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<RenderPause>()
             .add_systems(
-            (apply_system_buffers, write_rendering_to_terminal)
-                .in_set(RenderTtySet::RenderToTerminal),
-        )
-            .add_system(
-                (pause_rendering_on_resize).in_base_set(CoreSet::PreUpdate)
+                (apply_system_buffers, write_rendering_to_terminal)
+                    .in_set(RenderTtySet::RenderToTerminal),
             )
-        .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
-        .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
-        .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))
-        .configure_set(RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts))
-        .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
+            .add_system((pause_rendering_on_resize).in_base_set(CoreSet::PreUpdate))
+            .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
+            .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
+            .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))
+            .configure_set(RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts))
+            .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
     }
 }
 
 pub fn pause_rendering_on_resize(
     mut event_reader: EventReader<CrosstermEvent>,
-    mut render_pause: ResMut<RenderPause>
+    mut render_pause: ResMut<RenderPause>,
 ) {
     for event in event_reader.iter() {
         if matches!(event, CrosstermEvent::Resize { .. }) {
-            **render_pause = Some(Instant::now() + Duration::from_millis(PAUSE_RENDERING_ON_RESIZE_MILLIS));
+            **render_pause =
+                Some(Instant::now() + Duration::from_millis(PAUSE_RENDERING_ON_RESIZE_MILLIS));
         }
     }
 }
-
 
 pub fn write_rendering_to_terminal(
     window: Res<TerminalWindow>,
@@ -106,13 +103,16 @@ pub fn write_rendering_to_terminal(
             return; // Do not render
         } else {
             render_cache.clear();
-            crossterm::queue!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All)).unwrap();
+            crossterm::queue!(
+                stdout(),
+                crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
+            )
+            .unwrap();
             **render_pause = None;
         }
     }
     for input in inputs.iter() {
-        if matches!(input, CrosstermEvent::Resize { .. }) {
-        }
+        if matches!(input, CrosstermEvent::Resize { .. }) {}
     }
     if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
         if *render_cache == *tr {

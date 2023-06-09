@@ -10,12 +10,13 @@ impl Default for GlyphRegistry {
     fn default() -> Self {
         GlyphRegistry {
             registry: [
-                ("mon", "$$"),
-                ("access_point", "@@"),
+                // Alternatives to consider: <>, @@, {}
+                ("env:access_point", "@@"),
                 ("curio:hack", "hk"),
                 ("curio:death", "死"),
                 // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"
                 ("pickup:card", "🂠 "),
+                ("pickup:mon", "$$"),
             ]
             .into_iter()
             .map(|(name, glyph)| (name.to_owned(), glyph.to_owned()))
