@@ -22,7 +22,7 @@ pub enum NDitError {
 pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Clone, Copy, Debug)]

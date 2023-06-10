@@ -1,5 +1,5 @@
 use game_core::prelude::*;
-use game_core::{IsTapped, NodePiece, Team};
+use game_core::{IsTapped, Team};
 
 use super::super::registry::GlyphRegistry;
 use crate::term::configuration::{DrawConfiguration, UiFormat};

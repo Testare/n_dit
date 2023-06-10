@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
-use crate::term::node_ui::{NodeCursor, NodeUiQ, NodeUiQReadOnlyItem};
+use crate::term::node_ui::{NodeCursor, NodeUiQReadOnlyItem};
 use crate::term::prelude::*;
 
 const INTERSECTION_CHAR: [char; 16] = [

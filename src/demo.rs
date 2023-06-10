@@ -8,7 +8,6 @@ use game_core::{
 };
 
 use crate::term::node_ui::{NodeCursor, ShowNode};
-use crate::term::TerminalWindow;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
@@ -23,12 +22,10 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
     let example_card = commands
         .spawn((Card::new("Hack"), Description::new("Basic attack program")))
         .id();
-    let player0 = commands
-        .spawn((
-            PlayerBundle::<0>::default(),
-            Deck::new().with_card(example_card).with_card(example_card),
-        ))
-        .id();
+    commands.spawn((
+        PlayerBundle::<0>::default(),
+        Deck::new().with_card(example_card).with_card(example_card),
+    ));
     let node = commands
         .spawn((
             Node,
@@ -87,8 +84,6 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 fn debug_key(
     mut inputs: EventReader<CrosstermEvent>,
     nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
-    window: Res<TerminalWindow>,
-    names: Query<&Name>,
 ) {
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {

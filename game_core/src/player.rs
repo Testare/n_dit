@@ -18,10 +18,6 @@ pub struct PlayerN<const P: PN>();
 pub struct ForPlayerN<const P: PN>;
 
 impl Player {
-    fn new(player_num: usize) -> Self {
-        Player(player_num)
-    }
-
     fn pn(&self) -> PN {
         self.0
     }

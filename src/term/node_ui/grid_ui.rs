@@ -5,14 +5,14 @@ use std::cmp;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::{
-    AccessPoint, Direction, EntityGrid, IsTapped, Mon, MovementSpeed, MovesTaken, NodePiece,
-    Pickup, Team,
+    AccessPoint, Direction, EntityGrid, IsTapped, MovementSpeed, MovesTaken, NodePiece, Pickup,
+    Team,
 };
 use itertools::Itertools;
 
 use self::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::registry::GlyphRegistry;
-use super::{AvailableMoves, NodeCursor, NodeFocus, NodeUiDataParam, NodeUiQ, NodeUiQReadOnlyItem};
+use super::{AvailableMoves, NodeCursor, NodeUiDataParam, NodeUiQReadOnlyItem};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;

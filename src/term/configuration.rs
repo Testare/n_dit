@@ -12,8 +12,6 @@ pub struct DrawConfiguration {
     color_scheme: ColorScheme,
     #[get_copy = "pub"]
     half_char: char,
-    #[get_copy = "pub"]
-    tail_appearance: FillMethod,
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -54,15 +52,6 @@ pub enum DrawType {
     CrossLink2, // Personal favorite
     CrossLink3,
     DotLink,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FillMethod {
-    Brackets = 0, // Personal favorite
-    NoFill = 1,   // Really terrible
-    HeadCopy = 2, // Hard to tell where head is
-    DotFill = 3, // Kinda works with DotLink, but not perfectly. Might need to adjust color scheme logic
-    Sequence = 4, // Nice additional information, but a little rough on the eyes
 }
 
 impl ColorScheme {
@@ -144,7 +133,6 @@ impl Default for DrawConfiguration {
         DrawConfiguration {
             color_scheme: ColorScheme::default(),
             border_appearance: DrawType::CrossLink2,
-            tail_appearance: FillMethod::Brackets,
             half_char: '~',
         }
     }

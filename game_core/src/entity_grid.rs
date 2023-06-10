@@ -198,7 +198,7 @@ impl EntityGrid {
     pub fn filtered_keys<P: Fn(Entity) -> bool>(&self, predicate: P) -> Vec<Entity> {
         self.entries
             .keys()
-            .filter(|(key)| predicate(**key))
+            .filter(|key| predicate(**key))
             .copied()
             .collect()
     }
@@ -569,7 +569,7 @@ impl EntityGrid {
     ///
     /// Returns the previous value
     pub fn replace_item(&mut self, key: Entity, item: Entity) {
-        for mut sqr in self.square_iter_mut(key) {
+        for sqr in self.square_iter_mut(key) {
             sqr.set_item_key(item)
         }
     }

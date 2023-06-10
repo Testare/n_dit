@@ -1,21 +1,15 @@
 use std::fs::File;
-use std::io::stdout;
-use std::panic;
 use std::time::Duration;
 
 use bevy::app::ScheduleRunnerSettings;
 use bevy::prelude::*;
-use crossterm::{self, execute};
-use old_game_core::{
-    error, loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory,
-    NetworkGameMaster, NodeDef, Pickup,
-};
+use old_game_core::{error, loader, node_from_def, GameState, Inventory, NodeDef, Pickup};
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() -> error::Result<()> {
     setup_logging();
 
-    let state = load_state();
+    log::trace!("{:?}", load_state());
     App::new()
         // .add_plugins(MinimalPlugins)
         .add_plugin(HierarchyPlugin)
