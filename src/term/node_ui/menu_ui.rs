@@ -13,8 +13,8 @@ use game_core::{
     card::{Card, Deck},
     player::PlayerN,
     prelude::*,
-    AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, Mon, MovementSpeed,
-    MovesTaken, Pickup, Team,
+    AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, MovementSpeed, MovesTaken,
+    Pickup, Team,
 };
 use taffy::style::Dimension;
 
@@ -244,67 +244,75 @@ impl SimpleSubmenu for MenuUiActions {
     }
 }
 
+impl MenuUiDescription {
+    fn style_update_system(
+        node_data: Query<NodeUiQ>,
+        node_focus: Res<NodeFocus>,
+        node_pieces: Query<NodePieceQ>,
+        mut ui: Query<(&mut StyleTty, &CalculatedSizeTty), With<MenuUiDescription>>,
+        mut last_nonzero_width: Local<usize>,
+    ) {
+        if let Ok((mut style, size)) = ui.get_single_mut() {
+            if size.width() != 0 {
+                *last_nonzero_width = size.width();
+            }
+            let new_height = selected_piece_data(&node_data, node_focus, &node_pieces)
+                .and_then(|selected| {
+                    // We use current size width here as an estimate, this might cause flickering if the menu changes width
+                    Some(
+                        textwrap::wrap(selected.description?.as_str(), *last_nonzero_width).len()
+                            as f32
+                            + 1.0,
+                    )
+                })
+                .unwrap_or(0.0);
+            if Dimension::Points(new_height) != style.min_size.height {
+                style.min_size.height = Dimension::Points(new_height);
+                style.display = if new_height == 0.0 {
+                    style.size.height = Dimension::Points(new_height);
+                    taffy::style::Display::None
+                } else {
+                    // Give a little extra for padding if we can
+                    style.size.height = Dimension::Points(new_height);
+                    taffy::style::Display::Flex
+                };
+            }
+        }
+    }
+
+    fn render_system(
+        node_data: Query<NodeUiQ>,
+        node_focus: Res<NodeFocus>,
+        node_pieces: Query<NodePieceQ>,
+        mut commands: Commands,
+        ui: Query<(Entity, &CalculatedSizeTty), With<MenuUiDescription>>,
+    ) {
+        if let Ok((id, size)) = ui.get_single() {
+            let rendering = selected_piece_data(&node_data, node_focus, &node_pieces)
+                .and_then(|selected| {
+                    let wrapped_desc = textwrap::wrap(selected.description?.as_str(), size.width());
+                    let mut menu = vec![format!("{0:-<1$}", "-Desc", size.width())];
+                    for desc_line in wrapped_desc.into_iter() {
+                        menu.push(desc_line.into_owned());
+                    }
+                    Some(menu)
+                })
+                .unwrap_or_default();
+
+            commands
+                .entity(id)
+                .update_rendering(rendering.fit_to_size(size));
+        }
+    }
+}
+
 impl NodeUi for MenuUiDescription {
     fn style_update_system() -> Option<SystemAppConfig> {
-        let mut last_nonzero_width: usize = 13; // TODO define constant for default width
-
-        Some((move | node_data: Query<NodeUiQ>,
-            node_focus: Res<NodeFocus>,
-            node_pieces: Query<NodePieceQ>,
-            mut ui: Query<(&mut StyleTty, &CalculatedSizeTty), With<MenuUiDescription>>
-            | {
-            
-
-            if let Ok((mut style, size)) = ui.get_single_mut() {
-                if size.width() != 0 {
-                    last_nonzero_width = size.width();
-                }
-                let new_height = selected_piece_data(&node_data, node_focus, &node_pieces)
-                    .and_then(|selected| {
-                        // We use current size width here as an estimate, this might cause flickering if the menu changes width
-                        Some(textwrap::wrap(selected.description?.as_str(), last_nonzero_width).len() as f32 + 1.0)
-                    })
-                    .unwrap_or(0.0);
-                if Dimension::Points(new_height) != style.min_size.height {
-                    style.min_size.height = Dimension::Points(new_height);
-                    style.display = if new_height == 0.0 {
-                        style.size.height = Dimension::Points(new_height);
-                        taffy::style::Display::None
-                    } else {
-                        // Give a little extra for padding if we can
-                        style.size.height = Dimension::Points(new_height);
-                        taffy::style::Display::Flex
-                    };
-                }
-            }
-        }).into_app_config())
+        Some(Self::style_update_system.into_app_config())
     }
 
     fn render_system() -> SystemAppConfig {
-        (|node_data: Query<NodeUiQ>,
-          node_focus: Res<NodeFocus>,
-          node_pieces: Query<NodePieceQ>,
-          mut commands: Commands,
-          ui: Query<(Entity, &CalculatedSizeTty), With<MenuUiDescription>>| {
-            if let Ok((id, size)) = ui.get_single() {
-                let rendering = selected_piece_data(&node_data, node_focus, &node_pieces)
-                    .and_then(|selected| {
-                        let wrapped_desc =
-                            textwrap::wrap(selected.description?.as_str(), size.width());
-                        let mut menu = vec![format!("{0:-<1$}", "-Desc", size.width())];
-                        for desc_line in wrapped_desc.into_iter() {
-                            menu.push(desc_line.into_owned());
-                        }
-                        Some(menu)
-                    })
-                    .unwrap_or_default();
-
-                commands
-                    .entity(id)
-                    .update_rendering(rendering.fit_to_size(size));
-            }
-        })
-        .into_app_config()
+        Self::render_system.into_app_config()
     }
 }
 
