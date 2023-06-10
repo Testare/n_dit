@@ -1,16 +1,11 @@
 use game_core::{EntityGrid, Node};
 
-use crate::term::{
-    layout::StyleTty,
-    node_ui::{
-        grid_ui::{GridUi, NodeViewScroll},
-        AvailableMoves, SelectedEntity,
-    },
-    prelude::*,
-    TerminalWindow,
-};
-
 use super::{NodeCursor, NodeFocus, ShowNode};
+use crate::term::layout::StyleTty;
+use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
+use crate::term::node_ui::{AvailableMoves, SelectedEntity};
+use crate::term::prelude::*;
+use crate::term::TerminalWindow;
 
 pub fn create_node_ui(
     mut commands: Commands,

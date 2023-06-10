@@ -1,13 +1,12 @@
 use std::io::{stdout, Write};
 use std::time::{Duration, Instant};
 
+use bevy::core::FrameCount;
+use bevy::ecs::system::{EntityCommand, EntityCommands};
+use itertools::{EitherOrBoth, Itertools};
+
 use super::TerminalWindow;
 use crate::term::prelude::*;
-use bevy::{
-    core::FrameCount,
-    ecs::system::{EntityCommand, EntityCommands},
-};
-use itertools::{EitherOrBoth, Itertools};
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
 
@@ -150,7 +149,7 @@ fn render_with_cache(
                         crossterm::style::Print(line_to_render.clone()),
                     )?;
                 }
-            }
+            },
             EitherOrBoth::Left(line_to_render) => {
                 log::trace!("Rendering line without cache: {}", line_num);
                 crossterm::queue!(
@@ -158,10 +157,10 @@ fn render_with_cache(
                     crossterm::cursor::MoveTo(0, line_num as u16),
                     crossterm::style::Print(line_to_render.clone()),
                 )?;
-            }
+            },
             EitherOrBoth::Right(_cached_line) => {
                 break;
-            }
+            },
         }
     }
     if rendering_height < term_height {

@@ -6,7 +6,7 @@ pub struct Node;
 
 #[derive(Component, Reflect, getset::Getters)]
 pub struct NodePiece {
-    #[getset(get="pub")]
+    #[getset(get = "pub")]
     display_id: String,
 }
 
@@ -17,7 +17,7 @@ pub struct Mon(pub u32);
 pub enum Pickup {
     Mon(Mon),
     Card(Entity),
-    Item(Entity)
+    Item(Entity),
 }
 
 #[derive(Component, Reflect, Default)]
@@ -35,11 +35,10 @@ pub struct Curio {
 #[derive(Component, Deref, Reflect)]
 pub struct Description(String);
 
-
 #[derive(Component, Debug, Deref, FromReflect, Reflect)]
 pub struct Actions(Vec<Action>);
 
-#[derive(Debug, FromReflect, Reflect, )]
+#[derive(Debug, FromReflect, Reflect)]
 pub struct Action {
     pub name: String,
     pub range: usize,
@@ -60,10 +59,9 @@ pub struct MovesTaken(pub u32);
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct IsTapped(pub bool);
 
-// Should it be "IsActivated" or should a node have an "ActivatedPiece" 
+// Should it be "IsActivated" or should a node have an "ActivatedPiece"
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct ActivatedPiece(Option<Entity>);
-    
 
 #[derive(Clone, Component, Debug, FromReflect, Reflect)]
 pub enum Team {
@@ -95,7 +93,7 @@ impl Curio {
     pub fn new<S: Into<String>>(name: S) -> Self {
         Curio {
             name: name.into(),
-            card: None
+            card: None,
         }
     }
 

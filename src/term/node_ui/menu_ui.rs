@@ -1,22 +1,22 @@
-use super::registry::GlyphRegistry;
-use super::NodeUiDataParam;
-use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
-use crate::term::node_ui::NodeFocus;
-use crate::term::node_ui::NodeUiQ;
-use crate::term::render::{RenderTtySet, UpdateRendering};
-use crate::term::TerminalFocusMode;
 use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
+use game_core::card::{Card, Deck};
 use game_core::node::NodePiece;
+use game_core::player::PlayerN;
+use game_core::prelude::*;
 use game_core::{
-    card::{Card, Deck},
-    player::PlayerN,
-    prelude::*,
     AccessPoint, Actions, Curio, Description, IsTapped, MaximumSize, MovementSpeed, MovesTaken,
     Pickup, Team,
 };
 use taffy::style::Dimension;
+
+use super::registry::GlyphRegistry;
+use super::NodeUiDataParam;
+use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
+use crate::term::node_ui::{NodeFocus, NodeUiQ};
+use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::TerminalFocusMode;
 
 #[derive(WorldQuery)]
 pub struct NodePieceQ {

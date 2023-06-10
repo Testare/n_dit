@@ -1,12 +1,11 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
+use game_core::card::{Card, Deck};
+use game_core::player::PlayerBundle;
+use game_core::prelude::*;
 use game_core::{
-    card::{Card, Deck},
-    player::PlayerBundle,
-    prelude::*,
-    AccessPoint, Action, Actions, Curio, Description, IsTapped, MaximumSize, MovementSpeed,
-    MovesTaken, Pickup,
+    AccessPoint, Action, Actions, Curio, Description, EntityGrid, IsTapped, MaximumSize,
+    MovementSpeed, MovesTaken, Node, NodePiece, Pickup, Team,
 };
-use game_core::{EntityGrid, Node, NodePiece, Team};
 
 use crate::term::node_ui::{NodeCursor, ShowNode};
 use crate::term::TerminalWindow;

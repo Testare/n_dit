@@ -1,6 +1,10 @@
-use std::{fs::File, io::stdout, panic, time::Duration};
+use std::fs::File;
+use std::io::stdout;
+use std::panic;
+use std::time::Duration;
 
-use bevy::{app::ScheduleRunnerSettings, prelude::*};
+use bevy::app::ScheduleRunnerSettings;
+use bevy::prelude::*;
 use crossterm::{self, execute};
 use old_game_core::{
     error, loader, node_from_def, AuthorityGameMaster, GameCommand, GameState, Inventory,

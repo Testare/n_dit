@@ -1,12 +1,10 @@
-use crate::term::{
-    layout::{CalculatedSizeTty, GlobalTranslationTty},
-    prelude::*,
-};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use game_core::EntityGrid;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
-
-use super::{grid_ui::GridUi, grid_ui::NodeViewScroll, NodeCursor, SelectedEntity};
+use super::grid_ui::{GridUi, NodeViewScroll};
+use super::{NodeCursor, SelectedEntity};
+use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::term::prelude::*;
 
 pub fn node_cursor_controls(
     mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedEntity)>,
@@ -26,17 +24,17 @@ pub fn node_cursor_controls(
                     }) => match input_char {
                         'k' | 'w' => {
                             cursor.y = cursor.y.saturating_sub(1);
-                        }
+                        },
                         'h' | 'a' => {
                             cursor.x = cursor.x.saturating_sub(1);
-                        }
+                        },
                         'j' | 's' => {
                             cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32);
-                        }
+                        },
                         'l' | 'd' => {
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
-                        }
-                        _ => {}
+                        },
+                        _ => {},
                     },
                     CrosstermEvent::Mouse(
                         event @ MouseEvent {
@@ -58,7 +56,7 @@ pub fn node_cursor_controls(
                                         cursor.x = new_x;
                                         cursor.y = new_y;
                                     }
-                                }
+                                },
                                 MouseEventKind::Down(MouseButton::Left) => {
                                     let new_x = ((*column as u32) + scroll.x - translation.x) / 3;
                                     let new_y = ((*row as u32) + scroll.y - translation.y) / 2;
@@ -70,12 +68,12 @@ pub fn node_cursor_controls(
                                             cursor.y = new_y;
                                         }
                                     }
-                                }
-                                _ => {}
+                                },
+                                _ => {},
                             }
                         }
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
         }

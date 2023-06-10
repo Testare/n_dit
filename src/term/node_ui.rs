@@ -5,20 +5,19 @@ mod registry;
 mod setup;
 mod titlebar_ui;
 
-use crate::term::{prelude::*, TerminalFocusMode};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
 use game_core::{EntityGrid, Node};
+use registry::GlyphRegistry;
 
 use self::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi,
 };
-
-use registry::GlyphRegistry;
-
 use super::render::RenderTtySet;
+use crate::term::prelude::*;
+use crate::term::TerminalFocusMode;
 
 /// Event that tells us to show a specific Node entity
 #[derive(Debug)]

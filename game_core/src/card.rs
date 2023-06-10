@@ -15,15 +15,15 @@ impl Deck {
     }
 
     pub fn cards_with_count<'a>(&'a self) -> impl Iterator<Item = (Entity, NonZeroU32)> + 'a {
-        self.cards.iter().map(|(&e, &c)|(e,c))
+        self.cards.iter().map(|(&e, &c)| (e, c))
     }
 
     /// Adds a card to the inventory, including another copy if it is already in the deck
     pub fn add_card(&mut self, card: Entity) -> &mut Self {
         self.cards
             .entry(card)
-            .and_modify(|count| { 
-                *count=count.saturating_add(1);
+            .and_modify(|count| {
+                *count = count.saturating_add(1);
             })
             .or_insert(Self::ONE);
         self
@@ -51,11 +51,10 @@ impl Deck {
     }
 }
 
-
 #[derive(Component, FromReflect, Reflect)]
 pub struct Card {
     card_name: String,
-    nickname: Option<String>
+    nickname: Option<String>,
 }
 
 impl Card {

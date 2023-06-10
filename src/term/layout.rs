@@ -1,9 +1,11 @@
-use super::{render::RenderTtySet, render::TerminalRendering, TerminalWindow};
-use crate::term::prelude::*;
 use bevy::core::FrameCount;
 use pad::PadStr;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
+
+use super::render::{RenderTtySet, TerminalRendering};
+use super::TerminalWindow;
+use crate::term::prelude::*;
 
 #[derive(Default)]
 pub struct TaffyTuiLayoutPlugin;

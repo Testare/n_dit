@@ -1,10 +1,15 @@
-//! Documentation might be outdated! This was recently migrated from a very 
+//! Documentation might be outdated! This was recently migrated from a very
 //! different implementation.
 
-use bitvec::{slice::BitSlice, vec::BitVec};
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, iter::Rev, vec::IntoIter};
+use std::collections::HashMap;
+use std::iter::Rev;
+use std::vec::IntoIter;
+
 use bevy::reflect::{FromReflect, Reflect};
+use bitvec::slice::BitSlice;
+use bitvec::vec::BitVec;
+use serde::{Deserialize, Serialize};
+
 use crate::prelude::*;
 pub mod commands;
 
@@ -118,7 +123,8 @@ impl EntityGrid {
     pub fn shape_bitvec(&self) -> BitVec<u8> {
         let height: [u8; 2] = (self.height() as u16).to_le_bytes();
         let width: [u8; 2] = (self.width() as u16).to_le_bytes();
-        let squarebits: BitVec<u8> =  self.grid
+        let squarebits: BitVec<u8> = self
+            .grid
             .iter()
             .flat_map(|col| col.iter().map(|sqr| sqr.is_some()))
             .collect();
@@ -150,7 +156,7 @@ impl EntityGrid {
     }
 
     /// Determins if a point is within bounds of the EntityGrid
-    pub fn contains_point(&self, UVec2 {x, y}: UVec2) -> bool {
+    pub fn contains_point(&self, UVec2 { x, y }: UVec2) -> bool {
         x < self.width && y < self.height
     }
 
@@ -204,7 +210,7 @@ impl EntityGrid {
     }
 
     /// Creates a base grid_map from a shape string
-    /// 
+    ///
     pub fn from_shape_bitslice(bits: &BitSlice<u8>) -> Self {
         let (hw, squarebits) = bits.split_at(32);
         let (wbits, hbits) = hw.split_at(16);
@@ -255,7 +261,10 @@ impl EntityGrid {
     /// and need to be opened manually with [`open_square`](Self::open_square). For this reason,
     /// it might be more convenient to create with [`EntityGrid::from<Vec<Vec<bool>>>()`].
     pub fn new(width: u32, height: u32) -> Self {
-        let grid = (0..width).into_iter().map(|_| vec![None; height as usize]).collect();
+        let grid = (0..width)
+            .into_iter()
+            .map(|_| vec![None; height as usize])
+            .collect();
 
         EntityGrid {
             height,
@@ -275,15 +284,21 @@ impl EntityGrid {
     /// indexed like `number_map[x][y]`.
     pub fn number_map(&self) -> Vec<Vec<usize>> {
         // TODO IMMEDIATELY Need to map entities to different numbers for this number map
-        let numbers: HashMap<Entity, usize> = self.entries.iter()
+        let numbers: HashMap<Entity, usize> = self
+            .entries
+            .iter()
             .enumerate()
-            .map(|(i, (entity, _))| (*entity, i+2))
+            .map(|(i, (entity, _))| (*entity, i + 2))
             .collect();
         self.grid
             .iter()
             .map(|col| {
                 col.iter()
-                    .map(|sqr_opt| sqr_opt.map(|sqr| sqr.item_key().map(|e|numbers[&e]).unwrap_or(1)).unwrap_or(0))
+                    .map(|sqr_opt| {
+                        sqr_opt
+                            .map(|sqr| sqr.item_key().map(|e| numbers[&e]).unwrap_or(1))
+                            .unwrap_or(0)
+                    })
                     .collect()
             })
             .collect()
@@ -371,11 +386,11 @@ impl EntityGrid {
                 self.square_mut(back_pt)?.set_item_key(None);
                 self.square_mut(next_back_pt)?.set_next(None);
                 None
-            }
+            },
             (None, Some(only_pt)) => {
                 self.square_mut(only_pt)?.set_item_key(None);
-                self.entries.remove(&item_key).map(|_|item_key)
-            }
+                self.entries.remove(&item_key).map(|_| item_key)
+            },
             (None, None) => None, // There are no points here, should we panic?
             _ => panic!("Programmer error, this should not be possible"),
         }
@@ -401,7 +416,7 @@ impl EntityGrid {
                 sqr.clear();
             }
         }
-        self.entries.remove(&item_key).map(|_|item_key)
+        self.entries.remove(&item_key).map(|_| item_key)
     }
 
     /// Removes an item from the first grid square this item was added to.
@@ -421,13 +436,11 @@ impl EntityGrid {
         square.clear();
 
         match next {
-            None => {
-                self.entries.remove(&item_key).map(|_|item_key)
-            },
+            None => self.entries.remove(&item_key).map(|_| item_key),
             Some(next_front) => {
                 *self.entries.get_mut(&item_key).unwrap() = next_front;
                 None
-            }
+            },
         }
     }
 
@@ -458,7 +471,7 @@ impl EntityGrid {
             Some(pt) => {
                 *self.entries.get_mut(&item_key).unwrap() = pt;
                 None
-            }
+            },
             None => self.entries.remove(&item_key).map(|_| item_key),
         }
     }
@@ -536,7 +549,7 @@ impl EntityGrid {
     /// Item to be added.
     ///
     /// Returns item key if successful
-    /// 
+    ///
     /// TODO what happens if you put the same entity twice?
     pub fn put_item(&mut self, pt: UVec2, item: Entity) -> Option<Entity> {
         if let Some(square) = self.square_mut(pt) {
@@ -603,7 +616,7 @@ impl EntityGrid {
     }
 
     /// Returns a copy of the square at a certain point, or None if square is closed
-    pub fn square(&self, UVec2 {x, y}: UVec2) -> Option<Square> {
+    pub fn square(&self, UVec2 { x, y }: UVec2) -> Option<Square> {
         *self.grid.get(x as usize)?.get(y as usize)?
     }
 
@@ -647,7 +660,7 @@ impl EntityGrid {
     /// Returns a reference to the square at a certain point.
     ///
     /// Returns None if the point is out of bounds or closed.
-    pub fn square_ref(&self, UVec2 {x, y}: UVec2) -> Option<&Square> {
+    pub fn square_ref(&self, UVec2 { x, y }: UVec2) -> Option<&Square> {
         self.grid.get(x as usize)?.get(y as usize)?.as_ref()
     }
 
@@ -664,8 +677,17 @@ impl EntityGrid {
 
     /// Used internally for the [`square_is_X`](Self::square_is_blocked) predicates. Used to ensure that if a point is
     /// out of bounds, all the predicates will return false.
-    fn square_check(&self, UVec2 {x, y}: UVec2, if_closed: bool, if_free_opt: Option<bool>) -> bool {
-        match self.grid.get(x as usize).and_then(|col| col.get(y as usize)) {
+    fn square_check(
+        &self,
+        UVec2 { x, y }: UVec2,
+        if_closed: bool,
+        if_free_opt: Option<bool>,
+    ) -> bool {
+        match self
+            .grid
+            .get(x as usize)
+            .and_then(|col| col.get(y as usize))
+        {
             Some(sqr_opt) => match if_free_opt {
                 // Square is in bounds
                 None => sqr_opt.is_some() != if_closed, // We don't care about occupied status, just if it is closed or not
@@ -685,7 +707,7 @@ impl EntityGrid {
     fn square_iter_mut(&mut self, item_key: Entity) -> SquareIterMut<'_> {
         SquareIterMut {
             next: self.entries.get(&item_key).copied(),
-            map: self, 
+            map: self,
         }
     }
 
@@ -693,7 +715,7 @@ impl EntityGrid {
     ///
     /// Not made public since we don't want squares to mutably accessible outside of grid map
     /// to avoid invalid states.
-    fn square_mut(&mut self, UVec2{x, y}: UVec2) -> Option<&mut Square> {
+    fn square_mut(&mut self, UVec2 { x, y }: UVec2) -> Option<&mut Square> {
         self.grid.get_mut(x as usize)?.get_mut(y as usize)?.as_mut()
     }
 
@@ -703,9 +725,11 @@ impl EntityGrid {
     }
 
     pub fn bounds(&self) -> UVec2 {
-        UVec2{ x: self.width, y: self.height }
+        UVec2 {
+            x: self.width,
+            y: self.height,
+        }
     }
-
 }
 
 impl From<Vec<Vec<bool>>> for EntityGrid {
@@ -803,7 +827,12 @@ mod test {
         EntityGrid::from(vec![vec![true; n]; 1])
     }
 
-    fn assert_square_eq<T>(map: &EntityGrid<T>, pt: UVec2, item: Option<Entity>, next: Option<UVec2>) {
+    fn assert_square_eq<T>(
+        map: &EntityGrid<T>,
+        pt: UVec2,
+        item: Option<Entity>,
+        next: Option<UVec2>,
+    ) {
         if let Some(sqr) = map.square_ref(pt) {
             assert_eq!(item, sqr.item_key());
             assert_eq!(next, sqr.next());
@@ -1294,7 +1323,7 @@ mod test {
             ],
         ]);
         let shape_base_64 = "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==";
-        let other_shape   = "EwALACCAAz7447/vP/6x+AABPh7/+O/7jz/4gAMIAA==";
+        let other_shape = "EwALACCAAz7447/vP/6x+AABPh7/+O/7jz/4gAMIAA==";
         let grid_map_from_shape = EntityGrid::from_shape_string(shape_base_64).unwrap();
         let grid_map_from_other_shape = EntityGrid::from_shape_string(other_shape).unwrap();
         assert_eq!(expected_grid, grid_map_from_shape);

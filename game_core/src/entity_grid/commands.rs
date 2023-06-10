@@ -1,6 +1,7 @@
 use bevy::ecs::system::{EntityCommand, EntityCommands};
-use crate::prelude::*;
+
 use super::EntityGrid;
+use crate::prelude::*;
 
 pub trait AddToGrid {
     fn add_to_grid<P: Into<UVec2>>(&mut self, grid: Entity, points: Vec<P>) -> &mut Self;
@@ -11,14 +12,14 @@ pub struct AddToGridCommand {
     points: Vec<UVec2>,
 }
 
-impl <'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
+impl<'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
     fn add_to_grid<P: Into<UVec2>>(&mut self, grid_entity: Entity, points: Vec<P>) -> &mut Self {
         if points.len() < 1 {
             panic!("cannot add to grid when there are no points");
         }
         let command = AddToGridCommand {
             grid_entity,
-            points: points.into_iter().map(|p|p.into()).collect(),
+            points: points.into_iter().map(|p| p.into()).collect(),
         };
         self.add(command);
         self
@@ -27,7 +28,10 @@ impl <'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
 
 impl EntityCommand for AddToGridCommand {
     fn write(self, id: Entity, world: &mut World) {
-        let AddToGridCommand { grid_entity, points } = self;
+        let AddToGridCommand {
+            grid_entity,
+            points,
+        } = self;
         if let Some(mut map) = world.entity_mut(grid_entity).get_mut::<EntityGrid>() {
             // TODO push item, then push_back any extra points
             let mut pts_iter = points.iter();
@@ -39,15 +43,42 @@ impl EntityCommand for AddToGridCommand {
                     }
                 }
             } else {
-                let grid_name = world.entity(self.grid_entity).get::<Name>().map(|name|name.as_str()).unwrap_or("unnamed");
-                let my_name = world.entity(id).get::<Name>().map(|name|name.as_str()).unwrap_or("unnamed");
-                log::error!("{}[{:?}] cannot add [{}]{:?} to EntityGrid since it does not have any points", grid_name, self.grid_entity, my_name, id);
+                let grid_name = world
+                    .entity(self.grid_entity)
+                    .get::<Name>()
+                    .map(|name| name.as_str())
+                    .unwrap_or("unnamed");
+                let my_name = world
+                    .entity(id)
+                    .get::<Name>()
+                    .map(|name| name.as_str())
+                    .unwrap_or("unnamed");
+                log::error!(
+                    "{}[{:?}] cannot add [{}]{:?} to EntityGrid since it does not have any points",
+                    grid_name,
+                    self.grid_entity,
+                    my_name,
+                    id
+                );
             }
-
         } else {
-            let grid_name = world.entity(self.grid_entity).get::<Name>().map(|name|name.as_str()).unwrap_or("unnamed");
-            let my_name = world.entity(id).get::<Name>().map(|name|name.as_str()).unwrap_or("unnamed");
-            log::error!("{}[{:?}] does not have an EntityGrid for [{}]{:?} to be added to", grid_name, self.grid_entity, my_name, id);
+            let grid_name = world
+                .entity(self.grid_entity)
+                .get::<Name>()
+                .map(|name| name.as_str())
+                .unwrap_or("unnamed");
+            let my_name = world
+                .entity(id)
+                .get::<Name>()
+                .map(|name| name.as_str())
+                .unwrap_or("unnamed");
+            log::error!(
+                "{}[{:?}] does not have an EntityGrid for [{}]{:?} to be added to",
+                grid_name,
+                self.grid_entity,
+                my_name,
+                id
+            );
         }
     }
 }
@@ -55,7 +86,7 @@ impl EntityCommand for AddToGridCommand {
 /*
  * So what is the expected form factor for adding entities to a grid?
  *
- * I suppose 
+ * I suppose
  *
  * let node = commands.spawn(..).id();
  *
@@ -63,6 +94,6 @@ impl EntityCommand for AddToGridCommand {
  *
  * node.add_child(mon)
  *
- * 
+ *
  *
  * */

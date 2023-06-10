@@ -8,14 +8,15 @@ pub mod prelude {
     pub use game_core::prelude::*;
 }
 
-use crossterm::event::Event as CrosstermEvent;
-use crossterm::execute;
-use prelude::*;
 use std::io::stdout;
 use std::panic;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
+
+use crossterm::event::Event as CrosstermEvent;
+use crossterm::execute;
+use prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 enum TerminalFocusMode {
@@ -106,10 +107,10 @@ impl TerminalWindow {
             match Self::reset_terminal_state() {
                 Ok(()) => {
                     log::info!("Successfully reset terminal")
-                }
+                },
                 Err(e) => {
                     log::error!("Failure resetting terminal: {:#?}", e)
-                }
+                },
             }
             default_hook(panic_info)
         }))
@@ -129,31 +130,31 @@ impl Default for TermEventListener {
             let duration = Duration::from_millis(100);
             loop {
                 match crossterm::event::poll(duration) {
-                    Ok(false) => {}
+                    Ok(false) => {},
                     Err(e) => {
                         log::error!(
                             "Error occurred in crossterm listening thread while polling: {:?}",
                             e
                         );
                         break;
-                    }
+                    },
                     Ok(true) => {
                         match crossterm::event::read() {
                             Ok(event) => {
                                 match tx.send(event) {
-                                    Ok(()) => {}
+                                    Ok(()) => {},
                                     Err(mpsc::SendError(_)) => {
                                         // Other end is dead, close this thread
                                         break;
-                                    }
+                                    },
                                 }
-                            }
+                            },
                             Err(e) => {
                                 log::error!("Error occurred reading crossterm events {:?}", e);
                                 break;
-                            }
+                            },
                         }
-                    }
+                    },
                 }
             }
         });
@@ -172,10 +173,10 @@ impl Drop for TerminalWindow {
         match Self::reset_terminal_state() {
             Ok(()) => {
                 log::info!("Successfully reset terminal from Drop")
-            }
+            },
             Err(e) => {
                 log::error!("Failure resetting terminal from Drop: {:#?}", e)
-            }
+            },
         }
     }
 }
@@ -224,21 +225,21 @@ fn term_event_listener(
                 match rx.try_recv() {
                     Ok(event) => {
                         inputs.send(event);
-                    }
+                    },
                     Err(TryRecvError::Empty) => {
                         break;
-                    }
+                    },
                     Err(TryRecvError::Disconnected) => {
                         log::error!("Thread sending input events unexpected closed");
                         break;
                         // TODO attempt error recovery here
-                    }
+                    },
                 }
             }
-        }
+        },
         Err(e) => {
             log::error!("Error with mutex in term_event_listener system: {:?}", e)
-        }
+        },
     }
 }
 

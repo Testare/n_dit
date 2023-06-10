@@ -1,7 +1,8 @@
+use game_core::prelude::*;
+use game_core::{IsTapped, NodePiece, Team};
+
 use super::super::registry::GlyphRegistry;
 use crate::term::configuration::{DrawConfiguration, UiFormat};
-use game_core::{prelude::*, IsTapped};
-use game_core::{NodePiece, Team};
 
 const UNKNOWN_NODE_PIECE: &'static str = "??";
 const FILL_GLYPH: &'static str = "[]";
@@ -58,7 +59,7 @@ pub fn render_square(
             (_, Some(Team::Enemy)) => configuration.color_scheme().enemy_team(),
             (Some(IsTapped(true)), Some(Team::Player)) => {
                 configuration.color_scheme().player_team_tapped()
-            }
+            },
             (_, Some(Team::Player)) => configuration.color_scheme().player_team(),
         }
     };
