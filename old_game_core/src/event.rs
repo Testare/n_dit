@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use super::error::{Error, ErrorMsg as _, Result};
 use super::{GameChange, GameState, NodeChange, StateChange};
-use serde::{Deserialize, Serialize};
 
 // TODO In the future, turn this into a trait and use typetag crate
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -96,7 +97,7 @@ impl Change {
                     change,
                     metadata,
                 })
-            }
+            },
             Self::N(change) => {
                 let metadata: <NodeChange as StateChange>::Metadata =
                     Self::apply_change(&change, game_state)?;
@@ -105,7 +106,7 @@ impl Change {
                     change,
                     metadata,
                 })
-            }
+            },
         }
     }
 }

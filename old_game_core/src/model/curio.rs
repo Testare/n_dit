@@ -1,16 +1,13 @@
 mod curio_builder;
 
+use curio_builder::CurioBuilder;
 use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
-use curio_builder::CurioBuilder;
 use super::inventory::Card;
-use crate::{
-    assets::AssetDictionary,
-    Metadata,
-    assets::CardDef,
-    error::{ErrorMsg, Result},
-};
+use crate::assets::{AssetDictionary, CardDef};
+use crate::error::{ErrorMsg, Result};
+use crate::Metadata;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Team {
@@ -44,20 +41,24 @@ impl Curio {
         CurioBuilder::new()
     }
 
-    fn from_card(card: &Card, team: Team, card_dictionary: &AssetDictionary<CardDef>) -> Result<Curio> {
+    fn from_card(
+        card: &Card,
+        team: Team,
+        card_dictionary: &AssetDictionary<CardDef>,
+    ) -> Result<Curio> {
         let card_def = &card_dictionary[card.basis.as_str()];
 
         let name = card.nickname.as_ref().unwrap_or(&card_def.name).clone();
         Ok(Curio {
-                display: card_def.display.clone(),
-                max_size: card_def.max_size,
-                speed: card_def.speed,
-                metadata: card.metadata.clone(),
-                name,
-                team,
-                actions: card_def.actions.clone(),
-                tapped: false,
-                moves_taken: 0,
+            display: card_def.display.clone(),
+            max_size: card_def.max_size,
+            speed: card_def.speed,
+            metadata: card.metadata.clone(),
+            name,
+            team,
+            actions: card_def.actions.clone(),
+            tapped: false,
+            moves_taken: 0,
         })
     }
 
@@ -121,4 +122,3 @@ impl Team {
         matches!(self, Team::EnemyTeam)
     }
 }
-

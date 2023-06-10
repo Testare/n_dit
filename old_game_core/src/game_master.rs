@@ -1,20 +1,17 @@
 mod game_command;
 mod informant;
 
-pub use informant::Informant;
-
-use super::error::{Error, ErrorMsg as _, Result};
-use super::{
-    event::{Change, Event},
-    EnemyAi, GameState,
-    network::{ServerConnectionListener, NetworkInformant},
-
-};
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::time::{Duration, Instant};
 
 pub use game_command::GameCommand;
+pub use informant::Informant;
+
+use super::error::{Error, ErrorMsg as _, Result};
+use super::event::{Change, Event};
+use super::network::{NetworkInformant, ServerConnectionListener};
+use super::{EnemyAi, GameState};
 
 // An intermediary between the Users and the persistent game state. As such it fulfills the following roles:
 // * Behavior of AI players, including the rendering of incomplete-but-finalized
@@ -36,26 +33,25 @@ pub struct AuthorityGameMaster {
     event_publishers: EventPublisherManager,
     informants: InformantManager,
     server_connection_listener: Option<ServerConnectionListener>,
-
 }
 
 // Currently render loop is coupled with input loop and animation loop.
 // In the future all 3 of these need to be decoupled
 const FRAME_DELAY: Duration = Duration::from_millis(100);
 
-pub trait GameMaster { 
-
-}
-
+pub trait GameMaster {}
 
 impl AuthorityGameMaster {
-
     pub fn informants_testing(&mut self) -> &mut InformantManager {
         &mut self.informants
     }
 
-    pub fn setup_informant<I: Informant + 'static, C: FnOnce(&GameState)-> I>(&mut self, construct_informant: C) {
-        self.informants.add_informant(construct_informant(&self.state));
+    pub fn setup_informant<I: Informant + 'static, C: FnOnce(&GameState) -> I>(
+        &mut self,
+        construct_informant: C,
+    ) {
+        self.informants
+            .add_informant(construct_informant(&self.state));
     }
 
     pub fn run(&mut self) {
@@ -77,15 +73,14 @@ impl AuthorityGameMaster {
                 match scl.poll_for_connection() {
                     Ok(tcp_connection) => {
                         log::debug!("Connection made!");
-                        self.setup_informant(|state|NetworkInformant::new(tcp_connection, state));
-                    }, 
-                    Err(TryRecvError::Empty) => {
-                    }
+                        self.setup_informant(|state| NetworkInformant::new(tcp_connection, state));
+                    },
+                    Err(TryRecvError::Empty) => {},
                     Err(TryRecvError::Disconnected) => {
                         // TODO What do we do in this situation?
                         panic!("Unexpected situation has occured, server is no longer listening")
                         //self.server_connection_listener = None;
-                    }
+                    },
                 }
             }
             if frame_count % 5 == 0 {
@@ -108,7 +103,7 @@ impl AuthorityGameMaster {
                 self.informants.collect(&event, &self.state);
                 self.event_log.push_event(event);
                 Ok(())
-            }
+            },
         }
     }
 
@@ -172,7 +167,9 @@ impl AuthorityGameMaster {
 
     pub fn apply_command(&mut self, command: GameCommand) -> Result<()> {
         let result = game_command::apply_command_dispatch(self, &command);
-        let AuthorityGameMaster{informants, state, ..} = self;
+        let AuthorityGameMaster {
+            informants, state, ..
+        } = self;
         match &result {
             Ok(_) => informants.publish(&command, state),
             // Failing here instead of in apply in case the command wants to modify the error message a little.
@@ -187,10 +184,7 @@ impl AuthorityGameMaster {
     }
 }
 
-impl GameMaster for AuthorityGameMaster {
-
-}
-
+impl GameMaster for AuthorityGameMaster {}
 
 impl From<GameState> for AuthorityGameMaster {
     fn from(state: GameState) -> AuthorityGameMaster {
@@ -288,12 +282,17 @@ pub struct InformantManager {
 }
 
 impl InformantManager {
-
     pub fn tick(&mut self, state: &GameState) -> Vec<(InformantId, GameCommand)> {
-        self.informants.iter_mut().flat_map(|(informant_id, informant)| {
-            informant.tick(state).into_iter().map(|gc|(*informant_id, gc))
-            // Some((*informant_id, informant.tick(state)?))
-        }).collect()
+        self.informants
+            .iter_mut()
+            .flat_map(|(informant_id, informant)| {
+                informant
+                    .tick(state)
+                    .into_iter()
+                    .map(|gc| (*informant_id, gc))
+                // Some((*informant_id, informant.tick(state)?))
+            })
+            .collect()
     }
 
     pub fn add_informant<P: Informant + 'static>(
@@ -301,7 +300,8 @@ impl InformantManager {
         informant: P,
     ) -> Option<Box<dyn Informant>> {
         self.informant_id_counter += 1;
-        self.informants.insert(InformantId(self.informant_id_counter), Box::new(informant))
+        self.informants
+            .insert(InformantId(self.informant_id_counter), Box::new(informant))
     }
 
     pub fn remove_informant(&mut self, id: &InformantId) -> Option<Box<dyn Informant>> {

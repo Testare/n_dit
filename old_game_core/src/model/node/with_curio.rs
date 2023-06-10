@@ -1,13 +1,15 @@
+use std::cmp;
+use std::collections::HashSet;
+use std::num::NonZeroUsize;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::Metadata;
 use super::super::keys::node_change_keys as keys;
-use super::Node;
-use super::SpritePoint;
+use super::{Node, SpritePoint};
 use crate::assets::ActionDef;
 use crate::{Bounds, Curio, Direction, GridMap, Point, PointSet, Sprite, Team};
-use std::{cmp, collections::HashSet, num::NonZeroUsize, ops::Deref, ops::DerefMut};
 
 const CURIO_KEY_IS_VALID: &str = "Curio key is expected to be valid key for node grid";
 
@@ -43,11 +45,12 @@ impl<N: Deref<Target = Node>> WithCurioGeneric<N> {
         self.action_names()
             .iter()
             .map(|action_name| {
-                Some(action_name.as_str()).zip(
-                self.node
-                    .action_dictionary()
-                    .get(action_name))
-                    .ok_or_else(|| format!("Sprite action [{}] missing from dictionary", action_name).fail_critical_msg())
+                Some(action_name.as_str())
+                    .zip(self.node.action_dictionary().get(action_name))
+                    .ok_or_else(|| {
+                        format!("Sprite action [{}] missing from dictionary", action_name)
+                            .fail_critical_msg()
+                    })
             })
             .collect()
     }
@@ -262,7 +265,9 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
         let grid_mut = self.node.grid_mut();
 
         match grid_mut.item_at(next_pt) {
-            Some(Sprite::AccessPoint(..)) => "Move curio collision with access point".fail_critical(),
+            Some(Sprite::AccessPoint(..)) => {
+                "Move curio collision with access point".fail_critical()
+            },
             Some(Sprite::Pickup(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if let Some(Sprite::Pickup(pickup)) = grid_mut.pop_front(key) {
@@ -273,7 +278,7 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
                     "Something weird happened, is pop-up taking more than one location?"
                         .fail_critical()
                 }
-            }
+            },
             Some(Sprite::Curio(_)) => {
                 let key = grid_mut.item_key_at(next_pt).unwrap();
                 if key != self.curio_key {
@@ -281,7 +286,7 @@ impl<N: DerefMut<Target = Node>> WithCurioGeneric<N> {
                 } else {
                     Ok(())
                 }
-            }
+            },
             _ => Ok(()),
         }?;
 

@@ -1,10 +1,10 @@
-use std::{num::NonZeroUsize, ops::RangeInclusive};
+use std::num::NonZeroUsize;
+use std::ops::RangeInclusive;
 
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use crate::{Asset, Sprite};
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ActionDefUnnamed {
@@ -36,7 +36,6 @@ pub struct ActionDef {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     cost: Option<NonZeroUsize>,
 }
-
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum CurioActionGenre {
@@ -109,8 +108,7 @@ impl Asset for ActionDef {
             effect: unnamed.effect,
             targets: unnamed.targets,
             conditions: unnamed.conditions,
-            cost: unnamed.cost
+            cost: unnamed.cost,
         }
-
     }
 }

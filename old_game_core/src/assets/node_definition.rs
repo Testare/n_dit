@@ -1,12 +1,12 @@
 use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 
-use crate::Asset;
-use crate::{Pickup, Point, Metadata, Team};
-use super::{CardDef, ActionDef};
-
-use crate::error::{LoadingError};
-use crate::{Inventory, Curio, AssetDictionary, Node, GridMap, Sprite};
+use super::{ActionDef, CardDef};
+use crate::error::LoadingError;
+use crate::{
+    Asset, AssetDictionary, Curio, GridMap, Inventory, Metadata, Node, Pickup, Point, Sprite, Team,
+};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct NodeDef {
@@ -30,9 +30,9 @@ pub enum SpriteDef {
         point: Point,
     },
     Curio {
-        #[serde(default, skip_serializing_if="Metadata::is_empty")]
+        #[serde(default, skip_serializing_if = "Metadata::is_empty")]
         metadata: Metadata,
-        #[serde(default, skip_serializing_if="Option::is_none")]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         nickname: Option<String>,
         team: Team,
         points: Vec<Point>,
@@ -63,8 +63,17 @@ impl Asset for NodeDef {
     }
 }
 
-pub fn node_from_def(def: &NodeDef, inventory: Inventory, card_dict: AssetDictionary<CardDef>, action_dictionary: AssetDictionary<ActionDef>) -> Result<Node, LoadingError> {
-    let mut node = Node::from((def.name.clone(), inventory, GridMap::from_shape_string(def.grid_shape.as_str())?));
+pub fn node_from_def(
+    def: &NodeDef,
+    inventory: Inventory,
+    card_dict: AssetDictionary<CardDef>,
+    action_dictionary: AssetDictionary<ActionDef>,
+) -> Result<Node, LoadingError> {
+    let mut node = Node::from((
+        def.name.clone(),
+        inventory,
+        GridMap::from_shape_string(def.grid_shape.as_str())?,
+    ));
 
     for sprite_def in def.sprites.iter() {
         match sprite_def {
@@ -79,14 +88,13 @@ pub fn node_from_def(def: &NodeDef, inventory: Inventory, card_dict: AssetDictio
                 metadata,
                 team,
                 points,
-                card
+                card,
             } => {
                 let card_ref = match card {
-                    CardRef::FromAsset ( card ) => {
-                        card_dict.get(card)
-                            .ok_or_else(||LoadingError::MissingAsset(CardDef::SUB_EXTENSION, card.clone()))?
-                    }, 
-                    CardRef::Custom ( card ) => Arc::new(card.clone())
+                    CardRef::FromAsset(card) => card_dict.get(card).ok_or_else(|| {
+                        LoadingError::MissingAsset(CardDef::SUB_EXTENSION, card.clone())
+                    })?,
+                    CardRef::Custom(card) => Arc::new(card.clone()),
                 };
                 let mut builder = Curio::builder();
                 let builder = builder
@@ -97,9 +105,10 @@ pub fn node_from_def(def: &NodeDef, inventory: Inventory, card_dict: AssetDictio
                     .max_size(card_ref.max_size)
                     .display(card_ref.display.clone())
                     .name(nickname.as_ref().unwrap_or(&card_ref.name).clone());
-                    // TODO Error handling for build error here
-                node.add_curio(builder.build().unwrap(), points.clone()).unwrap();
-            }
+                // TODO Error handling for build error here
+                node.add_curio(builder.build().unwrap(), points.clone())
+                    .unwrap();
+            },
         }
     }
 
@@ -112,7 +121,7 @@ pub fn node_from_def(def: &NodeDef, inventory: Inventory, card_dict: AssetDictio
 #[cfg(test)]
 mod test {
     use super::super::sprite_definition::{CurioInstanceDefAlternative, SpriteDef};
-    use super::{NodeDef};
+    use super::NodeDef;
     use crate::{Pickup, Team};
 
     #[test]

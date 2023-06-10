@@ -1,16 +1,17 @@
-use super::error::{ErrorMsg as _, Result};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::borrow::Borrow;
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use typed_key::Key;
+
+use super::error::{ErrorMsg as _, Result};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 
 impl Metadata {
-
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -159,9 +160,11 @@ impl From<Metadata> for HashMap<String, Value> {
 
 #[cfg(test)]
 mod test {
-    use super::Metadata;
     use std::collections::HashMap;
+
     use typed_key::{typed_key, Key};
+
+    use super::Metadata;
 
     #[test]
     #[ignore = "Problems with hashmap being unsorted"]

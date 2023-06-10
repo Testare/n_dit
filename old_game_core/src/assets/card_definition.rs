@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::Asset;
 
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CardDef {
     pub actions: Vec<String>,

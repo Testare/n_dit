@@ -1,10 +1,10 @@
 mod game_change;
 
 pub use game_change::GameChange;
+use serde::{Deserialize, Serialize};
 
 use super::super::{Inventory, Node, Team, WorldMap};
 use super::animation::Animation;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GameState {

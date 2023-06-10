@@ -1,9 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use super::super::super::abstractions::StateChange;
 use super::super::super::error::{Error, Result};
 use super::super::animation::Animation;
 use crate::GameState;
-
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum GameChange {

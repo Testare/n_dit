@@ -1,21 +1,26 @@
-use getset::{CopyGetters, Getters, Setters, MutGetters};
+use std::collections::HashMap;
+use std::fmt;
+
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
 
-use crate::{Metadata, Sprite, error::Result};
-use std::{fmt, collections::HashMap};
+use crate::error::Result;
+use crate::{Metadata, Sprite};
 
-#[derive(Clone, Debug, Default, Setters, MutGetters, Getters, CopyGetters, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Default, Setters, MutGetters, Getters, CopyGetters, Serialize, Deserialize,
+)]
 pub struct Inventory {
     bag: Vec<Item>,
     #[get = "pub"]
     #[get_mut = "pub"]
     deck: Deck,
     #[get_copy = "pub"]
-    wallet: usize
+    wallet: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Pickup {
     Mon(usize),
     Item(Item),
@@ -23,7 +28,6 @@ pub enum Pickup {
 }
 
 impl Inventory {
-
     pub fn card_id(&self, name: &str) -> Option<CardId> {
         self.deck.card_id(name)
     }
@@ -32,14 +36,16 @@ impl Inventory {
         match pickup {
             Pickup::Mon(mon) => {
                 self.wallet -= mon;
-            }
+            },
             Pickup::Item(item) => {
                 // Will obviously need more complex logic if we have "stackable" items
                 self.bag.retain(|iter_item| item != iter_item);
-            }
+            },
             Pickup::Card(card) => {
-                self.deck.drop_card(card).expect("Undo failed, card was never picked up!");
-            }
+                self.deck
+                    .drop_card(card)
+                    .expect("Undo failed, card was never picked up!");
+            },
         }
     }
 
@@ -47,15 +53,15 @@ impl Inventory {
         match pickup {
             Pickup::Mon(mon) => {
                 self.wallet += mon;
-            }
+            },
             Pickup::Item(item) => {
                 // Will obviously need more complex logic if we have "stackable" items
                 self.bag.push(item);
-            }
+            },
             Pickup::Card(card_name) => {
                 // Will obviously need more complex logic if we have "stackable" cards
                 self.deck.add_card(&card_name);
-            }
+            },
         }
     }
 }
@@ -109,9 +115,9 @@ pub struct Item {
 /// can have their own unique names
 // TODO Implement actual logic
 pub struct Card {
-    #[serde(default, skip_serializing_if="Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nickname: Option<String>,
-    #[serde(default, skip_serializing_if="Metadata::is_empty")]
+    #[serde(default, skip_serializing_if = "Metadata::is_empty")]
     pub metadata: Metadata,
     #[get = "pub"]
     pub basis: String,
@@ -139,7 +145,6 @@ impl CardId {
 }
 
 impl Deck {
-
     pub fn play_card(&mut self, _card_id: &CardId) -> Result<()> {
         Ok(())
     }
@@ -163,25 +168,34 @@ impl Deck {
     }
 
     fn mark_card(&mut self, nickname: &str, card_name: &str) -> bool {
-        let card_count = self.0.get(card_name).map(|card|card.0).unwrap_or(0);
-        let marked_card_exists = self.0.get(nickname).and_then(|card|card.1.as_ref()).is_some();
+        let card_count = self.0.get(card_name).map(|card| card.0).unwrap_or(0);
+        let marked_card_exists = self
+            .0
+            .get(nickname)
+            .and_then(|card| card.1.as_ref())
+            .is_some();
         if card_count == 0 || marked_card_exists {
             false
         } else {
             let card_name_string = card_name.to_string();
             self.0.entry(card_name_string.clone()).or_default().0 -= 1;
-            self.0.entry(nickname.to_string()).or_default().1 = Some(MarkedCard(card_name_string, Metadata::new()));
+            self.0.entry(nickname.to_string()).or_default().1 =
+                Some(MarkedCard(card_name_string, Metadata::new()));
             true
         }
     }
 
-    fn mark_up_card<M: FnMut(&mut Metadata)>(&mut self, nickname: &str, mut mark_up: M) -> Option<()> {
+    fn mark_up_card<M: FnMut(&mut Metadata)>(
+        &mut self,
+        nickname: &str,
+        mut mark_up: M,
+    ) -> Option<()> {
         Some(mark_up(&mut self.0.get_mut(nickname)?.1.as_mut()?.1))
     }
 
     /**
      * Looks for a card with the specified nickname, or the specified basis name
-     * (base card name) if no card has that nickname. If multiple cards match, 
+     * (base card name) if no card has that nickname. If multiple cards match,
      * the first one in deck order is returned
      */
     pub fn card_id(&self, name: &str) -> Option<CardId> {
@@ -197,7 +211,7 @@ impl Deck {
 
     /**
      * Looks for a card with the specified nickname, or the specified basis name
-     * (base card name) if no card has that nickname. If multiple cards match, 
+     * (base card name) if no card has that nickname. If multiple cards match,
      * the first one in deck order is returned
      */
     pub fn card_by_name(&self, name: &str) -> Option<Card> {
@@ -232,7 +246,7 @@ impl Deck {
                 } else {
                     None
                 }
-            }
+            },
             CardId::Nickname(nickname) => {
                 let deck_card = self.0.get(nickname)?.1.as_ref()?;
                 Some(Card {
@@ -240,10 +254,7 @@ impl Deck {
                     metadata: deck_card.1.clone(),
                     basis: deck_card.0.clone(),
                 })
-
-            }
+            },
         }
-
     }
-
 }

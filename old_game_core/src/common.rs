@@ -1,11 +1,11 @@
 mod grid_map;
 
-pub use grid_map::GridMap;
-
-use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::collections::HashSet;
 use std::ops::{Add, BitAnd, BitOr};
+
+pub use grid_map::GridMap;
+use serde::{Deserialize, Serialize};
 
 pub type Point = (usize, usize);
 pub type Pt<T> = (T, T);
@@ -32,7 +32,7 @@ impl PointSet {
                 let y_diff = y.checked_sub(pt.1).unwrap_or_else(|| pt.1 - y);
                 let manhattan_distance = x_diff + y_diff;
                 manhattan_distance <= *range
-            }
+            },
         }
     }
 
@@ -62,7 +62,7 @@ impl PointSet {
                     }
                 }
                 set
-            }
+            },
         }
     }
 
@@ -161,28 +161,28 @@ impl Direction {
                 } else {
                     (point.0, point.1 - speed)
                 }
-            }
+            },
             Self::East => {
                 if point.0 + speed >= bounds.width() {
                     (bounds.width() - 1, point.1)
                 } else {
                     (point.0 + speed, point.1)
                 }
-            }
+            },
             Self::South => {
                 if point.1 + speed >= bounds.height() {
                     (point.0, bounds.height() - 1)
                 } else {
                     (point.0, point.1 + speed)
                 }
-            }
+            },
             Self::West => {
                 if speed >= point.0 {
                     (0, point.1)
                 } else {
                     (point.0 - speed, point.1)
                 }
-            }
+            },
         }
     }
 }

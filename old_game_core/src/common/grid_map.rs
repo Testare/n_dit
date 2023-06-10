@@ -1,7 +1,11 @@
-use bitvec::{slice::BitSlice, vec::BitVec};
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, iter::Rev, vec::IntoIter};
+use std::collections::HashMap;
+use std::iter::Rev;
+use std::vec::IntoIter;
+
 use bevy::reflect::{FromReflect, Reflect};
+use bitvec::slice::BitSlice;
+use bitvec::vec::BitVec;
+use serde::{Deserialize, Serialize};
 
 use super::Point;
 
@@ -116,7 +120,8 @@ impl<T> GridMap<T> {
     pub fn shape_bitvec(&self) -> BitVec<u8> {
         let height: [u8; 2] = (self.height() as u16).to_le_bytes();
         let width: [u8; 2] = (self.width() as u16).to_le_bytes();
-        let squarebits: BitVec<u8> =  self.grid
+        let squarebits: BitVec<u8> = self
+            .grid
             .iter()
             .flat_map(|col| col.iter().map(|sqr| sqr.is_some()))
             .collect();
@@ -238,8 +243,8 @@ impl<T> GridMap<T> {
     }
 
     /// Creates a base grid_map from a shape string
-    /// 
-    /// 
+    ///
+    ///
     pub fn from_shape_bitslice(bits: &BitSlice<u8>) -> Self {
         let (hw, squarebits) = bits.split_at(32);
         let (wbits, hbits) = hw.split_at(16);
@@ -401,11 +406,11 @@ impl<T> GridMap<T> {
                 self.square_mut(back_pt)?.set_item_key(None);
                 self.square_mut(next_back_pt)?.set_next(None);
                 None
-            }
+            },
             (None, Some(only_pt)) => {
                 self.square_mut(only_pt)?.set_item_key(None);
                 self.entries.remove(&item_key).map(|(item, _)| item)
-            }
+            },
             (None, None) => None, // There are no points here, should we panic?
             _ => panic!("Programmer error, this should not be possible"),
         }
@@ -455,7 +460,7 @@ impl<T> GridMap<T> {
             Some(next_front) => {
                 self.entries.get_mut(&item_key).unwrap().1 = next_front;
                 None
-            }
+            },
         }
     }
 
@@ -486,7 +491,7 @@ impl<T> GridMap<T> {
             Some(pt) => {
                 self.entries.get_mut(&item_key).unwrap().1 = pt;
                 None
-            }
+            },
             None => self.entries.remove(&item_key).map(|(item, _)| item),
         }
     }
@@ -1338,7 +1343,7 @@ mod test {
             ],
         ]);
         let shape_base_64 = "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==";
-        let other_shape   = "EwALACCAAz7447/vP/6x+AABPh7/+O/7jz/4gAMIAA==";
+        let other_shape = "EwALACCAAz7447/vP/6x+AABPh7/+O/7jz/4gAMIAA==";
         let grid_map_from_shape = GridMap::from_shape_string(shape_base_64).unwrap();
         let grid_map_from_other_shape = GridMap::from_shape_string(other_shape).unwrap();
         assert_eq!(expected_grid, grid_map_from_shape);

@@ -1,4 +1,4 @@
-use crate::{Curio, Team, Metadata};
+use crate::{Curio, Metadata, Team};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CurioBuilder {

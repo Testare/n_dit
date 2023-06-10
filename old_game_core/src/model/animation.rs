@@ -1,5 +1,6 @@
-use super::game_state::GameState;
 use serde::{Deserialize, Serialize};
+
+use super::game_state::GameState;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Animation {
@@ -14,7 +15,7 @@ impl Animation {
             ),
             Some(Animation::EnemyActions) => {
                 unimplemented!("Animations not implemented");
-            }
+            },
         }
     }
 }

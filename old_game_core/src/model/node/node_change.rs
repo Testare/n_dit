@@ -1,12 +1,13 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 
 use super::super::super::error::{ErrorMsg as _, Result};
 use super::super::super::{Metadata, StateChange};
+use super::super::inventory::CardId;
 pub use super::super::keys::node_change_keys as keys;
 use super::Sprite;
-use super::super::inventory::CardId;
-use crate::{Direction, GameState, Node, Point, Team, Curio};
+use crate::{Curio, Direction, GameState, Node, Point, Team};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NodeChange {
@@ -130,11 +131,7 @@ impl Node {
         Ok(())
     }
 
-    fn take_curio_action_change(
-        &mut self,
-        action_name: &str,
-        pt: Point,
-    ) -> NodeChangeResult {
+    fn take_curio_action_change(&mut self, action_name: &str, pt: Point) -> NodeChangeResult {
         if !self.table_set {
             return "Table hasn't been set yet".invalid();
         }
@@ -163,7 +160,9 @@ impl Node {
         metadata: &Metadata,
     ) -> Result<()> {
         let active_curio_key = metadata.expect(keys::PERFORMING_CURIO)?;
-        let action = self.action_dictionary.get(action_name)
+        let action = self
+            .action_dictionary
+            .get(action_name)
             .ok_or_else(|| "Action not found".fail_critical_msg())?;
         self.set_active_curio(Some(active_curio_key));
         let curio_action_metadata = metadata.expect(keys::CURIO_ACTION_METADATA)?;
@@ -173,20 +172,23 @@ impl Node {
             .is_none();
         if curio_not_found {
             "Take curio action curio does not exist".fail_critical()
-        } else { Ok(()) }
+        } else {
+            Ok(())
+        }
     }
 
-    fn play_card_change(
-        &mut self,
-        card_name: &str,
-        pt: Point,
-    ) -> NodeChangeResult {
+    fn play_card_change(&mut self, card_name: &str, pt: Point) -> NodeChangeResult {
         if self.table_set {
             return "Table is already set".invalid();
         }
         let mut metadata = self.default_metadata()?;
-        let card_id = self.inventory.card_id(card_name).ok_or_else(||format!("Could not find card [{}]", card_name).invalid_msg())?;
-        let Node {grid, inventory, ..} = self;
+        let card_id = self
+            .inventory
+            .card_id(card_name)
+            .ok_or_else(|| format!("Could not find card [{}]", card_name).invalid_msg())?;
+        let Node {
+            grid, inventory, ..
+        } = self;
         match grid.item_at_mut(pt) {
             Some(Sprite::AccessPoint(crd)) => {
                 // OLD CARD
@@ -201,19 +203,17 @@ impl Node {
                 inventory.deck_mut().play_card(&card_id)?;
                 let _ = crd.insert(card_id);
             },
-            _ => format!("No access point at pt [{:?}]", pt).invalid()?
+            _ => format!("No access point at pt [{:?}]", pt).invalid()?,
         }
 
         Ok(metadata)
     }
 
-    fn play_card_undo(
-        &mut self,
-        pt: Point,
-        metadata: &Metadata,
-    ) -> Result<()> {
+    fn play_card_undo(&mut self, pt: Point, metadata: &Metadata) -> Result<()> {
         let old_card_id = metadata.get(keys::REPLACED_CARD)?;
-        let Node {grid, inventory, ..} = self;
+        let Node {
+            grid, inventory, ..
+        } = self;
         match grid.item_at_mut(pt) {
             Some(Sprite::AccessPoint(crd)) => {
                 if let Some(played_card) = crd {
@@ -226,57 +226,67 @@ impl Node {
                 }
                 *crd = old_card_id;
             },
-            _ => format!("No access point at pt [{:?}] to undo", pt).fail_critical()?
+            _ => format!("No access point at pt [{:?}] to undo", pt).fail_critical()?,
         }
         Ok(())
     }
 
-    fn ready_to_play_change(
-        &mut self,
-    ) -> NodeChangeResult {
+    fn ready_to_play_change(&mut self) -> NodeChangeResult {
         if self.table_set {
             return "Table is already set".invalid();
         }
         let mut metadata = Metadata::default();
-        let access_point_map: Result<HashMap<usize, (Point, Option<CardId>)>> = self.grid()
-            .filtered_keys(|_, sprite|matches!(sprite, Sprite::AccessPoint(_)))
-            .into_iter()
-            .map(|access_point_key| {
-                let pt: Point = self.grid.head(access_point_key).unwrap();
+        let access_point_map: Result<HashMap<usize, (Point, Option<CardId>)>> =
+            self.grid()
+                .filtered_keys(|_, sprite| matches!(sprite, Sprite::AccessPoint(_)))
+                .into_iter()
+                .map(|access_point_key| {
+                    let pt: Point = self.grid.head(access_point_key).unwrap();
 
-                if let Some(Sprite::AccessPoint(crd_opt)) = self.grid().item(access_point_key) {
-                    let result = (access_point_key, (pt, crd_opt.clone()));
-                    if let Some(card_id) = crd_opt {
-                        // TODO Definitely need some code cleanup over here
-                        let card = self.inventory
-                            .deck()
-                            .card_by_id(card_id)
-                            .ok_or_else(||"Can't find card in deck".fail_reversible_msg())?;
+                    if let Some(Sprite::AccessPoint(crd_opt)) = self.grid().item(access_point_key) {
+                        let result = (access_point_key, (pt, crd_opt.clone()));
+                        if let Some(card_id) = crd_opt {
+                            // TODO Definitely need some code cleanup over here
+                            let card =
+                                self.inventory.deck().card_by_id(card_id).ok_or_else(|| {
+                                    "Can't find card in deck".fail_reversible_msg()
+                                })?;
 
-                        let card_def = self.card_dictionary
-                            .get(card.basis())
-                            .ok_or_else(||"Card not found in assets".fail_reversible_msg())?;
+                            let card_def = self
+                                .card_dictionary
+                                .get(card.basis())
+                                .ok_or_else(|| "Card not found in assets".fail_reversible_msg())?;
 
-                    let mut builder = Curio::builder();
-                    let builder = builder
-                        .team(Team::PlayerTeam)
-                        .metadata(card.metadata.clone())
-                        .actions(&card_def.actions)
-                        .speed(card_def.speed)
-                        .max_size(card_def.max_size)
-                        .display(card_def.display.clone())
-                        .name(card.nickname.as_ref().unwrap_or_else(||card.basis()).clone());
+                            let mut builder = Curio::builder();
+                            let builder = builder
+                                .team(Team::PlayerTeam)
+                                .metadata(card.metadata.clone())
+                                .actions(&card_def.actions)
+                                .speed(card_def.speed)
+                                .max_size(card_def.max_size)
+                                .display(card_def.display.clone())
+                                .name(
+                                    card.nickname
+                                        .as_ref()
+                                        .unwrap_or_else(|| card.basis())
+                                        .clone(),
+                                );
 
-                        self.grid_mut().replace_item(access_point_key, Sprite::Curio(builder.build().ok_or_else(||"Failed to convert asset to curio".fail_critical_msg())?));
+                            self.grid_mut().replace_item(
+                                access_point_key,
+                                Sprite::Curio(builder.build().ok_or_else(|| {
+                                    "Failed to convert asset to curio".fail_critical_msg()
+                                })?),
+                            );
+                        } else {
+                            self.grid_mut().pop_back(access_point_key);
+                        }
+                        Ok(result)
                     } else {
-                        self.grid_mut().pop_back(access_point_key);
+                        "Some crazy access point failure".fail_critical()
                     }
-                    Ok(result)
-                } else {
-                    "Some crazy access point failure".fail_critical()
-                }
-
-            }).collect();
+                })
+                .collect();
 
         metadata.put(keys::ACCESS_POINT_MAP, &access_point_map?)?;
         self.table_set = true;
@@ -293,10 +303,13 @@ impl Node {
         let access_point_map = metadata.expect(keys::ACCESS_POINT_MAP)?;
         for (key, (pt, crd_opt)) in access_point_map.into_iter() {
             if crd_opt.is_some() {
-                self.grid_mut().replace_item(key, Sprite::AccessPoint(crd_opt));
+                self.grid_mut()
+                    .replace_item(key, Sprite::AccessPoint(crd_opt));
             } else if self.grid().item(key).is_none() {
-                unsafe { // Key checked to not exist
-                    self.grid_mut().return_item_with_key(key, pt, Sprite::AccessPoint(None));
+                unsafe {
+                    // Key checked to not exist
+                    self.grid_mut()
+                        .return_item_with_key(key, pt, Sprite::AccessPoint(None));
                 }
             } else {
                 "Undo failed: somehow an empty access point became a sprite".fail_critical()?;
@@ -306,8 +319,6 @@ impl Node {
         self.table_set = false;
         Ok(())
     }
-
-
 }
 
 impl StateChange for NodeChange {
@@ -325,16 +336,12 @@ impl StateChange for NodeChange {
             MoveActiveCurio(dir) => node.move_active_curio(*dir),
             TakeCurioAction(action_name, pt) => {
                 node.take_curio_action_change(action_name.as_str(), *pt)
-            }
-            PlayCard(card_name, pt) => {
-                node.play_card_change(card_name.as_str(), *pt)
-            }
-            ReadyToPlay => {
-                node.ready_to_play_change()
-            }
+            },
+            PlayCard(card_name, pt) => node.play_card_change(card_name.as_str(), *pt),
+            ReadyToPlay => node.ready_to_play_change(),
             _ => {
                 unimplemented!("Unimplemented NodeChange")
-            }
+            },
         }
     }
 
@@ -348,16 +355,12 @@ impl StateChange for NodeChange {
             MoveActiveCurio(_) => node.move_active_curio_undo(metadata),
             TakeCurioAction(action_name, target) => {
                 node.take_curio_action_undo(action_name.as_str(), *target, metadata)
-            }
-            PlayCard(_, pt) => {
-                node.play_card_undo(*pt, metadata)
-            }
-            ReadyToPlay => {
-                node.ready_to_play_undo(metadata)
-            }
+            },
+            PlayCard(_, pt) => node.play_card_undo(*pt, metadata),
+            ReadyToPlay => node.ready_to_play_undo(metadata),
             _ => {
                 unimplemented!("Unimplemented NodeChange")
-            }
+            },
         }
     }
 
@@ -372,7 +375,9 @@ impl StateChange for NodeChange {
             return matches!(self, FinishTurn); // Finish turn is the only durable event
         }
         match self {
-            DeactivateCurio | FinishTurn | TakeCurioAction(_, _) | PlayCard(_, _) | ReadyToPlay => true,
+            DeactivateCurio | FinishTurn | TakeCurioAction(_, _) | PlayCard(_, _) | ReadyToPlay => {
+                true
+            },
             ActivateCurio(_) | MoveActiveCurio(_) => false,
         }
     }

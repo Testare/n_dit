@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use super::super::error::Result;
 use super::super::{GameChange, NodeChange};
 use super::AuthorityGameMaster;
 use crate::{Direction, Point};
-use serde::{Deserialize, Serialize};
 /**
  * These commands are to be the sole method outside of the game core crate
  * of changing the internal state.
@@ -22,9 +23,9 @@ use serde::{Deserialize, Serialize};
 #[non_exhaustive]
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 pub enum GameCommand {
-    Start, // When a player joins a server, it should execute this command
+    Start,    // When a player joins a server, it should execute this command
     ShutDown, // To close the server down, run this one
-    Drop, // When a player disconnects from the server, run this one.
+    Drop,     // When a player disconnects from the server, run this one.
     Next,
     Skip,
     Undo,
@@ -61,39 +62,39 @@ pub(super) fn apply_command_dispatch(
                 // gm.apply(GameChange::NextPage)
                 Ok(())
             }
-        }
+        },
         NodeActivateCurio { curio_id } => gm.apply(NodeChange::ActivateCurio(*curio_id)),
         NodeDeactivateCurio => {
             gm.apply(NodeChange::DeactivateCurio)?;
             node_check_turn_end(gm)
-        }
+        },
         NodeMoveActiveCurio(dir) => {
             gm.apply(NodeChange::MoveActiveCurio(*dir))?;
             node_check_turn_end(gm)
-        }
-        NodePlayCard { card_name, target_access_point } => {
-            gm.apply(NodeChange::PlayCard(card_name.clone(), *target_access_point))
-        }
-        NodeReadyToPlay => {
-            gm.apply(NodeChange::ReadyToPlay)
-        }
+        },
+        NodePlayCard {
+            card_name,
+            target_access_point,
+        } => gm.apply(NodeChange::PlayCard(
+            card_name.clone(),
+            *target_access_point,
+        )),
+        NodeReadyToPlay => gm.apply(NodeChange::ReadyToPlay),
         NodeTakeAction {
             action_name,
             target,
         } => {
             gm.apply(NodeChange::TakeCurioAction(action_name.clone(), *target))?;
             node_check_turn_end(gm)
-        }
+        },
         Skip => {
             unimplemented!("Skip action not yet implemented");
-        }
+        },
         Undo => gm.undo_until_last_durable_event(),
-        Start => {
-            Ok(())
-        }
+        Start => Ok(()),
         _ => {
             unimplemented!("Many actions not yet implemented, such as {:?}", command);
-        }
+        },
     }
 }
 

@@ -55,7 +55,6 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
     node.with_curio(curio_key, |curio| {
         collect(NodeChange::ActivateCurio(curio_key));
 
-
         if let Some((action_name, preferred_action)) = curio
             .actions()
             .expect("If the AI has an action not defined, panic")
@@ -89,7 +88,10 @@ pub fn simple_greedy_attack<C: FnMut(NodeChange)>(curio_key: usize, node: &Node,
                     .with_curio(chosen_target, |curio| curio.head()) // FIXME The head is not the only targetable sprite of the player
                     .expect("Chosen target should have a head");
 
-                collect(NodeChange::TakeCurioAction(action_name.to_string(), chosen_target_pt));
+                collect(NodeChange::TakeCurioAction(
+                    action_name.to_string(),
+                    chosen_target_pt,
+                ));
             } else {
                 // For now, do nothing. In the future, we might:
                 // Pathfind towards /closest/ enemy

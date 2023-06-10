@@ -1,8 +1,9 @@
 //! Utility module for helping with pathfinding for AI
 
-use crate::{Direction, Node, Point};
 use std::cmp::Ordering::{Equal, Greater, Less};
 use std::collections::VecDeque;
+
+use crate::{Direction, Node, Point};
 
 /// Highly unoptimized and potentially buggy algorithm, significant slow down at speeds around 12.
 /// ... But hey, it does what it says on the box.

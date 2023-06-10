@@ -2,7 +2,7 @@
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Clone, Copy, PartialEq, Eq, )]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ErrorLevel {
     NonCritical,
@@ -122,13 +122,13 @@ impl From<base64::DecodeError> for LoadingError {
     }
 }
 
-impl From<std::io::Error> for Error{
+impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::Io(err)
     }
 }
 
-impl From<serde_json::Error> for Error{
+impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {
         Error::SerdeJson(err)
     }

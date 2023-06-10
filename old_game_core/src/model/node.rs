@@ -1,22 +1,20 @@
 mod node_change;
 mod with_curio;
 
+use getset::Getters;
 pub use node_change::NodeChange;
 pub use node_change::SpritePoint; // TODO Move these to better location
+use serde::{Deserialize, Serialize};
 use with_curio::WithCurio;
 
-use getset::Getters;
-use serde::{Deserialize, Serialize};
-
-use crate::assets::{AssetDictionary, CardDef, ActionDef};
-use crate::{error::Result, Bounds, GridMap, Metadata, Point, Team};
 // TODO Use some abstraction for EnemyAi, so we don't depend on that
 use super::super::ai::EnemyAi;
-use super::{
-    curio::Curio,
-    inventory::{Inventory, Pickup, CardId},
-    keys::node_change_keys,
-};
+use super::curio::Curio;
+use super::inventory::{CardId, Inventory, Pickup};
+use super::keys::node_change_keys;
+use crate::assets::{ActionDef, AssetDictionary, CardDef};
+use crate::error::Result;
+use crate::{Bounds, GridMap, Metadata, Point, Team};
 
 type NodeConstructionError = String;
 

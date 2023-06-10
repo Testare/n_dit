@@ -1,9 +1,8 @@
-
 use super::super::error::{ErrorMsg as _, Result};
 use super::super::Metadata;
 use super::keys::curio_action_keys as keys;
+use crate::assets::{ActionCondition, ActionDef, ActionEffect, ActionTarget};
 use crate::{Node, Point};
-use crate::assets::{ActionDef, ActionTarget, ActionCondition, ActionEffect};
 
 type CurioAction = ActionDef;
 
@@ -90,7 +89,7 @@ impl CurioAction {
                             deleted_sprites.push((key, deleted_curio));
                             metadata.put(keys::DELETED_SPRITES, &deleted_sprites)?;
                         }
-                    }
+                    },
                     ActionEffect::IncreaseMaxSize { amount, bound } => {
                         let max_size_change: (usize, usize) = node
                             .with_curio_at_mut(target_pt, |mut target| {
@@ -103,7 +102,7 @@ impl CurioAction {
                                     .fail_reversible_msg()
                             })?;
                         metadata.put(keys::MAX_SIZE_CHANGE, &max_size_change)?;
-                    }
+                    },
                     _ => unimplemented!("Not implemented yet!"),
                 }
                 Ok(metadata)
@@ -135,7 +134,6 @@ impl ActionCondition {
     }
 }
 
-
 impl ActionTarget {
     fn matches(&self, node: &Node, curio_key: usize, target_pt: Point) -> bool {
         match self {
@@ -143,13 +141,13 @@ impl ActionTarget {
                 let source_team = node.with_curio(curio_key, |curio| curio.team());
                 let target_team = node.with_curio_at(target_pt, |curio| curio.team());
                 source_team.is_some() && target_team.is_some() && source_team != target_team
-            }
+            },
             Self::Ally => {
                 // TODO shouldn't be able to target self.
                 let source_team = node.with_curio(curio_key, |curio| curio.team());
                 let target_team = node.with_curio_at(target_pt, |curio| curio.team());
                 source_team.is_some() && target_team.is_some() && source_team == target_team
-            }
+            },
             _ => unimplemented!("ActionTarget {:?} not implemented yet", self),
         }
     }
