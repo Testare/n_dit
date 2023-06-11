@@ -7,6 +7,7 @@ use game_core::{
     MovementSpeed, MovesTaken, Node, NodePiece, Pickup, Team,
 };
 
+use crate::term::layout::LayoutEvent;
 use crate::term::node_ui::{NodeCursor, ShowNode};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
@@ -19,12 +20,78 @@ impl Plugin for DemoPlugin {
 }
 
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
-    let example_card = commands
-        .spawn((Card::new("Hack"), Description::new("Basic attack program")))
+    let hack = commands
+        .spawn((
+            Card::new("Hack", None),
+            MaximumSize(4),
+            MovementSpeed(2),
+            Actions::new(vec![Action {
+                name: "Slice".to_owned(),
+                range: 1,
+                description: "Deletes 2 sectors from target".to_owned(),
+            }]),
+            Description::new("Basic attack program"),
+        ))
+        .id();
+    let card_0 = commands
+        .spawn((
+            Card::new("Card0", None),
+            Description::new("Basic attack program"),
+        ))
+        .id();
+    let card_1 = commands
+        .spawn((
+            Card::new("Card1", None),
+            Description::new("Basic attack program1"),
+        ))
+        .id();
+    let card_2 = commands
+        .spawn((
+            Card::new("Card2", None),
+            Description::new("Basic attack program2"),
+        ))
+        .id();
+    let card_3 = commands
+        .spawn((
+            Card::new("Card3", None),
+            Description::new("Basic attack program3"),
+        ))
+        .id();
+    let card_4 = commands
+        .spawn((
+            Card::new("Card4", None),
+            Description::new("Basic attack program4"),
+        ))
+        .id();
+    let card_5 = commands
+        .spawn((
+            Card::new("Data Doctor Pro", Some("DataDocPro")),
+            Description::new("He's gonna get you"),
+        ))
         .id();
     commands.spawn((
         PlayerBundle::<0>::default(),
-        Deck::new().with_card(example_card).with_card(example_card),
+        Deck::new()
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(hack)
+            .with_card(card_0)
+            .with_card(card_1)
+            .with_card(card_2)
+            .with_card(card_3)
+            .with_card(card_4)
+            .with_card(card_5),
     ));
     let node = commands
         .spawn((
@@ -54,7 +121,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
                 .add_to_grid(node_id, vec![(6, 2)]);
             node.spawn((
-                Pickup::Card(example_card),
+                Pickup::Card(hack),
                 NodePiece::new("pickup:card"),
                 Description::new("A card! Get this card! /it;s a good card! A very good card!"),
             ))
@@ -84,7 +151,11 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 fn debug_key(
     mut inputs: EventReader<CrosstermEvent>,
     nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
+    mut layout_events: EventReader<LayoutEvent>,
 ) {
+    for layout_event in layout_events.iter() {
+        log::trace!("LAYOUT EVENT: {:?}", layout_event);
+    }
     for input in inputs.iter() {
         if let CrosstermEvent::Key(KeyEvent {
             code: KeyCode::Char('d'),

@@ -1,7 +1,7 @@
 use game_core::{EntityGrid, Node};
 
 use super::{NodeCursor, NodeFocus, ShowNode};
-use crate::term::layout::StyleTty;
+use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
 use crate::term::node_ui::{AvailableMoves, SelectedEntity};
 use crate::term::prelude::*;
@@ -66,7 +66,7 @@ pub fn create_node_ui(
                             .spawn((
                                 StyleTty(taffy::prelude::Style {
                                     size: Size {
-                                        width: Dimension::Points(13.),
+                                        width: Dimension::Points(14.),
                                         height: Dimension::Auto,
                                     },
                                     flex_direction: FlexDirection::Column,
@@ -94,9 +94,11 @@ pub fn create_node_ui(
                                             width: Dimension::Auto,
                                             height: Dimension::Points(0.0),
                                         },
+                                        flex_grow: 1.0,
                                         ..default()
                                     }),
-                                    super::menu_ui::MenuUiCardSelection,
+                                    LayoutMouseTarget,
+                                    super::menu_ui::MenuUiCardSelection::<0>::default(),
                                     Name::new("Menu Card Selection"),
                                 ));
                                 menu_bar.spawn((
@@ -130,7 +132,7 @@ pub fn create_node_ui(
                                             width: Dimension::Auto,
                                             height: Dimension::Points(0.0),
                                         },
-                                        flex_grow: 1.0,
+                                        // flex_grow: 1.0,
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiDescription,

@@ -1,4 +1,10 @@
+use crate::card::Deck;
 use crate::prelude::*;
+
+mod node_action;
+
+use getset::CopyGetters;
+pub use node_action::{access_point_actions, NodeAction};
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
@@ -19,9 +25,15 @@ pub enum Pickup {
     Item(Entity),
 }
 
-#[derive(Component, Reflect, Default)]
+#[derive(Component, CopyGetters, Reflect, Default)]
 pub struct AccessPoint {
+    #[getset(get_copy = "pub")]
     card: Option<Entity>, // Display card data to load
+}
+
+#[derive(Component)]
+pub struct PlayedCards {
+    played_card_decks: Vec<Option<Deck>>,
 }
 
 #[derive(Component, Reflect)]
@@ -31,13 +43,13 @@ pub struct Curio {
     name: String,
 }
 
-#[derive(Component, Deref, Reflect)]
+#[derive(Clone, Component, Deref, Reflect)]
 pub struct Description(String);
 
-#[derive(Component, Debug, Deref, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, FromReflect, Reflect)]
 pub struct Actions(Vec<Action>);
 
-#[derive(Debug, FromReflect, Reflect)]
+#[derive(Clone, Debug, FromReflect, Reflect)]
 pub struct Action {
     pub name: String,
     pub range: usize,
@@ -46,10 +58,10 @@ pub struct Action {
     // desc
 }
 
-#[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MovementSpeed(pub u32);
 
-#[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MaximumSize(pub u32);
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]

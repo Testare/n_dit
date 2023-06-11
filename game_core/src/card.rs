@@ -5,6 +5,7 @@ use crate::prelude::*;
 #[derive(Component, Debug, Default, FromReflect, Reflect)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
+    ordering: Vec<(String, Entity)>,
 }
 
 impl Deck {
@@ -12,6 +13,10 @@ impl Deck {
 
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn different_cards_len(&self) -> usize {
+        self.cards.len()
     }
 
     pub fn cards_with_count<'a>(&'a self) -> impl Iterator<Item = (Entity, NonZeroU32)> + 'a {
@@ -51,22 +56,32 @@ impl Deck {
     }
 }
 
-#[derive(Component, FromReflect, Reflect)]
+#[derive(Component, Debug, FromReflect, Reflect)]
 pub struct Card {
     card_name: String,
+    short_name: Option<String>,
     nickname: Option<String>,
 }
 
 impl Card {
-    pub fn new<S: Into<String>>(card_name: S) -> Self {
+    pub fn new<S: Into<String>>(card_name: S, short_name: Option<S>) -> Self {
         Card {
             card_name: card_name.into(),
+            short_name: short_name.map(Into::into),
             nickname: None,
         }
     }
 
     pub fn name_or_nickname(&self) -> &str {
         self.nickname.as_ref().unwrap_or(&self.card_name).as_str()
+    }
+
+    pub fn short_name_or_nickname(&self) -> &str {
+        self.nickname
+            .as_ref()
+            .or(self.short_name.as_ref())
+            .unwrap_or(&self.card_name)
+            .as_str()
     }
 
     pub fn card_name(&self) -> &str {
@@ -83,16 +98,4 @@ struct Tags {
 enum Tag {
     Fire,
     Flying,
-}
-
-mod action {
-    use bevy::prelude::*;
-
-    #[derive(Component, FromReflect, Reflect)]
-    struct Actions {
-        actions: Vec<Entity>, // Entities or just a list of them directly?
-    }
-
-    #[derive(Component, FromReflect, Reflect)]
-    struct Action {}
 }

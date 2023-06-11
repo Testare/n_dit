@@ -1,4 +1,5 @@
 use bevy::core::FrameCount;
+use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
@@ -20,6 +21,21 @@ struct NodeTty(taffy::node::Node);
 /// Root of a layout. Is fitted to terminal
 #[derive(Component)]
 pub struct LayoutRoot;
+
+#[derive(Component, CopyGetters, Debug, Getters)]
+pub struct LayoutEvent {
+    #[getset(get_copy = "pub")]
+    entity: Entity,
+    #[getset(get_copy = "pub")]
+    pos: UVec2,
+    #[getset(get = "pub")]
+    modifiers: crossterm::event::KeyModifiers,
+    #[getset(get = "pub")]
+    event_kind: crossterm::event::MouseEventKind,
+}
+
+#[derive(Component, Debug)]
+pub struct LayoutMouseTarget;
 
 /// Part of a layout, defines the style
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -75,6 +91,8 @@ impl CalculatedSizeTty {
 impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
+            .add_event::<LayoutEvent>()
+            .add_system(generate_layout_events.in_base_set(CoreSet::PreUpdate))
             .add_systems(
                 (
                     taffy_apply_style_updates,
@@ -91,6 +109,46 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     .chain()
                     .in_set(RenderTtySet::RenderLayouts),
             );
+    }
+}
+
+fn generate_layout_events(
+    mut crossterm_events: EventReader<CrosstermEvent>,
+    mut layout_event_writer: EventWriter<LayoutEvent>,
+    layout_elements: Query<
+        (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
+        (With<StyleTty>, With<LayoutMouseTarget>),
+    >,
+) {
+    for crossterm_event in crossterm_events.iter() {
+        if let CrosstermEvent::Mouse(crossterm::event::MouseEvent {
+            kind,
+            column,
+            row,
+            modifiers,
+        }) = crossterm_event
+        {
+            let (event_x, event_y) = (*column as u32, *row as u32);
+
+            for (entity, size, translation) in layout_elements.iter() {
+                if translation.x <= event_x
+                    && event_x < (translation.x + size.width32())
+                    && translation.y <= event_y
+                    && event_y < (translation.y + size.height32())
+                {
+                    let pos = UVec2 {
+                        x: event_x - translation.x,
+                        y: event_y - translation.y,
+                    };
+                    layout_event_writer.send(LayoutEvent {
+                        entity,
+                        pos,
+                        modifiers: modifiers.clone(),
+                        event_kind: kind.clone(),
+                    })
+                }
+            }
+        }
     }
 }
 

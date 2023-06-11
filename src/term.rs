@@ -1,5 +1,5 @@
 mod configuration;
-mod layout;
+pub mod layout;
 pub mod node_ui;
 mod render;
 
@@ -17,6 +17,8 @@ use std::time::Duration;
 use crossterm::event::Event as CrosstermEvent;
 use crossterm::execute;
 use prelude::*;
+
+use self::configuration::DrawConfiguration;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 enum TerminalFocusMode {
@@ -187,6 +189,7 @@ impl Plugin for CharmiePlugin {
         app.init_resource::<TermConfig>()
             .init_resource::<TermEventListener>()
             .init_resource::<TerminalWindow>()
+            .init_resource::<DrawConfiguration>()
             .add_state::<TerminalFocusMode>()
             .add_plugin(render::RenderTtyPlugin::default())
             .add_plugin(node_ui::NodeUiPlugin::default())

@@ -5,10 +5,18 @@ pub mod player;
 pub mod prelude;
 
 pub use entity_grid::EntityGrid;
+// TODO no longer use these publicly, but have all itnerfaces one level deep?
 pub use node::{Mon, Node, NodePiece, *};
 use thiserror::Error;
 
 use self::prelude::*;
+
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum NDitCoreSet {
+    RawInputs,
+    ProcessInputs,
+    ProcessCommands,
+}
 
 #[derive(Debug, Error)]
 pub enum NDitError {
@@ -19,10 +27,37 @@ pub enum NDitError {
     },
 }
 
+pub struct Act<A> {
+    pub action: A,
+    pub player: usize,
+}
+
+impl<A> Act<A> {
+    pub fn new<const P: usize>(action: A) -> Self {
+        Act { action, player: P }
+    }
+
+    pub fn action(&self) -> &A {
+        &self.action
+    }
+
+    pub fn player(&self) -> usize {
+        self.player
+    }
+}
+
 pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_event::<Act<node::NodeAction>>()
+            .configure_sets((
+                NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
+                NDitCoreSet::ProcessInputs.in_base_set(CoreSet::PreUpdate),
+                NDitCoreSet::ProcessCommands.in_base_set(CoreSet::Update),
+            ))
+            .add_systems((node::access_point_actions,).in_set(NDitCoreSet::ProcessCommands));
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

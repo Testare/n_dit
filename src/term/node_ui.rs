@@ -9,7 +9,7 @@ use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use game_core::{EntityGrid, Node};
+use game_core::{EntityGrid, NDitCoreSet, Node};
 use registry::GlyphRegistry;
 
 use self::menu_ui::{
@@ -73,12 +73,20 @@ impl Plugin for NodeUiPlugin {
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(
-                (grid_ui::adjust_available_moves,)
+                (menu_ui::MenuUiCardSelection::<0>::handle_layout_events,)
+                    .in_set(OnUpdate(TerminalFocusMode::Node))
+                    .before(NDitCoreSet::ProcessCommands),
+            )
+            .add_systems(
+                (
+                    grid_ui::adjust_available_moves,
+                    // menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
+                )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
             )
             .add_systems(MenuUiLabel::ui_systems())
-            .add_systems(MenuUiCardSelection::ui_systems())
+            .add_systems(MenuUiCardSelection::<0>::ui_systems())
             .add_systems(MenuUiActions::ui_systems())
             .add_systems(MenuUiStats::ui_systems())
             .add_systems(MenuUiDescription::ui_systems())

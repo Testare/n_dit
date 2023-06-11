@@ -108,12 +108,19 @@ pub fn render_grid_system(
     node_ui_data: NodeUiDataParam,
     node_pieces: Query<NodePieceQ>,
     glyph_registry: Res<GlyphRegistry>,
+    draw_config: Res<DrawConfiguration>,
     render_grid_q: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll), With<GridUi>>,
 ) {
     if let Some(node_data) = node_ui_data.node_data() {
         if let Ok((render_grid_id, size, scroll)) = render_grid_q.get_single() {
-            let grid_rendering =
-                render_grid(size, scroll, &node_data, &node_pieces, &glyph_registry);
+            let grid_rendering = render_grid(
+                size,
+                scroll,
+                &node_data,
+                &node_pieces,
+                &glyph_registry,
+                &draw_config,
+            );
 
             commands
                 .get_entity(render_grid_id)
@@ -129,13 +136,13 @@ fn render_grid(
     node_data: &NodeUiQReadOnlyItem,
     node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
+    draw_config: &DrawConfiguration,
 ) -> Vec<String> {
     // TODO Break DrawConfiguration down into parts and resources
 
     let grid = node_data.grid;
     let node_cursor = node_data.node_cursor;
 
-    let draw_config = DrawConfiguration::default();
     let width = grid.width() as usize;
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
