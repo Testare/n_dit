@@ -2,19 +2,19 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent,
 use game_core::EntityGrid;
 
 use super::grid_ui::{GridUi, NodeViewScroll};
-use super::{NodeCursor, SelectedEntity};
+use super::{NodeCursor, SelectedEntity, SelectedAction};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
 
 pub fn node_cursor_controls(
-    mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedEntity)>,
+    mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedAction, &mut SelectedEntity)>,
     mut grid_ui_view: Query<
         (&CalculatedSizeTty, &GlobalTranslationTty, &NodeViewScroll),
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
-    for (mut cursor, grid, mut selected_entity) in node_cursors.iter_mut() {
+    for (mut cursor, grid, mut selected_action, mut selected_entity) in node_cursors.iter_mut() {
         if let Ok((size, translation, scroll)) = grid_ui_view.get_single_mut() {
             for input in inputs.iter() {
                 match input {
@@ -44,6 +44,7 @@ pub fn node_cursor_controls(
                             modifiers,
                         },
                     ) => {
+                        // TODO Use layout events instead
                         let grid_contained = size.contains_mouse_event(translation, event);
                         if grid_contained {
                             match *kind {
@@ -80,6 +81,8 @@ pub fn node_cursor_controls(
         let now_selected_entity = grid.item_at(**cursor);
         if selected_entity.0 != now_selected_entity {
             selected_entity.0 = now_selected_entity;
+            **selected_action = None;
+
         }
     }
 }

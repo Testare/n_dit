@@ -1,10 +1,10 @@
-use crate::card::Deck;
+use crate::card::{Deck, ActionEffect};
 use crate::prelude::*;
 
-mod node_action;
+mod node_act;
 
 use getset::CopyGetters;
-pub use node_action::{access_point_actions, NodeAction};
+pub use node_act::{access_point_actions, NodeAct};
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
@@ -53,9 +53,9 @@ pub struct Actions(Vec<Action>);
 pub struct Action {
     pub name: String,
     pub range: usize,
+    pub effect: ActionEffect,
     pub description: String,
-    // effect
-    // desc
+    // tags
 }
 
 #[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]

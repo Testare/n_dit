@@ -35,6 +35,9 @@ pub struct NodeUiPlugin;
 #[derive(Component, Debug, Deref)]
 pub struct SelectedEntity(pub Option<Entity>);
 
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct SelectedAction(Option<usize>);
+
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct AvailableMoves(HashSet<UVec2>);
 
@@ -73,7 +76,9 @@ impl Plugin for NodeUiPlugin {
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(
-                (menu_ui::MenuUiCardSelection::<0>::handle_layout_events,)
+                (menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
+                    menu_ui::MenuUiActions::handle_layout_events,
+                )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .before(NDitCoreSet::ProcessCommands),
             )

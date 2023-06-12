@@ -1,9 +1,11 @@
 mod card_selection;
+mod actions;
 
 use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 pub use card_selection::MenuUiCardSelection;
+pub use actions::MenuUiActions;
 use game_core::node::NodePiece;
 use game_core::prelude::*;
 use game_core::{
@@ -71,9 +73,6 @@ pub struct MenuUiLabel;
 
 #[derive(Component, Debug)]
 pub struct MenuUiStats;
-
-#[derive(Component, Debug)]
-pub struct MenuUiActions;
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiDescription;
@@ -171,27 +170,6 @@ impl SimpleSubmenu for MenuUiStats {
     }
 }
 
-impl SimpleSubmenu for MenuUiActions {
-    type RenderSystemParam = ();
-
-    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
-        let actions = selected.actions.as_deref()?;
-        Some(actions.len() + 1)
-    }
-
-    fn render(
-        selected: &NodePieceQItem<'_>,
-        size: &CalculatedSizeTty,
-        _: (),
-    ) -> Option<Vec<String>> {
-        let actions = selected.actions.as_deref()?;
-        let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
-        for action in actions.iter() {
-            menu.push(action.name.clone());
-        }
-        Some(menu)
-    }
-}
 
 impl MenuUiDescription {
     fn style_update_system(

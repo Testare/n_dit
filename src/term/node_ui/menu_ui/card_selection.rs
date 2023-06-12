@@ -2,7 +2,7 @@ use bevy::app::SystemAppConfig;
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Card, Deck};
 use game_core::player::PlayerN;
-use game_core::{AccessPoint, NodeAction, NodePiece};
+use game_core::{AccessPoint, NodeAct, NodePiece};
 use pad::PadStr;
 use taffy::style::Dimension;
 
@@ -25,7 +25,7 @@ impl<const P: usize> MenuUiCardSelection<P> {
         deck: Query<&Deck, With<PlayerN<P>>>,
         node_data: NodeUiDataParam,
         access_points: Query<&AccessPoint, With<NodePiece>>,
-        mut node_command: EventWriter<Act<NodeAction>>,
+        mut node_command: EventWriter<Act<NodeAct>>,
     ) {
         if let Ok(deck) = deck.get_single() {
             for layout_event in layout_events.iter() {
@@ -70,11 +70,11 @@ impl<const P: usize> MenuUiCardSelection<P> {
 
                                     if access_point.card() == Some(card_id) {
                                         node_command.send(Act::new::<P>(
-                                            NodeAction::UnloadAccessPoint { access_point_id },
+                                            NodeAct::UnloadAccessPoint { access_point_id },
                                         ));
                                     } else {
                                         node_command.send(Act::new::<P>(
-                                            NodeAction::LoadAccessPoint {
+                                            NodeAct::LoadAccessPoint {
                                                 access_point_id,
                                                 card_id,
                                             },

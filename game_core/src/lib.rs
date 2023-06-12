@@ -50,7 +50,7 @@ pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Act<node::NodeAction>>()
+        app.add_event::<Act<node::NodeAct>>()
             .configure_sets((
                 NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
                 NDitCoreSet::ProcessInputs.in_base_set(CoreSet::PreUpdate),

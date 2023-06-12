@@ -3,7 +3,7 @@ use game_core::{EntityGrid, Node};
 use super::{NodeCursor, NodeFocus, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
-use crate::term::node_ui::{AvailableMoves, SelectedEntity};
+use crate::term::node_ui::{AvailableMoves, SelectedEntity, SelectedAction};
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
 
@@ -20,6 +20,7 @@ pub fn create_node_ui(
             commands.entity(*node_id).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
+                SelectedAction(None),
                 AvailableMoves::default(),
             ));
         }
@@ -123,6 +124,7 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiActions,
+                                    LayoutMouseTarget,
                                     Name::new("Actions Menu"),
                                 ));
                                 menu_bar.spawn((
@@ -155,6 +157,7 @@ pub fn create_node_ui(
                             }),
                             Name::new("Grid"),
                             GridUi,
+                            LayoutMouseTarget,
                             NodeViewScroll::default(),
                         ));
                     });
