@@ -23,7 +23,6 @@ pub fn create_node_ui(
                 SelectedAction(None),
                 AvailableMoves::default(),
             ));
-        }
         if (*node_focus).is_none() {
             let render_root = commands
                 .spawn((
@@ -58,6 +57,7 @@ pub fn create_node_ui(
                                 height: Dimension::Auto,
                             },
                             flex_grow: 1.0,
+                            flex_shrink: 0.0,
                             ..default()
                         }),
                         Name::new("Node Content Pane"),
@@ -148,6 +148,10 @@ pub fn create_node_ui(
                                     width: Dimension::Auto,
                                     height: Dimension::Auto,
                                 },
+                                max_size: Size {
+                                    width: Dimension::Points((grid.width() * 3 + 1) as f32),
+                                    height: Dimension::Points((grid.height() * 2 + 1) as f32),
+                                },
                                 border: Rect {
                                     left: Dimension::Points(1.0),
                                     ..default()
@@ -161,9 +165,23 @@ pub fn create_node_ui(
                             NodeViewScroll::default(),
                         ));
                     });
+                    root.spawn((
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Points(1.),
+                            },
+                            flex_shrink: 0.0,
+                            ..default()
+                        }),
+                        Name::new("Message Bar"),
+                        super::MessageBarUi(vec!["Have you ever heard the story of Darth Plegius the wise? I thought not, it's not a story the jedi would tell you. He was powerful, some say he even could even stop people from dying. Of course, he was betrayed, and at this point Logan's memory starts to fail, and he isn't really able to quote the whole thing exactly. But of course I remember the gist.".to_owned()]),
+                    ));
                 })
                 .id();
+
             terminal_window.set_render_target(Some(render_root));
+        }
         }
         *node_focus = NodeFocus(Some(*node_id));
     }

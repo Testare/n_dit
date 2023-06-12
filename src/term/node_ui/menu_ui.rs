@@ -152,9 +152,6 @@ impl SimpleSubmenu for MenuUiStats {
                 );
                 stats.push(format!("Size:  {}/{}", size, **max_size));
             }
-            /*if let Some(speed) = selected.speed {
-                stats.push(format!("Speed: {}", **speed));
-            }*/
             if let Some(speed) = selected.speed {
                 let moves_taken = selected
                     .moves_taken

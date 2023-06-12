@@ -19,6 +19,8 @@ use super::render::RenderTtySet;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
+pub use titlebar_ui::MessageBarUi;
+
 /// Event that tells us to show a specific Node entity
 #[derive(Debug)]
 pub struct ShowNode(pub Entity);
@@ -79,6 +81,7 @@ impl Plugin for NodeUiPlugin {
                 (
                     menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
                     menu_ui::MenuUiActions::handle_layout_events,
+                    titlebar_ui::style_message_bar,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .before(NDitCoreSet::ProcessCommands),
@@ -101,9 +104,11 @@ impl Plugin for NodeUiPlugin {
                     grid_ui::adjust_scroll.before(grid_ui::render_grid_system),
                     grid_ui::render_grid_system,
                     titlebar_ui::render_title_bar_system,
+                    titlebar_ui::render_message_bar,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PostCalculateLayout),
             );
     }
 }
+

@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent,
 use game_core::EntityGrid;
 
 use super::grid_ui::{GridUi, NodeViewScroll};
-use super::{NodeCursor, SelectedAction, SelectedEntity};
+use super::{NodeCursor, MessageBarUi, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
 
@@ -13,6 +13,7 @@ pub fn node_cursor_controls(
         &mut SelectedAction,
         &mut SelectedEntity,
     )>,
+    mut message_bar_ui: Query<&mut MessageBarUi>,
     mut grid_ui_view: Query<
         (&CalculatedSizeTty, &GlobalTranslationTty, &NodeViewScroll),
         With<GridUi>,
@@ -40,6 +41,17 @@ pub fn node_cursor_controls(
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
                         },
                         _ => {},
+                    },
+
+                    CrosstermEvent::Key(KeyEvent {
+                        code: KeyCode::Enter,
+                        ..
+                    }) => {
+                        // Next message
+                        for mut msg_bar in message_bar_ui.iter_mut() {
+                            msg_bar.0 = msg_bar.0[1..].into();
+                        }
+
                     },
                     CrosstermEvent::Mouse(
                         event @ MouseEvent {
