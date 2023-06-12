@@ -3,7 +3,7 @@ use game_core::{EntityGrid, Node};
 use super::{NodeCursor, NodeFocus, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
-use crate::term::node_ui::{AvailableMoves, SelectedEntity, SelectedAction};
+use crate::term::node_ui::{AvailableMoves, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
 

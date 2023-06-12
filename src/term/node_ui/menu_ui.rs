@@ -1,11 +1,11 @@
-mod card_selection;
 mod actions;
+mod card_selection;
 
+pub use actions::MenuUiActions;
 use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 pub use card_selection::MenuUiCardSelection;
-pub use actions::MenuUiActions;
 use game_core::node::NodePiece;
 use game_core::prelude::*;
 use game_core::{
@@ -169,7 +169,6 @@ impl SimpleSubmenu for MenuUiStats {
         }
     }
 }
-
 
 impl MenuUiDescription {
     fn style_update_system(

@@ -102,9 +102,8 @@ enum Tag {
     Flying,
 }
 
-
 #[derive(Clone, Debug, FromReflect, Reflect)]
 pub enum ActionEffect {
     Damage(usize),
-    Heal(usize)
+    Heal(usize),
 }

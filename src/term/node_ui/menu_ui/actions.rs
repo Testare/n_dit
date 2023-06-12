@@ -1,15 +1,15 @@
-use crossterm::event::{MouseEventKind, MouseButton};
+use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::Node;
 
-use crate::term::{prelude::*, layout::{LayoutEvent, CalculatedSizeTty}, node_ui::{NodeUiDataParam, SelectedAction}};
-
-use super::{NodePieceQItem, SimpleSubmenu, NodePieceQ};
+use super::{NodePieceQ, NodePieceQItem, SimpleSubmenu};
+use crate::term::layout::{CalculatedSizeTty, LayoutEvent};
+use crate::term::node_ui::{NodeUiDataParam, SelectedAction};
+use crate::term::prelude::*;
 
 #[derive(Component, Debug)]
 pub struct MenuUiActions;
 
 impl MenuUiActions {
-
     pub fn handle_layout_events(
         mut layout_events: EventReader<LayoutEvent>,
         node_pieces: Query<NodePieceQ>,
@@ -23,21 +23,21 @@ impl MenuUiActions {
             for layout_event in layout_events.iter() {
                 match layout_event.event_kind() {
                     MouseEventKind::Down(MouseButton::Left) => {
-                        if layout_event.pos().y > 0 && layout_event.pos().y <= actions.len() as u32 {
-                            let clicked_action = Some((layout_event.pos().y - 1)  as usize);
+                        if layout_event.pos().y > 0 && layout_event.pos().y <= actions.len() as u32
+                        {
+                            let clicked_action = Some((layout_event.pos().y - 1) as usize);
                             if **selected_action != clicked_action {
                                 **selected_action = Some((layout_event.pos().y - 1) as usize);
                             } else {
                                 **selected_action = None;
                             }
                         }
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
             Some(selected)
         });
-
     }
 }
 
@@ -60,8 +60,7 @@ impl SimpleSubmenu for MenuUiActions {
             menu.push(action.name.clone());
         }
         if let Some(action_idx) = **(selected_action.get_single().ok()?) {
-            menu[action_idx+1] = format!("▶{}", menu[action_idx+1]);
-
+            menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
         }
         Some(menu)
     }

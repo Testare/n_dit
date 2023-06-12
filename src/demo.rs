@@ -1,5 +1,5 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
-use game_core::card::{Card, Deck, ActionEffect};
+use game_core::card::{ActionEffect, Card, Deck};
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
 use game_core::{
@@ -113,13 +113,12 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                         effect: ActionEffect::Damage(2),
                         description: "Deletes 2 sectors from target".to_owned(),
                     },
-
                     Action {
                         name: "Dice".to_owned(),
                         range: 1,
                         effect: ActionEffect::Damage(3),
                         description: "Deletes 3 sectors from target".to_owned(),
-                    }
+                    },
                 ]),
                 Description::new("Basic attack program"),
                 MaximumSize(4),

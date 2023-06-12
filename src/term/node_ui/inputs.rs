@@ -2,12 +2,17 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent,
 use game_core::EntityGrid;
 
 use super::grid_ui::{GridUi, NodeViewScroll};
-use super::{NodeCursor, SelectedEntity, SelectedAction};
+use super::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
 
 pub fn node_cursor_controls(
-    mut node_cursors: Query<(&mut NodeCursor, &EntityGrid, &mut SelectedAction, &mut SelectedEntity)>,
+    mut node_cursors: Query<(
+        &mut NodeCursor,
+        &EntityGrid,
+        &mut SelectedAction,
+        &mut SelectedEntity,
+    )>,
     mut grid_ui_view: Query<
         (&CalculatedSizeTty, &GlobalTranslationTty, &NodeViewScroll),
         With<GridUi>,
@@ -82,7 +87,6 @@ pub fn node_cursor_controls(
         if selected_entity.0 != now_selected_entity {
             selected_entity.0 = now_selected_entity;
             **selected_action = None;
-
         }
     }
 }

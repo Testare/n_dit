@@ -76,7 +76,8 @@ impl Plugin for NodeUiPlugin {
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(
-                (menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
+                (
+                    menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
                     menu_ui::MenuUiActions::handle_layout_events,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
