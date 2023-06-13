@@ -4,11 +4,8 @@ pub mod node;
 pub mod player;
 pub mod prelude;
 
-pub use entity_grid::EntityGrid;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
-pub use node::{Mon, Node, NodePiece, *};
 use thiserror::Error;
-
 use self::prelude::*;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -27,18 +24,18 @@ pub enum NDitError {
     },
 }
 
-pub struct Act<A> {
-    pub action: A,
+pub struct Op<O> {
+    pub op: O,
     pub player: usize,
 }
 
-impl<A> Act<A> {
-    pub fn new<const P: usize>(action: A) -> Self {
-        Act { action, player: P }
+impl<O> Op<O> {
+    pub fn new<const P: usize>(op: O) -> Self {
+        Op { op, player: P }
     }
 
-    pub fn action(&self) -> &A {
-        &self.action
+    pub fn op(&self) -> &O {
+        &self.op
     }
 
     pub fn player(&self) -> usize {
@@ -50,7 +47,7 @@ pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Act<node::NodeAct>>()
+        app.add_event::<Op<node::NodeOp>>()
             .configure_sets((
                 NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
                 NDitCoreSet::ProcessInputs.in_base_set(CoreSet::PreUpdate),

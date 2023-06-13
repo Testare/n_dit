@@ -1,5 +1,4 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
-use game_core::EntityGrid;
 
 use super::grid_ui::{GridUi, NodeViewScroll};
 use super::{NodeCursor, MessageBarUi, SelectedAction, SelectedEntity};

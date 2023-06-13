@@ -4,10 +4,11 @@ mod render_square;
 use std::cmp;
 
 use bevy::ecs::query::WorldQuery;
-use game_core::{
-    AccessPoint, Direction, EntityGrid, IsTapped, MovementSpeed, MovesTaken, NodePiece, Pickup,
-    Team,
-};
+use game_core::node::{AccessPoint, IsTapped, MovesTaken, NodePiece, Pickup, Team};
+
+use game_core::card::MovementSpeed;
+
+use game_core::Direction;
 use itertools::Itertools;
 
 use self::borders::{border_style_for, intersection_for_pivot, BorderType};

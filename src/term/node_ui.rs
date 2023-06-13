@@ -4,12 +4,14 @@ mod menu_ui;
 mod registry;
 mod setup;
 mod titlebar_ui;
+mod messagebar_ui;
 
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use game_core::{EntityGrid, NDitCoreSet, Node};
+use game_core::NDitCoreSet;
+use game_core::node::Node;
 use registry::GlyphRegistry;
 
 use self::menu_ui::{
@@ -19,11 +21,15 @@ use super::render::RenderTtySet;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
-pub use titlebar_ui::MessageBarUi;
+pub use messagebar_ui::MessageBarUi;
 
 /// Event that tells us to show a specific Node entity
+/// Should likely be replaced with a gamecore Op
 #[derive(Debug)]
-pub struct ShowNode(pub Entity);
+pub struct ShowNode {
+    pub pn: usize,
+    pub node: Entity,
+}
 
 /// If there are multiple Nodes, this is the node that is being rendered to the screen
 #[derive(Debug, Deref, DerefMut, Resource, Default)]
@@ -34,7 +40,7 @@ pub struct NodeFocus(pub Option<Entity>);
 pub struct NodeUiPlugin;
 
 /// Component that tells the UI which entity the node cursor is over
-#[derive(Component, Debug, Deref)]
+#[derive(Component, Resource, Debug, Deref)]
 pub struct SelectedEntity(pub Option<Entity>);
 
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -54,8 +60,8 @@ pub struct NodeUiQ {
     entity: Entity,
     grid: &'static EntityGrid,
     node_cursor: &'static NodeCursor,
-    selected_entity: &'static SelectedEntity,
     available_moves: &'static AvailableMoves,
+    selected_entity: &'static SelectedEntity,
 }
 
 #[derive(SystemParam)]
@@ -81,7 +87,7 @@ impl Plugin for NodeUiPlugin {
                 (
                     menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
                     menu_ui::MenuUiActions::handle_layout_events,
-                    titlebar_ui::style_message_bar,
+                    messagebar_ui::style_message_bar,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .before(NDitCoreSet::ProcessCommands),
@@ -104,11 +110,12 @@ impl Plugin for NodeUiPlugin {
                     grid_ui::adjust_scroll.before(grid_ui::render_grid_system),
                     grid_ui::render_grid_system,
                     titlebar_ui::render_title_bar_system,
-                    titlebar_ui::render_message_bar,
+                    messagebar_ui::render_message_bar,
                 )
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PostCalculateLayout),
             );
+
     }
 }
 

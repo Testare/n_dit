@@ -2,9 +2,13 @@ use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use game_core::card::{ActionEffect, Card, Deck};
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
-use game_core::{
-    AccessPoint, Action, Actions, Curio, Description, EntityGrid, IsTapped, MaximumSize,
-    MovementSpeed, MovesTaken, Node, NodePiece, Pickup, Team,
+use game_core::node::{
+    AccessPoint, Curio, IsTapped,
+    MovesTaken, Node, NodePiece, Pickup, Team,
+};
+use game_core::card::{
+    Action, Actions, Description, MaximumSize,
+    MovementSpeed
 };
 
 use crate::term::layout::LayoutEvent;
@@ -30,6 +34,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 range: 1,
                 effect: ActionEffect::Damage(2),
                 description: "Deletes 2 sectors from target".to_owned(),
+                prereqs: default(),
             }]),
             Description::new("Basic attack program"),
         ))
@@ -70,7 +75,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Description::new("He's gonna get you"),
         ))
         .id();
-    commands.spawn((
+    let player = commands.spawn((
         PlayerBundle::<0>::default(),
         Deck::new()
             .with_card(hack)
@@ -93,7 +98,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             .with_card(card_3)
             .with_card(card_4)
             .with_card(card_5),
-    ));
+    )).id();
     let node = commands
         .spawn((
             Node,
@@ -112,12 +117,14 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                         range: 1,
                         effect: ActionEffect::Damage(2),
                         description: "Deletes 2 sectors from target".to_owned(),
+                        prereqs: default(),
                     },
                     Action {
                         name: "Dice".to_owned(),
                         range: 1,
                         effect: ActionEffect::Damage(3),
                         description: "Deletes 3 sectors from target".to_owned(),
+                        prereqs: default(),
                     },
                 ]),
                 Description::new("Basic attack program"),
@@ -154,7 +161,10 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         })
         .id();
 
-    load_node_writer.send(ShowNode(node));
+    load_node_writer.send(ShowNode {
+        node,
+        pn: 0
+    });
     log::debug!("Demo startup executed");
 }
 

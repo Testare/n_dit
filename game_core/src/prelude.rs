@@ -9,4 +9,5 @@ pub use bevy::prelude::{
 pub use bevy::utils::{HashMap, HashSet};
 
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};
-pub use crate::Act;
+pub use crate::Op;
+pub use crate::entity_grid::EntityGrid;

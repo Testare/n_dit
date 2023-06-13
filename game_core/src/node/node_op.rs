@@ -1,10 +1,10 @@
 use bevy::ecs::query::WorldQuery;
 
-use crate::card::Card;
+use crate::card::{Card, Actions, Description, MaximumSize, MovementSpeed};
 use crate::prelude::*;
-use crate::{AccessPoint, Actions, Description, MaximumSize, MovementSpeed};
+use crate::node::AccessPoint;
 
-pub enum NodeAct {
+pub enum NodeOp {
     LoadAccessPoint {
         access_point_id: Entity,
         card_id: Entity,
@@ -26,13 +26,13 @@ pub struct CardInfo {
 
 pub fn access_point_actions(
     mut commands: Commands,
-    mut actions: EventReader<Act<NodeAct>>,
+    mut ops: EventReader<Op<NodeOp>>,
     cards: Query<CardInfo>,
     mut access_points: Query<&mut AccessPoint>,
 ) {
-    for command in actions.iter() {
-        match command.action() {
-            NodeAct::LoadAccessPoint {
+    for command in ops.iter() {
+        match command.op() {
+            NodeOp::LoadAccessPoint {
                 access_point_id,
                 card_id,
             } => {
@@ -60,7 +60,7 @@ pub fn access_point_actions(
                     }
                 }
             },
-            NodeAct::UnloadAccessPoint { access_point_id } => {
+            NodeOp::UnloadAccessPoint { access_point_id } => {
                 if let Ok(mut access_point) = access_points.get_mut(*access_point_id) {
                     let mut access_point_commands = commands.entity(*access_point_id);
 

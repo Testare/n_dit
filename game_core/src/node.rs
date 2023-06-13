@@ -1,10 +1,10 @@
 use crate::card::{ActionEffect, Deck};
 use crate::prelude::*;
 
-mod node_act;
+mod node_op;
 
 use getset::CopyGetters;
-pub use node_act::{access_point_actions, NodeAct};
+pub use node_op::{access_point_actions, NodeOp};
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
@@ -43,27 +43,6 @@ pub struct Curio {
     name: String,
 }
 
-#[derive(Clone, Component, Deref, Reflect)]
-pub struct Description(String);
-
-#[derive(Clone, Component, Debug, Deref, FromReflect, Reflect)]
-pub struct Actions(Vec<Action>);
-
-#[derive(Clone, Debug, FromReflect, Reflect)]
-pub struct Action {
-    pub name: String,
-    pub range: usize,
-    pub effect: ActionEffect,
-    pub description: String,
-    // tags
-}
-
-#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
-pub struct MovementSpeed(pub u32);
-
-#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
-pub struct MaximumSize(pub u32);
-
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MovesTaken(pub u32);
 
@@ -85,18 +64,6 @@ impl NodePiece {
         NodePiece {
             display_id: display_name.to_owned(),
         }
-    }
-}
-
-impl Actions {
-    pub fn new(actions: Vec<Action>) -> Self {
-        Actions(actions)
-    }
-}
-
-impl Description {
-    pub fn new<S: Into<String>>(description: S) -> Self {
-        Description(description.into())
     }
 }
 

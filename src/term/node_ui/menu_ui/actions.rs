@@ -1,5 +1,5 @@
 use crossterm::event::{MouseButton, MouseEventKind};
-use game_core::Node;
+use game_core::node::Node;
 
 use super::{NodePieceQ, NodePieceQItem, SimpleSubmenu};
 use crate::term::layout::{CalculatedSizeTty, LayoutEvent};

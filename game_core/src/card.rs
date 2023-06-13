@@ -2,10 +2,43 @@ use std::num::NonZeroU32;
 
 use crate::prelude::*;
 
+mod card_action;
+
+pub use card_action::{Action, Actions, ActionEffect, Prerequisite};
+
 #[derive(Component, Debug, Default, FromReflect, Reflect)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
     ordering: Vec<(String, Entity)>,
+}
+
+#[derive(Component, Debug, FromReflect, Reflect)]
+pub struct Card {
+    card_name: String,
+    short_name: Option<String>,
+    nickname: Option<String>,
+}
+
+#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+pub struct MovementSpeed(pub u32);
+
+#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+pub struct MaximumSize(pub u32);
+
+#[derive(Clone, Component, Deref, Reflect)]
+pub struct Description(String);
+
+#[derive(Component, Deref, FromReflect, Reflect)]
+struct Tags {
+    tags: Vec<Tag>,
+}
+
+#[derive(FromReflect, Reflect)]
+enum Tag {
+    Damage,
+    Healing,
+    Fire,
+    Flying,
 }
 
 impl Deck {
@@ -56,13 +89,6 @@ impl Deck {
     }
 }
 
-#[derive(Component, Debug, FromReflect, Reflect)]
-pub struct Card {
-    card_name: String,
-    short_name: Option<String>,
-    nickname: Option<String>,
-}
-
 impl Card {
     pub fn new<S: Into<String>>(card_name: S, short_name: Option<S>) -> Self {
         Card {
@@ -89,21 +115,8 @@ impl Card {
     }
 }
 
-#[derive(Component, Deref, FromReflect, Reflect)]
-struct Tags {
-    tags: Vec<Tag>,
-}
-
-#[derive(FromReflect, Reflect)]
-enum Tag {
-    Damage,
-    Healing,
-    Fire,
-    Flying,
-}
-
-#[derive(Clone, Debug, FromReflect, Reflect)]
-pub enum ActionEffect {
-    Damage(usize),
-    Heal(usize),
+impl Description {
+    pub fn new<S: Into<String>>(description: S) -> Self {
+        Description(description.into())
+    }
 }

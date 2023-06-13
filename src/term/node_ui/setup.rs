@@ -1,4 +1,4 @@
-use game_core::{EntityGrid, Node};
+use game_core::node::Node;
 
 use super::{NodeCursor, NodeFocus, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
@@ -15,9 +15,9 @@ pub fn create_node_ui(
     nodes_without_cursors: Query<&EntityGrid, (With<Node>, Without<NodeCursor>)>,
 ) {
     use taffy::prelude::*;
-    if let Some(ShowNode(node_id)) = show_node.iter().next() {
-        if let Ok(grid) = nodes_without_cursors.get(*node_id) {
-            commands.entity(*node_id).insert((
+    if let Some(ShowNode{ pn, node}) = show_node.iter().next() {
+        if let Ok(grid) = nodes_without_cursors.get(*node) {
+            commands.entity(*node).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
                 SelectedAction(None),
@@ -183,6 +183,6 @@ pub fn create_node_ui(
             terminal_window.set_render_target(Some(render_root));
         }
         }
-        *node_focus = NodeFocus(Some(*node_id));
+        *node_focus = NodeFocus(Some(*node));
     }
 }
