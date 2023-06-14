@@ -2,9 +2,23 @@ use crate::card::{ActionEffect, Deck};
 use crate::prelude::*;
 
 mod node_op;
+mod rule;
 
 use getset::CopyGetters;
 pub use node_op::{access_point_actions, NodeOp};
+
+
+#[derive(Component, Debug, FromReflect, Reflect)]
+pub enum NodePhase {
+    Loading,
+    Setup {
+        ready_players: HashSet<Entity>,
+    },
+    Play,
+}
+
+#[derive(Component, Debug, FromReflect, Reflect)]
+pub struct PlayerTurn(Entity);
 
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;

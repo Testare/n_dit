@@ -11,7 +11,7 @@ pub struct Player(usize);
 pub struct PlayerN<const P: usize>();
 
 #[derive(Component, Debug)]
-pub struct ForPlayerN<const P: usize>;
+pub struct ForPlayerN(pub usize);
 
 impl Player {
     fn pn(&self) -> usize {
@@ -33,3 +33,7 @@ impl<const P: usize> Default for PlayerBundle<P> {
         }
     }
 }
+
+
+#[derive(Component, Debug, FromReflect, Reflect)]
+pub struct Players(Vec<Entity>);
