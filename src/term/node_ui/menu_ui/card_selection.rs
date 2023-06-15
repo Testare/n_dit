@@ -1,35 +1,36 @@
 use bevy::app::SystemAppConfig;
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Card, Deck};
-use game_core::player::PlayerN;
 use game_core::node::{AccessPoint, NodeOp, NodePiece};
+use game_core::player::{ForPlayer, Player};
 use pad::PadStr;
 use taffy::style::Dimension;
 
-use super::{selected_piece_data, NodePieceQ, NodeUi};
+use super::NodeUi;
 use crate::term::layout::{CalculatedSizeTty, FitToSize, LayoutEvent, StyleTty};
-use crate::term::node_ui::{NodeFocus, NodeUiDataParam, NodeUiQ};
+use crate::term::node_ui::SelectedEntity;
 use crate::term::prelude::*;
 use crate::term::render::UpdateRendering;
 
 #[derive(Component, Debug, Default)]
-pub struct MenuUiCardSelection<const P: usize> {
+pub struct MenuUiCardSelection {
     scroll: usize,
 }
 
-impl<const P: usize> MenuUiCardSelection<P> {
+impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut layout_events: EventReader<LayoutEvent>,
-        mut ui: Query<(&mut Self, &CalculatedSizeTty)>,
+        mut ui: Query<(&mut Self, &CalculatedSizeTty, &ForPlayer)>,
         cards: Query<&Card>,
-        deck: Query<&Deck, With<PlayerN<P>>>,
-        node_data: NodeUiDataParam,
+        deck: Query<(&Deck, &SelectedEntity), With<Player>>,
         access_points: Query<&AccessPoint, With<NodePiece>>,
         mut node_command: EventWriter<Op<NodeOp>>,
     ) {
-        if let Ok(deck) = deck.get_single() {
-            for layout_event in layout_events.iter() {
-                if let Ok((mut card_selection, size)) = ui.get_mut(layout_event.entity()) {
+        for layout_event in layout_events.iter() {
+            if let Ok((mut card_selection, size, ForPlayer(player))) =
+                ui.get_mut(layout_event.entity())
+            {
+                if let Ok((deck, selected_entity)) = deck.get(*player) {
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
                         MouseEventKind::ScrollDown => {
@@ -64,16 +65,19 @@ impl<const P: usize> MenuUiCardSelection<P> {
                                         cards.get(card_id).unwrap().name_or_nickname(),
                                         count
                                     );
-                                    let access_point_id =
-                                        node_data.node_data().unwrap().selected_entity.unwrap();
-                                    let access_point = access_points.get(access_point_id).unwrap();
+                                    // Selected
+                                        
+                                    let access_point_id = selected_entity.0.unwrap();
+                                    let access_point = selected_entity.of(&access_points).unwrap();
 
                                     if access_point.card() == Some(card_id) {
-                                        node_command.send(Op::new::<P>(
+                                        node_command.send(Op::new(
+                                            *player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
                                         ));
                                     } else {
-                                        node_command.send(Op::new::<P>(
+                                        node_command.send(Op::new(
+                                            *player,
                                             NodeOp::LoadAccessPoint {
                                                 access_point_id,
                                                 card_id,
@@ -90,24 +94,17 @@ impl<const P: usize> MenuUiCardSelection<P> {
         }
     }
     fn style_card_selection(
-        node_data: Query<NodeUiQ>,
-        node_focus: Res<NodeFocus>,
-        node_pieces: Query<NodePieceQ>,
-        player_deck: Query<&Deck, With<PlayerN<P>>>,
-        mut ui: Query<&mut StyleTty, With<Self>>,
+        access_points: Query<(), With<AccessPoint>>,
+        player_info: Query<(&Deck, &SelectedEntity), With<Player>>,
+        mut ui: Query<(&mut StyleTty, &ForPlayer), With<Self>>,
     ) {
-        if let Ok(mut style) = ui.get_single_mut() {
+        for (mut style, ForPlayer(player)) in ui.iter_mut() {
             let (min_height, max_height) =
-                selected_piece_data(&node_data, node_focus, &node_pieces)
-                    .and_then(|selected| {
-                        selected.access_point.and_then(|_| {
-                            let deck = player_deck.get_single().ok()?;
-                            let full_len = deck.different_cards_len() as f32 + 2.0;
-
-                            Some((full_len.min(6.0), full_len))
-                        })
-                    })
-                    .unwrap_or((0.0, 0.0));
+            player_info.get(*player).ok().and_then(|(deck, selected_entity)| {
+                selected_entity.of(&access_points)?;
+                let full_len = deck.different_cards_len() as f32 + 2.0;
+                Some((full_len.min(6.0), full_len))
+            }).unwrap_or((0.0, 0.0));
             if Dimension::Points(max_height) != style.max_size.height {
                 style.max_size.height = Dimension::Points(max_height);
                 style.min_size.height = Dimension::Points(min_height);
@@ -122,23 +119,17 @@ impl<const P: usize> MenuUiCardSelection<P> {
 
     /// System for rendering a simple submenu
     fn render_system(
-        node_data: Query<NodeUiQ>,
-        node_focus: Res<NodeFocus>,
-        node_pieces: Query<NodePieceQ>,
+        access_points: Query<&AccessPoint>,
         mut commands: Commands,
         cards: Query<&Card>,
-        player_deck: Query<&Deck, With<PlayerN<P>>>,
-        mut ui: Query<(Entity, &mut Self, &CalculatedSizeTty)>,
+        player_q: Query<(&Deck, &SelectedEntity), With<Player>>,
+        mut ui: Query<(Entity, &mut Self, &CalculatedSizeTty, &ForPlayer)>,
     ) {
-        if let Ok((id, mut card_selection, size)) = ui.get_single_mut() {
-            let rendering = node_focus
-                .and_then(|node_id| {
-                    let node_data = node_data.get(node_id).ok()?;
-                    let selected = node_pieces.get((**node_data.selected_entity)?).ok()?;
-                    let access_point = selected.access_point?;
+        for (id, mut card_selection, size, ForPlayer(player)) in ui.iter_mut() {
+            let rendering = player_q.get(*player).ok()
+                .and_then(|(player_deck, selected_entity)| {
+                    let access_point = selected_entity.of(&access_points)?;
 
-                    let player_deck = player_deck.get_single().ok()?;
-                    // TODO ensure order, enable scrolling, possibly cache this card list, handle non-cards in deck
                     let cards: Vec<String> = player_deck
                         .cards_with_count()
                         .map(|(id, count)| {
@@ -196,7 +187,7 @@ impl<const P: usize> MenuUiCardSelection<P> {
     }
 }
 
-impl<const P: usize> NodeUi for MenuUiCardSelection<P> {
+impl NodeUi for MenuUiCardSelection {
     fn style_update_system() -> Option<SystemAppConfig> {
         Some(Self::style_card_selection.into_app_config())
     }

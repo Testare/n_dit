@@ -6,6 +6,7 @@ pub mod prelude;
 
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
 use thiserror::Error;
+
 use self::prelude::*;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -26,19 +27,19 @@ pub enum NDitError {
 
 pub struct Op<O> {
     pub op: O,
-    pub player: usize,
+    pub player: Entity,
 }
 
 impl<O> Op<O> {
-    pub fn new<const P: usize>(op: O) -> Self {
-        Op { op, player: P }
+    pub fn new(player: Entity, op: O) -> Self {
+        Op { op, player }
     }
 
     pub fn op(&self) -> &O {
         &self.op
     }
 
-    pub fn player(&self) -> usize {
+    pub fn player(&self) -> Entity {
         self.player
     }
 }

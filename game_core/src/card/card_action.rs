@@ -21,7 +21,7 @@ pub enum ActionEffect {
 
 #[derive(Clone, Debug, FromReflect, Reflect)]
 pub enum Prerequisite {
-    MinSize(u32)
+    MinSize(u32),
 }
 
 impl Actions {

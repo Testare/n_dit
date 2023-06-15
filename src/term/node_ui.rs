@@ -1,17 +1,18 @@
 mod grid_ui;
 mod inputs;
 mod menu_ui;
+mod messagebar_ui;
 mod registry;
 mod setup;
 mod titlebar_ui;
-mod messagebar_ui;
 
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::{WorldQuery, ReadOnlyWorldQuery};
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use game_core::NDitCoreSet;
 use game_core::node::Node;
+use game_core::NDitCoreSet;
+pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
 
 use self::menu_ui::{
@@ -21,18 +22,16 @@ use super::render::RenderTtySet;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
-pub use messagebar_ui::MessageBarUi;
-
 /// Event that tells us to show a specific Node entity
 /// Should likely be replaced with a gamecore Op
 #[derive(Debug)]
 pub struct ShowNode {
-    pub pn: usize,
+    pub player: Entity,
     pub node: Entity,
 }
 
 /// If there are multiple Nodes, this is the node that is being rendered to the screen
-#[derive(Debug, Deref, DerefMut, Resource, Default)]
+#[derive(Component, Debug, Deref, DerefMut, Resource, Default)]
 pub struct NodeFocus(pub Option<Entity>);
 
 /// Plugin for NodeUI
@@ -85,7 +84,7 @@ impl Plugin for NodeUiPlugin {
             .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(
                 (
-                    menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
+                    menu_ui::MenuUiCardSelection::handle_layout_events,
                     menu_ui::MenuUiActions::handle_layout_events,
                     messagebar_ui::style_message_bar,
                 )
@@ -101,7 +100,7 @@ impl Plugin for NodeUiPlugin {
                     .in_set(RenderTtySet::PreCalculateLayout),
             )
             .add_systems(MenuUiLabel::ui_systems())
-            .add_systems(MenuUiCardSelection::<0>::ui_systems())
+            .add_systems(MenuUiCardSelection::ui_systems())
             .add_systems(MenuUiActions::ui_systems())
             .add_systems(MenuUiStats::ui_systems())
             .add_systems(MenuUiDescription::ui_systems())
@@ -115,7 +114,16 @@ impl Plugin for NodeUiPlugin {
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PostCalculateLayout),
             );
-
     }
 }
 
+
+impl SelectedEntity {
+    pub fn of<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(&self, query: &'a Query<'w, 's, Q, R>) -> Option<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>> {
+        query.get(self.0?).ok()
+    }
+
+    pub fn of_mut<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(&self, query: &'a mut Query<'w, 's, Q, R>) -> Option<<Q as WorldQuery>::Item<'a>> {
+        query.get_mut(self.0?).ok()
+    }
+}

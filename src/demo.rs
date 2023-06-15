@@ -1,15 +1,10 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
-use game_core::card::{ActionEffect, Card, Deck};
+use game_core::card::{
+    Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
+};
+use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, Node, NodePiece, Pickup, Team, InNode};
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
-use game_core::node::{
-    AccessPoint, Curio, IsTapped,
-    MovesTaken, Node, NodePiece, Pickup, Team,
-};
-use game_core::card::{
-    Action, Actions, Description, MaximumSize,
-    MovementSpeed
-};
 
 use crate::term::layout::LayoutEvent;
 use crate::term::node_ui::{NodeCursor, ShowNode};
@@ -75,30 +70,6 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Description::new("He's gonna get you"),
         ))
         .id();
-    let player = commands.spawn((
-        PlayerBundle::<0>::default(),
-        Deck::new()
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(hack)
-            .with_card(card_0)
-            .with_card(card_1)
-            .with_card(card_2)
-            .with_card(card_3)
-            .with_card(card_4)
-            .with_card(card_5),
-    )).id();
     let node = commands
         .spawn((
             Node,
@@ -160,11 +131,35 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             .add_to_grid(node_id, vec![(12, 3)]);
         })
         .id();
+    let player = commands
+        .spawn((
+            PlayerBundle::default(),
+            InNode(node),
+            Deck::new()
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(hack)
+                .with_card(card_0)
+                .with_card(card_1)
+                .with_card(card_2)
+                .with_card(card_3)
+                .with_card(card_4)
+                .with_card(card_5),
+        ))
+        .id();
 
-    load_node_writer.send(ShowNode {
-        node,
-        pn: 0
-    });
+    load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
 }
 

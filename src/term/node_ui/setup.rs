@@ -1,5 +1,5 @@
 use game_core::node::Node;
-use game_core::player::ForPlayerN;
+use game_core::player::ForPlayer;
 
 use super::{NodeCursor, NodeFocus, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
@@ -16,7 +16,7 @@ pub fn create_node_ui(
     nodes_without_cursors: Query<&EntityGrid, (With<Node>, Without<NodeCursor>)>,
 ) {
     use taffy::prelude::*;
-    if let Some(ShowNode{ pn, node}) = show_node.iter().next() {
+    if let Some(ShowNode { player, node }) = show_node.iter().next() {
         if let Ok(grid) = nodes_without_cursors.get(*node) {
             commands.entity(*node).insert((
                 NodeCursor::default(),
@@ -24,8 +24,14 @@ pub fn create_node_ui(
                 SelectedAction(None),
                 AvailableMoves::default(),
             ));
-        if (*node_focus).is_none() {
-            let render_root = commands
+            commands.entity(*player).insert((
+                NodeCursor::default(),
+                SelectedEntity(grid.item_at(default())),
+                // SelectedAction(None),
+                // AvailableMoves::default(),
+            ));
+            if (*node_focus).is_none() {
+                let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
                         size: Size {
@@ -50,6 +56,7 @@ pub fn create_node_ui(
                         }),
                         Name::new("Node Title Bar"),
                         super::titlebar_ui::TitleBarUi,
+                        ForPlayer(*player),
                     ));
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
@@ -87,6 +94,7 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiLabel,
+                                    ForPlayer(*player),
                                     Name::new("Menu Label"),
                                 ));
                                 menu_bar.spawn((
@@ -100,7 +108,8 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     LayoutMouseTarget,
-                                    super::menu_ui::MenuUiCardSelection::<0>::default(),
+                                    super::menu_ui::MenuUiCardSelection::default(),
+                                    ForPlayer(*player),
                                     Name::new("Menu Card Selection"),
                                 ));
                                 menu_bar.spawn((
@@ -113,6 +122,7 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiStats,
+                                    ForPlayer(*player),
                                     Name::new("Menu Stats"),
                                 ));
                                 menu_bar.spawn((
@@ -125,6 +135,7 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiActions,
+                                    ForPlayer(*player),
                                     LayoutMouseTarget,
                                     Name::new("Actions Menu"),
                                 ));
@@ -139,6 +150,7 @@ pub fn create_node_ui(
                                         ..default()
                                     }),
                                     super::menu_ui::MenuUiDescription,
+                                    ForPlayer(*player),
                                     Name::new("DescriptionMenu"),
                                 ));
                             });
@@ -163,6 +175,7 @@ pub fn create_node_ui(
                             Name::new("Grid"),
                             GridUi,
                             LayoutMouseTarget,
+                            ForPlayer(*player),
                             NodeViewScroll::default(),
                         ));
                     });
@@ -176,13 +189,14 @@ pub fn create_node_ui(
                             ..default()
                         }),
                         Name::new("Message Bar"),
+                        ForPlayer(*player),
                         super::MessageBarUi(vec!["Have you ever heard the story of Darth Plegius the wise? I thought not, it's not a story the jedi would tell you. He was powerful, some say he even could even stop people from dying. Of course, he was betrayed, and at this point Logan's memory starts to fail, and he isn't really able to quote the whole thing exactly. But of course I remember the gist.".to_owned()]),
                     ));
                 })
                 .id();
 
-            terminal_window.set_render_target(Some(render_root));
-        }
+                terminal_window.set_render_target(Some(render_root));
+            }
         }
         *node_focus = NodeFocus(Some(*node));
     }

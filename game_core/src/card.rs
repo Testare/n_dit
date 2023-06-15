@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 mod card_action;
 
-pub use card_action::{Action, Actions, ActionEffect, Prerequisite};
+pub use card_action::{Action, ActionEffect, Actions, Prerequisite};
 
 #[derive(Component, Debug, Default, FromReflect, Reflect)]
 pub struct Deck {

@@ -23,6 +23,10 @@ pub struct PlayerTurn(Entity);
 #[derive(Component, FromReflect, Reflect)]
 pub struct Node;
 
+/// Indicates this Player is in the node
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct InNode(pub Entity);
+
 #[derive(Component, Reflect, getset::Getters)]
 pub struct NodePiece {
     #[getset(get = "pub")]

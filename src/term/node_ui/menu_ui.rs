@@ -6,10 +6,9 @@ use bevy::app::{SystemAppConfig, SystemAppConfigs};
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 pub use card_selection::MenuUiCardSelection;
-use game_core::node::NodePiece;
-use game_core::prelude::*;
-use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, Pickup, Team};
 use game_core::card::{Actions, Description, MaximumSize, MovementSpeed};
+use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Pickup, Team};
+use game_core::prelude::*;
 use taffy::style::Dimension;
 
 use super::registry::GlyphRegistry;
