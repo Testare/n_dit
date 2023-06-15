@@ -410,30 +410,41 @@ fn possible_moves_recur(
 
 pub fn get_range_of_action(
     mut players: ParamSet<(
-        Query<
-            PlayerUiQ,
-            (
-                With<Player>,
-                Or<(Changed<SelectedAction>, Changed<SelectedEntity>)>,
-            ),
-        >,
-        Query<
-            (Entity, &mut AvailableActionTargets),
-            (
-                With<Player>,
-                Or<(Changed<SelectedAction>, Changed<SelectedEntity>)>,
-            ),
-        >,
+        Query<PlayerUiQ>,
+        Query<(Entity, &mut AvailableActionTargets)>,
     )>,
+    changed_player: Query<
+        (),
+        (
+            With<Player>,
+            Or<(Changed<SelectedAction>, Changed<SelectedEntity>)>,
+        ),
+    >,
+    changed_access_point: Query<(), Changed<AccessPoint>>,
     node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
     node_grids: Query<&EntityGrid, With<Node>>,
 ) {
-    let mut action_target_updates: HashMap<Entity, HashSet<UVec2>> = players
+    let players_to_update: HashSet<Entity> = players
         .p0()
         .iter()
         .filter_map(|player_q| {
+            if changed_player.contains(player_q.entity) {
+                Some(player_q.entity)
+            } else if player_q.selected_entity.of(&changed_access_point).is_some() {
+                Some(player_q.entity)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let mut action_target_updates: HashMap<Entity, HashSet<UVec2>> = players
+        .p0()
+        .iter_many(&players_to_update)
+        .filter_map(|player_q| {
             // Note: Will probably have to change this logic so that when the player is
             // actually trying to perform the action, it only shows up
+
             let (actions, is_tapped) = player_q.selected_entity.of(&node_pieces)?;
             if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(false) {
                 return None;
@@ -483,6 +494,9 @@ pub fn get_range_of_action(
         })
         .collect();
     for (player_id, mut available_action_targets) in players.p1().iter_mut() {
+        if !players_to_update.contains(&player_id) {
+            continue;
+        }
         let new_available_actions = action_target_updates.remove(&player_id).unwrap_or_default();
         if new_available_actions != available_action_targets.0 {
             available_action_targets.0 = new_available_actions;

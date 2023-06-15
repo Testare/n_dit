@@ -8,7 +8,7 @@ use taffy::style::Dimension;
 
 use super::NodeUi;
 use crate::term::layout::{CalculatedSizeTty, FitToSize, LayoutEvent, StyleTty};
-use crate::term::node_ui::SelectedEntity;
+use crate::term::node_ui::{SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 use crate::term::render::UpdateRendering;
 
@@ -22,7 +22,7 @@ impl MenuUiCardSelection {
         mut layout_events: EventReader<LayoutEvent>,
         mut ui: Query<(&mut Self, &CalculatedSizeTty, &ForPlayer)>,
         cards: Query<&Card>,
-        deck: Query<(&Deck, &SelectedEntity), With<Player>>,
+        mut players: Query<(&Deck, &SelectedEntity, &mut SelectedAction), With<Player>>,
         access_points: Query<&AccessPoint, With<NodePiece>>,
         mut node_command: EventWriter<Op<NodeOp>>,
     ) {
@@ -30,7 +30,7 @@ impl MenuUiCardSelection {
             if let Ok((mut card_selection, size, ForPlayer(player))) =
                 ui.get_mut(layout_event.entity())
             {
-                if let Ok((deck, selected_entity)) = deck.get(*player) {
+                if let Ok((deck, selected_entity, mut selected_action)) = players.get_mut(*player) {
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
                         MouseEventKind::ScrollDown => {
@@ -69,6 +69,8 @@ impl MenuUiCardSelection {
 
                                     let access_point_id = selected_entity.0.unwrap();
                                     let access_point = selected_entity.of(&access_points).unwrap();
+
+                                    **selected_action = None;
 
                                     if access_point.card() == Some(card_id) {
                                         node_command.send(Op::new(
@@ -173,12 +175,14 @@ impl MenuUiCardSelection {
                         }
                     });
 
+                    let padding = if no_scroll_bar_needed { 1 } else { 0 };
+
                     let mut cards_menu = vec![format!("{0:═<1$}", "═Cards", size.width())];
                     for (scroll_bar, card) in scroll_bar.zip(
                         cards
                             .into_iter()
                             .skip(card_selection.scroll)
-                            .take(size.height() - 2),
+                            .take(size.height() - 1 - padding),
                     ) {
                         cards_menu.push(format!("{}{}", scroll_bar, card));
                     }
