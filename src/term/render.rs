@@ -147,6 +147,7 @@ fn render_with_cache(
                         stdout,
                         crossterm::cursor::MoveTo(0, line_num as u16),
                         crossterm::style::Print(line_to_render.clone()),
+                        crossterm::terminal::Clear(crossterm::terminal::ClearType::UntilNewLine)
                     )?;
                 }
             },
