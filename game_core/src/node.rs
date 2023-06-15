@@ -7,13 +7,10 @@ mod rule;
 use getset::CopyGetters;
 pub use node_op::{access_point_actions, NodeOp};
 
-
 #[derive(Component, Debug, FromReflect, Reflect)]
 pub enum NodePhase {
     Loading,
-    Setup {
-        ready_players: HashSet<Entity>,
-    },
+    Setup { ready_players: HashSet<Entity> },
     Play,
 }
 

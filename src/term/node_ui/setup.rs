@@ -4,7 +4,9 @@ use game_core::player::ForPlayer;
 use super::{NodeCursor, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
-use crate::term::node_ui::{AvailableMoves, SelectedAction, SelectedEntity, AvailableActionTargets};
+use crate::term::node_ui::{
+    AvailableActionTargets, AvailableMoves, SelectedAction, SelectedEntity,
+};
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
 

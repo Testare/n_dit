@@ -122,15 +122,13 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 Team::Enemy,
                 MovementSpeed(2),
                 IsTapped(true),
-                Actions::new(vec![
-                    Action {
-                        name: "Ping".to_owned(),
-                        range: 2,
-                        effect: ActionEffect::Damage(2),
-                        description: "Range(2) Deletes 2 sectors from target".to_owned(),
-                        prereqs: default(),
-                    },
-                ])
+                Actions::new(vec![Action {
+                    name: "Ping".to_owned(),
+                    range: 2,
+                    effect: ActionEffect::Damage(2),
+                    description: "Range(2) Deletes 2 sectors from target".to_owned(),
+                    prereqs: default(),
+                }]),
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
             node.spawn((
@@ -138,15 +136,13 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 Team::Enemy,
                 MovementSpeed(2),
                 IsTapped(false),
-                Actions::new(vec![
-                    Action {
-                        name: "Ping".to_owned(),
-                        range: 2,
-                        effect: ActionEffect::Damage(2),
-                        description: "Range(2) Deletes 2 sectors from target".to_owned(),
-                        prereqs: default(),
-                    },
-                ])
+                Actions::new(vec![Action {
+                    name: "Ping".to_owned(),
+                    range: 2,
+                    effect: ActionEffect::Damage(2),
+                    description: "Range(2) Deletes 2 sectors from target".to_owned(),
+                    prereqs: default(),
+                }]),
             ))
             .add_to_grid(node_id, vec![(12, 3)]);
         })

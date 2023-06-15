@@ -3,9 +3,8 @@ pub use bevy::prelude::{
     Commands, Component, CoreSet, DebugName, Deref, DerefMut, Entity, EventReader, EventWriter,
     FromReflect, IVec2, In, IntoPipeSystem, IntoSystemAppConfig, IntoSystemAppConfigs,
     IntoSystemConfig, IntoSystemConfigs, IntoSystemSetConfig, IntoSystemSetConfigs, Local, Mut,
-    Name, OnEnter, OnExit, OnUpdate, ParamSet, Parent, Plugin, Query, Reflect, Res, ResMut,
+    Name, OnEnter, OnExit, OnUpdate, Or, ParamSet, Parent, Plugin, Query, Reflect, Res, ResMut,
     Resource, State, States, SystemParamFunction, SystemSet, UVec2, Vec2, With, Without, World,
-    Or,
 };
 pub use bevy::utils::{HashMap, HashSet};
 

@@ -67,8 +67,9 @@ impl Plugin for NodeUiPlugin {
             .add_systems(
                 (
                     grid_ui::adjust_available_moves,
-                    grid_ui::get_range_of_action
-                ).chain()
+                    grid_ui::get_range_of_action,
+                )
+                    .chain()
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
             )
