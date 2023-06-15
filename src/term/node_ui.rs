@@ -7,10 +7,8 @@ mod setup;
 mod titlebar_ui;
 
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
-use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use game_core::node::Node;
 use game_core::NDitCoreSet;
 pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
@@ -30,10 +28,6 @@ pub struct ShowNode {
     pub node: Entity,
 }
 
-/// If there are multiple Nodes, this is the node that is being rendered to the screen
-#[derive(Component, Debug, Deref, DerefMut, Resource, Default)]
-pub struct NodeFocus(pub Option<Entity>);
-
 /// Plugin for NodeUI
 #[derive(Default)]
 pub struct NodeUiPlugin;
@@ -48,6 +42,9 @@ pub struct SelectedAction(Option<usize>);
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct AvailableMoves(HashSet<UVec2>);
 
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct AvailableActionTargets(HashSet<UVec2>);
+
 /// Cursor that the user controls to select pieces in the node
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
@@ -55,10 +52,9 @@ pub struct NodeCursor(pub UVec2);
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
-            .init_resource::<NodeFocus>()
             .add_event::<ShowNode>()
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
-            .add_system(inputs::node_cursor_controls.in_base_set(CoreSet::PreUpdate))
+            .add_system(inputs::grid_ui_keyboard_controls.in_base_set(CoreSet::PreUpdate))
             .add_systems(
                 (
                     menu_ui::MenuUiCardSelection::handle_layout_events,
@@ -71,8 +67,8 @@ impl Plugin for NodeUiPlugin {
             .add_systems(
                 (
                     grid_ui::adjust_available_moves,
-                    // menu_ui::MenuUiCardSelection::<0>::handle_layout_events,
-                )
+                    grid_ui::get_range_of_action
+                ).chain()
                     .in_set(OnUpdate(TerminalFocusMode::Node))
                     .in_set(RenderTtySet::PreCalculateLayout),
             )

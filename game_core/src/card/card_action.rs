@@ -6,7 +6,7 @@ pub struct Actions(Vec<Action>);
 #[derive(Clone, Debug, FromReflect, Reflect)]
 pub struct Action {
     pub name: String,
-    pub range: usize,
+    pub range: u32,
     pub effect: ActionEffect,
     pub description: String,
     pub prereqs: Vec<Prerequisite>,

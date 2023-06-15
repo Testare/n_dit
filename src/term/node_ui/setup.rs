@@ -1,10 +1,10 @@
 use game_core::node::Node;
 use game_core::player::ForPlayer;
 
-use super::{NodeCursor, NodeFocus, ShowNode};
+use super::{NodeCursor, ShowNode};
 use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::node_ui::grid_ui::{GridUi, NodeViewScroll};
-use crate::term::node_ui::{AvailableMoves, SelectedAction, SelectedEntity};
+use crate::term::node_ui::{AvailableMoves, SelectedAction, SelectedEntity, AvailableActionTargets};
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
 
@@ -12,24 +12,19 @@ pub fn create_node_ui(
     mut commands: Commands,
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
-    mut node_focus: ResMut<NodeFocus>,
-    nodes_without_cursors: Query<&EntityGrid, (With<Node>, Without<NodeCursor>)>,
+    node_grids: Query<&EntityGrid, With<Node>>,
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.iter().next() {
-        if let Ok(grid) = nodes_without_cursors.get(*node) {
-            commands.entity(*node).insert((
-                NodeCursor::default(),
-                SelectedEntity(grid.item_at(default())),
-            ));
+        if let Ok(grid) = node_grids.get(*node) {
             commands.entity(*player).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
                 SelectedAction(None),
+                AvailableActionTargets::default(),
                 AvailableMoves::default(),
             ));
-            if (*node_focus).is_none() {
-                let render_root = commands
+            let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
                         size: Size {
@@ -192,10 +187,7 @@ pub fn create_node_ui(
                     ));
                 })
                 .id();
-
-                terminal_window.set_render_target(Some(render_root));
-            }
+            terminal_window.set_render_target(Some(render_root));
         }
-        *node_focus = NodeFocus(Some(*node));
     }
 }

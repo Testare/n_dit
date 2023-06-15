@@ -5,6 +5,7 @@ pub use bevy::prelude::{
     IntoSystemConfig, IntoSystemConfigs, IntoSystemSetConfig, IntoSystemSetConfigs, Local, Mut,
     Name, OnEnter, OnExit, OnUpdate, ParamSet, Parent, Plugin, Query, Reflect, Res, ResMut,
     Resource, State, States, SystemParamFunction, SystemSet, UVec2, Vec2, With, Without, World,
+    Or,
 };
 pub use bevy::utils::{HashMap, HashSet};
 

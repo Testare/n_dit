@@ -175,7 +175,7 @@ impl SimpleSubmenu for MenuUiStats {
 
 impl MenuUiDescription {
     fn style_update_system(
-        node_pieces: Query<(&Description, Option<&Actions>), With<NodePiece>>,
+        node_pieces: Query<(Option<&Description>, Option<&Actions>), With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
         mut last_nonzero_width: Local<usize>,
@@ -192,7 +192,7 @@ impl MenuUiDescription {
                             .and_then(|selected_action| {
                                 Some(actions?.get(selected_action)?.description.as_str())
                             })
-                            .or_else(|| Some(piece_desc.as_str()))?;
+                            .or_else(|| Some(piece_desc?.as_str()))?;
                         Some(textwrap::wrap(desc_str, *last_nonzero_width).len() as f32 + 1.0)
                     })
                     .unwrap_or(0.0);

@@ -7,7 +7,7 @@ use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
 
-pub fn node_cursor_controls(
+pub fn grid_ui_keyboard_controls(
     node_grids: Query<&EntityGrid, With<Node>>,
     mut players: Query<
         (
