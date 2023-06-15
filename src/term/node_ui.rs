@@ -6,7 +6,7 @@ mod registry;
 mod setup;
 mod titlebar_ui;
 
-use bevy::ecs::query::{WorldQuery, ReadOnlyWorldQuery};
+use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
@@ -52,29 +52,6 @@ pub struct AvailableMoves(HashSet<UVec2>);
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
-/// Query for getting common node data in systems
-#[derive(WorldQuery)]
-#[world_query(mutable)]
-pub struct NodeUiQ {
-    entity: Entity,
-    grid: &'static EntityGrid,
-    node_cursor: &'static NodeCursor,
-    available_moves: &'static AvailableMoves,
-    selected_entity: &'static SelectedEntity,
-}
-
-#[derive(SystemParam)]
-pub struct NodeUiDataParam<'w, 's> {
-    query: Query<'w, 's, NodeUiQ, With<Node>>,
-    node_focus: Res<'w, NodeFocus>,
-}
-
-impl<'w, 's> NodeUiDataParam<'w, 's> {
-    fn node_data(&self) -> Option<NodeUiQReadOnlyItem> {
-        self.query.get((**self.node_focus)?).ok()
-    }
-}
-
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
@@ -117,13 +94,18 @@ impl Plugin for NodeUiPlugin {
     }
 }
 
-
 impl SelectedEntity {
-    pub fn of<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(&self, query: &'a Query<'w, 's, Q, R>) -> Option<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>> {
+    pub fn of<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+        &self,
+        query: &'a Query<'w, 's, Q, R>,
+    ) -> Option<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>> {
         query.get(self.0?).ok()
     }
 
-    pub fn of_mut<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(&self, query: &'a mut Query<'w, 's, Q, R>) -> Option<<Q as WorldQuery>::Item<'a>> {
+    pub fn of_mut<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+        &self,
+        query: &'a mut Query<'w, 's, Q, R>,
+    ) -> Option<<Q as WorldQuery>::Item<'a>> {
         query.get_mut(self.0?).ok()
     }
 }

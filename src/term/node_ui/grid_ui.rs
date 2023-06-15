@@ -5,13 +5,14 @@ use std::cmp;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, IsTapped, MovesTaken, NodePiece, Pickup, Team};
+use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup, Team};
+use game_core::player::{ForPlayer, Player};
 use game_core::Direction;
 use itertools::Itertools;
 
 use self::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::registry::GlyphRegistry;
-use super::{AvailableMoves, NodeCursor, NodeUiDataParam, NodeUiQReadOnlyItem};
+use super::{AvailableMoves, NodeCursor, SelectedEntity};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
@@ -27,69 +28,70 @@ const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
 
 pub fn adjust_scroll(
-    mut node_cursors: Query<(&NodeCursor, &EntityGrid)>,
-    mut grid_ui_view: Query<(&CalculatedSizeTty, &mut NodeViewScroll), With<GridUi>>,
+    players: Query<(&NodeCursor, &InNode), With<Player>>,
+    node_grids: Query<&EntityGrid, With<Node>>,
+    mut ui: Query<(&CalculatedSizeTty, &mut NodeViewScroll, &ForPlayer), With<GridUi>>,
 ) {
-    for (cursor, grid) in node_cursors.iter_mut() {
-        if let Ok((size, mut scroll)) = grid_ui_view.get_single_mut() {
-            scroll.x = scroll
-                .x
-                .min(cursor.x * 3) // Keeps node cursor from going off the left
-                .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
-                .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
-            scroll.y = scroll
-                .y
-                .min(cursor.y * 2) // Keeps node cursor from going off the right
-                .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
-                .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
+    for (size, mut scroll, ForPlayer(player)) in ui.iter_mut() {
+        if let Ok((cursor, InNode(node))) = players.get(*player) {
+            if let Ok(grid) = node_grids.get(*node) {
+                scroll.x = scroll
+                    .x
+                    .min(cursor.x * 3) // Keeps node cursor from going off the left
+                    .max((cursor.x * 3 + 4).saturating_sub(size.width32())) // Keeps node cursor from going off the right
+                    .min((grid.width() * 3 + 1).saturating_sub(size.width32())); // On resize, show as much grid as possible
+                scroll.y = scroll
+                    .y
+                    .min(cursor.y * 2) // Keeps node cursor from going off the right
+                    .min((grid.height() * 2 + 1).saturating_sub(size.height32())) // Keeps node cursor from going off the bottom
+                    .max((cursor.y * 2 + 3).saturating_sub(size.height32())); // On resize, show as much grid as possible
+            }
         }
     }
 }
 
 pub fn adjust_available_moves(
-    mut moves_params: ParamSet<(
-        Query<&mut AvailableMoves, Changed<NodeCursor>>,
-        NodeUiDataParam,
-    )>,
-    pickup_query: Query<(), With<Pickup>>,
-    node_pieces: Query<(&MovementSpeed, Option<&MovesTaken>, Option<&IsTapped>), With<NodePiece>>,
+    mut players: Query<
+        (&SelectedEntity, &InNode, &mut AvailableMoves),
+        (With<Player>, Changed<NodeCursor>),
+    >,
+    node_grids: Query<&EntityGrid, With<Node>>,
+    pickups: Query<(), With<Pickup>>,
+    node_pieces: Query<
+        (
+            Entity,
+            &MovementSpeed,
+            Option<&MovesTaken>,
+            Option<&IsTapped>,
+        ),
+        With<NodePiece>,
+    >,
 ) {
-    if moves_params.p0().is_empty() {
-        return;
-    }
-    let node_ui_data = moves_params.p1();
-    let new_moves = node_ui_data
-        .node_data()
-        .and_then(|node_data| {
-            let entity = (**node_data.selected_entity)?;
-            let (speed, moves_taken, tapped) = node_pieces.get(entity).ok()?;
-            if matches!(tapped, Some(IsTapped(true))) {
-                return None;
-            }
-            let moves = (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
-            let mut points_set = HashSet::new();
-            let head = node_data
-                .grid
-                .head(entity)
-                .expect("a selected entity should exist in the grid map with a head");
+    for (selected_entity, node_id, mut available_moves) in players.iter_mut() {
+        let new_moves = node_grids
+            .get(**node_id)
+            .ok()
+            .and_then(|grid| {
+                let (entity, speed, moves_taken, tapped) = selected_entity.of(&node_pieces)?;
+                if matches!(tapped, Some(IsTapped(true))) {
+                    return None;
+                }
+                let moves =
+                    (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
+                let mut points_set = HashSet::new();
+                let head = grid
+                    .head(entity)
+                    .expect("a selected entity should exist in the grid map");
 
-            possible_moves_recur(
-                head,
-                &mut points_set,
-                &pickup_query,
-                moves,
-                node_data.grid.bounds(),
-                entity,
-                &node_data,
-            );
-            Some(points_set)
-        })
-        .unwrap_or_default();
-    let mut available_moves_param = moves_params.p0();
-    let mut available_moves = available_moves_param.single_mut();
-    if **available_moves != new_moves {
-        **available_moves = new_moves;
-        log::debug!("Available moves updated: {:?}", available_moves);
+                possible_moves_recur(head, &mut points_set, &pickups, moves, entity, &grid);
+                Some(points_set)
+            })
+            .unwrap_or_default();
+
+        if **available_moves != new_moves {
+            **available_moves = new_moves;
+            log::debug!("Available moves updated: {:?}", available_moves);
+        }
     }
 }
 
@@ -102,29 +104,41 @@ pub struct NodePieceQ {
     access_point: Option<&'static AccessPoint>,
 }
 
+#[derive(WorldQuery)]
+pub struct PlayerUiQ {
+    selected_entity: &'static SelectedEntity,
+    node_cursor: &'static NodeCursor,
+    available_moves: &'static AvailableMoves,
+    in_node: &'static InNode,
+}
+
 pub fn render_grid_system(
     mut commands: Commands,
-    node_ui_data: NodeUiDataParam,
+    node_grids: Query<&EntityGrid, With<Node>>,
     node_pieces: Query<NodePieceQ>,
+    players: Query<PlayerUiQ, With<Player>>,
     glyph_registry: Res<GlyphRegistry>,
     draw_config: Res<DrawConfiguration>,
-    render_grid_q: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll), With<GridUi>>,
+    render_grid_q: Query<(Entity, &CalculatedSizeTty, &NodeViewScroll, &ForPlayer), With<GridUi>>,
 ) {
-    if let Some(node_data) = node_ui_data.node_data() {
-        if let Ok((render_grid_id, size, scroll)) = render_grid_q.get_single() {
-            let grid_rendering = render_grid(
-                size,
-                scroll,
-                &node_data,
-                &node_pieces,
-                &glyph_registry,
-                &draw_config,
-            );
+    for (render_grid_id, size, scroll, ForPlayer(player)) in render_grid_q.iter() {
+        if let Ok(player_ui_q) = players.get(*player) {
+            if let Ok(grid) = node_grids.get(**player_ui_q.in_node) {
+                let grid_rendering = render_grid(
+                    size,
+                    scroll,
+                    &player_ui_q,
+                    &grid,
+                    &node_pieces,
+                    &glyph_registry,
+                    &draw_config,
+                );
 
-            commands
-                .get_entity(render_grid_id)
-                .unwrap()
-                .update_rendering(grid_rendering);
+                commands
+                    .get_entity(render_grid_id)
+                    .unwrap()
+                    .update_rendering(grid_rendering);
+            }
         }
     }
 }
@@ -132,15 +146,15 @@ pub fn render_grid_system(
 fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &NodeViewScroll,
-    node_data: &NodeUiQReadOnlyItem,
+    player_q: &PlayerUiQItem,
+    grid: &EntityGrid,
     node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
     draw_config: &DrawConfiguration,
 ) -> Vec<String> {
     // TODO Break DrawConfiguration down into parts and resources
 
-    let grid = node_data.grid;
-    let node_cursor = node_data.node_cursor;
+    let node_cursor = player_q.node_cursor;
 
     let width = grid.width() as usize;
     let height = grid.height() as usize;
@@ -204,7 +218,7 @@ fn render_grid(
                 if render_left_border {
                     if include_border {
                         let pivot_format = border_style_for(
-                            &node_data,
+                            &player_q,
                             &draw_config, // &available_moves,
                             // action_type,
                             // state,
@@ -224,7 +238,7 @@ fn render_grid(
                     if include_space {
                         // Add first vertical border
                         let border_style = border_style_for(
-                            &node_data,
+                            &player_q,
                             &draw_config, /*
                                                                   &available_moves,
                                                                   action_type,
@@ -244,7 +258,7 @@ fn render_grid(
                 if render_half_space {
                     if include_border {
                         let border_style = border_style_for(
-                            &node_data,
+                            &player_q,
                             &draw_config, /*
                                           &available_moves,
                                           action_type,
@@ -299,7 +313,7 @@ fn render_grid(
                 } else if render_full_space {
                     if include_border {
                         let border_style = border_style_for(
-                            &node_data,
+                            &player_q,
                             &draw_config, /*
                                                                   &available_moves,
                                                                   action_type,
@@ -362,36 +376,26 @@ fn possible_moves_recur(
     points_set: &mut HashSet<UVec2>,
     pickup_query: &Query<(), With<Pickup>>,
     moves: u32,
-    bounds: UVec2,
     id: Entity,
-    node_data: &NodeUiQReadOnlyItem,
+    grid: &EntityGrid,
 ) {
     if moves == 0 {
         return;
     }
     for dir in Direction::ALL_DIRECTIONS.iter() {
-        let next_pt = (pt + *dir).min(bounds);
+        let next_pt = (pt + *dir).min(grid.bounds());
         if points_set.contains(&next_pt) {
             continue;
         }
-        let can_move_to_pt = node_data.grid.square_is_free(next_pt)
-            || node_data
-                .grid
+        let can_move_to_pt = grid.square_is_free(next_pt)
+            || grid
                 .item_at(next_pt)
                 .map(|pt_id| id == pt_id || pickup_query.contains(pt_id))
                 .unwrap_or(false);
         // TODO If this is a pickup, it also works
         if can_move_to_pt {
             points_set.insert(next_pt);
-            possible_moves_recur(
-                next_pt,
-                points_set,
-                pickup_query,
-                moves - 1,
-                bounds,
-                id,
-                node_data,
-            );
+            possible_moves_recur(next_pt, points_set, pickup_query, moves - 1, id, grid);
         }
     }
 }

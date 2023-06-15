@@ -1,7 +1,8 @@
 use std::ops::RangeInclusive;
 
+use super::PlayerUiQItem;
 use crate::term::configuration::{DrawConfiguration, DrawType, UiFormat};
-use crate::term::node_ui::{NodeCursor, NodeUiQReadOnlyItem};
+use crate::term::node_ui::NodeCursor;
 use crate::term::prelude::*;
 
 const INTERSECTION_CHAR: [char; 16] = [
@@ -59,7 +60,7 @@ pub fn border_style_for(
     // available_moves: &Option<HashSet<Point>>,
     // available_moves_type: usize, // TODO something nicer
     // node_cursor: &NodeCursor,
-    node_data: &NodeUiQReadOnlyItem,
+    player_q: &PlayerUiQItem,
 
     draw_config: &DrawConfiguration,
     x_range: &RangeInclusive<usize>, // TODO usize -> u32?
@@ -70,7 +71,7 @@ pub fn border_style_for(
     let NodeCursor(UVec2 {
         x: cursor_x,
         y: cursor_y,
-    }) = node_data.node_cursor;
+    }) = player_q.node_cursor;
 
     // TODO optimized logic so we don't create a full set of points for every square
     if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
@@ -78,8 +79,8 @@ pub fn border_style_for(
     }
     // else if check attacks are selected and range
     // color_scheme.attack_action(),
-    else if !node_data.available_moves.is_empty()
-        && !points_in_range(x_range, y_range).is_disjoint(node_data.available_moves)
+    else if !player_q.available_moves.is_empty()
+        && !points_in_range(x_range, y_range).is_disjoint(player_q.available_moves)
     {
         color_scheme.possible_movement()
     } else {

@@ -2,7 +2,9 @@ use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use game_core::card::{
     Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
 };
-use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, Node, NodePiece, Pickup, Team, InNode};
+use game_core::node::{
+    AccessPoint, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup, Team,
+};
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
 

@@ -21,14 +21,12 @@ pub fn create_node_ui(
             commands.entity(*node).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
-                SelectedAction(None),
-                AvailableMoves::default(),
             ));
             commands.entity(*player).insert((
                 NodeCursor::default(),
                 SelectedEntity(grid.item_at(default())),
-                // SelectedAction(None),
-                // AvailableMoves::default(),
+                SelectedAction(None),
+                AvailableMoves::default(),
             ));
             if (*node_focus).is_none() {
                 let render_root = commands

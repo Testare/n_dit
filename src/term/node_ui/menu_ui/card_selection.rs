@@ -66,7 +66,7 @@ impl MenuUiCardSelection {
                                         count
                                     );
                                     // Selected
-                                        
+
                                     let access_point_id = selected_entity.0.unwrap();
                                     let access_point = selected_entity.of(&access_points).unwrap();
 
@@ -99,12 +99,15 @@ impl MenuUiCardSelection {
         mut ui: Query<(&mut StyleTty, &ForPlayer), With<Self>>,
     ) {
         for (mut style, ForPlayer(player)) in ui.iter_mut() {
-            let (min_height, max_height) =
-            player_info.get(*player).ok().and_then(|(deck, selected_entity)| {
-                selected_entity.of(&access_points)?;
-                let full_len = deck.different_cards_len() as f32 + 2.0;
-                Some((full_len.min(6.0), full_len))
-            }).unwrap_or((0.0, 0.0));
+            let (min_height, max_height) = player_info
+                .get(*player)
+                .ok()
+                .and_then(|(deck, selected_entity)| {
+                    selected_entity.of(&access_points)?;
+                    let full_len = deck.different_cards_len() as f32 + 2.0;
+                    Some((full_len.min(6.0), full_len))
+                })
+                .unwrap_or((0.0, 0.0));
             if Dimension::Points(max_height) != style.max_size.height {
                 style.max_size.height = Dimension::Points(max_height);
                 style.min_size.height = Dimension::Points(min_height);
@@ -122,11 +125,13 @@ impl MenuUiCardSelection {
         access_points: Query<&AccessPoint>,
         mut commands: Commands,
         cards: Query<&Card>,
-        player_q: Query<(&Deck, &SelectedEntity), With<Player>>,
+        players: Query<(&Deck, &SelectedEntity), With<Player>>,
         mut ui: Query<(Entity, &mut Self, &CalculatedSizeTty, &ForPlayer)>,
     ) {
         for (id, mut card_selection, size, ForPlayer(player)) in ui.iter_mut() {
-            let rendering = player_q.get(*player).ok()
+            let rendering = players
+                .get(*player)
+                .ok()
                 .and_then(|(player_deck, selected_entity)| {
                     let access_point = selected_entity.of(&access_points)?;
 

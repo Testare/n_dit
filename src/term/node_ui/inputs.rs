@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
-use game_core::player::{Player, ForPlayer};
+use game_core::node::{InNode, Node};
+use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::{GridUi, NodeViewScroll};
 use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
@@ -7,22 +8,36 @@ use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
 
 pub fn node_cursor_controls(
-    mut node_cursors: Query<(
-        &mut NodeCursor,
-        &EntityGrid,
-        &mut SelectedAction,
-        &mut SelectedEntity,
-    ), Without<Player>>,
-    mut player_q: Query<(&mut SelectedEntity,), With<Player>>,
+    node_grids: Query<&EntityGrid, With<Node>>,
+    mut players: Query<
+        (
+            &InNode,
+            &mut NodeCursor,
+            &mut SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
     mut message_bar_ui: Query<&mut MessageBarUi>,
-    mut grid_ui_view: Query<
-        (&CalculatedSizeTty, &GlobalTranslationTty, &NodeViewScroll, &ForPlayer),
+    grid_ui_view: Query<
+        (
+            &CalculatedSizeTty,
+            &GlobalTranslationTty,
+            &NodeViewScroll,
+            &ForPlayer,
+        ),
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
 ) {
-    for (mut cursor, grid, mut selected_action, mut selected_entity) in node_cursors.iter_mut() {
-        if let Ok((size, translation, scroll, ForPlayer(player))) = grid_ui_view.get_single_mut() {
+    for (size, translation, scroll, ForPlayer(player)) in grid_ui_view.iter() {
+        if let Ok((InNode(node), mut cursor, mut selected_entity, mut selected_action)) =
+            players.get_mut(*player)
+        {
+            let grid = node_grids
+                .get(*node)
+                .expect("if a player is in a node, it should have an entity grid");
+
             for input in inputs.iter() {
                 match input {
                     CrosstermEvent::Key(KeyEvent {
@@ -94,20 +109,11 @@ pub fn node_cursor_controls(
                     _ => {},
                 }
             }
-            if let Ok((mut selected_entity,)) = player_q.get_mut(*player) {
-                let now_selected_entity = grid.item_at(**cursor);
-                if selected_entity.0 != now_selected_entity {
-                    selected_entity.0 = now_selected_entity;
-                    **selected_action = None;
-                }
-
+            let now_selected_entity = grid.item_at(**cursor);
+            if selected_entity.0 != now_selected_entity {
+                selected_entity.0 = now_selected_entity;
+                **selected_action = None;
             }
-        }
-        // TO BE REPLACED
-        let now_selected_entity = grid.item_at(**cursor);
-        if selected_entity.0 != now_selected_entity {
-            selected_entity.0 = now_selected_entity;
-            **selected_action = None;
         }
     }
 }

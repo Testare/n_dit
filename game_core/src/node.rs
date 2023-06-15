@@ -1,4 +1,4 @@
-use crate::card::{ActionEffect, Deck};
+use crate::card::Deck;
 use crate::prelude::*;
 
 mod node_op;
