@@ -19,6 +19,7 @@ use self::menu_ui::{
 };
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
+use super::render::TerminalRendering;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
@@ -100,13 +101,14 @@ pub trait NodeUi: Component + Default {
     fn bundle(
         player: Entity,
         node_q: &NodeUiQItem,
-    ) -> (StyleTty, Name, ForPlayer, Self::UiBundleExtras, Self) {
+    ) -> (StyleTty, Name, ForPlayer, Self::UiBundleExtras, Self, TerminalRendering) {
         (
             Self::initial_style(node_q),
             Name::new(Self::NAME),
             ForPlayer(player),
             Self::ui_bundle_extras(),
             Self::default(),
+            TerminalRendering::default()
         )
     }
 

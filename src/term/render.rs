@@ -230,8 +230,6 @@ impl EntityCommand for UpdateRenderCommand {
             if tr.rendering().iter().ne(self.0.iter()) {
                 tr.update(self.0, frame_count);
             }
-        } else {
-            entity.insert(TerminalRendering::new(self.0, frame_count));
         }
     }
 }
