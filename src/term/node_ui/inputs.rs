@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent,
 use game_core::node::{InNode, Node};
 use game_core::player::{ForPlayer, Player};
 
-use super::grid_ui::{GridUi, NodeViewScroll};
+use super::grid_ui::{GridUi, Scroll2D};
 use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
@@ -23,7 +23,7 @@ pub fn grid_ui_keyboard_controls(
         (
             &CalculatedSizeTty,
             &GlobalTranslationTty,
-            &NodeViewScroll,
+            &Scroll2D,
             &ForPlayer,
         ),
         With<GridUi>,
