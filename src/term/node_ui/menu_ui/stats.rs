@@ -6,7 +6,7 @@ use game_core::prelude::*;
 use super::{NodePieceQItem, SimpleSubmenu};
 use crate::term::layout::CalculatedSizeTty;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct MenuUiStats;
 
 #[derive(SystemParam)]
@@ -16,7 +16,9 @@ pub struct MenuUiStatsDataParam<'w, 's> {
 }
 
 impl SimpleSubmenu for MenuUiStats {
+    const NAME: &'static str = "Menu Stats";
     type RenderSystemParam = MenuUiStatsDataParam<'static, 'static>;
+    type UiBundleExtras = ();
 
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let stats_to_display = if selected.max_size.is_some() { 1 } else { 0 }
@@ -53,5 +55,9 @@ impl SimpleSubmenu for MenuUiStats {
         } else {
             None
         }
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        ()
     }
 }

@@ -18,22 +18,40 @@ pub use label::MenuUiLabel;
 pub use stats::MenuUiStats;
 
 use super::{NodeUi, SelectedAction, SelectedEntity};
-use crate::term::layout::CalculatedSizeTty;
+use crate::term::layout::{CalculatedSizeTty, StyleTty};
 
-trait SimpleSubmenu {
+pub trait SimpleSubmenu {
+    const NAME: &'static str;
     type RenderSystemParam: SystemParam;
+    type UiBundleExtras: Bundle;
+
+    fn initial_style() -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(taffy::prelude::Style {
+            display: Display::None,
+            min_size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(0.0),
+            },
+            ..default()
+        })
+    }
 
     fn layout_event_system() -> Option<SystemAppConfig> {
         None
     }
 
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize>;
+
     fn render<'w, 's>(
         player: Entity,
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
         sys_param: &<Self::RenderSystemParam as SystemParam>::Item<'w, 's>,
     ) -> Option<Vec<String>>;
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras;
 }
 
 #[derive(WorldQuery)]

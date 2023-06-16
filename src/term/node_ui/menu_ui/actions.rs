@@ -4,11 +4,11 @@ use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 
 use super::{NodePieceQItem, SimpleSubmenu};
-use crate::term::layout::{CalculatedSizeTty, LayoutEvent};
+use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget};
 use crate::term::node_ui::{SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 
-#[derive(Component, Debug)]
+#[derive(Component, Default, Debug)]
 pub struct MenuUiActions;
 
 impl MenuUiActions {
@@ -48,6 +48,9 @@ impl MenuUiActions {
 }
 
 impl SimpleSubmenu for MenuUiActions {
+    const NAME: &'static str = "Actions Menu";
+    type UiBundleExtras = LayoutMouseTarget;
+
     type RenderSystemParam = Query<'static, 'static, &'static SelectedAction, With<Player>>;
 
     fn layout_event_system() -> Option<bevy::app::SystemAppConfig> {
@@ -74,5 +77,9 @@ impl SimpleSubmenu for MenuUiActions {
             menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
         }
         Some(menu)
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        LayoutMouseTarget
     }
 }

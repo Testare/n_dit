@@ -1,11 +1,13 @@
 use game_core::node::Node;
-use game_core::player::ForPlayer;
 
-use super::{NodeCursor, ShowNode};
-use crate::term::layout::{LayoutMouseTarget, StyleTty};
-use crate::term::node_ui::grid_ui::{GridUi, Scroll2D};
+use super::{NodeCursor, NodeUiQ, ShowNode};
+use crate::term::layout::StyleTty;
+use crate::term::node_ui::grid_ui::GridUi;
+use crate::term::node_ui::menu_ui::{
+    MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
+};
 use crate::term::node_ui::{
-    AvailableActionTargets, AvailableMoves, SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, NodeUi, SelectedAction, SelectedEntity,
 };
 use crate::term::prelude::*;
 use crate::term::TerminalWindow;
@@ -14,14 +16,14 @@ pub fn create_node_ui(
     mut commands: Commands,
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
-    node_grids: Query<&EntityGrid, With<Node>>,
+    node_qs: Query<NodeUiQ, With<Node>>,
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.iter().next() {
-        if let Ok(grid) = node_grids.get(*node) {
+        if let Ok(node_q) = node_qs.get(*node) {
             commands.entity(*player).insert((
                 NodeCursor::default(),
-                SelectedEntity(grid.item_at(default())),
+                SelectedEntity(node_q.grid.item_at(default())),
                 SelectedAction(None),
                 AvailableActionTargets::default(),
                 AvailableMoves::default(),
@@ -40,19 +42,7 @@ pub fn create_node_ui(
                     crate::term::layout::LayoutRoot,
                 ))
                 .with_children(|root| {
-                    root.spawn((
-                        StyleTty(taffy::prelude::Style {
-                            size: Size {
-                                width: Dimension::Auto,
-                                height: Dimension::Points(3.),
-                            },
-                            flex_shrink: 0.0,
-                            ..default()
-                        }),
-                        Name::new("Node Title Bar"),
-                        super::titlebar_ui::TitleBarUi,
-                        ForPlayer(*player),
-                    ));
+                    root.spawn(super::titlebar_ui::TitleBarUi::bundle(*player, &node_q));
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
                             size: Size {
@@ -79,114 +69,15 @@ pub fn create_node_ui(
                                 Name::new("Menu Bar"),
                             ))
                             .with_children(|menu_bar| {
-                                menu_bar.spawn((
-                                    StyleTty(taffy::prelude::Style {
-                                        display: Display::None,
-                                        min_size: Size {
-                                            width: Dimension::Auto,
-                                            height: Dimension::Points(0.0),
-                                        },
-                                        ..default()
-                                    }),
-                                    super::menu_ui::MenuUiLabel,
-                                    ForPlayer(*player),
-                                    Name::new("Menu Label"),
-                                ));
-                                menu_bar.spawn((
-                                    StyleTty(taffy::prelude::Style {
-                                        display: Display::None,
-                                        min_size: Size {
-                                            width: Dimension::Auto,
-                                            height: Dimension::Points(0.0),
-                                        },
-                                        flex_grow: 1.0,
-                                        ..default()
-                                    }),
-                                    LayoutMouseTarget,
-                                    super::menu_ui::MenuUiCardSelection::default(),
-                                    ForPlayer(*player),
-                                    Name::new("Menu Card Selection"),
-                                ));
-                                menu_bar.spawn((
-                                    StyleTty(taffy::prelude::Style {
-                                        display: Display::None,
-                                        min_size: Size {
-                                            width: Dimension::Auto,
-                                            height: Dimension::Points(0.0),
-                                        },
-                                        ..default()
-                                    }),
-                                    super::menu_ui::MenuUiStats,
-                                    ForPlayer(*player),
-                                    Name::new("Menu Stats"),
-                                ));
-                                menu_bar.spawn((
-                                    StyleTty(taffy::prelude::Style {
-                                        display: Display::None,
-                                        min_size: Size {
-                                            width: Dimension::Auto,
-                                            height: Dimension::Points(0.0),
-                                        },
-                                        ..default()
-                                    }),
-                                    super::menu_ui::MenuUiActions,
-                                    ForPlayer(*player),
-                                    LayoutMouseTarget,
-                                    Name::new("Actions Menu"),
-                                ));
-                                menu_bar.spawn((
-                                    StyleTty(taffy::prelude::Style {
-                                        display: Display::None,
-                                        min_size: Size {
-                                            width: Dimension::Auto,
-                                            height: Dimension::Points(0.0),
-                                        },
-                                        // flex_grow: 1.0,
-                                        ..default()
-                                    }),
-                                    super::menu_ui::MenuUiDescription,
-                                    ForPlayer(*player),
-                                    Name::new("DescriptionMenu"),
-                                ));
+                                menu_bar.spawn(MenuUiLabel::bundle(*player, &node_q));
+                                menu_bar.spawn(MenuUiCardSelection::bundle(*player, &node_q));
+                                menu_bar.spawn(MenuUiStats::bundle(*player, &node_q));
+                                menu_bar.spawn(MenuUiActions::bundle(*player, &node_q));
+                                menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
-
-                        content_pane.spawn((
-                            StyleTty(taffy::prelude::Style {
-                                size: Size {
-                                    width: Dimension::Auto,
-                                    height: Dimension::Auto,
-                                },
-                                max_size: Size {
-                                    width: Dimension::Points((grid.width() * 3 + 1) as f32),
-                                    height: Dimension::Points((grid.height() * 2 + 1) as f32),
-                                },
-                                border: Rect {
-                                    left: Dimension::Points(1.0),
-                                    ..default()
-                                },
-                                flex_grow: 1.0,
-                                ..default()
-                            }),
-                            Name::new("Grid"),
-                            GridUi,
-                            LayoutMouseTarget,
-                            ForPlayer(*player),
-                            Scroll2D::default(),
-                        ));
+                        content_pane.spawn(GridUi::bundle(*player, &node_q));
                     });
-                    root.spawn((
-                        StyleTty(taffy::prelude::Style {
-                            size: Size {
-                                width: Dimension::Auto,
-                                height: Dimension::Points(1.),
-                            },
-                            flex_shrink: 0.0,
-                            ..default()
-                        }),
-                        Name::new("Message Bar"),
-                        ForPlayer(*player),
-                        super::MessageBarUi(vec!["Have you ever heard the story of Darth Plegius the wise? I thought not, it's not a story the jedi would tell you. He was powerful, some say he even could even stop people from dying. Of course, he was betrayed, and at this point Logan's memory starts to fail, and he isn't really able to quote the whole thing exactly. But of course I remember the gist.".to_owned()]),
-                    ));
+                    root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
                 .id();
             terminal_window.set_render_target(Some(render_root));

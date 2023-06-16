@@ -11,8 +11,10 @@ use game_core::node::{AccessPoint, InNode, IsTapped, NodePiece, Team};
 pub use scroll::Scroll2D;
 
 use super::{
-    AvailableActionTargets, AvailableMoves, NodeCursor, NodeUi, SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, NodeCursor, NodeUi, NodeUiQItem, SelectedAction,
+    SelectedEntity,
 };
+use crate::term::layout::{LayoutMouseTarget, StyleTty};
 use crate::term::prelude::*;
 use crate::term::render::RenderTtySet;
 
@@ -58,10 +60,32 @@ impl Plugin for GridUi {
 }
 
 impl NodeUi for GridUi {
-    type UiBundle = ();
+    const NAME: &'static str = "Grid UI";
+    type UiBundleExtras = (Scroll2D, LayoutMouseTarget);
     type UiPlugin = Self;
 
-    fn ui_bundle() -> Self::UiBundle {
-        ()
+    fn initial_style(node_q: &NodeUiQItem) -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(taffy::prelude::Style {
+            size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Auto,
+            },
+            max_size: Size {
+                width: Dimension::Points((node_q.grid.width() * 3 + 1) as f32),
+                height: Dimension::Points((node_q.grid.height() * 2 + 1) as f32),
+            },
+            border: Rect {
+                left: Dimension::Points(1.0),
+                ..default()
+            },
+            flex_grow: 1.0,
+            ..default()
+        })
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        (Scroll2D::default(), LayoutMouseTarget)
     }
 }

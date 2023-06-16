@@ -1,6 +1,7 @@
 use game_core::prelude::*;
 
-use super::NodeUi;
+use super::{NodeUi, NodeUiQItem};
+use crate::term::layout::StyleTty;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 
 #[derive(Component, Default)]
@@ -25,10 +26,24 @@ impl Plugin for TitleBarUi {
 }
 
 impl NodeUi for TitleBarUi {
-    type UiBundle = ();
+    const NAME: &'static str = "Node Title Bar";
+    type UiBundleExtras = ();
     type UiPlugin = Self;
 
-    fn ui_bundle() -> Self::UiBundle {
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(Style {
+            size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(3.),
+            },
+            flex_shrink: 0.0,
+            ..default()
+        })
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
         ()
     }
 }

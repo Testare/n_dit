@@ -6,6 +6,7 @@ use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
+use crate::term::node_ui::NodeUiQItem;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 
 #[derive(Component, Debug, Default)]
@@ -91,10 +92,24 @@ impl Plugin for MenuUiDescription {
 }
 
 impl NodeUi for MenuUiDescription {
+    const NAME: &'static str = "Description Menu";
     type UiPlugin = Self;
-    type UiBundle = ();
+    type UiBundleExtras = ();
 
-    fn ui_bundle() -> Self::UiBundle {
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(taffy::prelude::Style {
+            display: Display::None,
+            min_size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(0.0),
+            },
+            ..default()
+        })
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
         ()
     }
 }

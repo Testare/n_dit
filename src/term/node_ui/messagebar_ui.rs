@@ -1,11 +1,12 @@
 use game_core::prelude::*;
+use taffy::prelude::Size;
 use taffy::style::Dimension;
 
-use super::NodeUi;
+use super::{NodeUi, NodeUiQItem};
 use crate::term::layout::{CalculatedSizeTty, StyleTty};
 use crate::term::render::{RenderTtySet, UpdateRendering};
 
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MessageBarUi(pub Vec<String>);
 
 #[derive(Default)]
@@ -52,10 +53,28 @@ impl Plugin for MessageBarUiPlugin {
 }
 
 impl NodeUi for MessageBarUi {
-    type UiBundle = ();
+    const NAME: &'static str = "Message Bar";
+    type UiBundleExtras = ();
     type UiPlugin = MessageBarUiPlugin;
 
-    fn ui_bundle() -> Self::UiBundle {
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        StyleTty(taffy::prelude::Style {
+            size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(1.),
+            },
+            flex_shrink: 0.0,
+            ..default()
+        })
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
         ()
+    }
+}
+
+impl Default for MessageBarUi {
+    fn default() -> Self {
+        super::MessageBarUi(vec!["Have you ever heard the story of Darth Plegius the wise? I thought not, it's not a story the jedi would tell you. He was powerful, some say he even could even stop people from dying. Of course, he was betrayed, and at this point Logan's memory starts to fail, and he isn't really able to quote the whole thing exactly. But of course I remember the gist.".to_owned()])
     }
 }

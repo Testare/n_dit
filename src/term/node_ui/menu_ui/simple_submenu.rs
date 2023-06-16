@@ -7,6 +7,7 @@ use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedEntity, SimpleSubmenu};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
+use crate::term::node_ui::NodeUiQItem;
 use crate::term::prelude::*;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 use crate::term::TerminalFocusMode;
@@ -30,12 +31,17 @@ impl<S: SimpleSubmenu + Component + Sync + Send + 'static> Plugin for SimpleSubM
     }
 }
 
-impl<S: SimpleSubmenu + Component> NodeUi for S {
-    type UiBundle = ();
+impl<S: SimpleSubmenu + Component + Default> NodeUi for S {
+    const NAME: &'static str = S::NAME;
+    type UiBundleExtras = <S as SimpleSubmenu>::UiBundleExtras;
     type UiPlugin = SimpleSubMenuPlugin<S>;
 
-    fn ui_bundle() -> Self::UiBundle {
-        ()
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        <S as SimpleSubmenu>::initial_style()
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        <S as SimpleSubmenu>::ui_bundle_extras()
     }
 }
 

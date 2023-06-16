@@ -9,6 +9,7 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
+use game_core::player::ForPlayer;
 pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
 
@@ -17,6 +18,7 @@ use self::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
 use self::titlebar_ui::TitleBarUi;
+use super::layout::StyleTty;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
@@ -82,11 +84,32 @@ impl SelectedEntity {
     }
 }
 
-pub trait NodeUi: Component {
-    type UiBundle: Bundle;
+#[derive(WorldQuery)]
+pub struct NodeUiQ {
+    grid: &'static EntityGrid,
+}
+
+pub trait NodeUi: Component + Default {
+    const NAME: &'static str;
+    type UiBundleExtras: Bundle;
     type UiPlugin: Plugin + Default;
 
-    fn ui_bundle() -> Self::UiBundle;
+    fn ui_bundle_extras() -> Self::UiBundleExtras;
+    fn initial_style(node_q: &NodeUiQItem) -> StyleTty;
+
+    fn bundle(
+        player: Entity,
+        node_q: &NodeUiQItem,
+    ) -> (StyleTty, Name, ForPlayer, Self::UiBundleExtras, Self) {
+        (
+            Self::initial_style(node_q),
+            Name::new(Self::NAME),
+            ForPlayer(player),
+            Self::ui_bundle_extras(),
+            Self::default(),
+        )
+    }
+
     fn plugin() -> Self::UiPlugin {
         Self::UiPlugin::default()
     }

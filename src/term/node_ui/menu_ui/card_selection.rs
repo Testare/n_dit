@@ -6,8 +6,8 @@ use game_core::NDitCoreSet;
 use pad::PadStr;
 use taffy::style::Dimension;
 
-use crate::term::layout::{CalculatedSizeTty, FitToSize, LayoutEvent, StyleTty};
-use crate::term::node_ui::{NodeUi, SelectedAction, SelectedEntity};
+use crate::term::layout::{CalculatedSizeTty, FitToSize, LayoutEvent, LayoutMouseTarget, StyleTty};
+use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 use crate::term::render::{RenderTtySet, UpdateRendering};
 
@@ -209,10 +209,25 @@ impl Plugin for MenuUiCardSelectionPlugin {
 }
 
 impl NodeUi for MenuUiCardSelection {
-    type UiBundle = ();
+    const NAME: &'static str = "Menu Card Selection";
+    type UiBundleExtras = LayoutMouseTarget;
     type UiPlugin = MenuUiCardSelectionPlugin;
 
-    fn ui_bundle() -> Self::UiBundle {
-        ()
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(Style {
+            display: Display::None,
+            min_size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(0.0),
+            },
+            flex_grow: 1.0,
+            ..default()
+        })
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        LayoutMouseTarget
     }
 }

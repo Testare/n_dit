@@ -5,11 +5,14 @@ use super::super::registry::GlyphRegistry;
 use super::{NodePieceQItem, SimpleSubmenu};
 use crate::term::layout::CalculatedSizeTty;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct MenuUiLabel;
 
 impl SimpleSubmenu for MenuUiLabel {
+    const NAME: &'static str = "Menu Label";
+    type UiBundleExtras = ();
     type RenderSystemParam = Res<'static, GlyphRegistry>;
+
     fn height(_: &NodePieceQItem<'_>) -> Option<usize> {
         Some(2)
     }
@@ -53,5 +56,9 @@ impl SimpleSubmenu for MenuUiLabel {
             label.push(name);
         }
         Some(label)
+    }
+
+    fn ui_bundle_extras() -> Self::UiBundleExtras {
+        ()
     }
 }
