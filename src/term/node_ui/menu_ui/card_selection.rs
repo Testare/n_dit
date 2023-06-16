@@ -1,6 +1,6 @@
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Card, Deck};
-use game_core::node::{AccessPoint, NodeOp, NodePiece};
+use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use pad::PadStr;
@@ -24,7 +24,10 @@ impl MenuUiCardSelection {
         mut layout_events: EventReader<LayoutEvent>,
         mut ui: Query<(&mut Self, &CalculatedSizeTty, &ForPlayer)>,
         cards: Query<&Card>,
-        mut players: Query<(&Deck, &SelectedEntity, &mut SelectedAction), With<Player>>,
+        mut players: Query<
+            (&Deck, &SelectedEntity, &mut SelectedAction, &PlayedCards),
+            With<Player>,
+        >,
         access_points: Query<&AccessPoint, With<NodePiece>>,
         mut node_command: EventWriter<Op<NodeOp>>,
     ) {
@@ -32,7 +35,9 @@ impl MenuUiCardSelection {
             if let Ok((mut card_selection, size, ForPlayer(player))) =
                 ui.get_mut(layout_event.entity())
             {
-                if let Ok((deck, selected_entity, mut selected_action)) = players.get_mut(*player) {
+                if let Ok((deck, selected_entity, mut selected_action, played_cards)) =
+                    players.get_mut(*player)
+                {
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
                         MouseEventKind::ScrollDown => {
@@ -61,10 +66,11 @@ impl MenuUiCardSelection {
                                 let index = card_selection.scroll + y as usize - 1;
                                 if let Some((card_id, count)) = deck.cards_with_count().nth(index) {
                                     log::debug!(
-                                        "Clicked on card: {:?} \"{}\", which we have {} of.",
+                                        "Clicked on card: {:?} \"{}\", which we have {}/{} of.",
                                         card_id,
                                         cards.get(card_id).unwrap().name_or_nickname(),
-                                        count
+                                        played_cards.remaining_count(deck, card_id),
+                                        count,
                                     );
                                     // Selected
 
@@ -78,7 +84,7 @@ impl MenuUiCardSelection {
                                             *player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
                                         ));
-                                    } else {
+                                    } else if played_cards.can_be_played(deck, card_id) {
                                         node_command.send(Op::new(
                                             *player,
                                             NodeOp::LoadAccessPoint {
@@ -129,32 +135,30 @@ impl MenuUiCardSelection {
         access_points: Query<&AccessPoint>,
         mut commands: Commands,
         cards: Query<&Card>,
-        players: Query<(&Deck, &SelectedEntity), With<Player>>,
+        players: Query<(&Deck, &SelectedEntity, &PlayedCards), With<Player>>,
         mut ui: Query<(Entity, &mut Self, &CalculatedSizeTty, &ForPlayer)>,
     ) {
         for (id, mut card_selection, size, ForPlayer(player)) in ui.iter_mut() {
             let rendering = players
                 .get(*player)
                 .ok()
-                .and_then(|(player_deck, selected_entity)| {
+                .and_then(|(player_deck, selected_entity, played_cards)| {
                     let access_point = selected_entity.of(&access_points)?;
 
                     let cards: Vec<String> = player_deck
                         .cards_with_count()
-                        .map(|(id, count)| {
+                        .map(|(id, _)| {
+                            let remaining_count = played_cards.remaining_count(player_deck, id);
                             let is_selected = Some(id) == access_point.card();
                             let name = cards
                                 .get(id)
                                 .map(|card| card.short_name_or_nickname())
                                 .unwrap_or("NotACard");
-                            let width = size.width()
-                                - 3
-                                - count.ilog10() as usize
-                                - if is_selected { 1 } else { 0 };
+                            let width = size.width() - 4 - if is_selected { 1 } else { 0 };
                             format!(
                                 "{selection_indicator}{name} {count}",
                                 name = name.with_exact_width(width),
-                                count = count,
+                                count = remaining_count,
                                 selection_indicator = if is_selected { "▶" } else { "" },
                             )
                         })

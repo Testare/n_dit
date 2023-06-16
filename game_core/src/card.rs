@@ -45,6 +45,15 @@ enum Tag {
 
 impl Deck {
     const ONE: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(1) };
+    const MAX_CARD_COUNT: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(9) };
+
+    pub fn count_of_card(&self, entity: Entity) -> u32 {
+        self.cards
+            .get(&entity)
+            .copied()
+            .map(NonZeroU32::get)
+            .unwrap_or_default()
+    }
 
     pub fn new() -> Self {
         Default::default()
@@ -63,7 +72,9 @@ impl Deck {
         self.cards
             .entry(card)
             .and_modify(|count| {
-                *count = count.saturating_add(1);
+                if (*count).cmp(&Self::MAX_CARD_COUNT).is_lt() {
+                    *count = count.saturating_add(1);
+                }
             })
             .or_insert(Self::ONE);
         self

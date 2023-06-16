@@ -3,7 +3,7 @@ use game_core::card::{
     Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
-    AccessPoint, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup, Team,
+    AccessPoint, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup, PlayedCards, Team,
 };
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
@@ -123,6 +123,8 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
             node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
                 .add_to_grid(node_id, vec![(6, 2)]);
+            node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
+                .add_to_grid(node_id, vec![(12, 2)]);
             node.spawn((
                 Pickup::Card(hack),
                 NodePiece::new("pickup:card"),
@@ -164,6 +166,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((
             PlayerBundle::default(),
             InNode(node),
+            PlayedCards::default(),
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)

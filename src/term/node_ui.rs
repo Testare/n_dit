@@ -101,14 +101,21 @@ pub trait NodeUi: Component + Default {
     fn bundle(
         player: Entity,
         node_q: &NodeUiQItem,
-    ) -> (StyleTty, Name, ForPlayer, Self::UiBundleExtras, Self, TerminalRendering) {
+    ) -> (
+        StyleTty,
+        Name,
+        ForPlayer,
+        Self::UiBundleExtras,
+        Self,
+        TerminalRendering,
+    ) {
         (
             Self::initial_style(node_q),
             Name::new(Self::NAME),
             ForPlayer(player),
             Self::ui_bundle_extras(),
             Self::default(),
-            TerminalRendering::default()
+            TerminalRendering::default(),
         )
     }
 

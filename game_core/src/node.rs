@@ -46,9 +46,18 @@ pub struct AccessPoint {
     card: Option<Entity>, // Display card data to load
 }
 
-#[derive(Component)]
-pub struct PlayedCards {
-    played_card_decks: Vec<Option<Deck>>,
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct PlayedCards(HashMap<Entity, u32>);
+
+impl PlayedCards {
+    pub fn can_be_played(&self, deck: &Deck, card_id: Entity) -> bool {
+        self.get(&card_id).copied().unwrap_or_default() < deck.count_of_card(card_id)
+    }
+
+    pub fn remaining_count(&self, deck: &Deck, card_id: Entity) -> u32 {
+        deck.count_of_card(card_id)
+            .saturating_sub(self.get(&card_id).copied().unwrap_or_default())
+    }
 }
 
 #[derive(Component, Reflect)]
