@@ -13,9 +13,11 @@ impl Default for GlyphRegistry {
                 // Alternatives to consider: <>, @@, {}
                 ("env:access_point", "@@"),
                 ("curio:hack", "hk"),
+                ("curio:sling", ">-"),
+                ("curio:data_doctor_pro", "死"),
                 ("curio:death", "死"),
                 // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"
-                ("pickup:card", "🂠 "),
+                ("pickup:card", "🂠 "), // Looks good in this font, but not as good in other fonts
                 ("pickup:mon", "$$"),
             ]
             .into_iter()

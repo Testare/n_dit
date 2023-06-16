@@ -4,6 +4,10 @@ use crate::card::{Actions, Card, Description, MaximumSize, MovementSpeed};
 use crate::node::AccessPoint;
 use crate::prelude::*;
 
+use super::NodePiece;
+
+const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
+
 pub enum NodeOp {
     LoadAccessPoint {
         access_point_id: Entity,
@@ -28,7 +32,7 @@ pub fn access_point_actions(
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
     cards: Query<CardInfo>,
-    mut access_points: Query<&mut AccessPoint>,
+    mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
 ) {
     for command in ops.iter() {
         match command.op() {
@@ -36,7 +40,7 @@ pub fn access_point_actions(
                 access_point_id,
                 card_id,
             } => {
-                if let Ok(mut access_point) = access_points.get_mut(*access_point_id) {
+                if let Ok((mut access_point, mut node_piece)) = access_points.get_mut(*access_point_id) {
                     let mut access_point_commands = commands.entity(*access_point_id);
 
                     if access_point.card.is_some() {
@@ -45,6 +49,7 @@ pub fn access_point_actions(
                     }
                     access_point.card = Some(*card_id);
                     if let Ok(card_info) = cards.get(*card_id) {
+                        node_piece.set_display_id(card_info.card.display_id().clone());
                         if let Some(description) = card_info.description {
                             access_point_commands.insert(description.clone());
                         }
@@ -61,8 +66,9 @@ pub fn access_point_actions(
                 }
             },
             NodeOp::UnloadAccessPoint { access_point_id } => {
-                if let Ok(mut access_point) = access_points.get_mut(*access_point_id) {
+                if let Ok((mut access_point, mut node_piece)) = access_points.get_mut(*access_point_id) {
                     let mut access_point_commands = commands.entity(*access_point_id);
+                    node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
 
                     if access_point.card.is_some() {
                         access_point_commands

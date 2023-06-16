@@ -24,9 +24,9 @@ pub struct Node;
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct InNode(pub Entity);
 
-#[derive(Component, Reflect, getset::Getters)]
+#[derive(Component, Reflect, getset::Getters, getset::Setters)]
 pub struct NodePiece {
-    #[getset(get = "pub")]
+    #[getset(get = "pub", set = "pub")]
     display_id: String,
 }
 
@@ -75,9 +75,9 @@ pub enum Team {
 }
 
 impl NodePiece {
-    pub fn new(display_name: &str) -> Self {
+    pub fn new(display_id: &str) -> Self {
         NodePiece {
-            display_id: display_name.to_owned(),
+            display_id: display_id.to_owned(),
         }
     }
 }

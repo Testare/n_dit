@@ -23,7 +23,7 @@ impl Plugin for DemoPlugin {
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
     let hack = commands
         .spawn((
-            Card::new("Hack", None),
+            Card::new("Hack", "curio:hack", None),
             MaximumSize(4),
             MovementSpeed(2),
             Actions::new(vec![Action {
@@ -38,37 +38,46 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     let card_0 = commands
         .spawn((
-            Card::new("Card0", None),
+            Card::new("Sling", "curio:sling", None),
             Description::new("Basic attack program"),
+            MaximumSize(3),
+            MovementSpeed(2),
+            Actions::new(vec![Action {
+                name: "Shoot".to_owned(),
+                range: 2,
+                effect: ActionEffect::Damage(1),
+                description: "(Range 2) Deletes 1 sectors from target".to_owned(),
+                prereqs: default(),
+            }]),
         ))
         .id();
     let card_1 = commands
         .spawn((
-            Card::new("Card1", None),
+            Card::new("Card1", "curio:hack", None),
             Description::new("Basic attack program1"),
         ))
         .id();
     let card_2 = commands
         .spawn((
-            Card::new("Card2", None),
+            Card::new("Card2", "curio:hack", None),
             Description::new("Basic attack program2"),
         ))
         .id();
     let card_3 = commands
         .spawn((
-            Card::new("Card3", None),
+            Card::new("Card3", "curio:hack", None),
             Description::new("Basic attack program3"),
         ))
         .id();
     let card_4 = commands
         .spawn((
-            Card::new("Card4", None),
+            Card::new("Card4", "curio:hack", None),
             Description::new("Basic attack program4"),
         ))
         .id();
     let card_5 = commands
         .spawn((
-            Card::new("Data Doctor Pro", Some("DataDocPro")),
+            Card::new("Data Doctor Pro", "curio:data_doctor_pro", Some("DataDocPro")),
             Description::new("He's gonna get you"),
         ))
         .id();

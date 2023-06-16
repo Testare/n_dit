@@ -12,9 +12,11 @@ pub struct Deck {
     ordering: Vec<(String, Entity)>,
 }
 
-#[derive(Component, Debug, FromReflect, Reflect)]
+#[derive(Component, Debug, FromReflect, Reflect, getset::Getters)]
 pub struct Card {
     card_name: String,
+    #[getset(get = "pub")]
+    display_id: String,
     short_name: Option<String>,
     nickname: Option<String>,
 }
@@ -90,9 +92,10 @@ impl Deck {
 }
 
 impl Card {
-    pub fn new<S: Into<String>>(card_name: S, short_name: Option<S>) -> Self {
+    pub fn new<S: Into<String>>(card_name: S, display_id: S, short_name: Option<S>) -> Self {
         Card {
             card_name: card_name.into(),
+            display_id: display_id.into(),
             short_name: short_name.map(Into::into),
             nickname: None,
         }

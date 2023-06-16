@@ -41,23 +41,22 @@ impl MenuUiCardSelection {
                         },
                         MouseEventKind::Down(MouseButton::Left) => {
                             let height = size.height32();
-                            if layout_event.pos().x == 0 && max_scroll != 0 {
+                            let UVec2 { x, y } = layout_event.pos();
+                            if x == 0 && max_scroll != 0 {
                                 // Click on scroll bar
-                                match layout_event.pos().y {
+                                match y {
                                     1 | 2 => {
                                         card_selection.scroll =
                                             card_selection.scroll.saturating_sub(1);
                                     },
-                                    x if x == height - 1 || x == height - 2 => {
+                                    i if i == height - 1 || i == height - 2 => {
                                         card_selection.scroll =
                                             (card_selection.scroll + 1).min(max_scroll);
                                     },
                                     _ => {},
                                 }
-                            } else if layout_event.pos().y > 0 && layout_event.pos().y < height - 1
-                            {
-                                let index =
-                                    card_selection.scroll + layout_event.pos().y as usize - 1;
+                            } else if y > 0 && y < height - 1 {
+                                let index = card_selection.scroll + y as usize - 1;
                                 if let Some((card_id, count)) = deck.cards_with_count().nth(index) {
                                     log::debug!(
                                         "Clicked on card: {:?} \"{}\", which we have {} of.",
@@ -175,7 +174,7 @@ impl MenuUiCardSelection {
                         }
                     });
 
-                    let padding = if no_scroll_bar_needed { 1 } else { 0 };
+                    let padding = if height > (cards.len() + 1) { 1 } else { 0 };
 
                     let mut cards_menu = vec![format!("{0:═<1$}", "═Cards", size.width())];
                     for (scroll_bar, card) in scroll_bar.zip(
