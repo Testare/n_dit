@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
-use game_core::card::{Actions};
+use game_core::card::Actions;
 use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
-use super::{AvailableActionTargets, SelectedAction, SelectedEntity, PlayerUiQ};
+use super::{AvailableActionTargets, PlayerUiQ, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 
 pub fn get_range_of_action(

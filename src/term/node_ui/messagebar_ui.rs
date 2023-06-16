@@ -1,11 +1,15 @@
 use game_core::prelude::*;
 use taffy::style::Dimension;
 
+use super::NodeUi;
 use crate::term::layout::{CalculatedSizeTty, StyleTty};
-use crate::term::render::UpdateRendering;
+use crate::term::render::{RenderTtySet, UpdateRendering};
 
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MessageBarUi(pub Vec<String>);
+
+#[derive(Default)]
+pub struct MessageBarUiPlugin;
 
 pub fn style_message_bar(mut ui: Query<(&CalculatedSizeTty, &MessageBarUi, &mut StyleTty)>) {
     for (size, ui, mut style) in ui.iter_mut() {
@@ -35,5 +39,23 @@ pub fn render_message_bar(
         commands
             .get_entity(id)
             .update_rendering(rendered_text.clone());
+    }
+}
+
+impl Plugin for MessageBarUiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems((
+            style_message_bar.in_set(RenderTtySet::PreCalculateLayout),
+            render_message_bar.in_set(RenderTtySet::PostCalculateLayout),
+        ));
+    }
+}
+
+impl NodeUi for MessageBarUi {
+    type UiBundle = ();
+    type UiPlugin = MessageBarUiPlugin;
+
+    fn ui_bundle() -> Self::UiBundle {
+        ()
     }
 }

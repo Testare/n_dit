@@ -1,10 +1,9 @@
 use bevy::ecs::query::WorldQuery;
 
+use super::NodePiece;
 use crate::card::{Actions, Card, Description, MaximumSize, MovementSpeed};
 use crate::node::AccessPoint;
 use crate::prelude::*;
-
-use super::NodePiece;
 
 const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 
@@ -40,7 +39,9 @@ pub fn access_point_actions(
                 access_point_id,
                 card_id,
             } => {
-                if let Ok((mut access_point, mut node_piece)) = access_points.get_mut(*access_point_id) {
+                if let Ok((mut access_point, mut node_piece)) =
+                    access_points.get_mut(*access_point_id)
+                {
                     let mut access_point_commands = commands.entity(*access_point_id);
 
                     if access_point.card.is_some() {
@@ -66,7 +67,9 @@ pub fn access_point_actions(
                 }
             },
             NodeOp::UnloadAccessPoint { access_point_id } => {
-                if let Ok((mut access_point, mut node_piece)) = access_points.get_mut(*access_point_id) {
+                if let Ok((mut access_point, mut node_piece)) =
+                    access_points.get_mut(*access_point_id)
+                {
                     let mut access_point_commands = commands.entity(*access_point_id);
                     node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
 

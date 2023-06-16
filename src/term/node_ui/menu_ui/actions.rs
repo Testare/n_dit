@@ -35,14 +35,12 @@ impl MenuUiActions {
                                 } else {
                                     **selected_action = None;
                                 }
-                            } else {
-                                log::error!(
-                                    "Entity missing required components to render player UI"
-                                );
                             }
                         },
                         _ => {},
                     }
+                } else {
+                    log::error!("Entity missing required components to render player UI");
                 }
             }
         }
@@ -51,6 +49,10 @@ impl MenuUiActions {
 
 impl SimpleSubmenu for MenuUiActions {
     type RenderSystemParam = Query<'static, 'static, &'static SelectedAction, With<Player>>;
+
+    fn layout_event_system() -> Option<bevy::app::SystemAppConfig> {
+        Some(Self::handle_layout_events.into_app_config())
+    }
 
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
         let actions = selected.actions.as_deref()?;

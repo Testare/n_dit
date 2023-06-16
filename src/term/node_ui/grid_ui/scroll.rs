@@ -1,14 +1,12 @@
 use game_core::node::{InNode, Node};
 use game_core::player::{ForPlayer, Player};
 
-use super::{NodeCursor, GridUi};
+use super::{GridUi, NodeCursor};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
 
-
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct Scroll2D(pub UVec2);
-
 
 pub fn adjust_scroll(
     players: Query<(&NodeCursor, &InNode), With<Player>>,

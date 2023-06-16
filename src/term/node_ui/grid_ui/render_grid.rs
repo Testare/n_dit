@@ -4,11 +4,11 @@ use game_core::node::Node;
 use game_core::player::{ForPlayer, Player};
 use itertools::Itertools;
 
-use super::{Scroll2D, NodePieceQ, PlayerUiQ, PlayerUiQItem, GridUi};
-use super::borders::{border_style_for, intersection_for_pivot, BorderType};
-use super::render_square::render_square;
 use super::super::registry::GlyphRegistry;
 use super::super::NodeCursor;
+use super::borders::{border_style_for, intersection_for_pivot, BorderType};
+use super::render_square::render_square;
+use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
@@ -65,9 +65,8 @@ fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|i, sprite| {
-        render_square(i, sprite, node_pieces, glyph_registry, &draw_config)
-    });
+    let sprite_map = grid
+        .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
 
     let str_width = width * 3 + 3;
 

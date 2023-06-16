@@ -77,7 +77,11 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     let card_5 = commands
         .spawn((
-            Card::new("Data Doctor Pro", "curio:data_doctor_pro", Some("DataDocPro")),
+            Card::new(
+                "Data Doctor Pro",
+                "curio:data_doctor_pro",
+                Some("DataDocPro"),
+            ),
             Description::new("He's gonna get you"),
         ))
         .id();

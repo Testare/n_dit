@@ -9,14 +9,14 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use game_core::NDitCoreSet;
 pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
 
+use self::grid_ui::GridUi;
 use self::menu_ui::{
-    MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats, NodeUi,
+    MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
-use super::render::RenderTtySet;
+use self::titlebar_ui::TitleBarUi;
 use crate::term::prelude::*;
 use crate::term::TerminalFocusMode;
 
@@ -55,39 +55,14 @@ impl Plugin for NodeUiPlugin {
             .add_event::<ShowNode>()
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_system(inputs::grid_ui_keyboard_controls.in_base_set(CoreSet::PreUpdate))
-            .add_systems(
-                (
-                    menu_ui::MenuUiCardSelection::handle_layout_events,
-                    menu_ui::MenuUiActions::handle_layout_events,
-                    messagebar_ui::style_message_bar,
-                )
-                    .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .before(NDitCoreSet::ProcessCommands),
-            )
-            .add_systems(
-                (
-                    grid_ui::adjust_available_moves,
-                    grid_ui::get_range_of_action,
-                )
-                    .chain()
-                    .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .in_set(RenderTtySet::PreCalculateLayout),
-            )
-            .add_systems(MenuUiLabel::ui_systems())
-            .add_systems(MenuUiCardSelection::ui_systems())
-            .add_systems(MenuUiActions::ui_systems())
-            .add_systems(MenuUiStats::ui_systems())
-            .add_systems(MenuUiDescription::ui_systems())
-            .add_systems(
-                (
-                    grid_ui::adjust_scroll.before(grid_ui::render_grid_system),
-                    grid_ui::render_grid_system,
-                    titlebar_ui::render_title_bar_system,
-                    messagebar_ui::render_message_bar,
-                )
-                    .in_set(OnUpdate(TerminalFocusMode::Node))
-                    .in_set(RenderTtySet::PostCalculateLayout),
-            );
+            .add_plugin(MenuUiCardSelection::plugin())
+            .add_plugin(MenuUiStats::plugin())
+            .add_plugin(MenuUiLabel::plugin())
+            .add_plugin(MenuUiActions::plugin())
+            .add_plugin(MenuUiDescription::plugin())
+            .add_plugin(GridUi::plugin())
+            .add_plugin(MessageBarUi::plugin())
+            .add_plugin(TitleBarUi::plugin());
     }
 }
 
@@ -104,5 +79,15 @@ impl SelectedEntity {
         query: &'a mut Query<'w, 's, Q, R>,
     ) -> Option<<Q as WorldQuery>::Item<'a>> {
         query.get_mut(self.0?).ok()
+    }
+}
+
+pub trait NodeUi: Component {
+    type UiBundle: Bundle;
+    type UiPlugin: Plugin + Default;
+
+    fn ui_bundle() -> Self::UiBundle;
+    fn plugin() -> Self::UiPlugin {
+        Self::UiPlugin::default()
     }
 }

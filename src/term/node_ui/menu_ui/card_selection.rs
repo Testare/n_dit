@@ -1,21 +1,23 @@
-use bevy::app::SystemAppConfig;
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece};
 use game_core::player::{ForPlayer, Player};
+use game_core::NDitCoreSet;
 use pad::PadStr;
 use taffy::style::Dimension;
 
-use super::NodeUi;
 use crate::term::layout::{CalculatedSizeTty, FitToSize, LayoutEvent, StyleTty};
-use crate::term::node_ui::{SelectedAction, SelectedEntity};
+use crate::term::node_ui::{NodeUi, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
-use crate::term::render::UpdateRendering;
+use crate::term::render::{RenderTtySet, UpdateRendering};
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiCardSelection {
     scroll: usize,
 }
+
+#[derive(Default)]
+pub struct MenuUiCardSelectionPlugin;
 
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
@@ -94,6 +96,7 @@ impl MenuUiCardSelection {
             }
         }
     }
+
     fn style_card_selection(
         access_points: Query<(), With<AccessPoint>>,
         player_info: Query<(&Deck, &SelectedEntity), With<Player>>,
@@ -195,12 +198,21 @@ impl MenuUiCardSelection {
     }
 }
 
-impl NodeUi for MenuUiCardSelection {
-    fn style_update_system() -> Option<SystemAppConfig> {
-        Some(Self::style_card_selection.into_app_config())
+impl Plugin for MenuUiCardSelectionPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems((
+            MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
+            MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::PreCalculateLayout),
+            MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
+        ));
     }
+}
 
-    fn render_system() -> SystemAppConfig {
-        Self::render_system.into_app_config()
+impl NodeUi for MenuUiCardSelection {
+    type UiBundle = ();
+    type UiPlugin = MenuUiCardSelectionPlugin;
+
+    fn ui_bundle() -> Self::UiBundle {
+        ()
     }
 }
