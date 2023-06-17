@@ -1,5 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
-use game_core::node::{InNode, Node};
+use game_core::node::{InNode, Node, NodeOp};
 use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::{GridUi, Scroll2D};
@@ -29,6 +29,7 @@ pub fn grid_ui_keyboard_controls(
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
+    mut node_op_writer: EventWriter<Op<NodeOp>>,
 ) {
     for (size, translation, scroll, ForPlayer(player)) in grid_ui_view.iter() {
         if let Ok((InNode(node), mut cursor, mut selected_entity, mut selected_action)) =
@@ -55,6 +56,9 @@ pub fn grid_ui_keyboard_controls(
                         },
                         'l' | 'd' => {
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
+                        },
+                        '-' => {
+                            node_op_writer.send(Op::new(*player, NodeOp::ReadyToGo));
                         },
                         _ => {},
                     },

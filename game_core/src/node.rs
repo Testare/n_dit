@@ -5,14 +5,8 @@ mod node_op;
 mod rule;
 
 use getset::CopyGetters;
-pub use node_op::{access_point_actions, NodeOp};
-
-#[derive(Component, Debug, FromReflect, Reflect)]
-pub enum NodePhase {
-    Loading,
-    Setup { ready_players: HashSet<Entity> },
-    Play,
-}
+pub use node_op::{access_point_ops, ready_to_go_ops, NodeOp};
+pub use rule::AccessPointLoadingRule;
 
 #[derive(Component, Debug, FromReflect, Reflect)]
 pub struct PlayerTurn(Entity);
@@ -81,6 +75,30 @@ pub struct ActivatedPiece(Option<Entity>);
 pub enum Team {
     Enemy,
     Player,
+}
+
+#[derive(Component, Deref, DerefMut)]
+pub struct OnTeam(pub Entity);
+
+#[derive(Component, Deref, DerefMut)]
+pub struct Teams(pub Vec<Entity>);
+
+#[derive(Component)]
+pub enum TeamPhase {
+    Setup,
+    Play,
+}
+
+#[derive(Component)]
+pub struct ReadyToGo(pub bool);
+
+#[derive(Component)]
+pub struct NodeTeam;
+
+#[derive(Component)]
+pub enum TeamColor {
+    Red,
+    Blue,
 }
 
 impl NodePiece {

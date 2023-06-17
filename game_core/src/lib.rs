@@ -25,6 +25,7 @@ pub enum NDitError {
     },
 }
 
+#[derive(Debug)]
 pub struct Op<O> {
     pub op: O,
     pub player: Entity,
@@ -54,7 +55,10 @@ impl Plugin for NDitCorePlugin {
                 NDitCoreSet::ProcessInputs.in_base_set(CoreSet::PreUpdate),
                 NDitCoreSet::ProcessCommands.in_base_set(CoreSet::Update),
             ))
-            .add_systems((node::access_point_actions,).in_set(NDitCoreSet::ProcessCommands));
+            .add_systems(
+                (node::access_point_ops, node::ready_to_go_ops)
+                    .in_set(NDitCoreSet::ProcessCommands),
+            );
     }
 }
 

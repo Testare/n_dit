@@ -109,7 +109,35 @@ impl Default for ColorScheme {
 impl UiFormat {
     pub const NONE: Self = UiFormat(None, None, None);
 
-    const fn new(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> Self {
+    pub const fn fgbgv(fgr: u8, fgg: u8, fgb: u8, bgr: u8, bgg: u8, bgb: u8) -> Self {
+        UiFormat(
+            Some(Color::Rgb {
+                r: fgr,
+                g: fgg,
+                b: fgb,
+            }),
+            Some(Color::Rgb {
+                r: bgr,
+                g: bgg,
+                b: bgb,
+            }),
+            None,
+        )
+    }
+
+    pub const fn fgv(r: u8, g: u8, b: u8) -> Self {
+        UiFormat(Some(Color::Rgb { r, g, b }), None, None)
+    }
+
+    pub const fn fgbg(fg: Color, bg: Color) -> Self {
+        UiFormat(Some(fg), Some(bg), None)
+    }
+
+    pub const fn fg(fg: Color) -> Self {
+        UiFormat(Some(fg), None, None)
+    }
+
+    pub const fn new(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> Self {
         UiFormat(fg, bg, attr)
     }
 

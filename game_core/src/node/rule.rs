@@ -1,7 +1,8 @@
 use crate::prelude::*;
 
-#[derive(Component)]
-pub enum AccessPointLoading {
-    Staggered,
+#[derive(Clone, Component, Copy, Default, Eq, PartialEq)]
+pub enum AccessPointLoadingRule {
     Simultaneous,
+    #[default]
+    Staggered,
 }

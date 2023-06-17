@@ -1,9 +1,12 @@
 use bevy::utils::HashMap;
+use crossterm::style::Color;
 use game_core::prelude::*;
+
+use crate::term::configuration::UiFormat;
 
 #[derive(Deref, DerefMut, Resource)]
 pub struct GlyphRegistry {
-    registry: HashMap<String, String>,
+    registry: HashMap<String, (String, UiFormat)>,
 }
 
 impl Default for GlyphRegistry {
@@ -11,17 +14,28 @@ impl Default for GlyphRegistry {
         GlyphRegistry {
             registry: [
                 // Alternatives to consider: <>, @@, {}
-                ("env:access_point", "@@"),
-                ("curio:hack", "hk"),
-                ("curio:sling", ">-"),
-                ("curio:data_doctor_pro", "死"),
-                ("curio:death", "死"),
+                (
+                    "env:access_point",
+                    (
+                        "@@",
+                        UiFormat::new(Some(Color::Black), Some(Color::Green), None),
+                    ),
+                ),
+                ("curio:hack", ("hk", UiFormat::fgv(0, 199, 252))),
+                ("curio:sling", (">-", UiFormat::fgv(0, 217, 165))),
+                (
+                    "curio:data_doctor_pro",
+                    ("死", UiFormat::fg(Color::Rgb { r: 0, g: 0, b: 200 })),
+                ),
+                ("curio:death", ("死", UiFormat::fg(Color::Red))),
+                ("curio:bit_man", ("01", UiFormat::fgv(182, 252, 0))),
                 // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"
-                ("pickup:card", "🂠 "), // Looks good in this font, but not as good in other fonts
-                ("pickup:mon", "$$"),
+                // Looks good in this font, but not as good in other fonts
+                ("pickup:card", ("🂠 ", UiFormat::fg(Color::Yellow))),
+                ("pickup:mon", ("$$", UiFormat::fg(Color::Yellow))),
             ]
             .into_iter()
-            .map(|(name, glyph)| (name.to_owned(), glyph.to_owned()))
+            .map(|(name, (glyph, format))| (name.to_owned(), (glyph.to_owned(), format)))
             .collect(),
         }
     }

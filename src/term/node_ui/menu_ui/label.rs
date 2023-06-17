@@ -26,7 +26,7 @@ impl SimpleSubmenu for MenuUiLabel {
         let display_id = selected.piece.display_id();
         let glyph = (**glyph_registry)
             .get(display_id)
-            .map(|s| s.as_str())
+            .map(|s| s.0.as_str())
             .unwrap_or("??");
 
         let is_tapped = selected

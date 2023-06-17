@@ -1,13 +1,17 @@
 use bevy::ecs::query::WorldQuery;
 
-use super::{NodePiece, PlayedCards};
+use super::{
+    AccessPointLoadingRule, InNode, Node, NodePiece, NodeTeam, OnTeam, PlayedCards, ReadyToGo,
+    TeamPhase, Teams,
+};
 use crate::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
-use crate::node::AccessPoint;
+use crate::node::{AccessPoint, Curio};
 use crate::player::Player;
 use crate::prelude::*;
 
 const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 
+#[derive(Debug)]
 pub enum NodeOp {
     LoadAccessPoint {
         access_point_id: Entity,
@@ -28,16 +32,101 @@ pub struct CardInfo {
     actions: Option<&'static Actions>,
 }
 
-pub fn access_point_actions(
+// TODO Ready to go when it isn't your turn
+pub fn ready_to_go_ops(
+    mut commands: Commands,
+    mut ops: EventReader<Op<NodeOp>>,
+    cards: Query<&Card>,
+    mut players: Query<(Entity, &OnTeam, &InNode, &mut ReadyToGo), With<Player>>,
+    mut team_phases: Query<&mut TeamPhase, With<NodeTeam>>,
+    access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
+    mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
+) {
+    for op in ops.iter() {
+        if let Op {
+            player,
+            op: NodeOp::ReadyToGo,
+        } = op
+        {
+            if let Ok((_, OnTeam(player_team), InNode(node_id), ReadyToGo(false))) =
+                players.get(*player)
+            {
+                if let Ok((access_point_loading_rule, mut grid, teams)) = nodes.get_mut(*node_id) {
+                    let relevant_teams = match access_point_loading_rule {
+                        AccessPointLoadingRule::Staggered => vec![*player_team],
+                        AccessPointLoadingRule::Simultaneous => teams.0.clone(),
+                    };
+
+                    let valid_op = access_points
+                        .iter()
+                        .any(|(id, OnTeam(team), access_point)| {
+                            grid.contains_key(id)
+                                && team == player_team
+                                && access_point.card.is_some()
+                        });
+                    if valid_op {
+                        let relevant_teams_are_ready = players.iter().all(
+                            |(iter_player, OnTeam(team), _, ReadyToGo(ready_to_go))| {
+                                !relevant_teams.contains(team)
+                                    || *ready_to_go
+                                    || iter_player == *player
+                            },
+                        );
+                        if relevant_teams_are_ready {
+                            let relevant_access_points: Vec<(Entity, Option<Entity>)> =
+                                access_points
+                                    .iter()
+                                    .filter_map(|(id, OnTeam(team), access_point)| {
+                                        (player_team == team && grid.contains_key(id))
+                                            .then(|| (id, access_point.card))
+                                    })
+                                    .collect();
+                            for (player_id, OnTeam(team), _, _) in players.iter() {
+                                if relevant_teams.contains(team) {
+                                    commands.entity(player_id).remove::<ReadyToGo>();
+                                }
+                            }
+                            for (node_piece, card) in relevant_access_points.into_iter() {
+                                if let Some(card_id) = card {
+                                    let card_name =
+                                        cards.get(card_id).expect("card should exist").card_name();
+
+                                    commands
+                                        .entity(node_piece)
+                                        .insert(Curio::new_with_card(card_name, card_id))
+                                        .remove::<AccessPoint>();
+                                } else {
+                                    let piece_len = grid.len_of(node_piece);
+                                    grid.pop_back_n(node_piece, piece_len);
+                                    commands.entity(node_piece).despawn()
+                                }
+                            }
+                            for team in relevant_teams {
+                                *team_phases
+                                    .get_mut(team)
+                                    .expect("Team should have team phase component") =
+                                    TeamPhase::Play;
+                            }
+                        } else {
+                            players.get_mut(*player).unwrap().3 .0 = true;
+                        };
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn access_point_ops(
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
     cards: Query<CardInfo>,
     mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
     mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
 ) {
-    for command in ops.iter() {
-        if let Ok((mut played_cards, deck)) = players.get_mut(command.player()) {
-            match command.op() {
+    for node_op in ops.iter() {
+        if let Ok((mut played_cards, deck)) = players.get_mut(node_op.player()) {
+            match node_op.op() {
                 NodeOp::LoadAccessPoint {
                     access_point_id,
                     card_id,

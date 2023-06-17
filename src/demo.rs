@@ -3,7 +3,8 @@ use game_core::card::{
     Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
-    AccessPoint, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup, PlayedCards, Team,
+    AccessPoint, AccessPointLoadingRule, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece,
+    NodeTeam, OnTeam, Pickup, PlayedCards, ReadyToGo, Team, TeamColor, TeamPhase, Teams,
 };
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
@@ -21,6 +22,12 @@ impl Plugin for DemoPlugin {
 }
 
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
+    let player_team = commands
+        .spawn((NodeTeam, TeamColor::Blue, TeamPhase::Setup))
+        .id();
+    let enemy_team = commands
+        .spawn((NodeTeam, TeamColor::Red, TeamPhase::Play))
+        .id();
     let hack = commands
         .spawn((
             Card::new("Hack", "curio:hack", None),
@@ -53,8 +60,8 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     let card_1 = commands
         .spawn((
-            Card::new("Card1", "curio:hack", None),
-            Description::new("Basic attack program1"),
+            Card::new("Bit Man", "curio:bit_man", None),
+            Description::new("Makes sectors of the grid appear or disappear"),
         ))
         .id();
     let card_2 = commands
@@ -88,6 +95,8 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
     let node = commands
         .spawn((
             Node,
+            Teams(vec![player_team, enemy_team]),
+            AccessPointLoadingRule::Staggered,
             EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap(),
         ))
         .with_children(|node| {
@@ -96,6 +105,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             node.spawn((
                 NodePiece::new("curio:hack"),
                 Team::Player,
+                OnTeam(player_team),
                 Curio::new("Hack"),
                 Actions::new(vec![
                     Action {
@@ -121,10 +131,18 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             ))
             .add_to_grid(node_id, vec![(5, 4), (5, 3)]);
 
-            node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
-                .add_to_grid(node_id, vec![(6, 2)]);
-            node.spawn((NodePiece::new("env:access_point"), AccessPoint::default()))
-                .add_to_grid(node_id, vec![(12, 2)]);
+            node.spawn((
+                NodePiece::new("env:access_point"),
+                AccessPoint::default(),
+                OnTeam(player_team),
+            ))
+            .add_to_grid(node_id, vec![(6, 2)]);
+            node.spawn((
+                NodePiece::new("env:access_point"),
+                AccessPoint::default(),
+                OnTeam(player_team),
+            ))
+            .add_to_grid(node_id, vec![(12, 2)]);
             node.spawn((
                 Pickup::Card(hack),
                 NodePiece::new("pickup:card"),
@@ -135,6 +153,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             node.spawn((
                 NodePiece::new("curio:death"),
                 Team::Enemy,
+                OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(true),
                 Actions::new(vec![Action {
@@ -149,6 +168,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             node.spawn((
                 NodePiece::new("curio:death"),
                 Team::Enemy,
+                OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(false),
                 Actions::new(vec![Action {
@@ -162,11 +182,19 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             .add_to_grid(node_id, vec![(12, 3)]);
         })
         .id();
+    commands.spawn((
+        PlayerBundle::default(),
+        ReadyToGo(true),
+        InNode(node),
+        OnTeam(enemy_team),
+    ));
     let player = commands
         .spawn((
             PlayerBundle::default(),
+            OnTeam(player_team),
             InNode(node),
             PlayedCards::default(),
+            ReadyToGo(false),
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)
