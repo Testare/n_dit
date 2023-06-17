@@ -7,7 +7,7 @@ mod scroll;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, InNode, IsTapped, NodePiece, Team};
+use game_core::node::{AccessPoint, InNode, IsTapped, NodePiece};
 pub use scroll::Scroll2D;
 
 use super::{
@@ -24,7 +24,6 @@ pub struct GridUi;
 #[derive(WorldQuery)]
 pub struct NodePieceQ {
     piece: &'static NodePiece,
-    team: Option<&'static Team>,
     speed: Option<&'static MovementSpeed>,
     is_tapped: Option<&'static IsTapped>,
     access_point: Option<&'static AccessPoint>,

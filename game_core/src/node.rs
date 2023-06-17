@@ -71,12 +71,6 @@ pub struct IsTapped(pub bool);
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct ActivatedPiece(Option<Entity>);
 
-#[derive(Clone, Component, Debug, FromReflect, Reflect)]
-pub enum Team {
-    Enemy,
-    Player,
-}
-
 #[derive(Component, Deref, DerefMut)]
 pub struct OnTeam(pub Entity);
 

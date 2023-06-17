@@ -4,7 +4,7 @@ use game_core::card::{
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece,
-    NodeTeam, OnTeam, Pickup, PlayedCards, ReadyToGo, Team, TeamColor, TeamPhase, Teams,
+    NodeTeam, OnTeam, Pickup, PlayedCards, ReadyToGo, TeamColor, TeamPhase, Teams,
 };
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
@@ -104,7 +104,6 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
             node.spawn((
                 NodePiece::new("curio:hack"),
-                Team::Player,
                 OnTeam(player_team),
                 Curio::new("Hack"),
                 Actions::new(vec![
@@ -152,7 +151,6 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
             node.spawn((
                 NodePiece::new("curio:death"),
-                Team::Enemy,
                 OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(true),
@@ -167,7 +165,6 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             .add_to_grid(node_id, vec![(2, 5)]);
             node.spawn((
                 NodePiece::new("curio:death"),
-                Team::Enemy,
                 OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(false),
