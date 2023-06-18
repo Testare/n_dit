@@ -3,8 +3,9 @@ use game_core::card::{
     Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece,
-    Team, OnTeam, Pickup, PlayedCards, IsReadyToGo, TeamColor, TeamPhase, Teams,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
+    IsTapped, MovesTaken, Node, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamColor,
+    TeamPhase, Teams,
 };
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
@@ -17,7 +18,9 @@ pub struct DemoPlugin;
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(demo_startup).add_system(debug_key);
+        app.add_startup_system(demo_startup)
+            .add_system(debug_key)
+            .add_system(log_ops);
     }
 }
 
@@ -25,9 +28,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
-    let enemy_team = commands
-        .spawn((Team, TeamColor::Red, TeamPhase::Play))
-        .id();
+    let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
     let hack = commands
         .spawn((
             Card::new("Hack", "curio:hack", None),
@@ -96,7 +97,9 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((
             Node,
             Teams(vec![player_team, enemy_team]),
+            CurrentTurn(player_team),
             AccessPointLoadingRule::Staggered,
+            ActiveCurio::default(),
             EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap(),
         ))
         .with_children(|node| {
@@ -218,6 +221,12 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
     load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
+}
+
+fn log_ops(mut node_ops: EventReader<Op<NodeOp>>) {
+    for op in node_ops.iter() {
+        log::debug!("NODE_OP {:?}", op)
+    }
 }
 
 fn debug_key(

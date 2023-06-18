@@ -56,7 +56,11 @@ impl Plugin for NDitCorePlugin {
                 NDitCoreSet::ProcessCommands.in_base_set(CoreSet::Update),
             ))
             .add_systems(
-                (node::access_point_ops, node::ready_to_go_ops)
+                (
+                    node::access_point_ops,
+                    node::ready_to_go_ops,
+                    node::curio_ops,
+                )
                     .in_set(NDitCoreSet::ProcessCommands),
             );
     }

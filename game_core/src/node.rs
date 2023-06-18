@@ -5,7 +5,7 @@ mod node_op;
 mod rule;
 
 use getset::CopyGetters;
-pub use node_op::{access_point_ops, ready_to_go_ops, NodeOp};
+pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
 
 #[derive(Component, Debug, FromReflect, Reflect)]
@@ -75,9 +75,15 @@ pub struct ActivatedPiece(Option<Entity>);
 pub struct OnTeam(pub Entity);
 
 #[derive(Component, Deref, DerefMut)]
+pub struct CurrentTurn(pub Entity);
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct ActiveCurio(pub Option<Entity>);
+
+#[derive(Component, Deref, DerefMut)]
 pub struct Teams(pub Vec<Entity>);
 
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 pub enum TeamPhase {
     Setup,
     Play,

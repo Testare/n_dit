@@ -47,6 +47,12 @@ pub fn render_square(
         .unwrap_or_else(|| (UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
     let chosen_format = if node_piece.access_point.is_some() {
         configuration.color_scheme().access_point()
+    } else if node_piece
+        .is_tapped
+        .map(|is_tapped| **is_tapped)
+        .unwrap_or_default()
+    {
+        configuration.color_scheme().player_team_tapped()
     } else {
         glyph_format
     };

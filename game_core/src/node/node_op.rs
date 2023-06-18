@@ -1,8 +1,8 @@
 use bevy::ecs::query::WorldQuery;
 
 use super::{
-    AccessPointLoadingRule, InNode, Node, NodePiece, Team, OnTeam, PlayedCards, IsReadyToGo,
-    TeamPhase, Teams,
+    AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
+    Node, NodePiece, OnTeam, PlayedCards, Team, TeamPhase, Teams,
 };
 use crate::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use crate::node::{AccessPoint, Curio};
@@ -13,6 +13,17 @@ const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 
 #[derive(Debug)]
 pub enum NodeOp {
+    PerformCurioAction {
+        action: Entity,
+        target: UVec2,
+    },
+    MoveActiveCurio {
+        dir: Direction,
+    },
+    DeactivateCurio,
+    ActivateCurio {
+        curio_id: Entity,
+    },
     LoadAccessPoint {
         access_point_id: Entity,
         card_id: Entity,
@@ -30,6 +41,63 @@ pub struct CardInfo {
     speed: Option<&'static MovementSpeed>,
     size: Option<&'static MaximumSize>,
     actions: Option<&'static Actions>,
+}
+
+#[derive(WorldQuery)]
+#[world_query(mutable)]
+pub struct CurioQ {
+    team: &'static OnTeam,
+    tapped: &'static mut IsTapped,
+    moves_taken: &'static mut MovesTaken,
+    movement_speed: Option<&'static mut MovementSpeed>,
+    max_size: Option<&'static mut MaximumSize>,
+}
+
+pub fn curio_ops(
+    mut ops: EventReader<Op<NodeOp>>,
+    mut nodes: Query<(&mut EntityGrid, &CurrentTurn, &mut ActiveCurio), With<Node>>,
+    players: Query<(&OnTeam, &InNode), With<Player>>,
+    team_phases: Query<&TeamPhase, With<Team>>,
+    mut curios: Query<CurioQ, With<Curio>>,
+) {
+    for Op { op, player } in ops.into_iter() {
+        players.get(*player).ok().and_then(|(player_team, node)| {
+            let (grid, current_turn, mut activated_curio) = nodes.get_mut(**node).ok()?;
+            if **player_team != **current_turn {
+                return None;
+            }
+            if *team_phases.get(**player_team).ok()? != TeamPhase::Play {
+                return None;
+            }
+            match op {
+                NodeOp::ActivateCurio { curio_id } => {
+                    let target_curio = curios.get(*curio_id).ok()?;
+                    if **target_curio.team != **player_team || **target_curio.tapped {
+                        return None;
+                    }
+                    if let Some(last_active) = **activated_curio {
+                        if last_active != *curio_id {
+                            **curios.get_mut(last_active).ok()?.tapped = true;
+                            **activated_curio = Some(*curio_id);
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        **activated_curio = Some(*curio_id);
+                    }
+                },
+                NodeOp::DeactivateCurio => {
+                    if let Some(last_active) = **activated_curio {
+                        **curios.get_mut(last_active).ok()?.tapped = true;
+                    }
+                    **activated_curio = None;
+                },
+                _ => {},
+            }
+
+            Some(())
+        });
+    }
 }
 
 // TODO Ready to go when it isn't your turn
@@ -93,7 +161,11 @@ pub fn ready_to_go_ops(
 
                                     commands
                                         .entity(node_piece)
-                                        .insert(Curio::new_with_card(card_name, card_id))
+                                        .insert((
+                                            Curio::new_with_card(card_name, card_id),
+                                            IsTapped::default(),
+                                            MovesTaken::default(),
+                                        ))
                                         .remove::<AccessPoint>();
                                 } else {
                                     let piece_len = grid.len_of(node_piece);

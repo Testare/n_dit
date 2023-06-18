@@ -12,7 +12,7 @@ use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
 pub use description::MenuUiDescription;
 use game_core::card::{Actions, Description, MaximumSize, MovementSpeed};
-use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Team, Pickup};
+use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Pickup, Team};
 use game_core::prelude::*;
 pub use label::MenuUiLabel;
 pub use stats::MenuUiStats;

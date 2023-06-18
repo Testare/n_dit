@@ -10,4 +10,4 @@ pub use bevy::utils::{HashMap, HashSet};
 
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};
 pub use crate::entity_grid::EntityGrid;
-pub use crate::Op;
+pub use crate::{Direction, Op};
