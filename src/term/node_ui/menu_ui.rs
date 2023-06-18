@@ -12,7 +12,7 @@ use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
 pub use description::MenuUiDescription;
 use game_core::card::{Actions, Description, MaximumSize, MovementSpeed};
-use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, NodeTeam, Pickup};
+use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Team, Pickup};
 use game_core::prelude::*;
 pub use label::MenuUiLabel;
 pub use stats::MenuUiStats;
@@ -58,7 +58,7 @@ pub trait SimpleSubmenu {
 pub struct NodePieceQ {
     entity: Entity,
     piece: &'static NodePiece,
-    team: Option<&'static NodeTeam>,
+    team: Option<&'static Team>,
     curio: Option<&'static Curio>,
     pickup: Option<&'static Pickup>,
     actions: Option<&'static Actions>,

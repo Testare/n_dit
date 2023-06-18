@@ -84,10 +84,10 @@ pub enum TeamPhase {
 }
 
 #[derive(Component)]
-pub struct ReadyToGo(pub bool);
+pub struct IsReadyToGo(pub bool);
 
 #[derive(Component)]
-pub struct NodeTeam;
+pub struct Team;
 
 #[derive(Component)]
 pub enum TeamColor {

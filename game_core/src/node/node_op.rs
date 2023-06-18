@@ -1,7 +1,7 @@
 use bevy::ecs::query::WorldQuery;
 
 use super::{
-    AccessPointLoadingRule, InNode, Node, NodePiece, NodeTeam, OnTeam, PlayedCards, ReadyToGo,
+    AccessPointLoadingRule, InNode, Node, NodePiece, Team, OnTeam, PlayedCards, IsReadyToGo,
     TeamPhase, Teams,
 };
 use crate::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
@@ -37,8 +37,8 @@ pub fn ready_to_go_ops(
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
     cards: Query<&Card>,
-    mut players: Query<(Entity, &OnTeam, &InNode, &mut ReadyToGo), With<Player>>,
-    mut team_phases: Query<&mut TeamPhase, With<NodeTeam>>,
+    mut players: Query<(Entity, &OnTeam, &InNode, &mut IsReadyToGo), With<Player>>,
+    mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
     mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
 ) {
@@ -48,7 +48,7 @@ pub fn ready_to_go_ops(
             op: NodeOp::ReadyToGo,
         } = op
         {
-            if let Ok((_, OnTeam(player_team), InNode(node_id), ReadyToGo(false))) =
+            if let Ok((_, OnTeam(player_team), InNode(node_id), IsReadyToGo(false))) =
                 players.get(*player)
             {
                 if let Ok((access_point_loading_rule, mut grid, teams)) = nodes.get_mut(*node_id) {
@@ -66,7 +66,7 @@ pub fn ready_to_go_ops(
                         });
                     if valid_op {
                         let relevant_teams_are_ready = players.iter().all(
-                            |(iter_player, OnTeam(team), _, ReadyToGo(ready_to_go))| {
+                            |(iter_player, OnTeam(team), _, IsReadyToGo(ready_to_go))| {
                                 !relevant_teams.contains(team)
                                     || *ready_to_go
                                     || iter_player == *player
@@ -83,7 +83,7 @@ pub fn ready_to_go_ops(
                                     .collect();
                             for (player_id, OnTeam(team), _, _) in players.iter() {
                                 if relevant_teams.contains(team) {
-                                    commands.entity(player_id).remove::<ReadyToGo>();
+                                    commands.entity(player_id).remove::<IsReadyToGo>();
                                 }
                             }
                             for (node_piece, card) in relevant_access_points.into_iter() {

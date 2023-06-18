@@ -4,7 +4,7 @@ use game_core::card::{
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece,
-    NodeTeam, OnTeam, Pickup, PlayedCards, ReadyToGo, TeamColor, TeamPhase, Teams,
+    Team, OnTeam, Pickup, PlayedCards, IsReadyToGo, TeamColor, TeamPhase, Teams,
 };
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
@@ -23,10 +23,10 @@ impl Plugin for DemoPlugin {
 
 fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
     let player_team = commands
-        .spawn((NodeTeam, TeamColor::Blue, TeamPhase::Setup))
+        .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
     let enemy_team = commands
-        .spawn((NodeTeam, TeamColor::Red, TeamPhase::Play))
+        .spawn((Team, TeamColor::Red, TeamPhase::Play))
         .id();
     let hack = commands
         .spawn((
@@ -181,7 +181,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     commands.spawn((
         PlayerBundle::default(),
-        ReadyToGo(true),
+        IsReadyToGo(true),
         InNode(node),
         OnTeam(enemy_team),
     ));
@@ -191,7 +191,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             OnTeam(player_team),
             InNode(node),
             PlayedCards::default(),
-            ReadyToGo(false),
+            IsReadyToGo(false),
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)
