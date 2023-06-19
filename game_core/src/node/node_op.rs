@@ -59,7 +59,7 @@ pub fn curio_ops(
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
-    mut pickups: Query<&Pickup>,
+    pickups: Query<&Pickup>,
 ) {
     for Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
