@@ -12,6 +12,7 @@ use game_core::prelude::*;
 
 use crate::term::layout::LayoutEvent;
 use crate::term::node_ui::{NodeCursor, ShowNode};
+use crate::term::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
@@ -100,6 +101,8 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 Some("DataDocPro"),
             ),
             Description::new("He's gonna get you"),
+            MovementSpeed(5),
+            MaximumSize(8),
         ))
         .id();
     let node = commands
@@ -200,6 +203,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
     let player = commands
         .spawn((
             PlayerBundle::default(),
+            KeyMap::default(),
             OnTeam(player_team),
             InNode(node),
             PlayedCards::default(),

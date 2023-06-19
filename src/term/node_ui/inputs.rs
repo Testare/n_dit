@@ -6,6 +6,7 @@ use super::grid_ui::{GridUi, Scroll2D};
 use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::term::prelude::*;
+use crate::term::{KeyMap, Submap};
 
 pub fn grid_ui_keyboard_controls(
     node_grids: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
@@ -13,6 +14,7 @@ pub fn grid_ui_keyboard_controls(
         (
             &InNode,
             &OnTeam,
+            &KeyMap,
             &mut NodeCursor,
             &mut SelectedEntity,
             &mut SelectedAction,
@@ -36,6 +38,7 @@ pub fn grid_ui_keyboard_controls(
         if let Ok((
             InNode(node),
             OnTeam(team),
+            key_map,
             mut cursor,
             mut selected_entity,
             mut selected_action,
@@ -48,6 +51,13 @@ pub fn grid_ui_keyboard_controls(
             let is_controlling_active_curio = active_curio.is_some() && **turn == *team;
 
             for input in inputs.iter() {
+                if let CrosstermEvent::Key(KeyEvent { code, modifiers }) = input {
+                    if let Some(named_input) =
+                        key_map.named_input_for_key(Submap::Node, *code, *modifiers)
+                    {
+                        log::debug!("NAMED INPUT: {:?}", named_input);
+                    }
+                }
                 match input {
                     CrosstermEvent::Key(KeyEvent {
                         code: KeyCode::Char(input_char),
@@ -113,44 +123,6 @@ pub fn grid_ui_keyboard_controls(
                         // Next message
                         for mut msg_bar in message_bar_ui.iter_mut() {
                             msg_bar.0 = msg_bar.0[1..].into();
-                        }
-                    },
-                    CrosstermEvent::Mouse(
-                        event @ MouseEvent {
-                            kind,
-                            column,
-                            row,
-                            modifiers,
-                        },
-                    ) => {
-                        // TODO Use layout events instead
-                        let grid_contained = size.contains_mouse_event(translation, event);
-                        if grid_contained {
-                            match *kind {
-                                MouseEventKind::Moved
-                                    if modifiers.contains(KeyModifiers::SHIFT) =>
-                                {
-                                    let new_x = ((*column as u32) + scroll.x - translation.x) / 3;
-                                    let new_y = ((*row as u32) + scroll.y - translation.y) / 2;
-                                    if new_x < grid.width() && new_y < grid.height() {
-                                        cursor.x = new_x;
-                                        cursor.y = new_y;
-                                    }
-                                },
-                                MouseEventKind::Down(MouseButton::Left) => {
-                                    let new_x = ((*column as u32) + scroll.x - translation.x) / 3;
-                                    let new_y = ((*row as u32) + scroll.y - translation.y) / 2;
-                                    if new_x < grid.width() && new_y < grid.height() {
-                                        if cursor.x == new_x && cursor.y == new_y {
-                                            log::debug!("Click again on selected square")
-                                        } else {
-                                            cursor.x = new_x;
-                                            cursor.y = new_y;
-                                        }
-                                    }
-                                },
-                                _ => {},
-                            }
                         }
                     },
                     _ => {},

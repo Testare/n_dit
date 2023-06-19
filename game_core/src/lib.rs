@@ -66,7 +66,7 @@ impl Plugin for NDitCorePlugin {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Compass {
     North,
     East,

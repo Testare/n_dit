@@ -1,5 +1,6 @@
 mod available_moves;
 mod borders;
+mod grid_inputs;
 mod range_of_action;
 mod render_grid;
 mod render_square;
@@ -8,6 +9,7 @@ mod scroll;
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
 use game_core::node::{AccessPoint, InNode, IsTapped, NodePiece};
+use game_core::NDitCoreSet;
 pub use scroll::Scroll2D;
 
 use super::{
@@ -42,19 +44,20 @@ pub struct PlayerUiQ {
 
 impl Plugin for GridUi {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            (
-                available_moves::adjust_available_moves,
-                range_of_action::get_range_of_action,
+        app.add_systems((grid_inputs::handle_layout_events,).in_set(NDitCoreSet::ProcessInputs))
+            .add_systems(
+                (
+                    available_moves::adjust_available_moves,
+                    range_of_action::get_range_of_action,
+                )
+                    .chain()
+                    .in_set(RenderTtySet::PreCalculateLayout),
             )
-                .chain()
-                .in_set(RenderTtySet::PreCalculateLayout),
-        )
-        .add_systems(
-            (scroll::adjust_scroll, render_grid::render_grid_system)
-                .chain()
-                .in_set(RenderTtySet::PostCalculateLayout),
-        );
+            .add_systems(
+                (scroll::adjust_scroll, render_grid::render_grid_system)
+                    .chain()
+                    .in_set(RenderTtySet::PostCalculateLayout),
+            );
     }
 }
 

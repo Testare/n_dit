@@ -206,6 +206,8 @@ pub fn ready_to_go_ops(
                                 } else {
                                     let piece_len = grid.len_of(node_piece);
                                     grid.pop_back_n(node_piece, piece_len);
+                                    // Leaving access points lying around seems bug prone, but so does despawning them?
+                                    // TODO Use play phase checks in ops, then remove the following line
                                     commands.entity(node_piece).despawn()
                                 }
                             }

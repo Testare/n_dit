@@ -56,7 +56,6 @@ fn setup_logging() {
         } else {
             "debug.log"
         };
-        // Should I do something in the future to make this append style instead of recreate file?
         WriteLogger::init(
             LevelFilter::Debug,
             simplelog::Config::default(),

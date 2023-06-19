@@ -1,8 +1,10 @@
 mod configuration;
+mod key_map;
 pub mod layout;
 pub mod node_ui;
 mod render;
 
+pub use key_map::{KeyMap, Submap};
 pub mod prelude {
     pub use crossterm::event::Event as CrosstermEvent;
     pub use game_core::prelude::*;
