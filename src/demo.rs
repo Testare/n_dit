@@ -67,8 +67,17 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     let card_2 = commands
         .spawn((
-            Card::new("Card2", "curio:hack", None),
-            Description::new("Basic attack program2"),
+            Card::new("Bug", "curio:bug", None),
+            Description::new("Fast, cheap, and out of control"),
+            MaximumSize(1),
+            MovementSpeed(5),
+            Actions::new(vec![Action {
+                name: "Glitch".to_owned(),
+                range: 1,
+                effect: ActionEffect::Damage(2),
+                description: "Deletes 2 sectors from target".to_owned(),
+                prereqs: default(),
+            }]),
         ))
         .id();
     let card_3 = commands

@@ -1,7 +1,7 @@
 use game_core::card::MovementSpeed;
 use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
 use game_core::player::Player;
-use game_core::Direction;
+use game_core::Compass;
 
 use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
 use crate::term::prelude::*;
@@ -66,7 +66,7 @@ fn possible_moves_recur(
     if moves == 0 {
         return;
     }
-    for dir in Direction::ALL_DIRECTIONS.iter() {
+    for dir in Compass::ALL_DIRECTIONS.iter() {
         let next_pt = (pt + *dir).min(grid.bounds());
         if points_set.contains(&next_pt) {
             continue;

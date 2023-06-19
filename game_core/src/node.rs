@@ -24,10 +24,10 @@ pub struct NodePiece {
     display_id: String,
 }
 
-#[derive(FromReflect, Reflect)]
+#[derive(Debug, FromReflect, Reflect)]
 pub struct Mon(pub u32);
 
-#[derive(Component, Reflect)]
+#[derive(Component, Debug, Reflect)]
 pub enum Pickup {
     Mon(Mon),
     Card(Entity),

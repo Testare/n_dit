@@ -21,12 +21,10 @@ impl Default for GlyphRegistry {
                         UiFormat::new(Some(Color::Black), Some(Color::Green), None),
                     ),
                 ),
+                ("curio:bug", ("b ", UiFormat::fgv(132, 252, 0))),
                 ("curio:hack", ("hk", UiFormat::fgv(0, 199, 252))),
                 ("curio:sling", (">-", UiFormat::fgv(0, 217, 165))),
-                (
-                    "curio:data_doctor_pro",
-                    ("死", UiFormat::fg(Color::Rgb { r: 0, g: 0, b: 200 })),
-                ),
+                ("curio:data_doctor_pro", ("++", UiFormat::fgv(0, 0, 200))),
                 ("curio:death", ("死", UiFormat::fg(Color::Red))),
                 ("curio:bit_man", ("01", UiFormat::fgv(182, 252, 0))),
                 // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"

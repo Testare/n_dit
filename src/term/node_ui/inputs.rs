@@ -30,7 +30,7 @@ pub fn grid_ui_keyboard_controls(
         With<GridUi>,
     >,
     mut inputs: EventReader<CrosstermEvent>,
-    mut node_op_writer: EventWriter<Op<NodeOp>>,
+    mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
     for (size, translation, scroll, ForPlayer(player)) in grid_ui_view.iter() {
         if let Ok((
@@ -54,25 +54,53 @@ pub fn grid_ui_keyboard_controls(
                         ..
                     }) => match input_char {
                         'k' | 'w' => {
+                            if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(
+                                    *player,
+                                    NodeOp::MoveActiveCurio {
+                                        dir: Compass::North,
+                                    },
+                                ))
+                            }
                             cursor.y = cursor.y.saturating_sub(1);
                         },
                         'h' | 'a' => {
+                            if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(
+                                    *player,
+                                    NodeOp::MoveActiveCurio { dir: Compass::West },
+                                ))
+                            }
                             cursor.x = cursor.x.saturating_sub(1);
                         },
                         'j' | 's' => {
+                            if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(
+                                    *player,
+                                    NodeOp::MoveActiveCurio {
+                                        dir: Compass::South,
+                                    },
+                                ))
+                            }
                             cursor.y = cursor.y.saturating_add(1).min(grid.height() - 1 as u32);
                         },
                         'l' | 'd' => {
+                            if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(
+                                    *player,
+                                    NodeOp::MoveActiveCurio { dir: Compass::East },
+                                ))
+                            }
                             cursor.x = cursor.x.saturating_add(1).min(grid.width() - 1 as u32);
                         },
                         '-' => {
-                            node_op_writer.send(Op::new(*player, NodeOp::ReadyToGo));
+                            ev_node_op.send(Op::new(*player, NodeOp::ReadyToGo));
                         },
                         ' ' => {
                             if is_controlling_active_curio {
-                                node_op_writer.send(Op::new(*player, NodeOp::DeactivateCurio));
+                                ev_node_op.send(Op::new(*player, NodeOp::DeactivateCurio));
                             } else if let Some(curio_id) = **selected_entity {
-                                node_op_writer
+                                ev_node_op
                                     .send(Op::new(*player, NodeOp::ActivateCurio { curio_id }));
                             }
                         },

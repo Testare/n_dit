@@ -2,7 +2,7 @@ use bevy::ecs::query::WorldQuery;
 
 use super::{
     AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
-    Node, NodePiece, OnTeam, PlayedCards, Team, TeamPhase, Teams,
+    Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase, Teams,
 };
 use crate::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use crate::node::{AccessPoint, Curio};
@@ -18,7 +18,7 @@ pub enum NodeOp {
         target: UVec2,
     },
     MoveActiveCurio {
-        dir: Direction,
+        dir: Compass,
     },
     DeactivateCurio,
     ActivateCurio {
@@ -59,10 +59,11 @@ pub fn curio_ops(
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
+    mut pickups: Query<&Pickup>,
 ) {
     for Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
-            let (grid, current_turn, mut activated_curio) = nodes.get_mut(**node).ok()?;
+            let (mut grid, current_turn, mut active_curio) = nodes.get_mut(**node).ok()?;
             if **player_team != **current_turn {
                 return None;
             }
@@ -75,22 +76,57 @@ pub fn curio_ops(
                     if **target_curio.team != **player_team || **target_curio.tapped {
                         return None;
                     }
-                    if let Some(last_active) = **activated_curio {
+                    if let Some(last_active) = **active_curio {
                         if last_active != *curio_id {
                             **curios.get_mut(last_active).ok()?.tapped = true;
-                            **activated_curio = Some(*curio_id);
+                            **active_curio = Some(*curio_id);
                         } else {
                             return None;
                         }
                     } else {
-                        **activated_curio = Some(*curio_id);
+                        **active_curio = Some(*curio_id);
                     }
                 },
                 NodeOp::DeactivateCurio => {
-                    if let Some(last_active) = **activated_curio {
+                    if let Some(last_active) = **active_curio {
                         **curios.get_mut(last_active).ok()?.tapped = true;
                     }
-                    **activated_curio = None;
+                    **active_curio = None;
+                },
+                NodeOp::MoveActiveCurio { dir } => {
+                    active_curio.and_then(|active_curio| {
+                        let mut curio_q = curios.get_mut(active_curio).ok()?;
+                        debug_assert!(!**curio_q.tapped, "a tapped curio was active");
+                        if **curio_q.movement_speed? == **curio_q.moves_taken {
+                            return None;
+                        }
+                        let head = grid.head(active_curio)?;
+                        let next_pt = head + *dir;
+                        if grid.square_is_closed(next_pt) {
+                            return None;
+                        }
+                        if let Some(entity_at_pt) = grid.item_at(next_pt) {
+                            if entity_at_pt == active_curio {
+                                // Curios can move onto their own squares
+                            } else if let Ok(pickup) = pickups.get(entity_at_pt) {
+                                // TODO EntityGrid.remove
+                                let entity_pt_len = grid.len_of(entity_at_pt);
+                                grid.pop_back_n(entity_at_pt, entity_pt_len);
+                                log::debug!("Picked up: {:?}", pickup);
+                            } else {
+                                return None;
+                            }
+                        }
+                        grid.push_front(next_pt, active_curio);
+                        **curio_q.moves_taken += 1;
+                        if grid.len_of(active_curio) as u32
+                            > curio_q.max_size.map(|ms| **ms).unwrap_or(1)
+                        {
+                            grid.pop_back(active_curio);
+                        }
+
+                        Some(())
+                    });
                 },
                 _ => {},
             }
