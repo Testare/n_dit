@@ -6,7 +6,7 @@ mod render;
 
 pub use key_map::{KeyMap, Submap};
 pub mod prelude {
-    pub use crossterm::event::Event as CrosstermEvent;
+    pub use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
     pub use game_core::prelude::*;
 }
 
@@ -197,6 +197,8 @@ impl Plugin for CharmiePlugin {
             .add_plugin(node_ui::NodeUiPlugin::default())
             .add_plugin(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()
+            .add_event::<KeyEvent>()
+            .add_event::<MouseEvent>()
             .add_system(term_event_listener)
             .add_system(terminal_size_adjustment)
             .add_system(exit_key);
@@ -207,29 +209,39 @@ impl Plugin for CharmiePlugin {
 
 fn exit_key(
     term_config: Res<TermConfig>,
-    mut inputs: EventReader<CrosstermEvent>,
+    mut ev_key: EventReader<KeyEvent>,
     mut exit: EventWriter<bevy::app::AppExit>,
 ) {
-    for input in inputs.iter() {
-        if let CrosstermEvent::Key(crossterm::event::KeyEvent { code, .. }) = input {
-            if *code == crossterm::event::KeyCode::Char(term_config.exit_key) {
-                exit.send(bevy::app::AppExit);
-            }
+    for crossterm::event::KeyEvent { code, .. } in ev_key.iter() {
+        if *code == crossterm::event::KeyCode::Char(term_config.exit_key) {
+            exit.send(bevy::app::AppExit);
         }
     }
 }
 
+/// Writes out crossterm events 
+/// KeyEvent and MouseEvent are written as their own events,
+/// the rest are written as crossterm::event::Event's (but we
+/// provide "CrosstermEvent" as a convenient way to refer to them)
 fn term_event_listener(
     term_listener: Res<TermEventListener>,
-    mut inputs: EventWriter<CrosstermEvent>,
+    mut ev_crossterm: EventWriter<CrosstermEvent>,
+    mut ev_mouse: EventWriter<MouseEvent>,
+    mut ev_key: EventWriter<KeyEvent>,
 ) {
     let lock = term_listener.try_lock();
     match lock {
         Ok(rx) => {
             loop {
                 match rx.try_recv() {
+                    Ok(CrosstermEvent::Mouse(mouse_event)) => {
+                        ev_mouse.send(mouse_event);
+                    },
+                    Ok(CrosstermEvent::Key(key_event)) => {
+                        ev_key.send(key_event);
+                    },
                     Ok(event) => {
-                        inputs.send(event);
+                        ev_crossterm.send(event);
                     },
                     Err(TryRecvError::Empty) => {
                         break;

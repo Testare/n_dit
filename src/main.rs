@@ -58,7 +58,9 @@ fn setup_logging() {
         };
         WriteLogger::init(
             LevelFilter::Debug,
-            simplelog::ConfigBuilder::new().set_target_level(LevelFilter::Error).build(),
+            simplelog::ConfigBuilder::new()
+                .set_target_level(LevelFilter::Error)
+                .build(),
             File::create(file).unwrap(),
         )
         .unwrap()

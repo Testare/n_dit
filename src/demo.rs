@@ -1,4 +1,4 @@
-use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent};
 use game_core::card::{
     Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -243,19 +243,15 @@ fn log_ops(mut node_ops: EventReader<Op<NodeOp>>) {
 }
 
 fn debug_key(
-    mut inputs: EventReader<CrosstermEvent>,
+    mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
     mut layout_events: EventReader<LayoutEvent>,
 ) {
     for layout_event in layout_events.iter() {
         log::trace!("LAYOUT EVENT: {:?}", layout_event);
     }
-    for input in inputs.iter() {
-        if let CrosstermEvent::Key(KeyEvent {
-            code: KeyCode::Char('d'),
-            ..
-        }) = input
-        {
+    for KeyEvent { code, .. } in ev_keys.iter() {
+        if *code == KeyCode::Char('/') {
             log::debug!("Debug event occured");
 
             for (_, entity_grid, cursor) in nodes.iter() {

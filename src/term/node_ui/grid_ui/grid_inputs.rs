@@ -34,8 +34,13 @@ pub fn handle_layout_events(
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventKind::Down(button) = event.event_kind() {
                 log::debug!("Clicked on the grid");
-                get_assert_mut!(*player, players, |(node, team, mut cursor, mut selected_entity, mut selected_action)| {
-
+                get_assert_mut!(*player, players, |(
+                    node,
+                    team,
+                    mut cursor,
+                    mut selected_entity,
+                    mut selected_action,
+                )| {
                     let (grid, active_curio, current_turn) = get_assert!(**node, nodes)?;
                     let team_phase = get_assert!(**team, teams)?;
                     let clicked_pos = event.pos() + **scroll;
@@ -77,8 +82,10 @@ pub fn handle_layout_events(
 
                                 if valid_move_target {
                                     if let [Some(dir), _] = head.dirs_to(cursor.deref()) {
-                                        ev_node_op
-                                            .send(Op::new(*player, NodeOp::MoveActiveCurio { dir }));
+                                        ev_node_op.send(Op::new(
+                                            *player,
+                                            NodeOp::MoveActiveCurio { dir },
+                                        ));
                                         return Some(());
                                     }
                                 }

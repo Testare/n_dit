@@ -31,7 +31,7 @@ pub fn grid_ui_keyboard_controls(
         ),
         With<GridUi>,
     >,
-    mut inputs: EventReader<CrosstermEvent>,
+    mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
     for (size, translation, scroll, ForPlayer(player)) in grid_ui_view.iter() {
@@ -50,19 +50,14 @@ pub fn grid_ui_keyboard_controls(
 
             let is_controlling_active_curio = active_curio.is_some() && **turn == *team;
 
-            for input in inputs.iter() {
-                if let CrosstermEvent::Key(KeyEvent { code, modifiers }) = input {
-                    if let Some(named_input) =
-                        key_map.named_input_for_key(Submap::Node, *code, *modifiers)
-                    {
-                        log::debug!("NAMED INPUT: {:?}", named_input);
-                    }
+            for KeyEvent { code, modifiers } in ev_keys.iter() {
+                if let Some(named_input) =
+                    key_map.named_input_for_key(Submap::Node, *code, *modifiers)
+                {
+                    log::debug!("NAMED INPUT: {:?}", named_input);
                 }
-                match input {
-                    CrosstermEvent::Key(KeyEvent {
-                        code: KeyCode::Char(input_char),
-                        ..
-                    }) => match input_char {
+                match code {
+                    KeyCode::Char(input_char) => match input_char {
                         'k' | 'w' => {
                             if is_controlling_active_curio {
                                 ev_node_op.send(Op::new(
@@ -116,10 +111,7 @@ pub fn grid_ui_keyboard_controls(
                         },
                         _ => {},
                     },
-                    CrosstermEvent::Key(KeyEvent {
-                        code: KeyCode::Enter,
-                        ..
-                    }) => {
+                    KeyCode::Enter => {
                         // Next message
                         for mut msg_bar in message_bar_ui.iter_mut() {
                             msg_bar.0 = msg_bar.0[1..].into();

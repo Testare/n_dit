@@ -113,40 +113,38 @@ impl Plugin for TaffyTuiLayoutPlugin {
 }
 
 fn generate_layout_events(
-    mut crossterm_events: EventReader<CrosstermEvent>,
+    mut crossterm_events: EventReader<MouseEvent>,
     mut layout_event_writer: EventWriter<LayoutEvent>,
     layout_elements: Query<
         (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
         (With<StyleTty>, With<LayoutMouseTarget>),
     >,
 ) {
-    for crossterm_event in crossterm_events.iter() {
-        if let CrosstermEvent::Mouse(crossterm::event::MouseEvent {
-            kind,
-            column,
-            row,
-            modifiers,
-        }) = crossterm_event
-        {
-            let (event_x, event_y) = (*column as u32, *row as u32);
+    for MouseEvent {
+        kind,
+        column,
+        row,
+        modifiers,
+    } in crossterm_events.iter()
+    {
+        let (event_x, event_y) = (*column as u32, *row as u32);
 
-            for (entity, size, translation) in layout_elements.iter() {
-                if translation.x <= event_x
-                    && event_x < (translation.x + size.width32())
-                    && translation.y <= event_y
-                    && event_y < (translation.y + size.height32())
-                {
-                    let pos = UVec2 {
-                        x: event_x - translation.x,
-                        y: event_y - translation.y,
-                    };
-                    layout_event_writer.send(LayoutEvent {
-                        entity,
-                        pos,
-                        modifiers: modifiers.clone(),
-                        event_kind: kind.clone(),
-                    })
-                }
+        for (entity, size, translation) in layout_elements.iter() {
+            if translation.x <= event_x
+                && event_x < (translation.x + size.width32())
+                && translation.y <= event_y
+                && event_y < (translation.y + size.height32())
+            {
+                let pos = UVec2 {
+                    x: event_x - translation.x,
+                    y: event_y - translation.y,
+                };
+                layout_event_writer.send(LayoutEvent {
+                    entity,
+                    pos,
+                    modifiers: modifiers.clone(),
+                    event_kind: kind.clone(),
+                })
             }
         }
     }

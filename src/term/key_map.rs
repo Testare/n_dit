@@ -1,4 +1,4 @@
-use crossterm::event::*;
+use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::term::prelude::*;
 

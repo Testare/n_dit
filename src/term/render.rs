@@ -91,7 +91,6 @@ pub fn pause_rendering_on_resize(
 pub fn write_rendering_to_terminal(
     window: Res<TerminalWindow>,
     renderings: Query<&TerminalRendering>,
-    mut inputs: EventReader<CrosstermEvent>,
     mut render_cache: Local<TerminalRendering>,
     mut render_pause: ResMut<RenderPause>,
 ) {
@@ -109,9 +108,6 @@ pub fn write_rendering_to_terminal(
             .unwrap();
             **render_pause = None;
         }
-    }
-    for input in inputs.iter() {
-        if matches!(input, CrosstermEvent::Resize { .. }) {}
     }
     if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
         if *render_cache == *tr {

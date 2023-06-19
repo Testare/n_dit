@@ -69,52 +69,60 @@ impl Plugin for NDitCorePlugin {
 
 #[macro_export]
 macro_rules! get_assert {
-    ($id:expr, $q:expr) => {
-        {
-            let temp_result = ($q).get($id);
-            let result_is_ok = temp_result.is_ok();
-            debug_assert!(temp_result.is_ok(), "expected query get failed {:?}", temp_result.err());
-            if let Err(e) = temp_result {
-                log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
-            }
-            temp_result.ok()
+    ($id:expr, $q:expr) => {{
+        let temp_result = ($q).get($id);
+        let result_is_ok = temp_result.is_ok();
+        debug_assert!(
+            temp_result.is_ok(),
+            "expected query get failed {:?}",
+            temp_result.err()
+        );
+        if let Err(e) = temp_result {
+            log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
         }
-    };
-    ($id:expr, $q:expr, $block:expr) => {
-        {
-            let temp_result = ($q).get($id);
-            let result_is_ok = temp_result.is_ok();
-            debug_assert!(temp_result.is_ok(), "expected query get failed {:?}", temp_result.err());
-            if let Err(e) = temp_result {
-                log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
-            }
-            temp_result.ok().and_then(block)
+        temp_result.ok()
+    }};
+    ($id:expr, $q:expr, $block:expr) => {{
+        let temp_result = ($q).get($id);
+        let result_is_ok = temp_result.is_ok();
+        debug_assert!(
+            temp_result.is_ok(),
+            "expected query get failed {:?}",
+            temp_result.err()
+        );
+        if let Err(e) = temp_result {
+            log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
         }
-    }
+        temp_result.ok().and_then(block)
+    }};
 }
 
 #[macro_export]
 macro_rules! get_assert_mut {
-    ($id:expr, $q:expr) => {
-        {
-            let temp_result = ($q).get_mut($id);
-            let result_is_ok = temp_result.is_ok();
-            debug_assert!(temp_result.is_ok(), "expected query get failed {:?}", temp_result.err());
-            if let Err(e) = temp_result {
-                log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
-            }
-            temp_result.ok()
+    ($id:expr, $q:expr) => {{
+        let temp_result = ($q).get_mut($id);
+        let result_is_ok = temp_result.is_ok();
+        debug_assert!(
+            temp_result.is_ok(),
+            "expected query get failed {:?}",
+            temp_result.err()
+        );
+        if let Err(e) = temp_result {
+            log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
         }
-    };
-    ($id:expr, $q:expr, $block:expr) => {
-        {
-            let temp_result = ($q).get_mut($id);
-            let result_is_ok = temp_result.is_ok();
-            debug_assert!(temp_result.is_ok(), "expected query get failed {:?}", temp_result.err());
-            if let Err(e) = temp_result {
-                log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
-            }
-            temp_result.ok().and_then($block)
+        temp_result.ok()
+    }};
+    ($id:expr, $q:expr, $block:expr) => {{
+        let temp_result = ($q).get_mut($id);
+        let result_is_ok = temp_result.is_ok();
+        debug_assert!(
+            temp_result.is_ok(),
+            "expected query get failed {:?}",
+            temp_result.err()
+        );
+        if let Err(e) = temp_result {
+            log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
         }
-    };
+        temp_result.ok().and_then($block)
+    }};
 }
