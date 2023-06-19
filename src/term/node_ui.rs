@@ -6,6 +6,8 @@ mod registry;
 mod setup;
 mod titlebar_ui;
 
+use std::ops::Deref;
+
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
@@ -36,7 +38,7 @@ pub struct ShowNode {
 pub struct NodeUiPlugin;
 
 /// Component that tells the UI which entity the node cursor is over
-#[derive(Component, Resource, Debug, Deref)]
+#[derive(Component, Resource, Debug, Deref, DerefMut)]
 pub struct SelectedEntity(pub Option<Entity>);
 
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -121,5 +123,24 @@ pub trait NodeUi: Component + Default {
 
     fn plugin() -> Self::UiPlugin {
         Self::UiPlugin::default()
+    }
+}
+
+impl NodeCursor {
+    fn adjust_to(
+        &mut self,
+        pt: UVec2,
+        mut selected_entity: Mut<SelectedEntity>,
+        mut selected_action: Mut<SelectedAction>,
+        grid: &EntityGrid,
+    ) {
+        if self.0 != pt {
+            self.0 = pt;
+            let item_at_pt = grid.item_at(pt);
+            if *selected_entity.deref().deref() != item_at_pt {
+                **selected_entity = item_at_pt;
+                **selected_action = None;
+            }
+        }
     }
 }

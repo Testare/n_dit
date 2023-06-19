@@ -219,7 +219,7 @@ fn exit_key(
     }
 }
 
-/// Writes out crossterm events 
+/// Writes out crossterm events
 /// KeyEvent and MouseEvent are written as their own events,
 /// the rest are written as crossterm::event::Event's (but we
 /// provide "CrosstermEvent" as a convenient way to refer to them)

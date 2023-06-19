@@ -19,6 +19,8 @@ pub enum NamedInput {
     MenuFocusNext,
     MenuFocusPrev,
     Undo,
+    Help,
+    NextMsg,
 }
 
 #[derive(Component)]
@@ -105,6 +107,10 @@ impl Default for KeyMap {
                         NamedInput::Activate,
                     ),
                     (
+                        KeyCombo(KeyCode::Char('?'), KeyModifiers::NONE),
+                        NamedInput::Help,
+                    ),
+                    (
                         KeyCombo(KeyCode::Tab, KeyModifiers::NONE),
                         NamedInput::MenuFocusNext,
                     ),
@@ -119,6 +125,10 @@ impl Default for KeyMap {
                     (
                         KeyCombo(KeyCode::Backspace, KeyModifiers::NONE),
                         NamedInput::Undo,
+                    ),
+                    (
+                        KeyCombo(KeyCode::Enter, KeyModifiers::NONE),
+                        NamedInput::NextMsg,
                     ),
                 ]
                 .into_iter()

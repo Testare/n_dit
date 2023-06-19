@@ -8,7 +8,8 @@ mod scroll;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, InNode, IsTapped, NodePiece};
+use game_core::node::{AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
+use game_core::player::Player;
 use game_core::NDitCoreSet;
 pub use scroll::Scroll2D;
 
@@ -49,6 +50,7 @@ impl Plugin for GridUi {
                 (
                     available_moves::adjust_available_moves,
                     range_of_action::get_range_of_action,
+                    adjust_node_cursor_when_curio_moves,
                 )
                     .chain()
                     .in_set(RenderTtySet::PreCalculateLayout),
@@ -89,5 +91,44 @@ impl NodeUi for GridUi {
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
         (Scroll2D::default(), LayoutMouseTarget)
+    }
+}
+
+fn adjust_node_cursor_when_curio_moves(
+    mut ev_op: EventReader<Op<NodeOp>>,
+    nodes: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
+    mut players: Query<
+        (
+            &InNode,
+            &mut NodeCursor,
+            &mut SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
+) {
+    for op in ev_op.iter() {
+        if let Op {
+            player,
+            op: NodeOp::MoveActiveCurio { .. },
+        } = op
+        {
+            get_assert_mut!(*player, players, |(
+                node,
+                mut node_cursor,
+                selected_entity,
+                selected_action,
+            )| {
+                let (grid, active_curio) = get_assert!(**node, nodes)?;
+                let active_curio = (**active_curio)?;
+                node_cursor.adjust_to(
+                    grid.head(active_curio)?,
+                    selected_entity,
+                    selected_action,
+                    grid,
+                );
+                Some(())
+            });
+        }
     }
 }
