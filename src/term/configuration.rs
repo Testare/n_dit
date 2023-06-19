@@ -71,10 +71,15 @@ impl ColorScheme {
         player_team: UiFormat::new(Some(Color::Blue), None, None),
         enemy_team: UiFormat::new(Some(Color::Red), None, None),
         player_team_active: UiFormat::new(
+            Some(Color::Black),
+            Some(Color::White),
+            Some(Attribute::Bold),
+        ),
+        /*player_team_active: UiFormat::new(
             Some(Color::White),
             Some(Color::Blue),
             Some(Attribute::Bold),
-        ),
+        ),*/
         player_team_tapped: UiFormat::new(Some(Color::Grey), None, None),
     };
 

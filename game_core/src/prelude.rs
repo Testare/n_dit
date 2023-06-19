@@ -8,6 +8,7 @@ pub use bevy::prelude::{
 };
 pub use bevy::utils::{HashMap, HashSet};
 
+pub use crate::common::{Compass, GridPoints};
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};
 pub use crate::entity_grid::EntityGrid;
-pub use crate::{Compass, Op};
+pub use crate::Op;

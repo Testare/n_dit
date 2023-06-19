@@ -1,4 +1,5 @@
 pub mod card;
+pub mod common;
 mod entity_grid;
 pub mod node;
 pub mod player;
@@ -63,37 +64,5 @@ impl Plugin for NDitCorePlugin {
                 )
                     .in_set(NDitCoreSet::ProcessCommands),
             );
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum Compass {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Compass {
-    pub const ALL_DIRECTIONS: [Compass; 4] =
-        [Compass::North, Compass::East, Compass::South, Compass::West];
-}
-
-impl std::ops::Add<Compass> for UVec2 {
-    type Output = UVec2;
-    fn add(self, rhs: Compass) -> Self::Output {
-        let UVec2 { x, y } = self;
-        match rhs {
-            Compass::North => UVec2 {
-                x,
-                y: y.saturating_sub(1),
-            },
-            Compass::East => UVec2 { x: x + 1, y },
-            Compass::South => UVec2 { x, y: y + 1 },
-            Compass::West => UVec2 {
-                x: x.saturating_sub(1),
-                y,
-            },
-        }
     }
 }

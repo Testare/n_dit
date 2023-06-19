@@ -1,3 +1,4 @@
+use game_core::node::ActiveCurio;
 use game_core::prelude::*;
 
 use super::super::registry::GlyphRegistry;
@@ -34,6 +35,7 @@ const FILL_GLYPH: &'static str = "[]";
 pub fn render_square(
     position: usize,
     entity: Entity,
+    active_curio: &ActiveCurio,
     node_pieces: &Query<super::NodePieceQ>,
     node_piece_render_registry: &GlyphRegistry,
     configuration: &DrawConfiguration,
@@ -53,6 +55,11 @@ pub fn render_square(
         .unwrap_or_default()
     {
         configuration.color_scheme().player_team_tapped()
+    } else if active_curio
+        .map(|curio_id| curio_id == entity && position == 0)
+        .unwrap_or_default()
+    {
+        configuration.color_scheme().player_team_active()
     } else {
         glyph_format
     };

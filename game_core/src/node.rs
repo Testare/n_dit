@@ -71,7 +71,7 @@ pub struct IsTapped(pub bool);
 #[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
 pub struct ActivatedPiece(Option<Entity>);
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component, Deref, DerefMut, Eq, PartialEq)]
 pub struct OnTeam(pub Entity);
 
 #[derive(Component, Deref, DerefMut)]

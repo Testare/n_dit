@@ -1,5 +1,4 @@
 use crossterm::event::*;
-use game_core::Compass;
 
 use crate::term::prelude::*;
 

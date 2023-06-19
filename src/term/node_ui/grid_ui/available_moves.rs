@@ -1,7 +1,6 @@
 use game_core::card::MovementSpeed;
 use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
 use game_core::player::Player;
-use game_core::Compass;
 
 use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
 use crate::term::prelude::*;

@@ -1,6 +1,6 @@
 use std::cmp;
 
-use game_core::node::Node;
+use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use itertools::Itertools;
 
@@ -19,7 +19,7 @@ const OPEN_SQUARE: &str = "░░";
 
 pub fn render_grid_system(
     mut commands: Commands,
-    node_grids: Query<&EntityGrid, With<Node>>,
+    node_data: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
     node_pieces: Query<NodePieceQ>,
     players: Query<PlayerUiQ, With<Player>>,
     glyph_registry: Res<GlyphRegistry>,
@@ -28,12 +28,13 @@ pub fn render_grid_system(
 ) {
     for (render_grid_id, size, scroll, ForPlayer(player)) in render_grid_q.iter() {
         if let Ok(player_ui_q) = players.get(*player) {
-            if let Ok(grid) = node_grids.get(**player_ui_q.in_node) {
+            if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
                 let grid_rendering = render_grid(
                     size,
                     scroll,
                     &player_ui_q,
-                    &grid,
+                    grid,
+                    active_curio,
                     &node_pieces,
                     &glyph_registry,
                     &draw_config,
@@ -53,6 +54,7 @@ fn render_grid(
     scroll: &Scroll2D,
     player_q: &PlayerUiQItem,
     grid: &EntityGrid,
+    active_curio: &ActiveCurio,
     node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
     draw_config: &DrawConfiguration,
@@ -65,8 +67,16 @@ fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid
-        .point_map(|i, sprite| render_square(i, sprite, node_pieces, glyph_registry, &draw_config));
+    let sprite_map = grid.point_map(|i, sprite| {
+        render_square(
+            i,
+            sprite,
+            active_curio,
+            node_pieces,
+            glyph_registry,
+            &draw_config,
+        )
+    });
 
     let str_width = width * 3 + 3;
 
