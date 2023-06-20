@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use bevy::core::FrameCount;
 use bevy::ecs::system::{EntityCommand, EntityCommands};
+use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 
 use super::TerminalWindow;
@@ -68,6 +69,7 @@ impl Plugin for RenderTtyPlugin {
                     .in_set(RenderTtySet::RenderToTerminal),
             )
             .add_system((pause_rendering_on_resize).in_base_set(CoreSet::PreUpdate))
+            .configure_set(RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::ProcessCommandsFlush))
             .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
             .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
             .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))

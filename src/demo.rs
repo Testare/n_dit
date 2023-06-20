@@ -34,7 +34,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((
             Card::new("Hack", "curio:hack", None),
             MaximumSize(4),
-            MovementSpeed(2),
+            MovementSpeed(3),
             Actions::new(vec![Action {
                 name: "Slice".to_owned(),
                 range: 1,
@@ -83,8 +83,10 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .id();
     let card_3 = commands
         .spawn((
-            Card::new("Card3", "curio:hack", None),
-            Description::new("Basic attack program3"),
+            Card::new("Super Bug", "curio:death", None),
+            Description::new("Testing utility"),
+            MaximumSize(2),
+            MovementSpeed(30),
         ))
         .id();
     let card_4 = commands
@@ -139,7 +141,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 ]),
                 Description::new("Basic attack program"),
                 MaximumSize(4),
-                MovementSpeed(3),
+                MovementSpeed(5),
                 MovesTaken(1),
                 IsTapped(false),
             ))

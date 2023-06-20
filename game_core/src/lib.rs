@@ -15,6 +15,8 @@ pub enum NDitCoreSet {
     RawInputs,
     ProcessInputs,
     ProcessCommands,
+    ProcessCommandsFlush,
+    PostProcessCommands,
 }
 
 #[derive(Debug, Error)]
@@ -53,8 +55,18 @@ impl Plugin for NDitCorePlugin {
         app.add_event::<Op<node::NodeOp>>()
             .configure_sets((
                 NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
-                NDitCoreSet::ProcessInputs.in_base_set(CoreSet::PreUpdate),
-                NDitCoreSet::ProcessCommands.in_base_set(CoreSet::Update),
+                NDitCoreSet::ProcessInputs
+                    .in_base_set(CoreSet::PreUpdate)
+                    .after(NDitCoreSet::RawInputs),
+                NDitCoreSet::ProcessCommands
+                    .in_base_set(CoreSet::Update)
+                    .after(NDitCoreSet::ProcessInputs),
+                NDitCoreSet::ProcessCommandsFlush
+                    .in_base_set(CoreSet::Update)
+                    .after(NDitCoreSet::ProcessCommands),
+                NDitCoreSet::PostProcessCommands
+                    .in_base_set(CoreSet::Update)
+                    .after(NDitCoreSet::ProcessCommandsFlush),
             ))
             .add_systems(
                 (
@@ -63,7 +75,8 @@ impl Plugin for NDitCorePlugin {
                     node::curio_ops,
                 )
                     .in_set(NDitCoreSet::ProcessCommands),
-            );
+            )
+            .add_system(apply_system_buffers.in_set(NDitCoreSet::ProcessCommandsFlush));
     }
 }
 

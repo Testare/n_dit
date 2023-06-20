@@ -48,12 +48,12 @@ impl Plugin for GridUi {
         app.add_systems((grid_inputs::handle_layout_events,).in_set(NDitCoreSet::ProcessInputs))
             .add_systems(
                 (
+                    adjust_node_cursor_when_curio_moves,
                     available_moves::adjust_available_moves,
                     range_of_action::get_range_of_action,
-                    adjust_node_cursor_when_curio_moves,
                 )
                     .chain()
-                    .in_set(RenderTtySet::PreCalculateLayout),
+                    .in_set(NDitCoreSet::PostProcessCommands),
             )
             .add_systems(
                 (scroll::adjust_scroll, render_grid::render_grid_system)

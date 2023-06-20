@@ -7,7 +7,13 @@ use crate::term::prelude::*;
 
 pub fn adjust_available_moves(
     mut players: Query<(Entity, &SelectedEntity, &InNode, &mut AvailableMoves), (With<Player>,)>,
-    changed_access_points: Query<(), Changed<AccessPoint>>,
+    changed_access_points: Query<
+        (),
+        (
+            With<AccessPoint>,
+            Or<(Changed<AccessPoint>, Changed<MovementSpeed>)>,
+        ),
+    >,
     changed_cursor: Query<(), Changed<NodeCursor>>,
     node_grids: Query<&EntityGrid, With<Node>>,
     pickups: Query<(), With<Pickup>>,
@@ -42,7 +48,7 @@ pub fn adjust_available_moves(
                     .head(entity)
                     .expect("a selected entity should exist in the grid map");
 
-                possible_moves_recur(head, &mut points_set, &pickups, moves, entity, &grid);
+                possible_moves(head, &mut points_set, &pickups, moves, entity, &grid);
                 Some(points_set)
             })
             .unwrap_or_default();
@@ -54,31 +60,34 @@ pub fn adjust_available_moves(
     }
 }
 
-fn possible_moves_recur(
-    pt: UVec2,
+fn possible_moves(
+    head: UVec2,
     points_set: &mut HashSet<UVec2>,
     pickup_query: &Query<(), With<Pickup>>,
     moves: u32,
     id: Entity,
     grid: &EntityGrid,
 ) {
-    if moves == 0 {
-        return;
-    }
-    for dir in Compass::ALL_DIRECTIONS.iter() {
-        let next_pt = (pt + *dir).min(grid.bounds());
-        if points_set.contains(&next_pt) {
-            continue;
+    let mut last_edge_set: HashSet<_> = [head].into_iter().collect();
+    for _ in 0..moves {
+        let mut next_edge_set = HashSet::new();
+        for pt in last_edge_set {
+            for dir in Compass::ALL_DIRECTIONS.iter() {
+                let next_pt = (pt + *dir).min(grid.bounds() - UVec2::splat(1));
+                if points_set.contains(&next_pt) {
+                    continue;
+                }
+                let can_move_to_pt = grid.square_is_free(next_pt)
+                    || grid
+                        .item_at(next_pt)
+                        .map(|pt_id| id == pt_id || pickup_query.contains(pt_id))
+                        .unwrap_or(false);
+                if can_move_to_pt {
+                    points_set.insert(next_pt);
+                    next_edge_set.insert(next_pt);
+                }
+            }
         }
-        let can_move_to_pt = grid.square_is_free(next_pt)
-            || grid
-                .item_at(next_pt)
-                .map(|pt_id| id == pt_id || pickup_query.contains(pt_id))
-                .unwrap_or(false);
-        // TODO If this is a pickup, it also works
-        if can_move_to_pt {
-            points_set.insert(next_pt);
-            possible_moves_recur(next_pt, points_set, pickup_query, moves - 1, id, grid);
-        }
+        last_edge_set = next_edge_set;
     }
 }
