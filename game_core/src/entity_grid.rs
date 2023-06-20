@@ -724,10 +724,19 @@ impl EntityGrid {
         self.width
     }
 
+    /// Returns width (x) and height (y) of grid
     pub fn bounds(&self) -> UVec2 {
         UVec2 {
             x: self.width,
             y: self.height,
+        }
+    }
+
+    /// Returns maximum x and y values for grid
+    pub fn index_bounds(&self) -> UVec2 {
+        UVec2 {
+            x: self.width - 1,
+            y: self.height - 1,
         }
     }
 }

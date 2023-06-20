@@ -47,8 +47,7 @@ pub fn grid_ui_keyboard_controls(
                             if is_controlling_active_curio {
                                 ev_node_op.send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
                             } else {
-                                let next_cursor_pt =
-                                    (**cursor + dir).min(grid.bounds() - UVec2::splat(1));
+                                let next_cursor_pt = (**cursor + dir).min(grid.index_bounds());
 
                                 cursor.adjust_to(
                                     next_cursor_pt,

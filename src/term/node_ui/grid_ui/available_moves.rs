@@ -73,7 +73,7 @@ fn possible_moves(
         let mut next_edge_set = HashSet::new();
         for pt in last_edge_set {
             for dir in Compass::ALL_DIRECTIONS.iter() {
-                let next_pt = (pt + *dir).min(grid.bounds() - UVec2::splat(1));
+                let next_pt = (pt + *dir).min(grid.index_bounds());
                 if points_set.contains(&next_pt) {
                     continue;
                 }
