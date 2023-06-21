@@ -21,9 +21,19 @@ pad =  { git = "https://github.com/Testare/rust-pad" }
 unicode-width = "0.1.8"
 crossterm = { version = "0.20.0", features = ["event-stream"] }
 taffy = "0.2"
-bevy = "0.10"
 thiserror = "1.0.40"
 textwrap = "0.16.0"
+
+[dependencies.bevy]
+version = "0.10"
+default-features = false
+features = [
+    "bevy_asset",
+    "filesystem_watcher",
+    "bevy_scene",
+    "bevy_audio",
+    "animation"
+]
 
 # Use for "cargo flamegraph"
 # [profile.release]
