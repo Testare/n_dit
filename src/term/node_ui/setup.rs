@@ -1,7 +1,7 @@
 use game_core::node::Node;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::term::layout::StyleTty;
+use crate::term::layout::{StyleTty, UiFocus, UiFocusOnClick};
 use crate::term::node_ui::grid_ui::GridUi;
 use crate::term::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -21,13 +21,6 @@ pub fn create_node_ui(
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.iter().next() {
         if let Ok(node_q) = node_qs.get(*node) {
-            commands.entity(*player).insert((
-                NodeCursor::default(),
-                SelectedEntity(node_q.grid.item_at(default())),
-                SelectedAction(None),
-                AvailableActionTargets::default(),
-                AvailableMoves::default(),
-            ));
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
@@ -75,11 +68,20 @@ pub fn create_node_ui(
                                 menu_bar.spawn(MenuUiActions::bundle(*player, &node_q));
                                 menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
-                        content_pane.spawn(GridUi::bundle(*player, &node_q));
+                        let grid_ui = content_pane.spawn(GridUi::bundle(*player, &node_q)).id();
                     });
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
                 .id();
+
+            commands.entity(*player).insert((
+                NodeCursor::default(),
+                SelectedEntity(node_q.grid.item_at(default())),
+                SelectedAction(None),
+                AvailableActionTargets::default(),
+                UiFocus::default(),
+                AvailableMoves::default(),
+            ));
             terminal_window.set_render_target(Some(render_root));
         }
     }

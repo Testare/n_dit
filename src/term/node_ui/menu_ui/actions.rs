@@ -4,7 +4,7 @@ use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 
 use super::{NodePieceQItem, SimpleSubmenu};
-use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget};
+use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, UiFocusOnClick};
 use crate::term::node_ui::{SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 
@@ -49,7 +49,7 @@ impl MenuUiActions {
 
 impl SimpleSubmenu for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = LayoutMouseTarget;
+    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
 
     type RenderSystemParam = Query<'static, 'static, &'static SelectedAction, With<Player>>;
 
@@ -80,6 +80,6 @@ impl SimpleSubmenu for MenuUiActions {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        LayoutMouseTarget
+        (LayoutMouseTarget, UiFocusOnClick)
     }
 }

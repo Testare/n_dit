@@ -133,7 +133,14 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                     },
                     Action {
                         name: "Dice".to_owned(),
-                        range: 1,
+                        range: 2,
+                        effect: ActionEffect::Damage(3),
+                        description: "Deletes 3 sectors from target".to_owned(),
+                        prereqs: default(),
+                    },
+                    Action {
+                        name: "Thrice".to_owned(),
+                        range: 4,
                         effect: ActionEffect::Damage(3),
                         description: "Deletes 3 sectors from target".to_owned(),
                         prereqs: default(),

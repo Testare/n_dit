@@ -59,7 +59,7 @@ impl Plugin for NodeUiPlugin {
         app.init_resource::<GlyphRegistry>()
             .add_event::<ShowNode>()
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
-            .add_system(inputs::grid_ui_keyboard_controls.in_base_set(CoreSet::PreUpdate))
+            .add_systems((inputs::grid_ui_keyboard_controls,inputs::action_menu_ui_controls).in_base_set(CoreSet::PreUpdate))
             .add_plugin(MenuUiCardSelection::plugin())
             .add_plugin(MenuUiStats::plugin())
             .add_plugin(MenuUiLabel::plugin())

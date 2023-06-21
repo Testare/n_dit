@@ -1,9 +1,13 @@
 use crossterm::event::KeyEvent;
-use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, NodeOp, OnTeam};
+use game_core::card::Actions;
+use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
 use game_core::player::Player;
 
+use super::grid_ui::GridUi;
+use super::menu_ui::MenuUiActions;
 use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::key_map::NamedInput;
+use crate::term::layout::UiFocus;
 use crate::term::prelude::*;
 use crate::term::{KeyMap, Submap};
 
@@ -14,6 +18,7 @@ pub fn grid_ui_keyboard_controls(
             Entity,
             &InNode,
             &OnTeam,
+            &UiFocus,
             &KeyMap,
             &mut NodeCursor,
             &mut SelectedEntity,
@@ -24,18 +29,29 @@ pub fn grid_ui_keyboard_controls(
     mut message_bar_ui: Query<&mut MessageBarUi>,
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
+    grid_uis: Query<(), With<GridUi>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
         for (
             player,
             InNode(node),
             OnTeam(team),
+            UiFocus(focus_opt),
             key_map,
             mut cursor,
             selected_entity,
             selected_action,
         ) in players.iter_mut()
         {
+            if focus_opt
+                .map(|focused_ui| !grid_uis.contains(focused_ui))
+                .unwrap_or(false)
+            {
+                // If there is a focus and it isn't grid_ui, don't do grid_ui controls
+                continue;
+            }
+
+            // if focus_opt.
             key_map
                 .named_input_for_key(Submap::Node, *code, *modifiers)
                 .and_then(|named_input| {
@@ -75,6 +91,60 @@ pub fn grid_ui_keyboard_controls(
                             }
                         },
                         _ => {},
+                    }
+                    Some(())
+                });
+        }
+    }
+}
+
+pub fn action_menu_ui_controls(
+    mut players: Query<
+        (
+            &UiFocus,
+            &KeyMap,
+            &SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
+    node_pieces: Query<(&Actions,), With<NodePiece>>,
+    mut ev_keys: EventReader<KeyEvent>,
+    action_menu_uis: Query<(), With<MenuUiActions>>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (UiFocus(focus_opt), key_map, selected_entity, mut selected_action) in
+            players.iter_mut()
+        {
+            if focus_opt
+                .map(|focused_ui| !action_menu_uis.contains(focused_ui))
+                .unwrap_or(true)
+            {
+                continue;
+            }
+
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    if let Some((actions,)) = selected_entity.of(&node_pieces) {
+                        match named_input {
+                            NamedInput::Direction(dir) => {
+                                let actions_bound = actions.len();
+                                let current_action = selected_action.unwrap_or(0);
+                                let next_action = Some((current_action + match dir {
+                                    Compass::North => actions_bound - 1,
+                                    Compass::South => 1,
+                                    _ => 0,
+                                }) % actions_bound);
+                                if **selected_action != next_action {
+                                    **selected_action = next_action;
+                                }
+                            },
+                            NamedInput::Activate => {},
+                            NamedInput::MenuFocusNext => {},
+                            NamedInput::MenuFocusPrev => {},
+                            _ => {},
+                        }
                     }
                     Some(())
                 });

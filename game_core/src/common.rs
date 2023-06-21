@@ -2,15 +2,22 @@ use bevy::prelude::UVec2;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Compass {
-    North,
-    East,
-    South,
-    West,
+    North = 1,
+    East = 2,
+    South = 4,
+    West = 8,
 }
 
 impl Compass {
     pub const ALL_DIRECTIONS: [Compass; 4] =
         [Compass::North, Compass::East, Compass::South, Compass::West];
+
+    pub fn is_vertical(&self) -> bool {
+        match self {
+            Compass::North | Compass::South => true,
+            Compass::East | Compass::West => false,
+        }
+    }
 }
 
 impl std::ops::Add<Compass> for UVec2 {

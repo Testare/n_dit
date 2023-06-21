@@ -1,4 +1,7 @@
 use bevy::core::FrameCount;
+use bevy::utils::tracing::field::debug;
+use crossterm::event::MouseEventKind;
+use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
@@ -36,6 +39,19 @@ pub struct LayoutEvent {
 
 #[derive(Component, Debug)]
 pub struct LayoutMouseTarget;
+
+/// Indicates a UI element that should be focused on
+/// when clicked on.
+#[derive(Component, Debug)]
+pub struct UiFocusOnClick;
+
+/// Indicates the UI element that is being focused on for
+/// controls. Added on a player entity.
+/// If it is empty, default controls can be defined.
+/// Does not have to have a [UiFocusClickTarget] component, but
+/// should have a [StyleTty] component.
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct UiFocus(pub Option<Entity>);
 
 /// Part of a layout, defines the style
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -92,7 +108,9 @@ impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
             .add_event::<LayoutEvent>()
-            .add_system(generate_layout_events.in_base_set(CoreSet::PreUpdate))
+            .add_systems(
+                (generate_layout_events, update_ui_focus_on_click).in_base_set(CoreSet::PreUpdate),
+            )
             .add_systems(
                 (
                     taffy_apply_style_updates,
@@ -146,6 +164,28 @@ fn generate_layout_events(
                     event_kind: kind.clone(),
                 })
             }
+        }
+    }
+}
+
+/// Not quite sure where in the frame this should go
+fn update_ui_focus_on_click(
+    mut ev_layout: EventReader<LayoutEvent>,
+    mut players: Query<&mut UiFocus, With<Player>>,
+    ui_focus_targets: Query<(&ForPlayer, DebugName), With<UiFocusOnClick>>,
+) {
+    for layout_event in ev_layout.iter() {
+        if matches!(layout_event.event_kind(), MouseEventKind::Down(_)) {
+            ui_focus_targets.get(layout_event.entity()).ok().and_then(
+                |(ForPlayer(player), debug_name)| {
+                    let mut focus = players.get_mut(*player).ok()?;
+                    if **focus != Some(layout_event.entity()) {
+                        **focus = Some(layout_event.entity());
+                        log::debug!("Set focus for player {:?} to {:?}", *player, debug_name);
+                    }
+                    Some(())
+                },
+            );
         }
     }
 }
