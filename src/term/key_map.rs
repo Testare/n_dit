@@ -115,11 +115,7 @@ impl Default for KeyMap {
                         NamedInput::MenuFocusNext,
                     ),
                     (
-                        KeyCombo(KeyCode::BackTab, KeyModifiers::NONE),
-                        NamedInput::MenuFocusPrev,
-                    ),
-                    (
-                        KeyCombo(KeyCode::Tab, KeyModifiers::SHIFT),
+                        KeyCombo(KeyCode::BackTab, KeyModifiers::SHIFT),
                         NamedInput::MenuFocusPrev,
                     ),
                     (

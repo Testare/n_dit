@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use game_core::card::Actions;
 use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
-use game_core::player::Player;
+use game_core::player::{Player, ForPlayer};
 
 use super::grid_ui::GridUi;
 use super::menu_ui::MenuUiActions;
@@ -101,7 +101,8 @@ pub fn grid_ui_keyboard_controls(
 pub fn action_menu_ui_controls(
     mut players: Query<
         (
-            &UiFocus,
+            Entity,
+            &mut UiFocus,
             &KeyMap,
             &SelectedEntity,
             &mut SelectedAction,
@@ -111,12 +112,13 @@ pub fn action_menu_ui_controls(
     node_pieces: Query<(&Actions,), With<NodePiece>>,
     mut ev_keys: EventReader<KeyEvent>,
     action_menu_uis: Query<(), With<MenuUiActions>>,
+    grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (UiFocus(focus_opt), key_map, selected_entity, mut selected_action) in
+        for (player, mut focus, key_map, selected_entity, mut selected_action) in
             players.iter_mut()
         {
-            if focus_opt
+            if (**focus)
                 .map(|focused_ui| !action_menu_uis.contains(focused_ui))
                 .unwrap_or(true)
             {
@@ -140,9 +142,17 @@ pub fn action_menu_ui_controls(
                                     **selected_action = next_action;
                                 }
                             },
-                            NamedInput::Activate => {},
-                            NamedInput::MenuFocusNext => {},
-                            NamedInput::MenuFocusPrev => {},
+                            NamedInput::Activate => {
+                                if let Some((grid_ui_id, _)) = grid_uis.iter().find(|(_, ForPlayer(ui_player))| *ui_player == player) {
+                                    **focus = Some(grid_ui_id);
+                                }
+                            },
+                            NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
+                                if let Some((grid_ui_id, _)) = grid_uis.iter().find(|(_, ForPlayer(ui_player))| *ui_player == player) {
+                                    **selected_action = None;
+                                    **focus = Some(grid_ui_id);
+                                }
+                            },
                             _ => {},
                         }
                     }
