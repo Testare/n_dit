@@ -1,6 +1,7 @@
 use bevy::core::FrameCount;
 use crossterm::event::MouseEventKind;
 use game_core::player::{ForPlayer, Player};
+use game_core::NDitCoreSet;
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
@@ -47,10 +48,24 @@ pub struct UiFocusOnClick;
 /// Indicates the UI element that is being focused on for
 /// controls. Added on a player entity.
 /// If it is empty, default controls can be defined.
-/// Does not have to have a [UiFocusClickTarget] component, but
+/// Does not have to have a [UiFocusOnClick] component, but
 /// should have a [StyleTty] component.
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct UiFocus(pub Option<Entity>);
+
+#[derive(Bundle, Default)]
+pub struct UiFocusBundle {
+    ui_focus: UiFocus,
+    ui_focus_next: UiFocusNext,
+}
+
+/// When focus shifts from one UI element to the next, we set it here first so
+/// that we don't have inputs counted multiple times
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct UiFocusNext(pub Option<Entity>);
+
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct UiFocusCycleOrder(pub u32);
 
 /// Part of a layout, defines the style
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -107,6 +122,7 @@ impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
             .add_event::<LayoutEvent>()
+            .add_systems((apply_ui_next,).in_set(NDitCoreSet::PostProcessCommands))
             .add_systems(
                 (generate_layout_events, update_ui_focus_on_click).in_base_set(CoreSet::PreUpdate),
             )
@@ -126,6 +142,14 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     .chain()
                     .in_set(RenderTtySet::RenderLayouts),
             );
+    }
+}
+
+fn apply_ui_next(mut ui_focus: Query<(&mut UiFocus, &UiFocusNext)>) {
+    for (mut ui_focus, ui_focus_next) in ui_focus.iter_mut() {
+        if **ui_focus != **ui_focus_next {
+            **ui_focus = **ui_focus_next;
+        }
     }
 }
 
@@ -170,7 +194,7 @@ fn generate_layout_events(
 /// Not quite sure where in the frame this should go
 fn update_ui_focus_on_click(
     mut ev_layout: EventReader<LayoutEvent>,
-    mut players: Query<&mut UiFocus, With<Player>>,
+    mut players: Query<&mut UiFocusNext, With<Player>>,
     ui_focus_targets: Query<(&ForPlayer, DebugName), With<UiFocusOnClick>>,
 ) {
     for layout_event in ev_layout.iter() {
@@ -338,6 +362,86 @@ pub fn render_layouts(
 }
 
 // Helper function
+
+pub fn ui_focus_cycle_next(
+    from_entity: Option<Entity>,
+    player: Entity,
+    default_pos: u32,
+    ui_nodes: &Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,
+) -> Option<Entity> {
+    let from_pos = from_entity
+        .and_then(|entity| ui_nodes.get(entity).ok())
+        .map(|player| **player.2)
+        .unwrap_or(default_pos);
+    let mut candidate_pos = from_pos;
+    ui_nodes.iter().fold(
+        from_entity,
+        |current_candidate,
+         (candidate, style, UiFocusCycleOrder(pos), ForPlayer(candidate_player))| {
+            if *candidate_player != player || style.display == taffy::prelude::Display::None {
+                current_candidate
+            } else if current_candidate.is_none() {
+                candidate_pos = *pos;
+                Some(candidate)
+            } else if from_pos < *pos {
+                if candidate_pos <= from_pos {
+                    candidate_pos = *pos;
+                    Some(candidate)
+                } else if *pos < candidate_pos {
+                    candidate_pos = *pos;
+                    Some(candidate)
+                } else {
+                    current_candidate
+                }
+            } else if candidate_pos <= from_pos && *pos < candidate_pos {
+                candidate_pos = *pos;
+                Some(candidate)
+            } else {
+                current_candidate
+            }
+        },
+    )
+}
+
+pub fn ui_focus_cycle_prev(
+    from_entity: Option<Entity>,
+    player: Entity,
+    default_pos: u32,
+    ui_nodes: &Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,
+) -> Option<Entity> {
+    let from_pos = from_entity
+        .and_then(|entity| ui_nodes.get(entity).ok())
+        .map(|player| **player.2)
+        .unwrap_or(default_pos);
+    let mut candidate_pos = from_pos;
+    ui_nodes.iter().fold(
+        from_entity,
+        |current_candidate,
+         (candidate, style, UiFocusCycleOrder(pos), ForPlayer(candidate_player))| {
+            if *candidate_player != player || style.display == taffy::prelude::Display::None {
+                current_candidate
+            } else if current_candidate.is_none() {
+                candidate_pos = *pos;
+                Some(candidate)
+            } else if from_pos > *pos {
+                if candidate_pos >= from_pos {
+                    candidate_pos = *pos;
+                    Some(candidate)
+                } else if *pos > candidate_pos {
+                    candidate_pos = *pos;
+                    Some(candidate)
+                } else {
+                    current_candidate
+                }
+            } else if candidate_pos >= from_pos && *pos > candidate_pos {
+                candidate_pos = *pos;
+                Some(candidate)
+            } else {
+                current_candidate
+            }
+        },
+    )
+}
 
 fn update_layout_traversal<F: FnMut(Entity, UVec2) -> UVec2>(
     current: Entity,

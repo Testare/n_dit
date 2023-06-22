@@ -1,7 +1,7 @@
 use game_core::node::Node;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::term::layout::{StyleTty, UiFocus};
+use crate::term::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
 use crate::term::node_ui::grid_ui::GridUi;
 use crate::term::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -63,12 +63,18 @@ pub fn create_node_ui(
                             ))
                             .with_children(|menu_bar| {
                                 menu_bar.spawn(MenuUiLabel::bundle(*player, &node_q));
-                                menu_bar.spawn(MenuUiCardSelection::bundle(*player, &node_q));
+                                menu_bar
+                                    .spawn(MenuUiCardSelection::bundle(*player, &node_q))
+                                    .insert(UiFocusCycleOrder(1));
                                 menu_bar.spawn(MenuUiStats::bundle(*player, &node_q));
-                                menu_bar.spawn(MenuUiActions::bundle(*player, &node_q));
+                                menu_bar
+                                    .spawn(MenuUiActions::bundle(*player, &node_q))
+                                    .insert(UiFocusCycleOrder(2));
                                 menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
-                        content_pane.spawn(GridUi::bundle(*player, &node_q));
+                        content_pane
+                            .spawn(GridUi::bundle(*player, &node_q))
+                            .insert(UiFocusCycleOrder(0));
                     });
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
@@ -79,7 +85,7 @@ pub fn create_node_ui(
                 SelectedEntity(node_q.grid.item_at(default())),
                 SelectedAction(None),
                 AvailableActionTargets::default(),
-                UiFocus::default(),
+                UiFocusBundle::default(),
                 AvailableMoves::default(),
             ));
             terminal_window.set_render_target(Some(render_root));

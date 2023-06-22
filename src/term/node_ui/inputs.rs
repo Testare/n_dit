@@ -7,7 +7,9 @@ use super::grid_ui::GridUi;
 use super::menu_ui::MenuUiActions;
 use super::{MessageBarUi, NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::key_map::NamedInput;
-use crate::term::layout::UiFocus;
+use crate::term::layout::{
+    ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder, UiFocusNext,
+};
 use crate::term::prelude::*;
 use crate::term::{KeyMap, Submap};
 
@@ -51,7 +53,6 @@ pub fn grid_ui_keyboard_controls(
                 continue;
             }
 
-            // if focus_opt.
             key_map
                 .named_input_for_key(Submap::Node, *code, *modifiers)
                 .and_then(|named_input| {
@@ -164,6 +165,48 @@ pub fn action_menu_ui_controls(
                             },
                             _ => {},
                         }
+                    }
+                    Some(())
+                });
+        }
+    }
+}
+
+pub fn action_menu_on_focus(
+    mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
+    action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
+) {
+    for (action_menu, ForPlayer(player)) in action_menus.iter() {
+        if let Ok((ui_focus, mut selected_action)) = players.get_mut(*player) {
+            if **ui_focus == Some(action_menu) && selected_action.is_none() {
+                **selected_action = Some(0);
+            }
+        }
+    }
+}
+
+pub fn ui_focus_cycle(
+    mut players: Query<(Entity, &mut UiFocusNext, &KeyMap), With<Player>>,
+    mut ev_keys: EventReader<KeyEvent>,
+    ui_nodes: Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (player, mut ui_focus, key_map) in players.iter_mut() {
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    match named_input {
+                        NamedInput::MenuFocusNext => {
+                            let next_ui_focus =
+                                ui_focus_cycle_next(**ui_focus, player, 0, &ui_nodes);
+                            **ui_focus = next_ui_focus;
+                        },
+                        NamedInput::MenuFocusPrev => {
+                            let next_ui_focus =
+                                ui_focus_cycle_prev(**ui_focus, player, 0, &ui_nodes);
+                            **ui_focus = next_ui_focus;
+                        },
+                        _ => {},
                     }
                     Some(())
                 });

@@ -63,6 +63,8 @@ impl Plugin for NodeUiPlugin {
                 (
                     inputs::grid_ui_keyboard_controls,
                     inputs::action_menu_ui_controls,
+                    inputs::action_menu_on_focus,
+                    inputs::ui_focus_cycle,
                 )
                     .in_base_set(CoreSet::PreUpdate),
             )
