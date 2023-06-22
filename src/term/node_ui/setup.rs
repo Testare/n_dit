@@ -1,7 +1,7 @@
 use game_core::node::Node;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::term::layout::{StyleTty, UiFocus, UiFocusOnClick};
+use crate::term::layout::{StyleTty, UiFocus};
 use crate::term::node_ui::grid_ui::GridUi;
 use crate::term::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -68,7 +68,7 @@ pub fn create_node_ui(
                                 menu_bar.spawn(MenuUiActions::bundle(*player, &node_q));
                                 menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
-                        let grid_ui = content_pane.spawn(GridUi::bundle(*player, &node_q)).id();
+                        content_pane.spawn(GridUi::bundle(*player, &node_q));
                     });
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })

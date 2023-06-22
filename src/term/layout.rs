@@ -1,5 +1,4 @@
 use bevy::core::FrameCount;
-use bevy::utils::tracing::field::debug;
 use crossterm::event::MouseEventKind;
 use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};

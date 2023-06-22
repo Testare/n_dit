@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use game_core::card::Actions;
 use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
-use game_core::player::{Player, ForPlayer};
+use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
 use super::menu_ui::MenuUiActions;
@@ -115,8 +115,7 @@ pub fn action_menu_ui_controls(
     grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (player, mut focus, key_map, selected_entity, mut selected_action) in
-            players.iter_mut()
+        for (player, mut focus, key_map, selected_entity, mut selected_action) in players.iter_mut()
         {
             if (**focus)
                 .map(|focused_ui| !action_menu_uis.contains(focused_ui))
@@ -133,22 +132,32 @@ pub fn action_menu_ui_controls(
                             NamedInput::Direction(dir) => {
                                 let actions_bound = actions.len();
                                 let current_action = selected_action.unwrap_or(0);
-                                let next_action = Some((current_action + match dir {
-                                    Compass::North => actions_bound - 1,
-                                    Compass::South => 1,
-                                    _ => 0,
-                                }) % actions_bound);
+                                let next_action = Some(
+                                    (current_action
+                                        + match dir {
+                                            Compass::North => actions_bound - 1,
+                                            Compass::South => 1,
+                                            _ => 0,
+                                        })
+                                        % actions_bound,
+                                );
                                 if **selected_action != next_action {
                                     **selected_action = next_action;
                                 }
                             },
                             NamedInput::Activate => {
-                                if let Some((grid_ui_id, _)) = grid_uis.iter().find(|(_, ForPlayer(ui_player))| *ui_player == player) {
+                                if let Some((grid_ui_id, _)) = grid_uis
+                                    .iter()
+                                    .find(|(_, ForPlayer(ui_player))| *ui_player == player)
+                                {
                                     **focus = Some(grid_ui_id);
                                 }
                             },
                             NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
-                                if let Some((grid_ui_id, _)) = grid_uis.iter().find(|(_, ForPlayer(ui_player))| *ui_player == player) {
+                                if let Some((grid_ui_id, _)) = grid_uis
+                                    .iter()
+                                    .find(|(_, ForPlayer(ui_player))| *ui_player == player)
+                                {
                                     **selected_action = None;
                                     **focus = Some(grid_ui_id);
                                 }
