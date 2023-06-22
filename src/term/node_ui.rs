@@ -61,6 +61,7 @@ impl Plugin for NodeUiPlugin {
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_systems(
                 (
+                    inputs::advance_message_ui,
                     inputs::grid_ui_keyboard_controls,
                     inputs::action_menu_ui_controls,
                     inputs::action_menu_on_focus,

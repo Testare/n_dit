@@ -13,6 +13,30 @@ use crate::term::layout::{
 use crate::term::prelude::*;
 use crate::term::{KeyMap, Submap};
 
+pub fn advance_message_ui(
+    mut ev_keys: EventReader<KeyEvent>,
+    mut message_bar_ui: Query<(&mut MessageBarUi, &ForPlayer)>,
+    players: Query<(Entity, &KeyMap), With<Player>>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (player, key_map) in players.iter() {
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    if matches!(named_input, NamedInput::NextMsg) {
+                        for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
+                            if *for_player == player {
+                                msg_bar.0 = msg_bar.0[1..].into();
+                                break;
+                            }
+                        }
+                    }
+                    Some(())
+                });
+        }
+    }
+}
+
 pub fn grid_ui_keyboard_controls(
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     mut players: Query<
@@ -28,7 +52,6 @@ pub fn grid_ui_keyboard_controls(
         ),
         With<Player>,
     >,
-    mut message_bar_ui: Query<&mut MessageBarUi>,
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     grid_uis: Query<(), With<GridUi>>,
@@ -83,12 +106,6 @@ pub fn grid_ui_keyboard_controls(
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
                                     .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
-                            }
-                        },
-                        NamedInput::NextMsg => {
-                            // Next message
-                            for mut msg_bar in message_bar_ui.iter_mut() {
-                                msg_bar.0 = msg_bar.0[1..].into();
                             }
                         },
                         _ => {},
