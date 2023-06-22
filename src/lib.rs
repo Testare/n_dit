@@ -93,5 +93,6 @@
 pub mod hld {}
 
 pub use old_game_core::GridMap;
+pub mod charmie;
 pub mod demo;
 pub mod term;
