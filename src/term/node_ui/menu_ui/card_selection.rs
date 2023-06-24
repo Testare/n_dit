@@ -113,8 +113,31 @@ impl MenuUiCardSelection {
         }
     }
 
-    pub fn card_selection_on_focus() {
-        // TODO If menu is focused but the access point doesn't have anything loaded, create default selected_item position
+    pub fn card_selection_focus_status_change(
+        players: Query<(Entity, &UiFocus), (Changed<UiFocus>, With<Player>)>,
+        mut card_selection_menus: Query<(&MenuUiCardSelection, &mut SelectedItem, &ForPlayer)>,
+    ) {
+        for (player, ui_focus) in players.iter() {
+            if let Some((menu_ui_card_selection, mut selected_item, _)) =
+                ui_focus.and_then(|ui_focus| card_selection_menus.get_mut(ui_focus).ok())
+            {
+                // If the menu_ui is focused, but no selected_item created, create a default
+                if selected_item.is_none() {
+                    // TODO Potential improvement: Default to loaded card if there is one
+                    **selected_item = Some(menu_ui_card_selection.scroll);
+                }
+            } else {
+                for (_, mut selected_item, for_player) in card_selection_menus.iter_mut() {
+                    if for_player.0 == player {
+                        // If the ui focus changes from card_selection, clear selected_item
+                        if selected_item.is_some() {
+                            **selected_item = None;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     pub fn card_selection_keyboard_controls(
@@ -316,6 +339,8 @@ impl Plugin for MenuUiCardSelectionPlugin {
         app.add_systems((
             MenuUiCardSelection::card_selection_keyboard_controls
                 .in_set(NDitCoreSet::ProcessInputs),
+            MenuUiCardSelection::card_selection_focus_status_change
+                .in_set(RenderTtySet::PreCalculateLayout),
             MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
             MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::PreCalculateLayout),
             MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
