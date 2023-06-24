@@ -26,7 +26,9 @@ pub fn advance_message_ui(
                     if matches!(named_input, NamedInput::NextMsg) {
                         for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
                             if *for_player == player {
-                                msg_bar.0 = msg_bar.0[1..].into();
+                                if msg_bar.len() > 0 {
+                                    msg_bar.0 = msg_bar.0[1..].into();
+                                }
                                 break;
                             }
                         }

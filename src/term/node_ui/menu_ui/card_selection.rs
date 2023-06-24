@@ -20,8 +20,12 @@ pub struct MenuUiCardSelection {
     scroll: usize,
 }
 
+// Perhaps these subcomponents should be part of MenuUiCardSelection?
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct SelectedItem(Option<usize>);
+
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct IsPadded(bool);
 
 #[derive(Default)]
 pub struct MenuUiCardSelectionPlugin;
@@ -29,7 +33,13 @@ pub struct MenuUiCardSelectionPlugin;
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut layout_events: EventReader<LayoutEvent>,
-        mut ui: Query<(&mut Self, &CalculatedSizeTty, &ForPlayer, &mut SelectedItem)>,
+        mut ui: Query<(
+            &mut Self,
+            &CalculatedSizeTty,
+            &ForPlayer,
+            &mut SelectedItem,
+            &IsPadded,
+        )>,
         cards: Query<&Card>,
         mut players: Query<
             (&Deck, &SelectedEntity, &mut SelectedAction, &PlayedCards),
@@ -39,15 +49,12 @@ impl MenuUiCardSelection {
         mut node_command: EventWriter<Op<NodeOp>>,
     ) {
         for layout_event in layout_events.iter() {
-            if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item)) =
+            if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
                 ui.get_mut(layout_event.entity())
             {
                 if let Ok((deck, selected_entity, mut selected_action, played_cards)) =
                     players.get_mut(*player)
                 {
-                    if selected_item.is_some() {
-                        **selected_item = None;
-                    }
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
                         MouseEventKind::ScrollDown => {
@@ -58,6 +65,7 @@ impl MenuUiCardSelection {
                         },
                         MouseEventKind::Down(MouseButton::Left) => {
                             let height = size.height32();
+                            let padding: u32 = is_padded.0.into();
                             let UVec2 { x, y } = layout_event.pos();
                             if x == 0 && max_scroll != 0 {
                                 // Click on scroll bar
@@ -72,7 +80,7 @@ impl MenuUiCardSelection {
                                     },
                                     _ => {},
                                 }
-                            } else if y > 0 && y < height - 1 {
+                            } else if y > 0 && y < height - padding {
                                 let index = card_selection.scroll + y as usize - 1;
                                 if let Some((card_id, count)) = deck.cards_with_count().nth(index) {
                                     log::debug!(
@@ -88,6 +96,7 @@ impl MenuUiCardSelection {
                                     let access_point = selected_entity.of(&access_points).unwrap();
 
                                     **selected_action = None;
+                                    **selected_item = Some(index);
 
                                     if access_point.card() == Some(card_id) {
                                         node_command.send(Op::new(
@@ -114,17 +123,23 @@ impl MenuUiCardSelection {
     }
 
     pub fn card_selection_focus_status_change(
-        players: Query<(Entity, &UiFocus), (Changed<UiFocus>, With<Player>)>,
+        players: Query<
+            (Entity, &UiFocus, &Deck, &SelectedEntity),
+            (Changed<UiFocus>, With<Player>),
+        >,
         mut card_selection_menus: Query<(&MenuUiCardSelection, &mut SelectedItem, &ForPlayer)>,
+        access_points: Query<&AccessPoint>,
     ) {
-        for (player, ui_focus) in players.iter() {
+        for (player, ui_focus, deck, selected_entity) in players.iter() {
             if let Some((menu_ui_card_selection, mut selected_item, _)) =
                 ui_focus.and_then(|ui_focus| card_selection_menus.get_mut(ui_focus).ok())
             {
                 // If the menu_ui is focused, but no selected_item created, create a default
                 if selected_item.is_none() {
-                    // TODO Potential improvement: Default to loaded card if there is one
-                    **selected_item = Some(menu_ui_card_selection.scroll);
+                    **selected_item = selected_entity
+                        .of(&access_points)
+                        .and_then(|ap| deck.index_of_card(ap.card()?))
+                        .or(Some(menu_ui_card_selection.scroll));
                 }
             } else {
                 for (_, mut selected_item, for_player) in card_selection_menus.iter_mut() {
@@ -149,6 +164,7 @@ impl MenuUiCardSelection {
                 &Deck,
                 &SelectedEntity,
                 &UiFocus,
+                &PlayedCards,
                 &mut SelectedAction,
             ),
             With<Player>,
@@ -158,8 +174,15 @@ impl MenuUiCardSelection {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.iter() {
-            for (player, key_map, deck, selected_entity, focus_opt, mut selected_action) in
-                players.iter_mut()
+            for (
+                player,
+                key_map,
+                deck,
+                selected_entity,
+                focus_opt,
+                played_cards,
+                mut selected_action,
+            ) in players.iter_mut()
             {
                 focus_opt.and_then(|focused_ui| {
                     let (card_selection_menu, size, for_player, mut selected_item) =
@@ -194,23 +217,29 @@ impl MenuUiCardSelection {
                                 _ => current_point,
                             };
                             **selected_item = Some(next_pt);
-                            // TODO Manage scroll
                         },
                         NamedInput::Activate => {
-                            /*if access_point.card() == Some(card_id) {
-                                node_command.send(Op::new(
-                                    *player,
-                                    NodeOp::UnloadAccessPoint { access_point_id },
-                                ));
-                            } else if played_cards.can_be_played(deck, card_id) {
-                                node_command.send(Op::new(
-                                    *player,
-                                    NodeOp::LoadAccessPoint {
-                                        access_point_id,
-                                        card_id,
-                                    },
-                                ));
-                            }*/
+                            // TODO assert_and_then
+                            selected_entity.and_then(|access_point_id| {
+                                let card_id = deck.cards_with_count().nth((**selected_item)?)?.0;
+                                let access_point = get_assert!(access_point_id, &access_points)?;
+
+                                if access_point.card() == Some(card_id) {
+                                    ev_node_op.send(Op::new(
+                                        player,
+                                        NodeOp::UnloadAccessPoint { access_point_id },
+                                    ));
+                                } else if played_cards.can_be_played(deck, card_id) {
+                                    ev_node_op.send(Op::new(
+                                        player,
+                                        NodeOp::LoadAccessPoint {
+                                            access_point_id,
+                                            card_id,
+                                        },
+                                    ));
+                                }
+                                Some(())
+                            });
                         },
                         _ => {},
                     }
@@ -249,19 +278,22 @@ impl MenuUiCardSelection {
 
     /// System for rendering a simple submenu
     fn render_system(
-        access_points: Query<&AccessPoint>,
+        access_points: Query<Ref<AccessPoint>>,
         mut commands: Commands,
         cards: Query<&Card>,
         players: Query<(&Deck, &SelectedEntity, &PlayedCards), With<Player>>,
         mut ui: Query<(
             Entity,
             &mut Self,
-            &CalculatedSizeTty,
+            &mut IsPadded,
+            Ref<CalculatedSizeTty>,
             &ForPlayer,
-            &SelectedItem,
+            Ref<SelectedItem>,
         )>,
     ) {
-        for (id, mut card_selection, size, ForPlayer(player), selected_item) in ui.iter_mut() {
+        for (id, mut card_selection, mut is_padded, size, ForPlayer(player), selected_item) in
+            ui.iter_mut()
+        {
             let rendering = players
                 .get(*player)
                 .ok()
@@ -297,9 +329,23 @@ impl MenuUiCardSelection {
                         .collect();
 
                     let height = size.height();
-                    card_selection.scroll = card_selection
-                        .scroll
-                        .min((player_deck.different_cards_len() + 1).saturating_sub(height));
+                    **is_padded = height > cards.len() + 1; // Might change this logic sometime
+                    let padding: usize = is_padded.0.into();
+                    card_selection.scroll = if let (true, Some(index)) = (
+                        selected_item.is_changed()
+                            || access_point.is_changed()
+                            || size.is_changed(), // Ideally we could remove this if we can get scheduling figured out
+                        **selected_item,
+                    ) {
+                        // Focus on selected item
+                        card_selection
+                            .scroll
+                            .min(index)
+                            .max((index + 2 + padding).saturating_sub(height))
+                    } else {
+                        card_selection.scroll
+                    }
+                    .min((player_deck.different_cards_len() + 1 + padding).saturating_sub(height));
                     let no_scroll_bar_needed = height > cards.len();
                     let scroll_bar = (0..height).map(|i| {
                         if no_scroll_bar_needed {
@@ -312,8 +358,6 @@ impl MenuUiCardSelection {
                             "|"
                         }
                     });
-
-                    let padding = if height > (cards.len() + 1) { 1 } else { 0 };
 
                     let mut cards_menu = vec![format!("{0:═<1$}", "═Cards", size.width())];
                     for (scroll_bar, card) in scroll_bar.zip(
@@ -329,7 +373,7 @@ impl MenuUiCardSelection {
                 .unwrap_or_default();
             commands
                 .entity(id)
-                .update_rendering(rendering.fit_to_size(size));
+                .update_rendering(rendering.fit_to_size(&size));
         }
     }
 }
@@ -350,7 +394,7 @@ impl Plugin for MenuUiCardSelectionPlugin {
 
 impl NodeUi for MenuUiCardSelection {
     const NAME: &'static str = "Menu Card Selection";
-    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick, SelectedItem);
+    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick, SelectedItem, IsPadded);
     type UiPlugin = MenuUiCardSelectionPlugin;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -368,6 +412,11 @@ impl NodeUi for MenuUiCardSelection {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (LayoutMouseTarget, UiFocusOnClick, SelectedItem::default())
+        (
+            LayoutMouseTarget,
+            UiFocusOnClick,
+            SelectedItem::default(),
+            IsPadded::default(),
+        )
     }
 }

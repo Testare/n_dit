@@ -47,6 +47,15 @@ impl Deck {
     const ONE: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(1) };
     const MAX_CARD_COUNT: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(9) };
 
+    pub fn index_of_card(&self, entity: Entity) -> Option<usize> {
+        // TODO use ordering when I actually use ordering logic here
+        self.cards
+            .iter()
+            .enumerate()
+            .find(|(_, (card, _))| **card == entity)
+            .map(|(index, _)| index)
+    }
+
     pub fn count_of_card(&self, entity: Entity) -> u32 {
         self.cards
             .get(&entity)
