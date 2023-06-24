@@ -13,7 +13,7 @@ use crate::term::layout::{
 use crate::term::prelude::*;
 use crate::term::{KeyMap, Submap};
 
-pub fn advance_message_ui(
+pub fn kb_messages(
     mut ev_keys: EventReader<KeyEvent>,
     mut message_bar_ui: Query<(&mut MessageBarUi, &ForPlayer)>,
     players: Query<(Entity, &KeyMap), With<Player>>,
@@ -39,7 +39,26 @@ pub fn advance_message_ui(
     }
 }
 
-pub fn grid_ui_keyboard_controls(
+pub fn kb_ready(
+    mut players: Query<(Entity, &KeyMap), (With<Player>, With<InNode>)>,
+    mut ev_keys: EventReader<KeyEvent>,
+    mut ev_node_op: EventWriter<Op<NodeOp>>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (player, key_map) in players.iter_mut() {
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    if matches!(named_input, NamedInput::Ready) {
+                        ev_node_op.send(Op::new(player, NodeOp::ReadyToGo));
+                    }
+                    Some(())
+                });
+        }
+    }
+}
+
+pub fn kb_grid(
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     mut players: Query<
         (
@@ -99,9 +118,6 @@ pub fn grid_ui_keyboard_controls(
                                 )
                             }
                         },
-                        NamedInput::Ready => {
-                            ev_node_op.send(Op::new(player, NodeOp::ReadyToGo));
-                        },
                         NamedInput::Activate => {
                             if is_controlling_active_curio {
                                 ev_node_op.send(Op::new(player, NodeOp::DeactivateCurio));
@@ -118,11 +134,12 @@ pub fn grid_ui_keyboard_controls(
     }
 }
 
-pub fn action_menu_ui_controls(
+pub fn kb_action_menu(
     mut players: Query<
         (
             Entity,
-            &mut UiFocus,
+            &UiFocus,
+            &mut UiFocusNext,
             &KeyMap,
             &SelectedEntity,
             &mut SelectedAction,
@@ -135,7 +152,8 @@ pub fn action_menu_ui_controls(
     grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (player, mut focus, key_map, selected_entity, mut selected_action) in players.iter_mut()
+        for (player, focus, mut next_focus, key_map, selected_entity, mut selected_action) in
+            players.iter_mut()
         {
             if (**focus)
                 .map(|focused_ui| !action_menu_uis.contains(focused_ui))
@@ -170,17 +188,11 @@ pub fn action_menu_ui_controls(
                                     .iter()
                                     .find(|(_, ForPlayer(ui_player))| *ui_player == player)
                                 {
-                                    **focus = Some(grid_ui_id);
+                                    **next_focus = Some(grid_ui_id);
                                 }
                             },
                             NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
-                                if let Some((grid_ui_id, _)) = grid_uis
-                                    .iter()
-                                    .find(|(_, ForPlayer(ui_player))| *ui_player == player)
-                                {
-                                    **selected_action = None;
-                                    **focus = Some(grid_ui_id);
-                                }
+                                **selected_action = None;
                             },
                             _ => {},
                         }
@@ -204,7 +216,7 @@ pub fn action_menu_on_focus(
     }
 }
 
-pub fn ui_focus_cycle(
+pub fn kb_focus_cycle(
     mut players: Query<(Entity, &mut UiFocusNext, &KeyMap), With<Player>>,
     mut ev_keys: EventReader<KeyEvent>,
     ui_nodes: Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,

@@ -12,6 +12,7 @@ use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
 use game_core::player::ForPlayer;
+use game_core::NDitCoreSet;
 pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
 
@@ -61,13 +62,14 @@ impl Plugin for NodeUiPlugin {
             .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
             .add_systems(
                 (
-                    inputs::advance_message_ui,
-                    inputs::grid_ui_keyboard_controls,
-                    inputs::action_menu_ui_controls,
-                    inputs::action_menu_on_focus,
-                    inputs::ui_focus_cycle,
+                    inputs::kb_messages,
+                    inputs::kb_grid,
+                    inputs::action_menu_on_focus.before(inputs::kb_action_menu),
+                    inputs::kb_action_menu,
+                    inputs::kb_focus_cycle,
+                    inputs::kb_ready,
                 )
-                    .in_base_set(CoreSet::PreUpdate),
+                    .in_set(NDitCoreSet::ProcessInputs),
             )
             .add_plugin(MenuUiCardSelection::plugin())
             .add_plugin(MenuUiStats::plugin())

@@ -65,11 +65,11 @@ pub fn create_node_ui(
                                 menu_bar.spawn(MenuUiLabel::bundle(*player, &node_q));
                                 menu_bar
                                     .spawn(MenuUiCardSelection::bundle(*player, &node_q))
-                                    .insert(UiFocusCycleOrder(1));
+                                    .insert(UiFocusCycleOrder(2));
                                 menu_bar.spawn(MenuUiStats::bundle(*player, &node_q));
                                 menu_bar
                                     .spawn(MenuUiActions::bundle(*player, &node_q))
-                                    .insert(UiFocusCycleOrder(2));
+                                    .insert(UiFocusCycleOrder(1));
                                 menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
                         content_pane

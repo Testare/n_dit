@@ -122,7 +122,11 @@ impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
             .add_event::<LayoutEvent>()
-            .add_systems((apply_ui_next,).in_set(NDitCoreSet::PostProcessCommands))
+            .add_systems(
+                (remove_ui_focus_if_not_displayed, apply_ui_next)
+                    .chain()
+                    .in_base_set(CoreSet::Last),
+            )
             .add_systems(
                 (generate_layout_events, update_ui_focus_on_click).in_base_set(CoreSet::PreUpdate),
             )
@@ -142,6 +146,25 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     .chain()
                     .in_set(RenderTtySet::RenderLayouts),
             );
+    }
+}
+
+fn remove_ui_focus_if_not_displayed(
+    mut ui_foci: Query<&mut UiFocusNext>,
+    styles: Query<&StyleTty>,
+) {
+    for mut next_focus in ui_foci.iter_mut() {
+        if next_focus.is_some() {
+            let not_focusable = next_focus
+                .and_then(|focus| {
+                    let style = styles.get(focus).ok()?;
+                    Some(style.display == taffy::style::Display::None)
+                })
+                .unwrap_or(true);
+            if not_focusable {
+                **next_focus = None;
+            }
+        }
     }
 }
 
