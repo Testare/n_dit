@@ -156,8 +156,8 @@ impl MenuUiCardSelection {
     }
 
     pub fn card_selection_keyboard_controls(
-        mut uis: Query<(&mut Self, &CalculatedSizeTty, &ForPlayer, &mut SelectedItem)>,
-        mut players: Query<
+        mut uis: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
+        players: Query<
             (
                 Entity,
                 &KeyMap,
@@ -165,7 +165,6 @@ impl MenuUiCardSelection {
                 &SelectedEntity,
                 &UiFocus,
                 &PlayedCards,
-                &mut SelectedAction,
             ),
             With<Player>,
         >,
@@ -181,11 +180,10 @@ impl MenuUiCardSelection {
                 selected_entity,
                 focus_opt,
                 played_cards,
-                mut selected_action,
-            ) in players.iter_mut()
+            ) in players.iter()
             {
                 focus_opt.and_then(|focused_ui| {
-                    let (card_selection_menu, size, for_player, mut selected_item) =
+                    let (card_selection_menu, for_player, mut selected_item) =
                         uis.get_mut(focused_ui).ok()?;
                     if for_player.0 != player {
                         return None;
@@ -317,10 +315,10 @@ impl MenuUiCardSelection {
                                 "{selection_indicator}{name} {count}",
                                 name = name.with_exact_width(width),
                                 count = remaining_count,
-                                selection_indicator = if is_selected {
-                                    "▶"
-                                } else if is_hover {
+                                selection_indicator = if is_hover {
                                     "▷"
+                                } else if is_selected {
+                                    "▶"
                                 } else {
                                     ""
                                 },

@@ -76,7 +76,8 @@ impl Plugin for NDitCorePlugin {
                 )
                     .in_set(NDitCoreSet::ProcessCommands),
             )
-            .add_system(apply_system_buffers.in_set(NDitCoreSet::ProcessCommandsFlush));
+            .add_system(apply_system_buffers.in_set(NDitCoreSet::ProcessCommandsFlush))
+            .add_systems((card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands));
     }
 }
 
@@ -84,7 +85,6 @@ impl Plugin for NDitCorePlugin {
 macro_rules! get_assert {
     ($id:expr, $q:expr) => {{
         let temp_result = ($q).get($id);
-        let result_is_ok = temp_result.is_ok();
         debug_assert!(
             temp_result.is_ok(),
             "expected query get failed {:?}",
@@ -97,7 +97,6 @@ macro_rules! get_assert {
     }};
     ($id:expr, $q:expr, $block:expr) => {{
         let temp_result = ($q).get($id);
-        let result_is_ok = temp_result.is_ok();
         debug_assert!(
             temp_result.is_ok(),
             "expected query get failed {:?}",
@@ -114,7 +113,6 @@ macro_rules! get_assert {
 macro_rules! get_assert_mut {
     ($id:expr, $q:expr) => {{
         let temp_result = ($q).get_mut($id);
-        let result_is_ok = temp_result.is_ok();
         debug_assert!(
             temp_result.is_ok(),
             "expected query get failed {:?}",
@@ -127,7 +125,6 @@ macro_rules! get_assert_mut {
     }};
     ($id:expr, $q:expr, $block:expr) => {{
         let temp_result = ($q).get_mut($id);
-        let result_is_ok = temp_result.is_ok();
         debug_assert!(
             temp_result.is_ok(),
             "expected query get failed {:?}",

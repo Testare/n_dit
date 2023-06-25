@@ -4,7 +4,7 @@ use crate::prelude::*;
 #[derive(Component, Debug)]
 pub struct Player;
 
-#[derive(Clone, Component, Copy, Debug)]
+#[derive(Clone, Component, Copy, Debug, Deref)]
 pub struct ForPlayer(pub Entity);
 
 #[derive(Clone, Component, Debug)]

@@ -9,7 +9,7 @@ pub use card_action::{Action, ActionEffect, Actions, Prerequisite};
 #[derive(Component, Debug, Default, FromReflect, Reflect)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
-    ordering: Vec<(String, Entity)>,
+    ordering: Vec<Entity>,
 }
 
 #[derive(Component, Debug, FromReflect, Reflect, getset::Getters)]
@@ -73,7 +73,11 @@ impl Deck {
     }
 
     pub fn cards_with_count<'a>(&'a self) -> impl Iterator<Item = (Entity, NonZeroU32)> + 'a {
-        self.cards.iter().map(|(&e, &c)| (e, c))
+        self.ordering.iter().map(|card| (*card, self.cards[card]))
+    }
+
+    pub fn cards_iter<'a>(&'a self) -> impl Iterator<Item = Entity> + 'a {
+        self.ordering.iter().map(|e| *e)
     }
 
     /// Adds a card to the inventory, including another copy if it is already in the deck
@@ -86,7 +90,17 @@ impl Deck {
                 }
             })
             .or_insert(Self::ONE);
+        if !self.ordering.contains(&card) {
+            self.ordering.push(card);
+        }
         self
+    }
+
+    pub fn sort_by_key<F, K: Ord>(&mut self, f: F)
+    where
+        F: FnMut(&Entity) -> K,
+    {
+        self.ordering.sort_by_key(f);
     }
 
     /// Adds a card to the inventory, including another copy if it is already in the deck.
@@ -103,6 +117,14 @@ impl Deck {
                 *card_count = new_count;
             } else {
                 self.cards.remove(&card);
+                let index = self
+                    .ordering
+                    .iter()
+                    .enumerate()
+                    .find(|(_, e)| **e == card)
+                    .expect("If it is present in the hashmap, it should be present in the ordering")
+                    .0;
+                self.ordering.remove(index);
             }
             true
         } else {
@@ -141,5 +163,16 @@ impl Card {
 impl Description {
     pub fn new<S: Into<String>>(description: S) -> Self {
         Description(description.into())
+    }
+}
+
+pub fn sys_sort_decks(cards: Query<&Card>, mut decks: Query<&mut Deck, Changed<Deck>>) {
+    for mut deck in decks.iter_mut() {
+        // In the future, perhaps have a property of Deck configure sorting method
+        deck.sort_by_key(|card_id| {
+            get_assert!(*card_id, &cards)
+                .map(|card| card.short_name_or_nickname())
+                .unwrap_or("")
+        })
     }
 }
