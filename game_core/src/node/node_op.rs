@@ -4,7 +4,10 @@ use super::{
     AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
     Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase, Teams,
 };
-use crate::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
+use crate::card::{
+    Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
+    MovementSpeed, Prereqs,
+};
 use crate::node::{AccessPoint, Curio};
 use crate::player::Player;
 use crate::prelude::*;
@@ -51,6 +54,7 @@ pub struct CurioQ {
     moves_taken: &'static mut MovesTaken,
     movement_speed: Option<&'static mut MovementSpeed>,
     max_size: Option<&'static mut MaximumSize>,
+    actions: Option<&'static Actions>,
 }
 
 pub fn curio_ops(
@@ -60,6 +64,7 @@ pub fn curio_ops(
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
     pickups: Query<&Pickup>,
+    actions: Query<(&ActionRange, &ActionEffect, &Prereqs), With<Action>>,
 ) {
     for Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
@@ -93,20 +98,22 @@ pub fn curio_ops(
                     }
                     **active_curio = None;
                 },
+
                 NodeOp::MoveActiveCurio { dir } => {
-                    active_curio.and_then(|active_curio| {
-                        let mut curio_q = curios.get_mut(active_curio).ok()?;
+                    active_curio.and_then(|active_curio_id| {
+                        let mut curio_q = curios.get_mut(active_curio_id).ok()?;
                         debug_assert!(!**curio_q.tapped, "a tapped curio was active");
-                        if **curio_q.movement_speed? == **curio_q.moves_taken {
+                        let movement_speed = **curio_q.movement_speed?;
+                        if movement_speed == **curio_q.moves_taken {
                             return None;
                         }
-                        let head = grid.head(active_curio)?;
+                        let head = grid.head(active_curio_id)?;
                         let next_pt = head + *dir;
                         if grid.square_is_closed(next_pt) {
                             return None;
                         }
                         if let Some(entity_at_pt) = grid.item_at(next_pt) {
-                            if entity_at_pt == active_curio {
+                            if entity_at_pt == active_curio_id {
                                 // Curios can move onto their own squares
                             } else if let Ok(pickup) = pickups.get(entity_at_pt) {
                                 // TODO EntityGrid.remove
@@ -117,13 +124,32 @@ pub fn curio_ops(
                                 return None;
                             }
                         }
-                        grid.push_front(next_pt, active_curio);
+                        grid.push_front(next_pt, active_curio_id);
                         **curio_q.moves_taken += 1;
-                        if grid.len_of(active_curio) as u32
+                        if grid.len_of(active_curio_id) as u32
                             > curio_q.max_size.map(|ms| **ms).unwrap_or(1)
                         {
-                            grid.pop_back(active_curio);
+                            grid.pop_back(active_curio_id);
                         }
+                        if movement_speed == **curio_q.moves_taken {
+                            if curio_q
+                                .actions
+                                .as_ref()
+                                .map(|curio_actions| curio_actions.is_empty())
+                                .unwrap_or(true)
+                            {
+                                **curio_q.tapped = true;
+                                **active_curio = None;
+                            }
+
+                            return None;
+                        }
+                        Some(())
+                    });
+                },
+                NodeOp::PerformCurioAction { action, target } => {
+                    active_curio.and_then(|active_curio| {
+                        let mut curio_q = get_assert_mut!(active_curio, curios)?;
 
                         Some(())
                     });
