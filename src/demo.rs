@@ -1,6 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use game_core::card::{
-    Action, ActionEffect, Actions, Card, Deck, Description, MaximumSize, MovementSpeed,
+    Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
+    MovementSpeed, Prereqs, Prerequisite,
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
@@ -30,18 +31,82 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
+    let act_no_action = commands
+        .spawn((
+            Action {
+                name: "No Action".to_owned(),
+            },
+            Description::new("End movement and do nothing"),
+        ))
+        .id();
+    let act_slice = commands
+        .spawn((
+            Action {
+                name: "Slice".to_owned(),
+            },
+            ActionRange(1),
+            ActionEffect::Damage(2),
+            Description::new("Deletes 2 sectors from target"),
+        ))
+        .id();
+    let act_stone = commands
+        .spawn((
+            Action {
+                name: "Stone".to_owned(),
+            },
+            ActionRange(2),
+            ActionEffect::Damage(1),
+            Description::new("(Range 2) Deletes 1 sectors from target"),
+        ))
+        .id();
+    let act_glitch = commands
+        .spawn((
+            Action {
+                name: "Glitch".to_owned(),
+            },
+            ActionRange(1),
+            ActionEffect::Damage(2),
+            Description::new("Deletes 2 sectors from target"),
+        ))
+        .id();
+    let act_dice = commands
+        .spawn((
+            Action {
+                name: "Dice".to_owned(),
+            },
+            ActionRange(2),
+            ActionEffect::Damage(3),
+            Description::new("Deletes 3 sectors from target"),
+            Prereqs(vec![Prerequisite::MinSize(4)]),
+        ))
+        .id();
+    let act_thrice = commands
+        .spawn((
+            Action {
+                name: "Thrice".to_owned(),
+            },
+            ActionRange(4),
+            ActionEffect::Damage(3),
+            Description::new("Testare says HELLO"),
+        ))
+        .id();
+    let act_ping = commands
+        .spawn(((
+            Action {
+                name: "Ping".to_owned(),
+            },
+            ActionRange(2),
+            ActionEffect::Damage(2),
+            Description::new("Range(2) Deletes 2 sectors from target"),
+        ),))
+        .id();
+
     let hack = commands
         .spawn((
             Card::new("Hack", "curio:hack", None),
             MaximumSize(4),
             MovementSpeed(3),
-            Actions::new(vec![Action {
-                name: "Slice".to_owned(),
-                range: 1,
-                effect: ActionEffect::Damage(2),
-                description: "Deletes 2 sectors from target".to_owned(),
-                prereqs: default(),
-            }]),
+            Actions(vec![act_slice, act_dice]),
             Description::new("Basic attack program"),
         ))
         .id();
@@ -51,13 +116,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Description::new("Basic attack program"),
             MaximumSize(3),
             MovementSpeed(2),
-            Actions::new(vec![Action {
-                name: "Shoot".to_owned(),
-                range: 2,
-                effect: ActionEffect::Damage(1),
-                description: "(Range 2) Deletes 1 sectors from target".to_owned(),
-                prereqs: default(),
-            }]),
+            Actions(vec![act_stone]),
         ))
         .id();
     let card_1 = commands
@@ -72,13 +131,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Description::new("Fast, cheap, and out of control"),
             MaximumSize(1),
             MovementSpeed(5),
-            Actions::new(vec![Action {
-                name: "Glitch".to_owned(),
-                range: 1,
-                effect: ActionEffect::Damage(2),
-                description: "Deletes 2 sectors from target".to_owned(),
-                prereqs: default(),
-            }]),
+            Actions(vec![act_glitch]),
         ))
         .id();
     let card_3 = commands
@@ -123,29 +176,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 NodePiece::new("curio:hack"),
                 OnTeam(player_team),
                 Curio::new("Hack"),
-                Actions::new(vec![
-                    Action {
-                        name: "Slice".to_owned(),
-                        range: 1,
-                        effect: ActionEffect::Damage(2),
-                        description: "Deletes 2 sectors from target".to_owned(),
-                        prereqs: default(),
-                    },
-                    Action {
-                        name: "Dice".to_owned(),
-                        range: 2,
-                        effect: ActionEffect::Damage(3),
-                        description: "Deletes 3 sectors from target".to_owned(),
-                        prereqs: default(),
-                    },
-                    Action {
-                        name: "Thrice".to_owned(),
-                        range: 4,
-                        effect: ActionEffect::Damage(3),
-                        description: "Deletes 3 sectors from target".to_owned(),
-                        prereqs: default(),
-                    },
-                ]),
+                Actions(vec![act_slice, act_dice, act_thrice]),
                 Description::new("Basic attack program"),
                 MaximumSize(4),
                 MovementSpeed(5),
@@ -178,13 +209,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(true),
-                Actions::new(vec![Action {
-                    name: "Ping".to_owned(),
-                    range: 2,
-                    effect: ActionEffect::Damage(2),
-                    description: "Range(2) Deletes 2 sectors from target".to_owned(),
-                    prereqs: default(),
-                }]),
+                Actions(vec![act_ping]),
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
             node.spawn((
@@ -192,13 +217,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(false),
-                Actions::new(vec![Action {
-                    name: "Ping".to_owned(),
-                    range: 2,
-                    effect: ActionEffect::Damage(2),
-                    description: "Range(2) Deletes 2 sectors from target".to_owned(),
-                    prereqs: default(),
-                }]),
+                Actions(vec![act_ping]),
             ))
             .add_to_grid(node_id, vec![(12, 3)]);
         })

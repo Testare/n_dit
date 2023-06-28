@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use game_core::card::Actions;
+use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
@@ -22,6 +22,7 @@ pub fn get_range_of_action(
     changed_access_point: Query<(), Changed<AccessPoint>>,
     node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
     node_grids: Query<&EntityGrid, With<Node>>,
+    actions: Query<(&ActionRange,), With<Action>>,
 ) {
     let players_to_update: HashSet<Entity> = players
         .p0()
@@ -44,11 +45,12 @@ pub fn get_range_of_action(
             // Note: Will probably have to change this logic so that when the player is
             // actually trying to perform the action, it only shows up
 
-            let (actions, is_tapped) = player_q.selected_entity.of(&node_pieces)?;
+            let (curio_actions, is_tapped) = player_q.selected_entity.of(&node_pieces)?;
             if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(false) {
                 return None;
             }
-            let action = &actions[(**player_q.selected_action)?];
+            let action_id = &curio_actions[(**player_q.selected_action)?];
+            let (range,) = get_assert!(*action_id, &actions)?;
             let available_moves = player_q.available_moves.deref();
             let entity = (**player_q.selected_entity)?;
             let grid = node_grids.get(**player_q.in_node).ok()?;
@@ -72,16 +74,14 @@ pub fn get_range_of_action(
                         if available_moves.contains(&pt) {
                             return None;
                         }
-                        if entity_head.x.abs_diff(pt.x) + entity_head.y.abs_diff(pt.y)
-                            <= action.range
-                        {
+                        if entity_head.x.abs_diff(pt.x) + entity_head.y.abs_diff(pt.y) <= **range {
                             return Some(pt);
                         }
                         // TODO only run this if the player has selected to perform an action
                         for UVec2 { x, y } in available_moves.iter() {
                             // For some of the weird curio ideas I have, we'll need to make changes
                             // to this logic
-                            if x.abs_diff(pt.x) + y.abs_diff(pt.y) <= action.range {
+                            if x.abs_diff(pt.x) + y.abs_diff(pt.y) <= **range {
                                 return Some(pt);
                             }
                         }

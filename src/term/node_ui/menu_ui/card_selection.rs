@@ -173,14 +173,7 @@ impl MenuUiCardSelection {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.iter() {
-            for (
-                player,
-                key_map,
-                deck,
-                selected_entity,
-                focus_opt,
-                played_cards,
-            ) in players.iter()
+            for (player, key_map, deck, selected_entity, focus_opt, played_cards) in players.iter()
             {
                 focus_opt.and_then(|focused_ui| {
                     let (card_selection_menu, for_player, mut selected_item) =

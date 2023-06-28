@@ -1,4 +1,4 @@
-use game_core::card::{Actions, Description};
+use game_core::card::{Action, Actions, Description};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
@@ -18,6 +18,7 @@ impl MenuUiDescription {
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
         mut last_nonzero_width: Local<usize>,
+        action_descs: Query<&Description, With<Action>>,
     ) {
         for (mut style, size, ForPlayer(player)) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
@@ -29,7 +30,8 @@ impl MenuUiDescription {
                     .and_then(|(piece_desc, actions)| {
                         let desc_str = selected_action
                             .and_then(|selected_action| {
-                                Some(actions?.get(selected_action)?.description.as_str())
+                                let action_id = actions?.get(selected_action)?;
+                                Some(action_descs.get(*action_id).ok()?.as_str())
                             })
                             .or_else(|| Some(piece_desc?.as_str()))?;
                         Some(textwrap::wrap(desc_str, *last_nonzero_width).len() as f32 + 1.0)
@@ -55,6 +57,7 @@ impl MenuUiDescription {
         node_pieces: Query<NodePieceQ>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         ui: Query<(Entity, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
+        action_descs: Query<&Description, With<Action>>,
     ) {
         for (id, size, ForPlayer(player)) in ui.iter() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
@@ -63,7 +66,8 @@ impl MenuUiDescription {
                     .and_then(|selected| {
                         let desc_str = selected_action
                             .and_then(|selected_action| {
-                                Some(selected.actions?.get(selected_action)?.description.as_str())
+                                let action_id = selected.actions?.get(selected_action)?;
+                                Some(action_descs.get(*action_id).ok()?.as_str())
                             })
                             .or_else(|| Some(selected.description?.as_str()))?;
                         let wrapped_desc = textwrap::wrap(desc_str, size.width());

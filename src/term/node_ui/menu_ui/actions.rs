@@ -1,5 +1,6 @@
+use bevy::ecs::system::SystemParam;
 use crossterm::event::{MouseButton, MouseEventKind};
-use game_core::card::Actions;
+use game_core::card::{Action, Actions};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 
@@ -23,6 +24,7 @@ impl MenuUiActions {
                 if let Ok((mut selected_action, selected_entity)) = players.get_mut(*player) {
                     let actions = selected_entity.of(&actions_of_piece);
 
+                    // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
                         MouseEventKind::Down(MouseButton::Left) => {
                             if actions.is_some()
@@ -47,11 +49,17 @@ impl MenuUiActions {
     }
 }
 
+#[derive(SystemParam)]
+pub struct MenuUiActionsParam<'w, 's> {
+    players: Query<'w, 's, &'static SelectedAction, With<Player>>,
+    actions: Query<'w, 's, &'static Action>,
+}
+
 impl SimpleSubmenu for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
     type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
 
-    type RenderSystemParam = Query<'static, 'static, &'static SelectedAction, With<Player>>;
+    type RenderSystemParam = MenuUiActionsParam<'static, 'static>;
 
     fn layout_event_system() -> Option<bevy::app::SystemAppConfig> {
         Some(Self::handle_layout_events.into_app_config())
@@ -66,14 +74,16 @@ impl SimpleSubmenu for MenuUiActions {
         player: Entity,
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        selected_action: &Query<&SelectedAction, With<Player>>,
+        param: &MenuUiActionsParam,
     ) -> Option<Vec<String>> {
         let actions = selected.actions.as_deref()?;
         let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
         for action in actions.iter() {
-            menu.push(action.name.clone());
+            if let Some(action) = get_assert!(*action, param.actions) {
+                menu.push(action.name.clone());
+            }
         }
-        if let Some(action_idx) = **(selected_action.get(player).ok()?) {
+        if let Some(action_idx) = **(param.players.get(player).ok()?) {
             menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
         }
         Some(menu)
