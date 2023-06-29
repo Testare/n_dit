@@ -1,6 +1,8 @@
 use crossterm::event::KeyEvent;
 use game_core::card::Actions;
-use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
+use game_core::node::{
+    ActiveCurio, CurrentTurn, InNode, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
+};
 use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
@@ -59,13 +61,15 @@ pub fn kb_ready(
 }
 
 pub fn kb_grid(
+    no_op_action: Res<NoOpAction>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     mut players: Query<
         (
-            Entity,
+            Entity, // Solid candidate for making a WorldQuery derive
             &InNode,
             &OnTeam,
             &UiFocus,
+            &mut UiFocusNext,
             &KeyMap,
             &mut NodeCursor,
             &mut SelectedEntity,
@@ -73,9 +77,11 @@ pub fn kb_grid(
         ),
         With<Player>,
     >,
+    node_pieces: Query<(Option<&Actions>,), With<NodePiece>>,
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     grid_uis: Query<(), With<GridUi>>,
+    action_uis: Query<(), With<MenuUiActions>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
         for (
@@ -83,6 +89,7 @@ pub fn kb_grid(
             InNode(node),
             OnTeam(team),
             UiFocus(focus_opt),
+            ui_focus_next,
             key_map,
             mut cursor,
             selected_entity,
@@ -106,10 +113,15 @@ pub fn kb_grid(
                     match named_input {
                         NamedInput::Direction(dir) => {
                             if is_controlling_active_curio {
-                                ev_node_op.send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
+                                if selected_action.is_none() {
+                                    ev_node_op
+                                        .send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
+                                } else {
+                                    // Do not adjust selected entity/action
+                                    **cursor = (**cursor + dir).min(grid.index_bounds());
+                                }
                             } else {
                                 let next_cursor_pt = (**cursor + dir).min(grid.index_bounds());
-
                                 cursor.adjust_to(
                                     next_cursor_pt,
                                     selected_entity,
@@ -120,7 +132,29 @@ pub fn kb_grid(
                         },
                         NamedInput::Activate => {
                             if is_controlling_active_curio {
-                                ev_node_op.send(Op::new(player, NodeOp::DeactivateCurio));
+                                if let Some(selected_action_index) = **selected_action {
+                                    selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                        let action = *actions?.get(selected_action_index)?;
+                                        ev_node_op.send(Op::new(
+                                            player,
+                                            NodeOp::PerformCurioAction {
+                                                action,
+                                                target: **cursor,
+                                            },
+                                        ));
+                                        Some(())
+                                    });
+                                } else {
+                                    // If the curio has an action menu, focus on it
+                                    // Should deactivate curio be a separate action?
+                                    ev_node_op.send(Op::new(
+                                        player,
+                                        NodeOp::PerformCurioAction {
+                                            action: **no_op_action,
+                                            target: default(),
+                                        },
+                                    ));
+                                }
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
                                     .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));

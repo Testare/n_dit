@@ -2,7 +2,7 @@ use bevy::ecs::query::WorldQuery;
 
 use super::{
     AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
-    Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase, Teams,
+    NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, PreventNoOp, Team, TeamPhase, Teams,
 };
 use crate::card::{
     Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
@@ -23,7 +23,6 @@ pub enum NodeOp {
     MoveActiveCurio {
         dir: Compass,
     },
-    DeactivateCurio,
     ActivateCurio {
         curio_id: Entity,
     },
@@ -55,16 +54,25 @@ pub struct CurioQ {
     movement_speed: Option<&'static mut MovementSpeed>,
     max_size: Option<&'static mut MaximumSize>,
     actions: Option<&'static Actions>,
+    prevent_no_op: Option<&'static PreventNoOp>,
 }
 
 pub fn curio_ops(
+    no_op_action: Res<NoOpAction>,
     mut ops: EventReader<Op<NodeOp>>,
     mut nodes: Query<(&mut EntityGrid, &CurrentTurn, &mut ActiveCurio), With<Node>>,
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
     pickups: Query<&Pickup>,
-    actions: Query<(&ActionRange, &ActionEffect, &Prereqs), With<Action>>,
+    actions: Query<
+        (
+            Option<&ActionEffect>,
+            Option<&ActionRange>,
+            Option<&Prereqs>,
+        ),
+        With<Action>,
+    >,
 ) {
     for Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
@@ -92,13 +100,6 @@ pub fn curio_ops(
                         **active_curio = Some(*curio_id);
                     }
                 },
-                NodeOp::DeactivateCurio => {
-                    if let Some(last_active) = **active_curio {
-                        **curios.get_mut(last_active).ok()?.tapped = true;
-                    }
-                    **active_curio = None;
-                },
-
                 NodeOp::MoveActiveCurio { dir } => {
                     active_curio.and_then(|active_curio_id| {
                         let mut curio_q = curios.get_mut(active_curio_id).ok()?;
@@ -135,7 +136,12 @@ pub fn curio_ops(
                             if curio_q
                                 .actions
                                 .as_ref()
-                                .map(|curio_actions| curio_actions.is_empty())
+                                .map(|curio_actions| {
+                                    curio_actions
+                                        .iter()
+                                        .find(|action| **action != **no_op_action)
+                                        .is_none()
+                                })
                                 .unwrap_or(true)
                             {
                                 **curio_q.tapped = true;
@@ -147,10 +153,34 @@ pub fn curio_ops(
                         Some(())
                     });
                 },
-                NodeOp::PerformCurioAction { action, target } => {
-                    active_curio.and_then(|active_curio| {
-                        let mut curio_q = get_assert_mut!(active_curio, curios)?;
+                NodeOp::PerformCurioAction {
+                    action: action_id,
+                    target,
+                } => {
+                    active_curio.and_then(|active_curio_id| {
+                        let mut curio_q = get_assert_mut!(active_curio_id, curios)?;
+                        if !curio_q.actions?.contains(action_id) {
+                            return None;
+                        }
 
+                        let (effect, range, prereqs) = get_assert!(*action_id, actions)?;
+                        if let Some(range) = range {
+                            if !range.in_range(&grid, active_curio_id, *target) {
+                                return None;
+                            }
+                        }
+                        if let Some(Prereqs(prereqs)) = prereqs {
+                            for prereq in prereqs {
+                                if !prereq.satisfied(&grid, active_curio_id, *target) {
+                                    return None;
+                                }
+                            }
+                        }
+                        if let Some(effect) = effect {
+                            effect.apply_effect(&mut grid, active_curio_id, *target);
+                        }
+                        **curio_q.tapped = true;
+                        **active_curio = None;
                         Some(())
                     });
                 },
@@ -164,9 +194,10 @@ pub fn curio_ops(
 
 // TODO Ready to go when it isn't your turn
 pub fn ready_to_go_ops(
+    no_op_action: Res<NoOpAction>,
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
-    cards: Query<&Card>,
+    cards: Query<(&Card, Option<&Actions>, Option<&PreventNoOp>)>,
     mut players: Query<(Entity, &OnTeam, &InNode, &mut IsReadyToGo), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
@@ -216,26 +247,41 @@ pub fn ready_to_go_ops(
                                     commands.entity(player_id).remove::<IsReadyToGo>();
                                 }
                             }
-                            for (node_piece, card) in relevant_access_points.into_iter() {
-                                if let Some(card_id) = card {
-                                    let card_name =
-                                        cards.get(card_id).expect("card should exist").card_name();
+                            for (node_piece, card_id) in relevant_access_points.into_iter() {
+                                card_id
+                                    .and_then(|card_id| {
+                                        let (card, card_actions, prevent_no_op) =
+                                            get_assert!(card_id, cards)?;
+                                        // Can be tapped
 
-                                    commands
-                                        .entity(node_piece)
-                                        .insert((
-                                            Curio::new_with_card(card_name, card_id),
-                                            IsTapped::default(),
-                                            MovesTaken::default(),
-                                        ))
-                                        .remove::<AccessPoint>();
-                                } else {
-                                    let piece_len = grid.len_of(node_piece);
-                                    grid.pop_back_n(node_piece, piece_len);
-                                    // Leaving access points lying around seems bug prone, but so does despawning them?
-                                    // TODO Use play phase checks in ops, then remove the following line
-                                    commands.entity(node_piece).despawn()
-                                }
+                                        let mut ap_commands = commands.entity(node_piece);
+
+                                        ap_commands
+                                            .insert((
+                                                Curio::new_with_card(card.card_name(), card_id),
+                                                IsTapped::default(),
+                                                MovesTaken::default(),
+                                            ))
+                                            .remove::<AccessPoint>();
+
+                                        if prevent_no_op.is_none() {
+                                            // Add No Op action
+                                            let mut new_actions = card_actions
+                                                .cloned()
+                                                .unwrap_or_else(|| Actions(vec![]));
+                                            new_actions.0.push(**no_op_action);
+
+                                            ap_commands.insert(new_actions);
+                                        }
+                                        Some(())
+                                    })
+                                    .unwrap_or_else(|| {
+                                        let piece_len = grid.len_of(node_piece);
+                                        grid.pop_back_n(node_piece, piece_len);
+                                        // Leaving access points lying around seems bug prone, but so does despawning them?
+                                        // TODO Use play phase checks in ops, then remove the following line
+                                        commands.entity(node_piece).despawn()
+                                    });
                             }
                             for team in relevant_teams {
                                 *team_phases

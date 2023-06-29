@@ -68,16 +68,9 @@ impl Plugin for NDitCorePlugin {
                     .in_base_set(CoreSet::Update)
                     .after(NDitCoreSet::ProcessCommandsFlush),
             ))
-            .add_systems(
-                (
-                    node::access_point_ops,
-                    node::ready_to_go_ops,
-                    node::curio_ops,
-                )
-                    .in_set(NDitCoreSet::ProcessCommands),
-            )
             .add_system(apply_system_buffers.in_set(NDitCoreSet::ProcessCommandsFlush))
-            .add_systems((card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands));
+            .add_systems((card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands))
+            .add_plugin(node::NodePlugin);
     }
 }
 

@@ -5,6 +5,7 @@ use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
 use super::{AvailableActionTargets, PlayerUiQ, SelectedAction, SelectedEntity};
+use crate::term::node_ui::AvailableMoves;
 use crate::term::prelude::*;
 
 pub fn get_range_of_action(
@@ -16,7 +17,11 @@ pub fn get_range_of_action(
         (),
         (
             With<Player>,
-            Or<(Changed<SelectedAction>, Changed<SelectedEntity>)>,
+            Or<(
+                Changed<SelectedAction>,
+                Changed<SelectedEntity>,
+                Changed<AvailableMoves>,
+            )>,
         ),
     >,
     changed_access_point: Query<(), Changed<AccessPoint>>,
@@ -50,7 +55,7 @@ pub fn get_range_of_action(
                 return None;
             }
             let action_id = &curio_actions[(**player_q.selected_action)?];
-            let (range,) = get_assert!(*action_id, &actions)?;
+            let (range,) = actions.get(*action_id).ok()?; // Not all actions have a range
             let available_moves = player_q.available_moves.deref();
             let entity = (**player_q.selected_entity)?;
             let grid = node_grids.get(**player_q.in_node).ok()?;

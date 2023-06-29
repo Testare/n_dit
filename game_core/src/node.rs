@@ -1,5 +1,6 @@
-use crate::card::Deck;
+use crate::card::{Action, Deck, Description};
 use crate::prelude::*;
+use crate::NDitCoreSet;
 
 mod node_op;
 mod rule;
@@ -7,6 +8,8 @@ mod rule;
 use getset::CopyGetters;
 pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
+
+pub struct NodePlugin;
 
 #[derive(Component, Debug, FromReflect, Reflect)]
 pub struct PlayerTurn(Entity);
@@ -126,5 +129,35 @@ impl Curio {
 
     pub fn name(&self) -> &str {
         self.name.as_str()
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deref, Resource)]
+pub struct NoOpAction(pub Entity);
+
+// Might be moved to some combination of Rules and Tags
+#[derive(Copy, Clone, Component)]
+pub struct PreventNoOp;
+
+impl FromWorld for NoOpAction {
+    fn from_world(world: &mut World) -> Self {
+        NoOpAction(
+            world
+                .spawn((
+                    Action {
+                        name: "No Action".to_owned(),
+                    },
+                    Description::new("End movement and do nothing"),
+                ))
+                .id(),
+        )
+    }
+}
+
+impl Plugin for NodePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<NoOpAction>().add_systems(
+            (access_point_ops, ready_to_go_ops, curio_ops).in_set(NDitCoreSet::ProcessCommands),
+        );
     }
 }

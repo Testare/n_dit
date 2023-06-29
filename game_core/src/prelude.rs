@@ -1,11 +1,11 @@
 pub use bevy::prelude::{
     apply_system_buffers, default, AddChild, Added, App, BuildChildren, Bundle, Changed, Children,
     Commands, Component, CoreSet, DebugName, Deref, DerefMut, DetectChanges, DetectChangesMut,
-    Entity, EventReader, EventWriter, FromReflect, IVec2, In, IntoPipeSystem, IntoSystemAppConfig,
-    IntoSystemAppConfigs, IntoSystemConfig, IntoSystemConfigs, IntoSystemSetConfig,
-    IntoSystemSetConfigs, Local, Mut, Name, OnEnter, OnExit, OnUpdate, Or, ParamSet, Parent,
-    Plugin, Query, Ref, Reflect, Res, ResMut, Resource, State, States, SystemParamFunction,
-    SystemSet, UVec2, Vec2, With, Without, World,
+    Entity, EventReader, EventWriter, FromReflect, FromWorld, IVec2, In, IntoPipeSystem,
+    IntoSystemAppConfig, IntoSystemAppConfigs, IntoSystemConfig, IntoSystemConfigs,
+    IntoSystemSetConfig, IntoSystemSetConfigs, Local, Mut, Name, OnEnter, OnExit, OnUpdate, Or,
+    ParamSet, Parent, Plugin, Query, Ref, Reflect, Res, ResMut, Resource, State, States,
+    SystemParamFunction, SystemSet, UVec2, Vec2, With, Without, World,
 };
 pub use bevy::utils::{HashMap, HashSet};
 

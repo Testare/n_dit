@@ -31,20 +31,12 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
-    let act_no_action = commands
-        .spawn((
-            Action {
-                name: "No Action".to_owned(),
-            },
-            Description::new("End movement and do nothing"),
-        ))
-        .id();
     let act_slice = commands
         .spawn((
             Action {
                 name: "Slice".to_owned(),
             },
-            ActionRange(1),
+            ActionRange::new(1),
             ActionEffect::Damage(2),
             Description::new("Deletes 2 sectors from target"),
         ))
@@ -54,7 +46,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Action {
                 name: "Stone".to_owned(),
             },
-            ActionRange(2),
+            ActionRange::new(2),
             ActionEffect::Damage(1),
             Description::new("(Range 2) Deletes 1 sectors from target"),
         ))
@@ -64,7 +56,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Action {
                 name: "Glitch".to_owned(),
             },
-            ActionRange(1),
+            ActionRange::new(1),
             ActionEffect::Damage(2),
             Description::new("Deletes 2 sectors from target"),
         ))
@@ -74,10 +66,10 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Action {
                 name: "Dice".to_owned(),
             },
-            ActionRange(2),
+            ActionRange::new(2),
             ActionEffect::Damage(3),
-            Description::new("Deletes 3 sectors from target"),
-            Prereqs(vec![Prerequisite::MinSize(4)]),
+            Description::new("(Req Size: 3) Deletes 3 sectors from target"),
+            Prereqs(vec![Prerequisite::MinSize(3)]),
         ))
         .id();
     let act_thrice = commands
@@ -85,7 +77,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Action {
                 name: "Thrice".to_owned(),
             },
-            ActionRange(4),
+            ActionRange::new(4),
             ActionEffect::Damage(3),
             Description::new("Testare says HELLO"),
         ))
@@ -95,7 +87,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Action {
                 name: "Ping".to_owned(),
             },
-            ActionRange(2),
+            ActionRange::new(2),
             ActionEffect::Damage(2),
             Description::new("Range(2) Deletes 2 sectors from target"),
         ),))
@@ -219,7 +211,18 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 IsTapped(false),
                 Actions(vec![act_ping]),
             ))
-            .add_to_grid(node_id, vec![(12, 3)]);
+            .add_to_grid(
+                node_id,
+                vec![
+                    (12, 3),
+                    (13, 3),
+                    (14, 3),
+                    (15, 3),
+                    (15, 4),
+                    (15, 5),
+                    (16, 5),
+                ],
+            );
         })
         .id();
     commands.spawn((

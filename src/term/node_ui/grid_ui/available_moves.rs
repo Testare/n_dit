@@ -1,12 +1,27 @@
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
+use game_core::node::{
+    AccessPoint, ActiveCurio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup,
+};
 use game_core::player::Player;
 
 use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
+use super::GridUi;
+use crate::term::layout::UiFocus;
+use crate::term::node_ui::SelectedAction;
 use crate::term::prelude::*;
 
 pub fn adjust_available_moves(
-    mut players: Query<(Entity, &SelectedEntity, &InNode, &mut AvailableMoves), (With<Player>,)>,
+    mut players: Query<
+        (
+            Entity,
+            Ref<UiFocus>,
+            &SelectedAction,
+            &SelectedEntity,
+            &InNode,
+            &mut AvailableMoves,
+        ),
+        (With<Player>,),
+    >,
     changed_access_points: Query<
         (),
         (
@@ -15,7 +30,7 @@ pub fn adjust_available_moves(
         ),
     >,
     changed_cursor: Query<(), Changed<NodeCursor>>,
-    node_grids: Query<&EntityGrid, With<Node>>,
+    node_grids: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
     pickups: Query<(), With<Pickup>>,
     node_pieces: Query<
         (
@@ -26,27 +41,40 @@ pub fn adjust_available_moves(
         ),
         With<NodePiece>,
     >,
+    grid_uis: Query<(), With<GridUi>>,
 ) {
-    for (player, selected_entity, node_id, mut available_moves) in players.iter_mut() {
-        if !changed_cursor.contains(player) {
-            if selected_entity.of(&changed_access_points).is_none() {
-                continue;
-            }
+    for (player, ui_focus, selected_action, selected_entity, node_id, mut available_moves) in
+        players.iter_mut()
+    {
+        if !changed_cursor.contains(player)
+            && selected_entity.of(&changed_access_points).is_none()
+            && !ui_focus.is_changed()
+        {
+            continue;
         }
         let new_moves = node_grids
             .get(**node_id)
             .ok()
-            .and_then(|grid| {
+            .and_then(|(grid, active_curio)| {
                 let (entity, speed, moves_taken, tapped) = selected_entity.of(&node_pieces)?;
                 if matches!(tapped, Some(IsTapped(true))) {
                     return None;
                 }
-                let moves =
-                    (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
-                let mut points_set = HashSet::new();
                 let head = grid
                     .head(entity)
                     .expect("a selected entity should exist in the grid map");
+
+                if active_curio.is_some()
+                    && selected_action.is_some()
+                    && ui_focus
+                        .map(|focused_entity| grid_uis.contains(focused_entity))
+                        .unwrap_or(true)
+                {
+                    return Some(std::iter::once(head).collect());
+                }
+                let moves =
+                    (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
+                let mut points_set = HashSet::new();
 
                 possible_moves(head, &mut points_set, &pickups, moves, entity, &grid);
                 Some(points_set)
