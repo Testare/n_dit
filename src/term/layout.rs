@@ -1,11 +1,11 @@
 use bevy::core::FrameCount;
-use crossterm::event::MouseEventKind;
 use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
 use unicode_width::UnicodeWidthStr;
 
+use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering};
 use super::TerminalWindow;
 use crate::term::prelude::*;
@@ -31,9 +31,9 @@ pub struct LayoutEvent {
     #[getset(get_copy = "pub")]
     pos: UVec2,
     #[getset(get = "pub")]
-    modifiers: crossterm::event::KeyModifiers,
+    modifiers: KeyModifiers,
     #[getset(get = "pub")]
-    event_kind: crossterm::event::MouseEventKind,
+    event_kind: MouseEventKind,
 }
 
 #[derive(Component, Debug)]
@@ -99,21 +99,6 @@ impl CalculatedSizeTty {
 
     pub fn height(&self) -> usize {
         self.0.y as usize
-    }
-
-    pub fn contains_mouse_event(
-        &self,
-        translation: &GlobalTranslationTty,
-        event: &crossterm::event::MouseEvent,
-    ) -> bool {
-        // TODO better pattern would to probably make "LayoutEvents" for mouse events
-        // For example, using this does not take into account if there are multiple render layouts that aren't being rendered
-        // It also insulates us from crossterm changing how things work
-        let (column32, row32) = (event.column as u32, event.row as u32);
-        translation.x <= column32
-            && column32 < (translation.x + self.width32())
-            && translation.y <= row32
-            && row32 < (translation.y + self.height32())
     }
 }
 

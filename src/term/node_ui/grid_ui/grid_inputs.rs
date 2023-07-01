@@ -1,12 +1,12 @@
 use std::ops::Deref;
 
-use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, Node, NodeOp, OnTeam, Pickup, Team, TeamPhase,
 };
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2D};
+use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::layout::LayoutEvent;
 use crate::term::node_ui::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;

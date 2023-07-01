@@ -1,13 +1,16 @@
 mod configuration;
+pub mod input_event;
 mod key_map;
 pub mod layout;
 pub mod node_ui;
 mod render;
 
 pub use key_map::{KeyMap, Submap};
+
 pub mod prelude {
-    pub use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
     pub use game_core::prelude::*;
+
+    pub use super::input_event::{CrosstermEvent, KeyEvent, MouseEvent};
 }
 
 use std::io::stdout;
@@ -16,8 +19,8 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
-use crossterm::event::Event as CrosstermEvent;
 use crossterm::execute;
+use input_event::CrosstermEvent;
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
@@ -212,8 +215,8 @@ fn exit_key(
     mut ev_key: EventReader<KeyEvent>,
     mut exit: EventWriter<bevy::app::AppExit>,
 ) {
-    for crossterm::event::KeyEvent { code, .. } in ev_key.iter() {
-        if *code == crossterm::event::KeyCode::Char(term_config.exit_key) {
+    for input_event::KeyEvent { code, .. } in ev_key.iter() {
+        if *code == input_event::KeyCode::Char(term_config.exit_key) {
             exit.send(bevy::app::AppExit);
         }
     }

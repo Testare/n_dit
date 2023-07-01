@@ -1,10 +1,10 @@
 use bevy::ecs::system::SystemParam;
-use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Action, Actions};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 
 use super::{NodePieceQItem, SimpleSubmenu};
+use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, UiFocusOnClick};
 use crate::term::node_ui::{SelectedAction, SelectedEntity};
 use crate::term::prelude::*;

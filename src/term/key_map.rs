@@ -1,5 +1,4 @@
-use crossterm::event::{KeyCode, KeyModifiers};
-
+use crate::term::input_event::{KeyCode, KeyModifiers};
 use crate::term::prelude::*;
 
 #[derive(Eq, Hash, PartialEq)]

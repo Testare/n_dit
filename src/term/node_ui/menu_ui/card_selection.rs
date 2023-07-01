@@ -1,4 +1,3 @@
-use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::player::{ForPlayer, Player};
@@ -6,6 +5,7 @@ use game_core::NDitCoreSet;
 use pad::PadStr;
 use taffy::style::Dimension;
 
+use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{
     CalculatedSizeTty, FitToSize, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
