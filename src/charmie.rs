@@ -5,6 +5,22 @@ use std::ops::AddAssign;
 use crossterm::style::{ContentStyle, StyledContent};
 
 #[derive(Debug, Default)]
+pub enum ColorSupportLevel {
+    #[default]
+    TrueColor,
+    Ansi256,
+    Basic,
+    Plain,
+}
+
+// Defines a color with optional support at different levels
+pub struct CharmieColor {
+    true_color: Option<(u8, u8, u8)>,
+    ansi_256: Option<u8>,
+    basic: Option<String>,
+}
+
+#[derive(Debug, Default)]
 struct CharacterMapImage {
     rows: Vec<CharmieRow>,
 }

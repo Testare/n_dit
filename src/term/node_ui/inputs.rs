@@ -92,7 +92,7 @@ pub fn kb_grid(
             key_map,
             mut cursor,
             selected_entity,
-            selected_action,
+            mut selected_action,
         ) in players.iter_mut()
         {
             if focus_opt
@@ -157,6 +157,16 @@ pub fn kb_grid(
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
                                     .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
+                            }
+                        },
+                        NamedInput::Undo => {
+                            if is_controlling_active_curio && selected_action.is_some() {
+                                **selected_action = None;
+                                active_curio.and_then(|active_curio_id| {
+                                    let head = grid.head(active_curio_id)?;
+                                    cursor.adjust_to(head, selected_entity, selected_action, grid);
+                                    Some(())
+                                });
                             }
                         },
                         _ => {},
