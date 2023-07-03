@@ -68,6 +68,7 @@ impl Plugin for NodeUiPlugin {
                     inputs::kb_action_menu,
                     inputs::kb_focus_cycle,
                     inputs::kb_ready,
+                    inputs::kb_skirm_focus,
                 )
                     .in_set(NDitCoreSet::ProcessInputs),
             )

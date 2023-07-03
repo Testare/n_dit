@@ -8,10 +8,8 @@ use taffy::style::Dimension;
 use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{
-    CalculatedSizeTty, FitToSize, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusNext,
-    UiFocusOnClick,
+    CalculatedSizeTty, FitToSize, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
 };
-use crate::term::node_ui::grid_ui::GridUi;
 use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
 use crate::term::render::{RenderTtySet, UpdateRendering};
@@ -158,15 +156,14 @@ impl MenuUiCardSelection {
     }
 
     pub fn kb_card_selection(
-        mut uis: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
-        mut players: Query<
+        mut card_menus: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
+        players: Query<
             (
                 Entity,
                 &KeyMap,
                 &Deck,
                 &SelectedEntity,
                 &UiFocus,
-                &mut UiFocusNext,
                 &PlayedCards,
             ),
             With<Player>,
@@ -174,15 +171,13 @@ impl MenuUiCardSelection {
         access_points: Query<&AccessPoint>,
         mut ev_keys: EventReader<KeyEvent>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
-        grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.iter() {
-            for (player, key_map, deck, selected_entity, focus_opt, mut focus_next, played_cards) in
-                players.iter_mut()
+            for (player, key_map, deck, selected_entity, focus_opt, played_cards) in players.iter()
             {
                 focus_opt.and_then(|focused_ui| {
                     let (card_selection_menu, for_player, mut selected_item) =
-                        uis.get_mut(focused_ui).ok()?;
+                        card_menus.get_mut(focused_ui).ok()?;
                     if for_player.0 != player {
                         return None;
                     }
@@ -246,13 +241,6 @@ impl MenuUiCardSelection {
                                         NodeOp::UnloadAccessPoint { access_point_id },
                                     ));
                                 }
-                                let player_grid_ui = grid_uis
-                                    .iter()
-                                    .find(|(_, fp)| ***fp == player)
-                                    .map(|(id, _)| id);
-
-                                **focus_next = player_grid_ui;
-
                                 Some(())
                             });
                         },
