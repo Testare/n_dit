@@ -88,7 +88,7 @@ macro_rules! get_assert {
         }
         temp_result.ok()
     }};
-    ($id:expr, $q:expr, $block:expr) => {{
+    ($id:expr, $q:expr, $closure:expr) => {{
         let temp_result = ($q).get($id);
         debug_assert!(
             temp_result.is_ok(),
@@ -98,7 +98,7 @@ macro_rules! get_assert {
         if let Err(e) = temp_result {
             log::error!("[line: {}] expected query get failed [{:?}]", line!(), e);
         }
-        temp_result.ok().and_then(block)
+        temp_result.ok().and_then($closure)
     }};
 }
 

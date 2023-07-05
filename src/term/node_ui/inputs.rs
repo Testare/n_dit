@@ -79,6 +79,7 @@ pub fn kb_grid(
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     grid_uis: Query<(), With<GridUi>>,
+    rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
         for (
@@ -141,14 +142,37 @@ pub fn kb_grid(
                                         Some(())
                                     });
                                 } else {
+                                    selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                        match actions.map(|actions|(actions.len(), actions)) {
+                                            None | Some((0, _)) => {
+                                                ev_node_op.send(Op::new(
+                                                    player,
+                                                    NodeOp::PerformCurioAction {
+                                                        action: **no_op_action,
+                                                        target: default(),
+                                                    },
+                                                ));
+                                            },
+                                            Some((1, actions)) => {
+                                                let action = *actions.0.get(0).expect("if the len is 1, there should be an action at 0");
+                                                if rangeless_actions.contains(action) {
+                                                    ev_node_op.send(Op::new(
+                                                        player,
+                                                        NodeOp::PerformCurioAction {
+                                                            action,
+                                                            target: default(),
+                                                        },
+                                                    ));
+                                                } else {
+                                                    **selected_action = Some(0);
+                                                }
+                                            },
+                                            _ => {}
+                                        }
+                                        Some(())
+
+                                    });
                                     // If the curio has an action menu, focus on it
-                                    ev_node_op.send(Op::new(
-                                        player,
-                                        NodeOp::PerformCurioAction {
-                                            action: **no_op_action,
-                                            target: default(),
-                                        },
-                                    ));
                                 }
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
@@ -175,7 +199,16 @@ pub fn kb_grid(
 
 pub fn kb_skirm_focus(
     mut players: Query<
-        (Entity, &UiFocus, &mut UiFocusNext, &KeyMap, &SelectedEntity),
+        (
+            Entity,
+            &InNode,
+            &OnTeam,
+            &UiFocus,
+            &mut UiFocusNext,
+            &KeyMap,
+            &SelectedEntity,
+            &SelectedAction,
+        ),
         With<Player>,
     >,
     mut ev_keys: EventReader<KeyEvent>,
@@ -183,16 +216,28 @@ pub fn kb_skirm_focus(
         (Entity, &ForPlayer),
         Or<(With<GridUi>, With<MenuUiCardSelection>, With<MenuUiActions>)>,
     >,
+    nodes: Query<(&ActiveCurio, &CurrentTurn), With<Node>>,
+    access_points: Query<(), (With<AccessPoint>, With<NodePiece>)>,
+    action_pieces: Query<&Actions, With<NodePiece>>,
     grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
     card_menus: Query<(Entity, &ForPlayer), With<MenuUiCardSelection>>,
     action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
-    access_points: Query<(), (With<AccessPoint>, With<NodePiece>)>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (player, focus, mut focus_next, key_map, selected_entity) in players.iter_mut() {
+        for (
+            player,
+            in_node,
+            team,
+            focus,
+            mut focus_next,
+            key_map,
+            selected_entity,
+            selected_action,
+        ) in players.iter_mut()
+        {
             if (**focus)
                 .map(|focused_ui| !skirm_uis.contains(focused_ui))
-                .unwrap_or(true)
+                .unwrap_or(false)
             {
                 continue;
             }
@@ -209,6 +254,14 @@ pub fn kb_skirm_focus(
                 .iter()
                 .find(|(_, fp)| ***fp == player)
                 .map(|(id, _)| id);
+
+            let active_curio = get_assert!(**in_node, nodes, |(active_curio, turn)| {
+                if **turn == **team {
+                    **active_curio
+                } else {
+                    None
+                }
+            });
 
             if grid_id.is_none() {
                 log::error!("Missing Grid UI entity");
@@ -237,6 +290,12 @@ pub fn kb_skirm_focus(
                                 **focus_next = card_menu_id;
                             } else if **focus == action_menu_id {
                                 **focus_next = grid_id;
+                            } else if let Some(actions) =
+                                active_curio.and_then(|curio_id| action_pieces.get(curio_id).ok())
+                            {
+                                if actions.len() > 1 && selected_action.is_none() {
+                                    **focus_next = action_menu_id;
+                                }
                             }
                         },
                         _ => {},
