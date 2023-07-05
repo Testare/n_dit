@@ -1,4 +1,4 @@
-use game_core::card::Actions;
+use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
 };
@@ -142,7 +142,6 @@ pub fn kb_grid(
                                     });
                                 } else {
                                     // If the curio has an action menu, focus on it
-                                    // Should deactivate curio be a separate action?
                                     ev_node_op.send(Op::new(
                                         player,
                                         NodeOp::PerformCurioAction {
@@ -249,13 +248,25 @@ pub fn kb_skirm_focus(
 }
 
 pub fn kb_action_menu(
-    mut players: Query<(&UiFocus, &KeyMap, &SelectedEntity, &mut SelectedAction), With<Player>>,
+    mut players: Query<
+        (
+            Entity,
+            &UiFocus,
+            &KeyMap,
+            &SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
     node_pieces: Query<(&Actions,), With<NodePiece>>,
     mut ev_keys: EventReader<KeyEvent>,
     action_menu_uis: Query<(), With<MenuUiActions>>,
+    mut ev_node_op: EventWriter<Op<NodeOp>>,
+    rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (focus, key_map, selected_entity, mut selected_action) in players.iter_mut() {
+        for (player_id, focus, key_map, selected_entity, mut selected_action) in players.iter_mut()
+        {
             if (**focus)
                 .map(|focused_ui| !action_menu_uis.contains(focused_ui))
                 .unwrap_or(true)
@@ -286,6 +297,21 @@ pub fn kb_action_menu(
                             },
                             NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
                                 **selected_action = None;
+                            },
+                            NamedInput::Activate => {
+                                if let Some(action) =
+                                    actions.get(selected_action.unwrap_or_default())
+                                {
+                                    if rangeless_actions.contains(*action) {
+                                        ev_node_op.send(Op::new(
+                                            player_id,
+                                            NodeOp::PerformCurioAction {
+                                                action: *action,
+                                                target: default(),
+                                            },
+                                        ))
+                                    }
+                                }
                             },
                             _ => {},
                         }
