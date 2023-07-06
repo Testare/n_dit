@@ -1,7 +1,5 @@
 use game_core::card::MovementSpeed;
-use game_core::node::{
-    AccessPoint, ActiveCurio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup,
-};
+use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
 use game_core::player::Player;
 
 use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
@@ -30,7 +28,7 @@ pub fn adjust_available_moves(
         ),
     >,
     changed_cursor: Query<(), Changed<NodeCursor>>,
-    node_grids: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
+    node_grids: Query<(&EntityGrid,), With<Node>>,
     pickups: Query<(), With<Pickup>>,
     node_pieces: Query<
         (
@@ -55,7 +53,7 @@ pub fn adjust_available_moves(
         let new_moves = node_grids
             .get(**node_id)
             .ok()
-            .and_then(|(grid, active_curio)| {
+            .and_then(|(grid,)| {
                 let (entity, speed, moves_taken, tapped) = selected_entity.of(&node_pieces)?;
                 if matches!(tapped, Some(IsTapped(true))) {
                     return None;
@@ -64,8 +62,7 @@ pub fn adjust_available_moves(
                     .head(entity)
                     .expect("a selected entity should exist in the grid map");
 
-                if active_curio.is_some()
-                    && selected_action.is_some()
+                if selected_action.is_some()
                     && ui_focus
                         .map(|focused_entity| grid_uis.contains(focused_entity))
                         .unwrap_or(true)

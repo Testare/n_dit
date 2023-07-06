@@ -11,13 +11,15 @@ use crate::card::{
 use crate::node::{AccessPoint, Curio};
 use crate::player::Player;
 use crate::prelude::*;
+use crate::{OpResult, OpSubtype};
 
 const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum NodeOp {
     PerformCurioAction {
         action: Entity,
+        curio: Option<Entity>,
         target: UVec2,
     },
     MoveActiveCurio {
@@ -34,6 +36,23 @@ pub enum NodeOp {
         access_point_id: Entity,
     },
     ReadyToGo,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum NodeOpError {
+    NoActiveCurio,
+    NoAccessPoint,
+    NoSuchAction,
+    NoSuchCard,
+    InvalidTarget,
+    PrereqsNotSatisfied,
+    OutOfRange,
+    InternalError,
+}
+
+impl OpSubtype for NodeOp {
+    type Error = NodeOpError;
+    type Metadata = ();
 }
 
 #[derive(WorldQuery)]
@@ -73,8 +92,9 @@ pub fn curio_ops(
         ),
         With<Action>,
     >,
+    mut ev_results: EventWriter<OpResult<NodeOp>>,
 ) {
-    for Op { op, player } in ops.into_iter() {
+    for fullop @ Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
             let (mut grid, current_turn, mut active_curio) = nodes.get_mut(**node).ok()?;
             if **player_team != **current_turn {
@@ -101,7 +121,7 @@ pub fn curio_ops(
                     }
                 },
                 NodeOp::MoveActiveCurio { dir } => {
-                    active_curio.and_then(|active_curio_id| {
+                    let result = active_curio.and_then(|active_curio_id| {
                         let mut curio_q = curios.get_mut(active_curio_id).ok()?;
                         debug_assert!(!**curio_q.tapped, "a tapped curio was active");
                         let movement_speed = **curio_q.movement_speed?;
@@ -152,37 +172,56 @@ pub fn curio_ops(
                         }
                         Some(())
                     });
+                    // TODO use actual results
+                    ev_results.send(OpResult::new(
+                        fullop,
+                        result.ok_or(NodeOpError::InternalError),
+                    ));
                 },
                 NodeOp::PerformCurioAction {
                     action: action_id,
+                    curio,
                     target,
                 } => {
-                    active_curio.and_then(|active_curio_id| {
-                        let mut curio_q = get_assert_mut!(active_curio_id, curios)?;
-                        if !curio_q.actions?.contains(action_id) {
-                            return None;
-                        }
-
-                        let (effect, range, prereqs) = get_assert!(*action_id, actions)?;
-                        if let Some(range) = range {
-                            if !range.in_range(&grid, active_curio_id, *target) {
-                                return None;
+                    if active_curio.is_some() && curio.is_some() && **active_curio != *curio {
+                        return None; // NodeOpError::CurioMismatch
+                    }
+                    let node_op_result = active_curio
+                        .or(*curio)
+                        .ok_or(NodeOpError::NoActiveCurio)
+                        .and_then(|curio_id| {
+                            let mut curio_q = get_assert_mut!(curio_id, curios)
+                                .ok_or(NodeOpError::InternalError)?;
+                            if !curio_q
+                                .actions
+                                .ok_or(NodeOpError::NoSuchAction)?
+                                .contains(action_id)
+                            {
+                                return Err(NodeOpError::NoSuchAction);
                             }
-                        }
-                        if let Some(Prereqs(prereqs)) = prereqs {
-                            for prereq in prereqs {
-                                if !prereq.satisfied(&grid, active_curio_id, *target) {
-                                    return None;
+
+                            let (effect, range, prereqs) = get_assert!(*action_id, actions)
+                                .ok_or(NodeOpError::InternalError)?;
+                            if let Some(range) = range {
+                                if !range.in_range(&grid, curio_id, *target) {
+                                    return Err(NodeOpError::OutOfRange);
                                 }
                             }
-                        }
-                        if let Some(effect) = effect {
-                            effect.apply_effect(&mut grid, active_curio_id, *target);
-                        }
-                        **curio_q.tapped = true;
-                        **active_curio = None;
-                        Some(())
-                    });
+                            if let Some(Prereqs(prereqs)) = prereqs {
+                                for prereq in prereqs {
+                                    if !prereq.satisfied(&grid, curio_id, *target) {
+                                        return Err(NodeOpError::PrereqsNotSatisfied);
+                                    }
+                                }
+                            }
+                            if let Some(effect) = effect {
+                                effect.apply_effect(&mut grid, curio_id, *target);
+                            }
+                            **curio_q.tapped = true;
+                            **active_curio = None;
+                            Ok(())
+                        });
+                    ev_results.send(OpResult::new(fullop, node_op_result));
                 },
                 _ => {},
             }

@@ -28,10 +28,32 @@ pub enum NDitError {
     },
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Op<O> {
     pub op: O,
     pub player: Entity,
+}
+
+pub trait OpSubtype: Clone {
+    type Metadata;
+    type Error;
+}
+
+#[derive(Clone, Debug, getset::Getters)]
+pub struct OpResult<O: OpSubtype> {
+    #[getset(get = "pub")]
+    source: Op<O>,
+    #[getset(get = "pub")]
+    result: Result<O::Metadata, O::Error>,
+}
+
+impl<O: OpSubtype> OpResult<O> {
+    fn new(source: &Op<O>, result: Result<O::Metadata, O::Error>) -> Self {
+        OpResult {
+            source: source.clone(),
+            result,
+        }
+    }
 }
 
 impl<O> Op<O> {
@@ -53,6 +75,7 @@ pub struct NDitCorePlugin;
 impl Plugin for NDitCorePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Op<node::NodeOp>>()
+            .add_event::<OpResult<node::NodeOp>>()
             .configure_sets((
                 NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
                 NDitCoreSet::ProcessInputs

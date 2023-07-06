@@ -10,7 +10,7 @@ use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
 use game_core::node::{AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
 use game_core::player::Player;
-use game_core::NDitCoreSet;
+use game_core::{NDitCoreSet, OpResult};
 pub use scroll::Scroll2D;
 
 use super::{
@@ -95,7 +95,7 @@ impl NodeUi for GridUi {
 }
 
 fn adjust_node_cursor_when_curio_moves(
-    mut ev_op: EventReader<Op<NodeOp>>,
+    mut ev_op_result: EventReader<OpResult<NodeOp>>,
     nodes: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
     mut players: Query<
         (
@@ -107,28 +107,43 @@ fn adjust_node_cursor_when_curio_moves(
         With<Player>,
     >,
 ) {
-    for op in ev_op.iter() {
-        if let Op {
-            player,
-            op: NodeOp::MoveActiveCurio { .. },
-        } = op
-        {
-            get_assert_mut!(*player, players, |(
-                node,
-                mut node_cursor,
-                selected_entity,
-                selected_action,
-            )| {
-                let (grid, active_curio) = get_assert!(**node, nodes)?;
-                let active_curio = (**active_curio)?;
-                node_cursor.adjust_to(
-                    grid.head(active_curio)?,
+    for op_result in ev_op_result.iter() {
+        if op_result.result().is_err() {
+            continue;
+        }
+        match op_result.source().op() {
+            NodeOp::MoveActiveCurio { .. } => {
+                get_assert_mut!(op_result.source().player(), players, |(
+                    node,
+                    mut node_cursor,
                     selected_entity,
                     selected_action,
-                    grid,
-                );
-                Some(())
-            });
+                )| {
+                    let (grid, active_curio) = get_assert!(**node, nodes)?;
+                    let active_curio = (**active_curio)?;
+                    node_cursor.adjust_to(
+                        grid.head(active_curio)?,
+                        selected_entity,
+                        selected_action,
+                        grid,
+                    );
+                    Some(())
+                });
+            },
+            NodeOp::PerformCurioAction { .. } => {
+                get_assert_mut!(op_result.source().player(), players, |(
+                    node,
+                    mut node_cursor,
+                    selected_entity,
+                    selected_action,
+                )| {
+                    let (grid, _) = get_assert!(**node, nodes)?;
+                    let cursor_pt = **node_cursor;
+                    node_cursor.adjust_to(cursor_pt, selected_entity, selected_action, grid);
+                    Some(())
+                });
+            },
+            _ => {},
         }
     }
 }

@@ -109,14 +109,11 @@ pub fn kb_grid(
 
                     match named_input {
                         NamedInput::Direction(dir) => {
-                            if is_controlling_active_curio {
-                                if selected_action.is_none() {
-                                    ev_node_op
-                                        .send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
-                                } else {
-                                    // Do not adjust selected entity/action
-                                    **cursor = (**cursor + dir).min(grid.index_bounds());
-                                }
+                            if selected_action.is_some() {
+                                // Do not adjust selected entity/action
+                                **cursor = (**cursor + dir).min(grid.index_bounds());
+                            } else if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
                             } else {
                                 let next_cursor_pt = (**cursor + dir).min(grid.index_bounds());
                                 cursor.adjust_to(
@@ -128,52 +125,54 @@ pub fn kb_grid(
                             }
                         },
                         NamedInput::Activate => {
-                            if is_controlling_active_curio {
-                                if let Some(selected_action_index) = **selected_action {
-                                    selected_entity.of(&node_pieces).and_then(|(actions,)| {
-                                        let action = *actions?.get(selected_action_index)?;
-                                        ev_node_op.send(Op::new(
-                                            player,
-                                            NodeOp::PerformCurioAction {
-                                                action,
-                                                target: **cursor,
-                                            },
-                                        ));
-                                        Some(())
-                                    });
-                                } else {
-                                    selected_entity.of(&node_pieces).and_then(|(actions,)| {
-                                        match actions.map(|actions|(actions.len(), actions)) {
-                                            None | Some((0, _)) => {
+                            if let Some(selected_action_index) = **selected_action {
+                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                    let action = *actions?.get(selected_action_index)?;
+                                    ev_node_op.send(Op::new(
+                                        player,
+                                        NodeOp::PerformCurioAction {
+                                            action,
+                                            curio: **selected_entity,
+                                            target: **cursor,
+                                        },
+                                    ));
+                                    Some(())
+                                });
+                            } else if is_controlling_active_curio {
+                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                    match actions.map(|actions| (actions.len(), actions)) {
+                                        None | Some((0, _)) => {
+                                            ev_node_op.send(Op::new(
+                                                player,
+                                                NodeOp::PerformCurioAction {
+                                                    action: **no_op_action,
+                                                    curio: **selected_entity,
+                                                    target: default(),
+                                                },
+                                            ));
+                                        },
+                                        Some((1, actions)) => {
+                                            let action = *actions.0.get(0).expect(
+                                                "if the len is 1, there should be an action at 0",
+                                            );
+                                            if rangeless_actions.contains(action) {
                                                 ev_node_op.send(Op::new(
                                                     player,
                                                     NodeOp::PerformCurioAction {
-                                                        action: **no_op_action,
+                                                        action,
+                                                        curio: **selected_entity,
                                                         target: default(),
                                                     },
                                                 ));
-                                            },
-                                            Some((1, actions)) => {
-                                                let action = *actions.0.get(0).expect("if the len is 1, there should be an action at 0");
-                                                if rangeless_actions.contains(action) {
-                                                    ev_node_op.send(Op::new(
-                                                        player,
-                                                        NodeOp::PerformCurioAction {
-                                                            action,
-                                                            target: default(),
-                                                        },
-                                                    ));
-                                                } else {
-                                                    **selected_action = Some(0);
-                                                }
-                                            },
-                                            _ => {}
-                                        }
-                                        Some(())
-
-                                    });
-                                    // If the curio has an action menu, focus on it
-                                }
+                                            } else {
+                                                **selected_action = Some(0);
+                                            }
+                                        },
+                                        _ => {},
+                                    }
+                                    Some(())
+                                });
+                                // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
                                     .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
@@ -366,6 +365,7 @@ pub fn kb_action_menu(
                                             player_id,
                                             NodeOp::PerformCurioAction {
                                                 action: *action,
+                                                curio: **selected_entity,
                                                 target: default(),
                                             },
                                         ))
