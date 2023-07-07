@@ -7,6 +7,7 @@ use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 
 use super::TerminalWindow;
+use crate::charmie::CharacterMapImage;
 use crate::term::prelude::*;
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
@@ -21,9 +22,10 @@ pub enum RenderTtySet {
     RenderToTerminal,
 }
 
-#[derive(Clone, Component, FromReflect, Reflect)]
+#[derive(Clone, Component)]
 pub struct TerminalRendering {
     rendering: Vec<String>,
+    rendering1: CharacterMapImage,
     last_update: u32,
 }
 
@@ -36,17 +38,26 @@ pub struct RenderTtyPlugin;
 impl TerminalRendering {
     pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
         TerminalRendering {
+            rendering1: rendering.clone().into(),
             rendering,
-            last_update,
+            last_update, // Remove last update. We can have another component and a system track this
         }
     }
 
+    pub fn update_charmie(&mut self, new_rendering: CharacterMapImage, frame_count: u32) {
+        self.rendering = (&self.rendering1).into();
+        self.rendering1 = new_rendering.clone();
+        self.last_update = frame_count;
+    }
+
     pub fn update(&mut self, new_rendering: Vec<String>, frame_count: u32) {
-        self.rendering = new_rendering;
+        self.rendering1 = new_rendering.clone().into();
+        self.rendering = (&self.rendering1).into();
         self.last_update = frame_count;
     }
 
     fn update_from(&mut self, tr: &TerminalRendering) {
+        self.rendering1 = tr.rendering1.clone();
         self.rendering = tr.rendering.clone();
         self.last_update = tr.last_update;
     }
@@ -55,8 +66,13 @@ impl TerminalRendering {
         &self.rendering
     }
 
+    pub fn charmie(&self) -> &CharacterMapImage {
+        &self.rendering1
+    }
+
     pub fn clear(&mut self) {
         self.last_update = 0;
+        self.rendering1 = CharacterMapImage::new();
         self.rendering = Vec::new();
     }
 }
@@ -116,8 +132,11 @@ pub fn write_rendering_to_terminal(
             return;
         }
 
-        let render_result =
-            render_with_cache(&tr.rendering, &render_cache.rendering, window.height());
+        let render_result = render_with_cache(
+            &Into::<Vec<String>>::into(&tr.rendering1)[..],
+            &Into::<Vec<String>>::into(&render_cache.rendering1)[..],
+            window.height(),
+        );
         if let Result::Err(err) = render_result {
             log::error!("Error occurred in rendering: {:?}", err);
             return;
@@ -178,6 +197,7 @@ impl Default for TerminalRendering {
     fn default() -> Self {
         TerminalRendering {
             rendering: Vec::new(),
+            rendering1: CharacterMapImage::default(),
             last_update: 0,
         }
     }

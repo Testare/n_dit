@@ -1,5 +1,6 @@
 use std::cmp;
 
+use bevy::core::FrameCount;
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use itertools::Itertools;
@@ -9,24 +10,33 @@ use super::super::NodeCursor;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
+use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
-use crate::term::render::UpdateRendering;
+use crate::term::render::{TerminalRendering, UpdateRendering};
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
 
 pub fn render_grid_system(
-    mut commands: Commands,
     node_data: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
     node_pieces: Query<NodePieceQ>,
     players: Query<PlayerUiQ, With<Player>>,
     glyph_registry: Res<GlyphRegistry>,
     draw_config: Res<DrawConfiguration>,
-    render_grid_q: Query<(Entity, &CalculatedSizeTty, &Scroll2D, &ForPlayer), With<GridUi>>,
+    mut render_grid_q: Query<
+        (
+            &CalculatedSizeTty,
+            &Scroll2D,
+            &ForPlayer,
+            &mut TerminalRendering,
+        ),
+        With<GridUi>,
+    >,
+    frame_count: Res<FrameCount>,
 ) {
-    for (render_grid_id, size, scroll, ForPlayer(player)) in render_grid_q.iter() {
+    for (size, scroll, ForPlayer(player), mut rendering) in render_grid_q.iter_mut() {
         if let Ok(player_ui_q) = players.get(*player) {
             if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
                 let grid_rendering = render_grid(
@@ -40,10 +50,7 @@ pub fn render_grid_system(
                     &draw_config,
                 );
 
-                commands
-                    .get_entity(render_grid_id)
-                    .unwrap()
-                    .update_rendering(grid_rendering);
+                rendering.update_charmie(grid_rendering, frame_count.0);
             }
         }
     }
@@ -58,7 +65,7 @@ fn render_grid(
     node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
     draw_config: &DrawConfiguration,
-) -> Vec<String> {
+) -> CharacterMapImage {
     // TODO Break DrawConfiguration down into parts and resources
 
     let node_cursor = player_q.node_cursor;
@@ -78,8 +85,6 @@ fn render_grid(
         )
     });
 
-    let str_width = width * 3 + 3;
-
     let x_start = (scroll.x / 3) as usize;
     // The highest x value to be on screen, in character columns
     let x2 = cmp::min(width * 3 + 1, scroll.x as usize + size.width());
@@ -92,10 +97,10 @@ fn render_grid(
     let skip_y = (scroll.y % 2) as usize;
     let keep_last_space = skip_y + size.height() % 2 == 0;
 
-    let (border_lines, mut space_lines): (Vec<String>, Vec<String>) = (y_start..=y_end)
+    let (border_lines, mut space_lines): (Vec<CharmieRow>, Vec<CharmieRow>) = (y_start..=y_end)
         .map(|y| {
-            let mut border_line = String::with_capacity(str_width);
-            let mut space_line = String::with_capacity(str_width);
+            let mut border_line = CharmieRow::new();
+            let mut space_line = CharmieRow::new(); //String::with_capacity(str_width);
             let include_border = y != y_start || skip_y != 1;
             let include_space = y != height && (y != y_end || keep_last_space);
             for x in x_start..=x_end {
@@ -139,15 +144,13 @@ fn render_grid(
                             &border_x_range,
                             &border_y_range,
                         );
-                        border_line.push_str(
-                            pivot_format
-                                .apply(intersection_for_pivot(
-                                    &[left1, left2],
-                                    &[right1, right2],
-                                    &draw_config,
-                                ))
-                                .as_str(),
-                        );
+                        border_line.add_styled_text(pivot_format.apply(
+                            intersection_for_pivot(
+                                &[left1, left2],
+                                &[right1, right2],
+                                &draw_config,
+                            ),
+                        ));
                     }
                     if include_space {
                         // Add first vertical border
@@ -162,11 +165,9 @@ fn render_grid(
                             &border_x_range,
                             &(y..=y),
                         );
-                        space_line.push_str(
-                            border_style
-                                .apply(BorderType::of(left2, right2).vertical_border(&draw_config))
-                                .as_str(),
-                        );
+                        space_line.add_styled_text(border_style.apply(
+                            BorderType::of(left2, right2).vertical_border(&draw_config),
+                        ));
                     }
                 }
                 if render_half_space {
@@ -181,16 +182,14 @@ fn render_grid(
                             &(x..=x),
                             &border_y_range,
                         );
-                        border_line.push_str(
-                            border_style
-                                .apply(
-                                    BorderType::of(right1, right2)
-                                        .horizontal_border(&draw_config)
-                                        .chars()
-                                        .next()
-                                        .unwrap(),
-                                )
-                                .as_str(),
+                        border_line.add_styled_text(
+                            border_style.apply(
+                                BorderType::of(right1, right2)
+                                    .horizontal_border(&draw_config)
+                                    .chars()
+                                    .next()
+                                    .unwrap(),
+                            ),
                         );
                     }
                     if include_space {
@@ -206,10 +205,9 @@ fn render_grid(
                                 }
                             });
                         if square.chars().count() == 1 {
-                            space_line.push_str(
+                            space_line.add_styled_text(
                                 space_style
-                                    .apply(square_style.apply(draw_config.half_char()))
-                                    .as_str(),
+                                    .apply(square_style.apply(draw_config.half_char())),
                             );
                         } else {
                             // Whether we are getting the left half or the right half
@@ -219,8 +217,8 @@ fn render_grid(
                                 .nth(char_index)
                                 .expect("there should be at least 2 characters");
 
-                            space_line.push_str(
-                                space_style.apply(square_style.apply(half_char)).as_str(),
+                            space_line.add_styled_text(
+                                space_style.apply(square_style.apply(half_char)),
                             );
                         }
                     }
@@ -236,13 +234,9 @@ fn render_grid(
                             &(x..=x),
                             &border_y_range,
                         );
-                        border_line.push_str(
-                            border_style
-                                .apply(
-                                    BorderType::of(right1, right2).horizontal_border(&draw_config),
-                                )
-                                .as_str(),
-                        );
+                        border_line.add_styled_text(border_style.apply(
+                            BorderType::of(right1, right2).horizontal_border(&draw_config),
+                        ));
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
@@ -258,7 +252,8 @@ fn render_grid(
                             });
                         // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                         // TODO Instead of applying two styles, compose the styles then apply
-                        space_line.push_str(space_style.apply(square_style.apply(square)).as_str());
+                        space_line
+                            .add_styled_text(space_style.apply(square_style.apply(square)));
                     }
                 }
             }

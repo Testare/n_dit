@@ -1,3 +1,5 @@
+use bevy::core::FrameCount;
+use crossterm::style::Stylize;
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::player::{ForPlayer, Player};
@@ -5,6 +7,7 @@ use game_core::NDitCoreSet;
 use pad::PadStr;
 use taffy::style::Dimension;
 
+use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{
@@ -12,7 +15,7 @@ use crate::term::layout::{
 };
 use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering, UpdateRendering};
 use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Debug, Default)]
@@ -282,9 +285,8 @@ impl MenuUiCardSelection {
     /// System for rendering a simple submenu
     fn render_system(
         access_points: Query<Ref<AccessPoint>>,
-        mut commands: Commands,
         cards: Query<&Card>,
-        players: Query<(&Deck, &SelectedEntity, &PlayedCards), With<Player>>,
+        players: Query<(&Deck, &SelectedEntity, &PlayedCards, &UiFocus), With<Player>>,
         mut ui: Query<(
             Entity,
             &mut Self,
@@ -292,18 +294,27 @@ impl MenuUiCardSelection {
             Ref<CalculatedSizeTty>,
             &ForPlayer,
             Ref<SelectedItem>,
+            &mut TerminalRendering,
         )>,
+        frame_count: Res<FrameCount>,
     ) {
-        for (id, mut card_selection, mut is_padded, size, ForPlayer(player), selected_item) in
-            ui.iter_mut()
+        for (
+            id,
+            mut card_selection,
+            mut is_padded,
+            size,
+            ForPlayer(player),
+            selected_item,
+            mut tr,
+        ) in ui.iter_mut()
         {
-            let rendering = players
+            let mut rendering = players
                 .get(*player)
                 .ok()
-                .and_then(|(player_deck, selected_entity, played_cards)| {
+                .and_then(|(player_deck, selected_entity, played_cards, focus)| {
                     let access_point = selected_entity.of(&access_points)?;
 
-                    let cards: Vec<String> = player_deck
+                    let cards: Vec<CharmieRow> = player_deck
                         .cards_with_count()
                         .enumerate()
                         .map(|(num, (id, _))| {
@@ -316,18 +327,17 @@ impl MenuUiCardSelection {
                                 .unwrap_or("NotACard");
                             let width =
                                 size.width() - 4 - if is_selected || is_hover { 1 } else { 0 };
-                            format!(
-                                "{selection_indicator}{name} {count}",
-                                name = name.with_exact_width(width),
-                                count = remaining_count,
-                                selection_indicator = if is_hover {
-                                    "▷"
-                                } else if is_selected {
-                                    "▶"
-                                } else {
-                                    ""
-                                },
-                            )
+                            let mut row = CharmieRow::new();
+                            if is_hover {
+                                row.add_styled_text("▷".green());
+                            } else if is_selected {
+                                row.add_plain_text("▶");
+                            }
+                            row.add_plain_text(name) //.with_exact_width(width))
+                                .fit_to_len(size.width32() - 4)
+                                .add_plain_text(" ")
+                                .add_plain_text(remaining_count.to_string());
+                            row
                         })
                         .collect();
 
@@ -351,7 +361,7 @@ impl MenuUiCardSelection {
                     .min((player_deck.different_cards_len() + 1 + padding).saturating_sub(height));
                     let no_scroll_bar_needed = height > cards.len();
                     let scroll_bar = (0..height).map(|i| {
-                        if no_scroll_bar_needed {
+                        CharmieRow::from(if no_scroll_bar_needed {
                             " "
                         } else if i <= 1 {
                             "↑"
@@ -359,24 +369,29 @@ impl MenuUiCardSelection {
                             "↓"
                         } else {
                             "│"
-                        }
+                        })
                     });
 
-                    let mut cards_menu = vec![format!("{0:═<1$}", "═Cards", size.width())];
+                    let mut cards_menu = CharacterMapImage::new();
+                    let title_bar = CharmieRow::new()
+                        .with_plain_text(format!("{0:═<1$}", "═Cards", size.width()).as_str());
+                    cards_menu.push_row(title_bar);
                     for (scroll_bar, card) in scroll_bar.zip(
                         cards
                             .into_iter()
                             .skip(card_selection.scroll)
                             .take(size.height() - 1 - padding),
                     ) {
-                        cards_menu.push(format!("{}{}", scroll_bar, card));
+                        let mut row = scroll_bar;
+                        row += card;
+                        cards_menu.push_row(row);
+                        // cards_menu.push(format!("{}{}", scroll_bar, card));
                     }
                     Some(cards_menu)
                 })
                 .unwrap_or_default();
-            commands
-                .entity(id)
-                .update_rendering(rendering.fit_to_size(&size));
+            rendering.fit_to_size(size.width32(), size.height32());
+            tr.update_charmie(rendering, frame_count.0);
         }
     }
 }

@@ -10,6 +10,7 @@ use crate::term::node_ui::{
     AvailableActionTargets, AvailableMoves, NodeUi, SelectedAction, SelectedEntity,
 };
 use crate::term::prelude::*;
+use crate::term::render::TerminalRendering;
 use crate::term::TerminalWindow;
 
 pub fn create_node_ui(
@@ -33,6 +34,7 @@ pub fn create_node_ui(
                     }),
                     Name::new("Node UI Root"),
                     crate::term::layout::LayoutRoot,
+                    TerminalRendering::default(),
                 ))
                 .with_children(|root| {
                     root.spawn(super::titlebar_ui::TitleBarUi::bundle(*player, &node_q));

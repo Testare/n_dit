@@ -146,7 +146,10 @@ impl UiFormat {
         UiFormat(fg, bg, attr)
     }
 
-    pub fn apply<D: Display, S: Stylize<Styled = StyledContent<D>>>(&self, s: S) -> String {
+    pub fn apply<D: Display, S: Stylize<Styled = StyledContent<D>>>(
+        &self,
+        s: S,
+    ) -> StyledContent<D> {
         let mut styled = s.stylize();
         if let Some(fg) = self.0 {
             styled = styled.with(fg);
@@ -157,7 +160,7 @@ impl UiFormat {
         if let Some(attr) = self.2 {
             styled = styled.attribute(attr);
         }
-        styled.to_string()
+        styled
     }
 }
 

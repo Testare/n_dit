@@ -3,11 +3,11 @@ use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
-use unicode_width::UnicodeWidthStr;
 
 use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering};
 use super::TerminalWindow;
+use crate::charmie::CharacterMapImage;
 use crate::term::prelude::*;
 
 #[derive(Default)]
@@ -315,7 +315,6 @@ fn calculate_layouts(
 }
 
 pub fn render_layouts(
-    mut commands: Commands,
     frame_count: Res<FrameCount>,
     mut render_layouts: Query<
         (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),
@@ -332,38 +331,14 @@ pub fn render_layouts(
                 .collect();
         leaves.sort_by_cached_key(|leaf_info| (leaf_info.1.x as u32, leaf_info.1.y as u32));
 
-        let root_width = root_size.width32() as usize;
-        let mut rows = vec![String::default(); root_size.height32() as usize];
+        let mut charmie = CharacterMapImage::new();
         for leaf in leaves {
-            let x_offset = leaf.1.x as usize;
-            let y_offset = leaf.1.y as usize;
-            for (i, child_row) in leaf.0.rendering().iter().enumerate() {
-                if i + y_offset >= root_size.height() {
-                    break;
-                }
-                let row = &mut rows[i + y_offset];
-                let row_len = UnicodeWidthStr::width(row.as_str());
-                let new_row_text = format!(
-                    "{current_row}{space:padding$}{child_row}",
-                    current_row = row,
-                    space = "",
-                    padding = x_offset - row_len,
-                    child_row = child_row
-                );
-                *row = new_row_text;
-            }
+            charmie = charmie.draw(leaf.0.charmie(), leaf.1.x, leaf.1.y, Default::default());
         }
-        let padded_rendering = rows
-            .into_iter()
-            .map(|row| row.pad_to_width(root_width))
-            .collect();
+        charmie.fit_to_size(root_size.width32(), root_size.height32());
 
         if let Some(mut rendering) = rendering {
-            rendering.update(padded_rendering, frame_count.0);
-        } else {
-            log::debug!("Adding layout rendering");
-            let rendering = TerminalRendering::new(padded_rendering, frame_count.0);
-            commands.get_entity(root_id).unwrap().insert(rendering);
+            rendering.update_charmie(charmie, frame_count.0);
         }
     }
 }

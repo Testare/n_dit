@@ -21,8 +21,8 @@ pub struct CharmieColor {
     basic: Option<String>,
 }
 
-#[derive(Clone, Debug, Default)]
-struct CharacterMapImage {
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
 }
 
@@ -61,9 +61,16 @@ impl CharacterMapImage {
         }
         for (row_index, row) in map.rows.iter().enumerate() {
             let row_index = row_index + y as usize;
-            result.rows[row_index] = self.rows[row_index].draw(row, x, bcfb);
+            result.rows[row_index] = result.rows[row_index].draw(row, x, bcfb);
         }
         result
+    }
+
+    pub fn fit_to_size(&mut self, width: u32, height: u32) {
+        self.rows.truncate(height as usize);
+        for row in self.rows.iter_mut() {
+            row.pad_to(width);
+        }
     }
 
     pub fn clip(
@@ -84,29 +91,47 @@ impl CharacterMapImage {
                 .collect(),
         }
     }
+
+    pub fn push_row(&mut self, row: CharmieRow) -> &mut Self {
+        self.rows.push(row);
+        self
+    }
 }
 
-impl From<CharacterMapImage> for Vec<String> {
-    fn from(value: CharacterMapImage) -> Self {
+impl From<&CharacterMapImage> for Vec<String> {
+    fn from(value: &CharacterMapImage) -> Self {
         value.rows.iter().map(ToString::to_string).collect()
     }
 }
 
-impl FromIterator<CharmieRow> for CharacterMapImage {
-    fn from_iter<T: IntoIterator<Item = CharmieRow>>(iter: T) -> Self {
+impl From<Vec<String>> for CharacterMapImage {
+    fn from(value: Vec<String>) -> Self {
         CharacterMapImage {
-            rows: iter.into_iter().collect(),
+            rows: value.into_iter().map(|row| row.into()).collect(),
+        }
+    }
+}
+
+impl<T: Into<CharmieRow>> FromIterator<T> for CharacterMapImage {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        CharacterMapImage {
+            rows: iter.into_iter().map(|row| row.into()).collect(),
         }
     }
 }
 
 /// Represents a single row of a charmie image
 #[derive(Debug, Default, Clone, PartialEq)]
-struct CharmieRow {
+pub struct CharmieRow {
     segments: Vec<CharmieSegment>,
+    // cache: OnceCell<String>, Cow?
 }
 
 impl CharmieRow {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn len(&self) -> u32 {
         self.segments
             .iter()
@@ -123,6 +148,11 @@ impl CharmieRow {
         } else {
             self.segments.push(CharmieSegment::Empty { len });
         }
+        self
+    }
+
+    pub fn add_plain_text<S: Borrow<str>>(&mut self, text: S) -> &mut Self {
+        self.add_text(text, &ContentStyle::new());
         self
     }
 
@@ -152,6 +182,11 @@ impl CharmieRow {
         self
     }
 
+    pub fn with_plain_text(mut self, text: &str) -> Self {
+        self.add_plain_text(text);
+        self
+    }
+
     pub fn with_text(mut self, text: &str, text_format: &ContentStyle) -> Self {
         self.add_text(text, text_format);
         self
@@ -162,8 +197,25 @@ impl CharmieRow {
         self
     }
 
+    pub fn fit_to_len(&mut self, len: u32) -> &mut Self {
+        let self_len = self.len();
+        if self_len > len {
+            *self = self.clip(0, len, BrokenCharacterFillBehavior::Gap);
+        } else if self_len < len {
+            self.add_gap(len - self_len);
+        }
+        self
+    }
+
+    pub fn pad_to(&mut self, len: u32) -> &mut Self {
+        let self_len = self.len();
+        if self_len < len {
+            self.add_gap(len - self_len);
+        }
+        self
+    }
+
     pub fn draw(&self, row: &CharmieRow, x: u32, bcfb: BrokenCharacterFillBehavior) -> Self {
-        println!("Drawing {:?} to {:?}", row, self);
         let mut result = if x > 0 {
             self.clip(0, x, bcfb)
         } else {
@@ -217,15 +269,16 @@ impl CharmieRow {
                         } else {
                             let skip_start = clip_start.saturating_sub(seg_start);
                             let take_until = clip_end.saturating_sub(seg_start).min(segment.len());
-                            let len = take_until - skip_start;
                             match segment {
                                 CharmieSegment::Empty { .. } => {
-                                    row += &CharmieSegment::Empty { len }
+                                    row += &CharmieSegment::Empty {
+                                        len: take_until - skip_start,
+                                    }
                                 },
                                 CharmieSegment::Textual { text, style } => {
                                     let text: String = text
                                         .chars()
-                                        .scan(seg_start, |index, ch| {
+                                        .scan(0, |index, ch| {
                                             let current_idx = *index;
                                             let char_width = ch.width().unwrap_or(0) as u32;
                                             let next_idx = current_idx + char_width;
@@ -241,9 +294,9 @@ impl CharmieRow {
                                                 if current_idx + 1 == skip_start {
                                                     // Full width character sliced in half at the beginning
                                                     match bcfb {
-                                                        BrokenCharacterFillBehavior::Char(fill_ch) => {
-                                                            return Some(Some(fill_ch))
-                                                        },
+                                                        BrokenCharacterFillBehavior::Char(
+                                                            fill_ch,
+                                                        ) => return Some(Some(fill_ch)),
                                                         BrokenCharacterFillBehavior::Gap => {
                                                             row +=
                                                                 &CharmieSegment::Empty { len: 1 };
@@ -253,9 +306,9 @@ impl CharmieRow {
                                                 } else if current_idx + 1 == take_until {
                                                     // Full width character sliced in half at the end
                                                     match bcfb {
-                                                        BrokenCharacterFillBehavior::Char(fill_ch) => {
-                                                            return Some(Some(fill_ch))
-                                                        },
+                                                        BrokenCharacterFillBehavior::Char(
+                                                            fill_ch,
+                                                        ) => return Some(Some(fill_ch)),
                                                         BrokenCharacterFillBehavior::Gap => {
                                                             return None;
                                                         },
@@ -266,6 +319,7 @@ impl CharmieRow {
                                         })
                                         .filter_map(|c| c)
                                         .collect();
+
                                     row += CharmieSegment::Textual {
                                         text,
                                         style: *style,
@@ -307,6 +361,14 @@ impl From<String> for CharmieRow {
     }
 }
 
+impl From<&str> for CharmieRow {
+    fn from(value: &str) -> Self {
+        CharmieRow {
+            segments: vec![value.into()],
+        }
+    }
+}
+
 impl AddAssign<&str> for CharmieRow {
     fn add_assign(&mut self, rhs: &str) {
         self.add_text(rhs, &Default::default());
@@ -321,6 +383,14 @@ impl<D: Display> AddAssign<StyledContent<D>> for CharmieRow {
 
 impl AddAssign<&CharmieRow> for CharmieRow {
     fn add_assign(&mut self, rhs: &CharmieRow) {
+        for segment in rhs.segments.iter() {
+            *self += segment;
+        }
+    }
+}
+
+impl AddAssign<CharmieRow> for CharmieRow {
+    fn add_assign(&mut self, rhs: CharmieRow) {
         for segment in rhs.segments.iter() {
             *self += segment;
         }
@@ -394,6 +464,15 @@ impl From<String> for CharmieSegment {
     }
 }
 
+impl From<&str> for CharmieSegment {
+    fn from(value: &str) -> Self {
+        CharmieSegment::Textual {
+            text: value.into(),
+            style: Default::default(),
+        }
+    }
+}
+
 impl<D: Display> From<StyledContent<D>> for CharmieSegment {
     fn from(value: StyledContent<D>) -> Self {
         CharmieSegment::Textual {
@@ -405,6 +484,8 @@ impl<D: Display> From<StyledContent<D>> for CharmieSegment {
 
 #[cfg(test)]
 mod tests {
+    use crossterm::style::Stylize;
+
     use super::*;
 
     #[test]
@@ -419,6 +500,24 @@ mod tests {
 
         let clipped = row.clip(1, 7, BrokenCharacterFillBehavior::Gap);
         assert_eq!(clipped.to_string(), " Hello"); // Gap is not added to the end, but at the beginning
+    }
+
+    #[test]
+    fn test_clipping_charmie_row_with_two_segments() {
+        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+        let mut expected = "Hello".green().to_string();
+        expected.push_str("There!");
+        assert_eq!(row.to_string(), expected); // Gap is not added to the end, but at the beginning
+
+        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+        let clipped = row.clip(0, 10, BrokenCharacterFillBehavior::Gap);
+        let mut expected = "Hello".green().to_string();
+        expected.push_str("There");
+        assert_eq!(clipped.to_string(), expected); // Gap is not added to the end, but at the beginning
+
+        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+        let clipped = row.clip(6, 4, BrokenCharacterFillBehavior::Gap);
+        assert_eq!(clipped.to_string(), "here"); // Gap is not added to the end, but at the beginning
     }
 
     #[test]
