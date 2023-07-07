@@ -24,8 +24,8 @@ pub enum RenderTtySet {
 
 #[derive(Clone, Component)]
 pub struct TerminalRendering {
-    rendering: Vec<String>,
-    rendering1: CharacterMapImage,
+    render_cache: Vec<String>,
+    rendering: CharacterMapImage,
     last_update: u32,
 }
 
@@ -38,42 +38,42 @@ pub struct RenderTtyPlugin;
 impl TerminalRendering {
     pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
         TerminalRendering {
-            rendering1: rendering.clone().into(),
-            rendering,
+            rendering: rendering.clone().into(),
+            render_cache: rendering,
             last_update, // Remove last update. We can have another component and a system track this
         }
     }
 
     pub fn update_charmie(&mut self, new_rendering: CharacterMapImage, frame_count: u32) {
-        self.rendering = (&self.rendering1).into();
-        self.rendering1 = new_rendering.clone();
+        self.render_cache = (&self.rendering).into();
+        self.rendering = new_rendering.clone();
         self.last_update = frame_count;
     }
 
     pub fn update(&mut self, new_rendering: Vec<String>, frame_count: u32) {
-        self.rendering1 = new_rendering.clone().into();
-        self.rendering = (&self.rendering1).into();
+        self.rendering = new_rendering.clone().into();
+        self.render_cache = (&self.rendering).into();
         self.last_update = frame_count;
     }
 
     fn update_from(&mut self, tr: &TerminalRendering) {
-        self.rendering1 = tr.rendering1.clone();
         self.rendering = tr.rendering.clone();
+        self.render_cache = tr.render_cache.clone();
         self.last_update = tr.last_update;
     }
 
-    pub fn rendering(&self) -> &[String] {
-        &self.rendering
+    pub fn string_rendering(&self) -> &[String] {
+        &self.render_cache
     }
 
     pub fn charmie(&self) -> &CharacterMapImage {
-        &self.rendering1
+        &self.rendering
     }
 
     pub fn clear(&mut self) {
         self.last_update = 0;
-        self.rendering1 = CharacterMapImage::new();
-        self.rendering = Vec::new();
+        self.rendering = CharacterMapImage::new();
+        self.render_cache = Vec::new();
     }
 }
 
@@ -133,8 +133,8 @@ pub fn write_rendering_to_terminal(
         }
 
         let render_result = render_with_cache(
-            &Into::<Vec<String>>::into(&tr.rendering1)[..],
-            &Into::<Vec<String>>::into(&render_cache.rendering1)[..],
+            &Into::<Vec<String>>::into(&tr.rendering)[..],
+            &Into::<Vec<String>>::into(&render_cache.rendering)[..],
             window.height(),
         );
         if let Result::Err(err) = render_result {
@@ -196,8 +196,8 @@ fn render_with_cache(
 impl Default for TerminalRendering {
     fn default() -> Self {
         TerminalRendering {
-            rendering: Vec::new(),
-            rendering1: CharacterMapImage::default(),
+            render_cache: Vec::new(),
+            rendering: CharacterMapImage::default(),
             last_update: 0,
         }
     }
@@ -205,7 +205,7 @@ impl Default for TerminalRendering {
 
 impl PartialEq<TerminalRendering> for TerminalRendering {
     fn eq(&self, rhs: &TerminalRendering) -> bool {
-        self.rendering.iter().eq(rhs.rendering.iter())
+        self.render_cache.iter().eq(rhs.render_cache.iter())
     }
 }
 
@@ -245,7 +245,7 @@ impl EntityCommand for UpdateRenderCommand {
             .0;
         let mut entity = world.entity_mut(id);
         if let Some(mut tr) = entity.get_mut::<TerminalRendering>() {
-            if tr.rendering().iter().ne(self.0.iter()) {
+            if tr.string_rendering().iter().ne(self.0.iter()) {
                 tr.update(self.0, frame_count);
             }
         }
