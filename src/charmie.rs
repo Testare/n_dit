@@ -485,6 +485,7 @@ impl<D: Display> From<StyledContent<D>> for CharmieSegment {
 #[cfg(test)]
 mod tests {
     use crossterm::style::Stylize;
+    use test_log::test;
 
     use super::*;
 

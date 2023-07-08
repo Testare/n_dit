@@ -35,6 +35,10 @@ features = [
     "animation"
 ]
 
+[dev-dependencies]
+test-log = "0.2.12"
+env_logger = "*"
+
 # Use for "cargo flamegraph"
 # [profile.release]
 # debug = true
