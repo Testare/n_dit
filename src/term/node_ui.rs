@@ -64,8 +64,6 @@ impl Plugin for NodeUiPlugin {
                 (
                     inputs::kb_messages,
                     inputs::kb_grid,
-                    inputs::action_menu_on_focus.before(inputs::kb_action_menu),
-                    inputs::kb_action_menu,
                     inputs::kb_focus_cycle,
                     inputs::kb_ready,
                     inputs::kb_skirm_focus,

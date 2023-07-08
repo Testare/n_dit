@@ -1,19 +1,98 @@
-use bevy::ecs::system::SystemParam;
-use game_core::card::{Action, Actions};
-use game_core::node::NodePiece;
+use game_core::NDitCoreSet;
+use game_core::card::{Action, Actions, ActionRange};
+use game_core::node::{NodePiece, NodeOp};
 use game_core::player::{ForPlayer, Player};
+use taffy::style::Dimension;
 
-use super::{NodePieceQItem, SimpleSubmenu};
 use crate::term::input_event::{MouseButton, MouseEventKind};
-use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, UiFocusOnClick};
-use crate::term::node_ui::{SelectedAction, SelectedEntity};
-use crate::term::prelude::*;
+use crate::term::key_map::NamedInput;
+use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, UiFocusOnClick, StyleTty, FitToSize, UiFocus};
+use crate::term::node_ui::{SelectedAction, SelectedEntity, NodeUi, NodeUiQItem};
+use crate::term::{prelude::*, KeyMap, Submap};
+use crate::term::render::{UpdateRendering, RenderTtySet};
 
 #[derive(Component, Default, Debug)]
 pub struct MenuUiActions;
 
 impl MenuUiActions {
-    pub fn handle_layout_events(
+
+    pub fn kb_action_menu(
+        mut players: Query<
+            (
+                Entity,
+                &UiFocus,
+                &KeyMap,
+                &SelectedEntity,
+                &mut SelectedAction,
+            ),
+            With<Player>,
+        >,
+        node_pieces: Query<(&Actions,), With<NodePiece>>,
+        mut ev_keys: EventReader<KeyEvent>,
+        action_menu_uis: Query<(), With<MenuUiActions>>,
+        mut ev_node_op: EventWriter<Op<NodeOp>>,
+        rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+    ) {
+        for KeyEvent { code, modifiers } in ev_keys.iter() {
+            for (player_id, focus, key_map, selected_entity, mut selected_action) in players.iter_mut()
+            {
+                if (**focus)
+                    .map(|focused_ui| !action_menu_uis.contains(focused_ui))
+                    .unwrap_or(true)
+                {
+                    continue;
+                }
+
+                key_map
+                    .named_input_for_key(Submap::Node, *code, *modifiers)
+                    .and_then(|named_input| {
+                        if let Some((actions,)) = selected_entity.of(&node_pieces) {
+                            match named_input {
+                                NamedInput::Direction(dir) => {
+                                    let actions_bound = actions.len();
+                                    let current_action = selected_action.unwrap_or(0);
+                                    let next_action = Some(
+                                        (current_action
+                                            + match dir {
+                                                Compass::North => actions_bound - 1,
+                                                Compass::South => 1,
+                                                _ => 0,
+                                            })
+                                            % actions_bound,
+                                    );
+                                    if **selected_action != next_action {
+                                        **selected_action = next_action;
+                                    }
+                                },
+                                NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
+                                    **selected_action = None;
+                                },
+                                NamedInput::Activate => {
+                                    if let Some(action) =
+                                        actions.get(selected_action.unwrap_or_default())
+                                    {
+                                        if rangeless_actions.contains(*action) {
+                                            ev_node_op.send(Op::new(
+                                                player_id,
+                                                NodeOp::PerformCurioAction {
+                                                    action: *action,
+                                                    curio: **selected_entity,
+                                                    target: default(),
+                                                },
+                                            ))
+                                        }
+                                    }
+                                },
+                                _ => {},
+                            }
+                        }
+                        Some(())
+                    });
+            }
+        }
+    }
+
+    pub fn mouse_action_menu(
         mut layout_events: EventReader<LayoutEvent>,
         actions_of_piece: Query<&Actions, With<NodePiece>>,
         mut players: Query<(&mut SelectedAction, &SelectedEntity), With<Player>>,
@@ -21,7 +100,7 @@ impl MenuUiActions {
     ) {
         for layout_event in layout_events.iter() {
             if let Ok(ForPlayer(player)) = ui_actions.get(layout_event.entity()) {
-                if let Ok((mut selected_action, selected_entity)) = players.get_mut(*player) {
+                get_assert_mut!(*player, players, |(mut selected_action, selected_entity)| {
                     let actions = selected_entity.of(&actions_of_piece);
 
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
@@ -41,52 +120,117 @@ impl MenuUiActions {
                         },
                         _ => {},
                     }
-                } else {
-                    log::error!("Entity missing required components to render player UI");
+                    Some(())
+                });
+            }
+        }
+    }
+
+
+    pub fn sys_on_focus_action_menu(
+        mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
+        action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
+    ) {
+        for (action_menu, ForPlayer(player)) in action_menus.iter() {
+            if let Ok((ui_focus, mut selected_action)) = players.get_mut(*player) {
+                if **ui_focus == Some(action_menu) && selected_action.is_none() {
+                    **selected_action = Some(0);
                 }
             }
         }
     }
-}
 
-#[derive(SystemParam)]
-pub struct MenuUiActionsParam<'w, 's> {
-    players: Query<'w, 's, &'static SelectedAction, With<Player>>,
-    actions: Query<'w, 's, &'static Action>,
-}
+    fn sys_adjust_style_action_menu(
+        node_pieces: Query<&Actions, With<NodePiece>>,
+        players: Query<&SelectedEntity, With<Player>>,
+        mut ui: Query<(&mut StyleTty, &ForPlayer), With<MenuUiActions>>,
+    ) {
+        for (mut style, ForPlayer(player)) in ui.iter_mut() {
+            if let Ok(selected_entity) = players.get(*player) {
+                let new_height = selected_entity
+                    .of(&node_pieces)
+                    .map(|actions| (actions.len() + 1) as f32)
+                    .unwrap_or(0.0);
 
-impl SimpleSubmenu for MenuUiActions {
-    const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
-
-    type RenderSystemParam = MenuUiActionsParam<'static, 'static>;
-
-    fn layout_event_system() -> Option<bevy::app::SystemAppConfig> {
-        Some(Self::handle_layout_events.into_app_config())
-    }
-
-    fn height(selected: &NodePieceQItem<'_>) -> Option<usize> {
-        let actions = selected.actions.as_deref()?;
-        Some(actions.len() + 1)
-    }
-
-    fn render(
-        player: Entity,
-        selected: &NodePieceQItem<'_>,
-        size: &CalculatedSizeTty,
-        param: &MenuUiActionsParam,
-    ) -> Option<Vec<String>> {
-        let actions = selected.actions.as_deref()?;
-        let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
-        for action in actions.iter() {
-            if let Some(action) = get_assert!(*action, param.actions) {
-                menu.push(action.name.clone());
+                if Dimension::Points(new_height) != style.min_size.height {
+                    style.min_size.height = Dimension::Points(new_height);
+                    style.display = if new_height == 0.0 {
+                        style.size.height = Dimension::Points(new_height);
+                        taffy::style::Display::None
+                    } else {
+                        // Give a little extra for padding if we can
+                        style.size.height = Dimension::Points(new_height + 1.0);
+                        taffy::style::Display::Flex
+                    };
+                }
             }
         }
-        if let Some(action_idx) = **(param.players.get(player).ok()?) {
-            menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
+    }
+
+    fn sys_render_action_menu(
+        mut commands: Commands,
+        node_pieces: Query<&Actions, With<NodePiece>>,
+        players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
+        ui: Query<(Entity, &CalculatedSizeTty, &ForPlayer), With<MenuUiActions>>,
+        actions: Query<&Action>,
+    ) {
+        // let render_param = render_param.into_inner();
+        for (id, size, ForPlayer(player)) in ui.iter() {
+            if let Ok((selected_entity, selected_action)) = players.get(*player) {
+                let rendering = selected_entity
+                    .of(&node_pieces)
+                    .and_then(|piece_actions| {
+                        let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
+                        for action in piece_actions.iter() {
+                            if let Some(action) = get_assert!(*action, actions) {
+                                menu.push(action.name.clone());
+                            }
+                        }
+                        if let Some(action_idx) = **selected_action {
+                            menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
+                        }
+                        Some(menu)
+                    })
+                    .unwrap_or_default();
+                commands
+                    .entity(id)
+                    .update_rendering(rendering.fit_to_size(size));
+            }
         }
-        Some(menu)
+    }
+
+
+}
+
+impl Plugin for MenuUiActions {
+    fn build(&self, app: &mut App) {
+        app.add_systems((
+            Self::sys_on_focus_action_menu.before(Self::kb_action_menu).in_set(NDitCoreSet::ProcessInputs),
+            Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
+            Self::sys_adjust_style_action_menu.in_set(RenderTtySet::PreCalculateLayout),
+            Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
+            Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
+        ));
+    }
+}
+
+impl NodeUi for MenuUiActions {
+    const NAME: &'static str = "Actions Menu";
+    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
+    type UiPlugin = Self;
+
+
+    fn initial_style(_: &NodeUiQItem) -> StyleTty {
+        use taffy::prelude::*;
+
+        StyleTty(taffy::prelude::Style {
+            display: Display::None,
+            min_size: Size {
+                width: Dimension::Auto,
+                height: Dimension::Points(0.0),
+            },
+            ..default()
+        })
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {

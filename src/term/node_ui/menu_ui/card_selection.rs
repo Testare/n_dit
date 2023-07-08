@@ -4,18 +4,17 @@ use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
-use pad::PadStr;
 use taffy::style::Dimension;
 
 use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{
-    CalculatedSizeTty, FitToSize, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
+    CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
 };
 use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, TerminalRendering, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering};
 use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Debug, Default)]
