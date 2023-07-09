@@ -134,6 +134,11 @@ pub fn kb_skirm_focus(
                                 }
                             }
                         },
+                        NamedInput::AltActivate => {
+                            if **focus == card_menu_id {
+                                **focus_next = grid_id;
+                            }
+                        },
                         _ => {},
                     }
                     Some(())

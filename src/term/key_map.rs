@@ -9,12 +9,13 @@ pub enum Submap {
     Node = 0,
 }
 
-#[derive(Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash, PartialEq)]
 pub enum NamedInput {
     Direction(Compass),
     AltDirection(Compass),
     Ready,
     Activate,
+    AltActivate,
     MenuFocusNext,
     MenuFocusPrev,
     Undo,
@@ -104,6 +105,10 @@ impl Default for KeyMap {
                     (
                         KeyCombo(KeyCode::Char(' '), KeyModifiers::NONE),
                         NamedInput::Activate,
+                    ),
+                    (
+                        KeyCombo(KeyCode::Char(' '), KeyModifiers::CONTROL),
+                        NamedInput::AltActivate,
                     ),
                     (
                         KeyCombo(KeyCode::Char('?'), KeyModifiers::NONE),

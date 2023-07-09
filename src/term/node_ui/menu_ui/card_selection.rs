@@ -210,17 +210,19 @@ impl MenuUiCardSelection {
                             };
                             **selected_item = Some(next_pt);
                         },
-                        NamedInput::Activate => {
+                        NamedInput::Activate | NamedInput::AltActivate => {
                             // TODO assert_and_then
                             selected_entity.and_then(|access_point_id| {
                                 let card_id = deck.cards_with_count().nth((**selected_item)?)?.0;
                                 let access_point = get_assert!(access_point_id, &access_points)?;
 
                                 if access_point.card() == Some(card_id) {
-                                    ev_node_op.send(Op::new(
-                                        player,
-                                        NodeOp::UnloadAccessPoint { access_point_id },
-                                    ));
+                                    if named_input != NamedInput::AltActivate {
+                                        ev_node_op.send(Op::new(
+                                            player,
+                                            NodeOp::UnloadAccessPoint { access_point_id },
+                                        ));
+                                    }
                                 } else if played_cards.can_be_played(deck, card_id) {
                                     ev_node_op.send(Op::new(
                                         player,
