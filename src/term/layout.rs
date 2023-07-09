@@ -1,4 +1,3 @@
-use bevy::core::FrameCount;
 use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
@@ -315,7 +314,6 @@ fn calculate_layouts(
 }
 
 pub fn render_layouts(
-    frame_count: Res<FrameCount>,
     mut render_layouts: Query<
         (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),
         With<LayoutRoot>,
@@ -338,7 +336,7 @@ pub fn render_layouts(
         charmie.fit_to_size(root_size.width32(), root_size.height32());
 
         if let Some(mut rendering) = rendering {
-            rendering.update_charmie(charmie, frame_count.0);
+            rendering.update_charmie(charmie);
         }
     }
 }

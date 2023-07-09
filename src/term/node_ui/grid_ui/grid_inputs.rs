@@ -1,15 +1,19 @@
 use std::ops::Deref;
 
+use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{
-    ActiveCurio, Curio, CurrentTurn, InNode, Node, NodeOp, OnTeam, Pickup, Team, TeamPhase,
+    ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, NodeOp, NodePiece, OnTeam, Pickup,
+    Team, TeamPhase,
 };
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2D};
 use crate::term::input_event::{MouseButton, MouseEventKind};
-use crate::term::layout::LayoutEvent;
+use crate::term::key_map::NamedInput;
+use crate::term::layout::{LayoutEvent, UiFocus};
 use crate::term::node_ui::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
+use crate::term::{KeyMap, Submap};
 
 pub fn handle_layout_events(
     mut ev_mouse: EventReader<LayoutEvent>,
@@ -112,6 +116,143 @@ pub fn handle_layout_events(
                     Some(())
                 });
             }
+        }
+    }
+}
+
+pub fn kb_grid(
+    no_op_action: Res<NoOpAction>,
+    nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
+    mut players: Query<
+        (
+            Entity, // Solid candidate for making a WorldQuery derive
+            &InNode,
+            &OnTeam,
+            &UiFocus,
+            &KeyMap,
+            &mut NodeCursor,
+            &mut SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
+    node_pieces: Query<(Option<&Actions>,), With<NodePiece>>,
+    mut ev_keys: EventReader<KeyEvent>,
+    mut ev_node_op: EventWriter<Op<NodeOp>>,
+    grid_uis: Query<(), With<GridUi>>,
+    rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (
+            player,
+            InNode(node),
+            OnTeam(team),
+            UiFocus(focus_opt),
+            key_map,
+            mut cursor,
+            selected_entity,
+            mut selected_action,
+        ) in players.iter_mut()
+        {
+            if focus_opt
+                .map(|focused_ui| !grid_uis.contains(focused_ui))
+                .unwrap_or(false)
+            {
+                // If there is a focus and it isn't grid_ui, don't do grid_ui controls
+                continue;
+            }
+
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    let (grid, active_curio, turn) = get_assert!(*node, nodes)?;
+                    let is_controlling_active_curio = active_curio.is_some() && **turn == *team;
+
+                    match named_input {
+                        NamedInput::Direction(dir) => {
+                            if selected_action.is_some() {
+                                // Do not adjust selected entity/action
+                                **cursor = (**cursor + dir).min(grid.index_bounds());
+                            } else if is_controlling_active_curio {
+                                ev_node_op.send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
+                            } else {
+                                let next_cursor_pt = (**cursor + dir).min(grid.index_bounds());
+                                cursor.adjust_to(
+                                    next_cursor_pt,
+                                    selected_entity,
+                                    selected_action,
+                                    grid,
+                                )
+                            }
+                        },
+                        NamedInput::Activate => {
+                            if let Some(selected_action_index) = **selected_action {
+                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                    let action = *actions?.get(selected_action_index)?;
+                                    ev_node_op.send(Op::new(
+                                        player,
+                                        NodeOp::PerformCurioAction {
+                                            action,
+                                            curio: **selected_entity,
+                                            target: **cursor,
+                                        },
+                                    ));
+                                    Some(())
+                                });
+                            } else if is_controlling_active_curio {
+                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                    match actions.map(|actions| (actions.len(), actions)) {
+                                        None | Some((0, _)) => {
+                                            ev_node_op.send(Op::new(
+                                                player,
+                                                NodeOp::PerformCurioAction {
+                                                    action: **no_op_action,
+                                                    curio: **selected_entity,
+                                                    target: default(),
+                                                },
+                                            ));
+                                        },
+                                        Some((1, actions)) => {
+                                            let action = *actions.0.get(0).expect(
+                                                "if the len is 1, there should be an action at 0",
+                                            );
+                                            if rangeless_actions.contains(action) {
+                                                ev_node_op.send(Op::new(
+                                                    player,
+                                                    NodeOp::PerformCurioAction {
+                                                        action,
+                                                        curio: **selected_entity,
+                                                        target: default(),
+                                                    },
+                                                ));
+                                            } else {
+                                                **selected_action = Some(0);
+                                            }
+                                        },
+                                        _ => {},
+                                    }
+                                    Some(())
+                                });
+                                // If the curio has an action menu, focus on it
+                            } else if let Some(curio_id) = **selected_entity {
+                                ev_node_op
+                                    .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
+                            }
+                        },
+                        NamedInput::Undo => {
+                            if is_controlling_active_curio && selected_action.is_some() {
+                                **selected_action = None;
+                                active_curio.and_then(|active_curio_id| {
+                                    let head = grid.head(active_curio_id)?;
+                                    cursor.adjust_to(head, selected_entity, selected_action, grid);
+                                    Some(())
+                                });
+                            }
+                        },
+                        _ => {},
+                    }
+                    Some(())
+                });
         }
     }
 }

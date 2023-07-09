@@ -1,16 +1,47 @@
+use crossterm::event::KeyEvent;
+use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
+use game_core::NDitCoreSet;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 
 use super::{NodeUi, NodeUiQItem};
+use crate::term::key_map::NamedInput;
 use crate::term::layout::{CalculatedSizeTty, StyleTty};
 use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
 pub struct MessageBarUi(pub Vec<String>);
 
 #[derive(Default)]
 pub struct MessageBarUiPlugin;
+
+pub fn kb_messages(
+    mut ev_keys: EventReader<KeyEvent>,
+    mut message_bar_ui: Query<(&mut MessageBarUi, &ForPlayer)>,
+    players: Query<(Entity, &KeyMap), With<Player>>,
+) {
+    for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for (player, key_map) in players.iter() {
+            key_map
+                .named_input_for_key(Submap::Node, *code, *modifiers)
+                .and_then(|named_input| {
+                    if matches!(named_input, NamedInput::NextMsg) {
+                        for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
+                            if *for_player == player {
+                                if msg_bar.len() > 0 {
+                                    msg_bar.0 = msg_bar.0[1..].into();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    Some(())
+                });
+        }
+    }
+}
 
 pub fn style_message_bar(mut ui: Query<(&CalculatedSizeTty, &MessageBarUi, &mut StyleTty)>) {
     for (size, ui, mut style) in ui.iter_mut() {
@@ -46,6 +77,7 @@ pub fn render_message_bar(
 impl Plugin for MessageBarUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems((
+            kb_messages.in_set(NDitCoreSet::ProcessInputs),
             style_message_bar.in_set(RenderTtySet::PreCalculateLayout),
             render_message_bar.in_set(RenderTtySet::PostCalculateLayout),
         ));

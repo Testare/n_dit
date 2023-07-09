@@ -26,7 +26,6 @@ pub enum RenderTtySet {
 pub struct TerminalRendering {
     render_cache: Vec<String>,
     rendering: CharacterMapImage,
-    last_update: u32,
 }
 
 #[derive(Resource, Deref, DerefMut, Default)]
@@ -40,26 +39,22 @@ impl TerminalRendering {
         TerminalRendering {
             rendering: rendering.clone().into(),
             render_cache: rendering,
-            last_update, // Remove last update. We can have another component and a system track this
         }
     }
 
-    pub fn update_charmie(&mut self, new_rendering: CharacterMapImage, frame_count: u32) {
+    pub fn update_charmie(&mut self, new_rendering: CharacterMapImage) {
         self.render_cache = (&self.rendering).into();
         self.rendering = new_rendering.clone();
-        self.last_update = frame_count;
     }
 
     pub fn update(&mut self, new_rendering: Vec<String>, frame_count: u32) {
         self.rendering = new_rendering.clone().into();
         self.render_cache = (&self.rendering).into();
-        self.last_update = frame_count;
     }
 
     fn update_from(&mut self, tr: &TerminalRendering) {
         self.rendering = tr.rendering.clone();
         self.render_cache = tr.render_cache.clone();
-        self.last_update = tr.last_update;
     }
 
     pub fn string_rendering(&self) -> &[String] {
@@ -71,7 +66,6 @@ impl TerminalRendering {
     }
 
     pub fn clear(&mut self) {
-        self.last_update = 0;
         self.rendering = CharacterMapImage::new();
         self.render_cache = Vec::new();
     }
@@ -198,7 +192,6 @@ impl Default for TerminalRendering {
         TerminalRendering {
             render_cache: Vec::new(),
             rendering: CharacterMapImage::default(),
-            last_update: 0,
         }
     }
 }

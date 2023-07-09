@@ -1,21 +1,25 @@
-use game_core::NDitCoreSet;
-use game_core::card::{Action, Actions, ActionRange};
-use game_core::node::{NodePiece, NodeOp};
+use crossterm::style::{ContentStyle, Stylize};
+use game_core::card::{Action, ActionRange, Actions};
+use game_core::node::{NodeOp, NodePiece};
 use game_core::player::{ForPlayer, Player};
+use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
+use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
-use crate::term::layout::{CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, UiFocusOnClick, StyleTty, FitToSize, UiFocus};
-use crate::term::node_ui::{SelectedAction, SelectedEntity, NodeUi, NodeUiQItem};
-use crate::term::{prelude::*, KeyMap, Submap};
-use crate::term::render::{UpdateRendering, RenderTtySet};
+use crate::term::layout::{
+    CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
+};
+use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
+use crate::term::prelude::*;
+use crate::term::render::{RenderTtySet, TerminalRendering};
+use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Default, Debug)]
 pub struct MenuUiActions;
 
 impl MenuUiActions {
-
     pub fn kb_action_menu(
         mut players: Query<
             (
@@ -34,7 +38,8 @@ impl MenuUiActions {
         rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.iter() {
-            for (player_id, focus, key_map, selected_entity, mut selected_action) in players.iter_mut()
+            for (player_id, focus, key_map, selected_entity, mut selected_action) in
+                players.iter_mut()
             {
                 if (**focus)
                     .map(|focused_ui| !action_menu_uis.contains(focused_ui))
@@ -100,7 +105,10 @@ impl MenuUiActions {
     ) {
         for layout_event in layout_events.iter() {
             if let Ok(ForPlayer(player)) = ui_actions.get(layout_event.entity()) {
-                get_assert_mut!(*player, players, |(mut selected_action, selected_entity)| {
+                get_assert_mut!(*player, players, |(
+                    mut selected_action,
+                    selected_entity,
+                )| {
                     let actions = selected_entity.of(&actions_of_piece);
 
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
@@ -125,7 +133,6 @@ impl MenuUiActions {
             }
         }
     }
-
 
     pub fn sys_on_focus_action_menu(
         mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
@@ -168,44 +175,61 @@ impl MenuUiActions {
     }
 
     fn sys_render_action_menu(
-        mut commands: Commands,
         node_pieces: Query<&Actions, With<NodePiece>>,
-        players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
-        ui: Query<(Entity, &CalculatedSizeTty, &ForPlayer), With<MenuUiActions>>,
+        players: Query<(&SelectedEntity, &SelectedAction, &UiFocus), With<Player>>,
+        mut ui: Query<
+            (
+                Entity,
+                &CalculatedSizeTty,
+                &ForPlayer,
+                &mut TerminalRendering,
+            ),
+            With<MenuUiActions>,
+        >,
         actions: Query<&Action>,
     ) {
         // let render_param = render_param.into_inner();
-        for (id, size, ForPlayer(player)) in ui.iter() {
-            if let Ok((selected_entity, selected_action)) = players.get(*player) {
+        for (id, size, ForPlayer(player), mut tr) in ui.iter_mut() {
+            if let Ok((selected_entity, selected_action, focus)) = players.get(*player) {
                 let rendering = selected_entity
                     .of(&node_pieces)
                     .and_then(|piece_actions| {
-                        let mut menu = vec![format!("{0:-<1$}", "-Actions", size.width())];
-                        for action in piece_actions.iter() {
+                        let title_style = if Some(id) == **focus {
+                            // TODO replace with configurable "MenuUiTitleFocused"
+                            ContentStyle::new().reverse()
+                        } else {
+                            // TODO replace with configurable "MenuUiTitleUnfocused"
+                            ContentStyle::new()
+                        };
+                        let mut menu = CharacterMapImage::new();
+                        let menu_title =
+                            title_style.apply(format!("{0:-<1$}", "-Actions", size.width()));
+                        menu.push_row(CharmieRow::from(menu_title));
+
+                        for (idx, action) in piece_actions.iter().enumerate() {
                             if let Some(action) = get_assert!(*action, actions) {
-                                menu.push(action.name.clone());
+                                if Some(idx) == **selected_action {
+                                    menu.push_row(format!("▶{}", action.name).into());
+                                } else {
+                                    menu.push_row(action.name.as_str().into());
+                                }
                             }
-                        }
-                        if let Some(action_idx) = **selected_action {
-                            menu[action_idx + 1] = format!("▶{}", menu[action_idx + 1]);
                         }
                         Some(menu)
                     })
                     .unwrap_or_default();
-                commands
-                    .entity(id)
-                    .update_rendering(rendering.fit_to_size(size));
+                tr.update_charmie(rendering);
             }
         }
     }
-
-
 }
 
 impl Plugin for MenuUiActions {
     fn build(&self, app: &mut App) {
         app.add_systems((
-            Self::sys_on_focus_action_menu.before(Self::kb_action_menu).in_set(NDitCoreSet::ProcessInputs),
+            Self::sys_on_focus_action_menu
+                .before(Self::kb_action_menu)
+                .in_set(NDitCoreSet::ProcessInputs),
             Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
             Self::sys_adjust_style_action_menu.in_set(RenderTtySet::PreCalculateLayout),
             Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
@@ -218,7 +242,6 @@ impl NodeUi for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
     type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
     type UiPlugin = Self;
-
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
         use taffy::prelude::*;

@@ -1,6 +1,5 @@
 use std::cmp;
 
-use bevy::core::FrameCount;
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use itertools::Itertools;
@@ -14,7 +13,7 @@ use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
-use crate::term::render::{TerminalRendering, UpdateRendering};
+use crate::term::render::TerminalRendering;
 
 const CLOSED_SQUARE: &str = "  ";
 const OPEN_SQUARE: &str = "░░";
@@ -34,7 +33,6 @@ pub fn render_grid_system(
         ),
         With<GridUi>,
     >,
-    frame_count: Res<FrameCount>,
 ) {
     for (size, scroll, ForPlayer(player), mut rendering) in render_grid_q.iter_mut() {
         if let Ok(player_ui_q) = players.get(*player) {
@@ -50,7 +48,7 @@ pub fn render_grid_system(
                     &draw_config,
                 );
 
-                rendering.update_charmie(grid_rendering, frame_count.0);
+                rendering.update_charmie(grid_rendering);
             }
         }
     }
@@ -144,13 +142,11 @@ fn render_grid(
                             &border_x_range,
                             &border_y_range,
                         );
-                        border_line.add_styled_text(pivot_format.apply(
-                            intersection_for_pivot(
-                                &[left1, left2],
-                                &[right1, right2],
-                                &draw_config,
-                            ),
-                        ));
+                        border_line.add_styled_text(pivot_format.apply(intersection_for_pivot(
+                            &[left1, left2],
+                            &[right1, right2],
+                            &draw_config,
+                        )));
                     }
                     if include_space {
                         // Add first vertical border
@@ -165,9 +161,10 @@ fn render_grid(
                             &border_x_range,
                             &(y..=y),
                         );
-                        space_line.add_styled_text(border_style.apply(
-                            BorderType::of(left2, right2).vertical_border(&draw_config),
-                        ));
+                        space_line
+                            .add_styled_text(border_style.apply(
+                                BorderType::of(left2, right2).vertical_border(&draw_config),
+                            ));
                     }
                 }
                 if render_half_space {
@@ -206,8 +203,7 @@ fn render_grid(
                             });
                         if square.chars().count() == 1 {
                             space_line.add_styled_text(
-                                space_style
-                                    .apply(square_style.apply(draw_config.half_char())),
+                                space_style.apply(square_style.apply(draw_config.half_char())),
                             );
                         } else {
                             // Whether we are getting the left half or the right half
@@ -217,9 +213,8 @@ fn render_grid(
                                 .nth(char_index)
                                 .expect("there should be at least 2 characters");
 
-                            space_line.add_styled_text(
-                                space_style.apply(square_style.apply(half_char)),
-                            );
+                            space_line
+                                .add_styled_text(space_style.apply(square_style.apply(half_char)));
                         }
                     }
                 } else if render_full_space {
@@ -234,9 +229,11 @@ fn render_grid(
                             &(x..=x),
                             &border_y_range,
                         );
-                        border_line.add_styled_text(border_style.apply(
-                            BorderType::of(right1, right2).horizontal_border(&draw_config),
-                        ));
+                        border_line.add_styled_text(
+                            border_style.apply(
+                                BorderType::of(right1, right2).horizontal_border(&draw_config),
+                            ),
+                        );
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, node_cursor, &draw_config);
@@ -252,8 +249,7 @@ fn render_grid(
                             });
                         // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
                         // TODO Instead of applying two styles, compose the styles then apply
-                        space_line
-                            .add_styled_text(space_style.apply(square_style.apply(square)));
+                        space_line.add_styled_text(space_style.apply(square_style.apply(square)));
                     }
                 }
             }

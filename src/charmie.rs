@@ -361,6 +361,15 @@ impl From<String> for CharmieRow {
     }
 }
 
+/// Should NOT contain newline characters
+impl From<&String> for CharmieRow {
+    fn from(value: &String) -> Self {
+        CharmieRow {
+            segments: vec![value.clone().into()],
+        }
+    }
+}
+
 impl From<&str> for CharmieRow {
     fn from(value: &str) -> Self {
         CharmieRow {

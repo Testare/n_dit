@@ -1,5 +1,4 @@
-use bevy::core::FrameCount;
-use crossterm::style::Stylize;
+use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::player::{ForPlayer, Player};
@@ -295,7 +294,6 @@ impl MenuUiCardSelection {
             Ref<SelectedItem>,
             &mut TerminalRendering,
         )>,
-        frame_count: Res<FrameCount>,
     ) {
         for (
             id,
@@ -324,15 +322,13 @@ impl MenuUiCardSelection {
                                 .get(id)
                                 .map(|card| card.short_name_or_nickname())
                                 .unwrap_or("NotACard");
-                            let width =
-                                size.width() - 4 - if is_selected || is_hover { 1 } else { 0 };
                             let mut row = CharmieRow::new();
                             if is_hover {
                                 row.add_styled_text("▷".green());
                             } else if is_selected {
                                 row.add_plain_text("▶");
                             }
-                            row.add_plain_text(name) //.with_exact_width(width))
+                            row.add_plain_text(name)
                                 .fit_to_len(size.width32() - 4)
                                 .add_plain_text(" ")
                                 .add_plain_text(remaining_count.to_string());
@@ -372,8 +368,17 @@ impl MenuUiCardSelection {
                     });
 
                     let mut cards_menu = CharacterMapImage::new();
-                    let title_bar = CharmieRow::new()
-                        .with_plain_text(format!("{0:═<1$}", "═Cards", size.width()).as_str());
+                    let title_style = if Some(id) == **focus {
+                        // TODO replace with configurable "MenuUiTitleFocused"
+                        ContentStyle::new().reverse()
+                    } else {
+                        // TODO replace with configurable "MenuUiTitleUnfocused"
+                        ContentStyle::new()
+                    };
+                    let title_bar = CharmieRow::new().with_text(
+                        format!("{0:═<1$}", "═Cards", size.width()).as_str(),
+                        &title_style,
+                    );
                     cards_menu.push_row(title_bar);
                     for (scroll_bar, card) in scroll_bar.zip(
                         cards
@@ -390,7 +395,7 @@ impl MenuUiCardSelection {
                 })
                 .unwrap_or_default();
             rendering.fit_to_size(size.width32(), size.height32());
-            tr.update_charmie(rendering, frame_count.0);
+            tr.update_charmie(rendering);
         }
     }
 }
