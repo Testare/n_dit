@@ -121,6 +121,7 @@ impl MenuUiActions {
                                 let clicked_action = Some((layout_event.pos().y - 1) as usize);
                                 if **selected_action != clicked_action {
                                     **selected_action = Some((layout_event.pos().y - 1) as usize);
+                                } else if layout_event.double_click() {
                                 } else {
                                     **selected_action = None;
                                 }

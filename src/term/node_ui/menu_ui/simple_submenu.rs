@@ -83,7 +83,6 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
 
 /// System for rendering a simple submenu
 fn render_simple_submenu<'w, 's, T: SimpleSubmenu + Component>(
-    mut commands: Commands,
     node_pieces: Query<NodePieceQ>,
     players: Query<&SelectedEntity, With<Player>>,
     mut uis: Query<(&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering), With<T>>,

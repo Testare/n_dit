@@ -53,21 +53,15 @@ impl MenuUiDescription {
     }
 
     fn render_system(
-        mut commands: Commands,
         node_pieces: Query<NodePieceQ>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<
-            (
-                Entity,
-                &CalculatedSizeTty,
-                &ForPlayer,
-                &mut TerminalRendering,
-            ),
+            (&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering),
             With<MenuUiDescription>,
         >,
         action_descs: Query<&Description, With<Action>>,
     ) {
-        for (id, size, ForPlayer(player), mut tr) in ui.iter_mut() {
+        for (size, ForPlayer(player), mut tr) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
                 let rendering = selected_entity
                     .of(&node_pieces)

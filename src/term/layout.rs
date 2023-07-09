@@ -33,6 +33,8 @@ pub struct LayoutEvent {
     modifiers: KeyModifiers,
     #[getset(get = "pub")]
     event_kind: MouseEventKind,
+    #[getset(get_copy = "pub")]
+    double_click: bool,
 }
 
 #[derive(Component, Debug)]
@@ -166,8 +168,9 @@ fn generate_layout_events(
         (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
         (With<StyleTty>, With<LayoutMouseTarget>),
     >,
+    mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
 ) {
-    for MouseEvent {
+    for event @ MouseEvent {
         kind,
         column,
         row,
@@ -175,6 +178,15 @@ fn generate_layout_events(
     } in crossterm_events.iter()
     {
         let (event_x, event_y) = (*column as u32, *row as u32);
+
+        let double_click = last_click
+            .map(|(last_event_time, last_event)| {
+                last_event_time.elapsed().as_millis() <= 500
+                    && last_event.kind == *kind
+                    && last_event.column == *column
+                    && last_event.row == *row
+            })
+            .unwrap_or_default();
 
         for (entity, size, translation) in layout_elements.iter() {
             if translation.x <= event_x
@@ -191,8 +203,12 @@ fn generate_layout_events(
                     pos,
                     modifiers: modifiers.clone(),
                     event_kind: kind.clone(),
+                    double_click,
                 })
             }
+        }
+        if matches!(kind, MouseEventKind::Down(_)) {
+            last_click.replace((std::time::Instant::now(), *event));
         }
     }
 }
