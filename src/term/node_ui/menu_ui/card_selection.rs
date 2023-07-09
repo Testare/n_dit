@@ -358,7 +358,7 @@ impl MenuUiCardSelection {
                     .min((player_deck.different_cards_len() + 1 + padding).saturating_sub(height));
                     let no_scroll_bar_needed = height > cards.len();
                     let scroll_bar = (0..height).map(|i| {
-                        CharmieRow::from(if no_scroll_bar_needed {
+                        CharmieRow::of_plain_text(if no_scroll_bar_needed {
                             " "
                         } else if i <= 1 {
                             "↑"
@@ -377,7 +377,7 @@ impl MenuUiCardSelection {
                         // TODO replace with configurable "MenuUiTitleUnfocused"
                         ContentStyle::new()
                     };
-                    let title_bar = CharmieRow::new().with_text(
+                    let title_bar = CharmieRow::of_text(
                         format!("{0:═<1$}", "═Cards", size.width()).as_str(),
                         &title_style,
                     );

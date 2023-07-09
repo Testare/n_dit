@@ -203,9 +203,8 @@ impl MenuUiActions {
                             ContentStyle::new()
                         };
                         let mut menu = CharacterMapImage::new();
-                        let menu_title =
-                            title_style.apply(format!("{0:-<1$}", "-Actions", size.width()));
-                        menu.push_row(CharmieRow::from(menu_title));
+                        let menu_title = format!("{0:-<1$}", "-Actions", size.width());
+                        menu.push_row(CharmieRow::of_text(menu_title, &title_style));
 
                         for (idx, action) in piece_actions.iter().enumerate() {
                             if let Some(action) = get_assert!(*action, actions) {

@@ -132,14 +132,29 @@ impl CharmieRow {
         Self::default()
     }
 
-    pub fn len(&self) -> u32 {
-        self.segments
+    pub fn add_effect(&mut self, len: u32, style: &ContentStyle) -> &mut Self {
+        match self.segments.last_mut() {
+            Some(CharmieSegment::Effect {
+                len: last_len,
+                style: last_style,
+            }) if *last_style == *style => {
+                *last_len += len;
+            },
+            _ => {
+                self.segments
+                    .push(CharmieSegment::Effect { len, style: *style });
+            },
+        }
+        self
+    }
+
+    fn apply_effect(&mut self, style: &ContentStyle) -> &mut Self {
+        self.segments = self
+            .segments
             .iter()
-            .map(|segment| {
-                let len = segment.len();
-                len
-            })
-            .sum()
+            .map(|segment| segment.with_effect(style))
+            .collect();
+        self
     }
 
     pub fn add_gap(&mut self, len: u32) -> &mut Self {
@@ -156,16 +171,16 @@ impl CharmieRow {
         self
     }
 
-    pub fn add_text<S: Borrow<str>>(&mut self, text: S, text_format: &ContentStyle) -> &mut Self {
+    pub fn add_text<S: Borrow<str>>(&mut self, text: S, style: &ContentStyle) -> &mut Self {
         match self.segments.last_mut() {
             Some(CharmieSegment::Textual {
                 text: last_text,
                 style: format,
-            }) if *format == *text_format => last_text.push_str(text.borrow()),
+            }) if *format == *style => last_text.push_str(text.borrow()),
             _ => {
                 self.segments.push(CharmieSegment::Textual {
                     text: text.borrow().into(),
-                    style: *text_format,
+                    style: *style,
                 });
             },
         }
@@ -177,24 +192,59 @@ impl CharmieRow {
         self
     }
 
+    pub fn of_effect(len: u32, style: &ContentStyle) -> Self {
+        CharmieRow::new().with_effect(len, style)
+    }
+
+    pub fn of_gap(len: u32) -> Self {
+        CharmieRow::new().with_gap(len)
+    }
+
+    pub fn of_plain_text<S: Borrow<str>>(text: S) -> Self {
+        CharmieRow::new().with_plain_text(text)
+    }
+
+    pub fn of_styled_text<D: Display>(styled_content: StyledContent<D>) -> Self {
+        CharmieRow::new().with_styled_text(styled_content)
+    }
+
+    pub fn of_text<S: Borrow<str>>(text: S, style: &ContentStyle) -> Self {
+        CharmieRow::new().with_text(text, style)
+    }
+
+    pub fn with_effect(mut self, len: u32, style: &ContentStyle) -> Self {
+        self.add_effect(len, style);
+        self
+    }
+
     pub fn with_gap(mut self, len: u32) -> Self {
         self.add_gap(len);
         self
     }
 
-    pub fn with_plain_text(mut self, text: &str) -> Self {
+    pub fn with_plain_text<S: Borrow<str>>(mut self, text: S) -> Self {
         self.add_plain_text(text);
-        self
-    }
-
-    pub fn with_text(mut self, text: &str, text_format: &ContentStyle) -> Self {
-        self.add_text(text, text_format);
         self
     }
 
     pub fn with_styled_text<D: Display>(mut self, styled_content: StyledContent<D>) -> Self {
         self.add_styled_text(styled_content);
         self
+    }
+
+    pub fn with_text<S: Borrow<str>>(mut self, text: S, style: &ContentStyle) -> Self {
+        self.add_text(text, style);
+        self
+    }
+
+    pub fn len(&self) -> u32 {
+        self.segments
+            .iter()
+            .map(|segment| {
+                let len = segment.len();
+                len
+            })
+            .sum()
     }
 
     pub fn fit_to_len(&mut self, len: u32) -> &mut Self {
@@ -229,6 +279,20 @@ impl CharmieRow {
         let mut result_len = result.len();
         for segment in row.segments.iter() {
             match segment {
+                CharmieSegment::Effect { style, .. } => {
+                    let mut under_clip = self.clip(result_len, segment.len(), bcfb);
+                    under_clip.apply_effect(style);
+                    // Unfortunately, if you draw an effect partially over a full-width character,
+                    // that character will be deleted.
+                    // This use case will probably be difficult to design for
+
+                    // Implementation idea: clip_return_remainder()?
+                    let clip_len = under_clip.len();
+                    result += &under_clip;
+                    if clip_len < segment.len() {
+                        result.add_effect(segment.len() - clip_len, style);
+                    }
+                },
                 CharmieSegment::Empty { .. } => {
                     let under_clip = self.clip(result_len, segment.len(), bcfb);
                     let clip_len = under_clip.len();
@@ -270,6 +334,12 @@ impl CharmieRow {
                             let skip_start = clip_start.saturating_sub(seg_start);
                             let take_until = clip_end.saturating_sub(seg_start).min(segment.len());
                             match segment {
+                                CharmieSegment::Effect { style, .. } => {
+                                    row += &CharmieSegment::Effect {
+                                        len: take_until - skip_start,
+                                        style: *style,
+                                    }
+                                },
                                 CharmieSegment::Empty { .. } => {
                                     row += &CharmieSegment::Empty {
                                         len: take_until - skip_start,
@@ -409,6 +479,7 @@ impl AddAssign<CharmieRow> for CharmieRow {
 impl AddAssign<&CharmieSegment> for CharmieRow {
     fn add_assign(&mut self, rhs: &CharmieSegment) {
         match rhs {
+            CharmieSegment::Effect { len, style } => self.add_effect(*len, style),
             CharmieSegment::Empty { len } => self.add_gap(*len),
             CharmieSegment::Textual {
                 text,
@@ -421,6 +492,7 @@ impl AddAssign<&CharmieSegment> for CharmieRow {
 impl AddAssign<CharmieSegment> for CharmieRow {
     fn add_assign(&mut self, rhs: CharmieSegment) {
         match rhs {
+            CharmieSegment::Effect { len, style } => self.add_effect(len, &style),
             CharmieSegment::Empty { len } => self.add_gap(len),
             CharmieSegment::Textual {
                 text,
@@ -438,14 +510,36 @@ impl AddAssign<CharmieSegment> for CharmieRow {
 enum CharmieSegment {
     Textual { text: String, style: ContentStyle },
     Empty { len: u32 },
-    // Effect { len: u32, style: ContentStyle},
+    Effect { len: u32, style: ContentStyle },
 }
 
 impl CharmieSegment {
+    fn with_effect(&self, effect_style: &ContentStyle) -> Self {
+        match self {
+            Self::Textual { text, style } => Self::Textual {
+                text: text.to_string(),
+                style: Self::add_styles(style, &effect_style),
+            },
+            Self::Effect { len, style } => Self::Effect {
+                len: *len,
+                style: Self::add_styles(style, effect_style),
+            },
+            Self::Empty { len } => Self::Effect {
+                len: *len,
+                style: *effect_style,
+            },
+        }
+    }
+
+    fn add_styles(_lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyle {
+        *rhs
+    }
+
     fn len(&self) -> u32 {
         match self {
             Self::Textual { text, .. } => text.width() as u32,
             Self::Empty { len } => *len,
+            Self::Effect { len, .. } => *len,
         }
     }
 }
@@ -459,6 +553,10 @@ impl Display for CharmieSegment {
             },
             CharmieSegment::Textual { text, style } => {
                 write!(f, "{}", style.apply(text))
+            },
+            CharmieSegment::Effect { len, style } => {
+                let segment = format!("{:lensize$}", "", lensize = *len as usize);
+                write!(f, "{}", style.apply(segment))
             },
         }
     }
@@ -499,8 +597,56 @@ mod tests {
     use super::*;
 
     #[test]
+    fn current_undesirable_behavior_with_drawing_over_fullwidth_characters() {
+        let row = CharmieRow::of_plain_text("世Hello界world");
+        let effect = CharmieRow::of_effect(2, &ContentStyle::new().red());
+
+        // Undesired behavior: Effect splits fullwidth characters
+        let affected = row.draw(&effect, 1, BrokenCharacterFillBehavior::Char('_'));
+        let _desired = format! {"{}ello界world", "世H".red()};
+        let expected = format! {"_{}ello界world", "_H".red()};
+        assert_eq!(expected, affected.to_string());
+
+        let affected = row.draw(&effect, 6, BrokenCharacterFillBehavior::Char('_'));
+        let _desired = format! {"世Hell{}world", "o界".red()};
+        let expected = format! {"世Hell{}_world", "o_".red()};
+        assert_eq!(expected, affected.to_string());
+
+        // Undesired behavior: Gaps split full-width characters at beginning and end
+        let _desired = "世Hello界world";
+
+        let drawing = row.draw(
+            &CharmieRow::of_gap(1),
+            0,
+            BrokenCharacterFillBehavior::Char('_'),
+        );
+        assert_eq!(drawing.to_string(), "__Hello界world");
+
+        let drawing = row.draw(
+            &CharmieRow::of_gap(1),
+            7,
+            BrokenCharacterFillBehavior::Char('_'),
+        );
+        assert_eq!(drawing.to_string(), "世Hello__world");
+
+        let drawing = row.draw(
+            &CharmieRow::of_gap(2),
+            1,
+            BrokenCharacterFillBehavior::Char('_'),
+        );
+        assert_eq!(drawing.to_string(), "__Hello界world");
+
+        let drawing = row.draw(
+            &CharmieRow::of_gap(2),
+            6,
+            BrokenCharacterFillBehavior::Char('_'),
+        );
+        assert_eq!(drawing.to_string(), "世Hello__world");
+    }
+
+    #[test]
     fn test_clipping_charmie_row_with_fullwidth_characters() {
-        let row = CharmieRow::from("世Hello界world".to_string());
+        let row = CharmieRow::of_plain_text("世Hello界world");
 
         let clipped = row.clip(0, 9, BrokenCharacterFillBehavior::Gap);
         assert_eq!(clipped.to_string(), "世Hello界");
@@ -531,42 +677,68 @@ mod tests {
     }
 
     #[test]
-    fn test_draw_charmie_row() {
-        let row = CharmieRow::from("世Hello界world".to_string());
-        let draw_row = CharmieRow::from("Mimsy".to_string());
-        let gap_draw_row = CharmieRow::from("[".to_string())
-            .with_gap(2)
-            .with_text("]", &Default::default());
+    fn test_draw_effect() {
+        let row = CharmieRow::of_plain_text("世Hello界world");
+        let effect = CharmieRow::new().with_effect(2, &ContentStyle::new().red());
 
-        let drawing = row.draw(&draw_row, 0, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 0, BrokenCharacterFillBehavior::Char('_'));
+        let expected = format! {"{}Hello界world", "世".red()};
+        assert_eq!(expected, affected.to_string());
+
+        let affected = row.draw(&effect, 2, BrokenCharacterFillBehavior::Char('_'));
+        let expected = format! {"世{}llo界world", "He".red()};
+        assert_eq!(expected, affected.to_string());
+
+        let affected = row.draw(&effect, 15, BrokenCharacterFillBehavior::Char('_'));
+        let expected = format! {"世Hello界world {}", "  ".red()};
+        assert_eq!(expected, affected.to_string());
+    }
+
+    #[test]
+    fn test_draw_charmie_row() {
+        let bcr = BrokenCharacterFillBehavior::Char('_');
+        let row = CharmieRow::of_plain_text("世Hello界world");
+        let draw_row = CharmieRow::of_plain_text("Mimsy");
+        let gap_draw_row = CharmieRow::of_plain_text("[")
+            .with_gap(2)
+            .with_plain_text("]");
+
+        let drawing = row.draw(&draw_row, 0, bcr);
         assert_eq!(drawing.to_string(), "Mimsylo界world");
 
-        let drawing = row.draw(&draw_row, 1, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&draw_row, 1, bcr);
         assert_eq!(drawing.to_string(), "_Mimsyo界world");
 
-        let drawing = row.draw(&draw_row, 2, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&draw_row, 2, bcr);
         assert_eq!(drawing.to_string(), "世Mimsy界world");
 
-        let drawing = row.draw(&draw_row, 3, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&draw_row, 3, bcr);
         assert_eq!(drawing.to_string(), "世HMimsy_world");
 
-        let drawing = row.draw(&draw_row, 14, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&draw_row, 14, bcr);
         assert_eq!(drawing.to_string(), "世Hello界worldMimsy");
 
-        let drawing = row.draw(&draw_row, 16, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&draw_row, 16, bcr);
         assert_eq!(drawing.to_string(), "世Hello界world  Mimsy");
 
-        let drawing = row.draw(&gap_draw_row, 0, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 0, bcr);
         assert_eq!(drawing.to_string(), "[_H]llo界world");
-        let drawing = row.draw(&gap_draw_row, 1, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 1, bcr);
         assert_eq!(drawing.to_string(), "_[He]lo界world");
-        let drawing = row.draw(&gap_draw_row, 2, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 2, bcr);
         assert_eq!(drawing.to_string(), "世[el]o界world");
-        let drawing = row.draw(&gap_draw_row, 6, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 6, bcr);
         assert_eq!(drawing.to_string(), "世Hell[界]orld");
-        let drawing = row.draw(&gap_draw_row, 14, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 14, bcr);
         assert_eq!(drawing.to_string(), "世Hello界world[  ]");
-        let drawing = row.draw(&gap_draw_row, 16, BrokenCharacterFillBehavior::Char('_'));
+        let drawing = row.draw(&gap_draw_row, 16, bcr);
         assert_eq!(drawing.to_string(), "世Hello界world  [  ]");
+
+        let drawing = row.draw(
+            &CharmieRow::of_gap(2),
+            0,
+            BrokenCharacterFillBehavior::Char('_'),
+        );
+        assert_eq!(drawing.to_string(), "世Hello界world");
     }
 }
