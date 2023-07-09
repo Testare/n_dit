@@ -8,7 +8,7 @@ use taffy::style::Dimension;
 use super::{NodeUi, NodeUiQItem};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{CalculatedSizeTty, StyleTty};
-use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering};
 use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
@@ -57,10 +57,9 @@ pub fn style_message_bar(mut ui: Query<(&CalculatedSizeTty, &MessageBarUi, &mut 
 }
 
 pub fn render_message_bar(
-    mut commands: Commands,
-    ui: Query<(Entity, &MessageBarUi, &CalculatedSizeTty)>,
+    mut ui: Query<(&MessageBarUi, &CalculatedSizeTty, &mut TerminalRendering)>,
 ) {
-    if let Ok((id, msgbar, size)) = ui.get_single() {
+    if let Ok((msgbar, size, mut tr)) = ui.get_single_mut() {
         let mut rendered_text: Vec<String> = vec![format!("{0:─<1$}", "─Messages", size.width())];
         if let Some(msg) = msgbar.first() {
             for line in textwrap::wrap(msg.as_str(), size.width()).into_iter() {
@@ -68,9 +67,7 @@ pub fn render_message_bar(
             }
             rendered_text.push("---Enter to continue---".to_owned());
         }
-        commands
-            .get_entity(id)
-            .update_rendering(rendered_text.clone());
+        tr.update(rendered_text);
     }
 }
 

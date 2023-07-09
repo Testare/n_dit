@@ -2,20 +2,17 @@ use game_core::prelude::*;
 
 use super::{NodeUi, NodeUiQItem};
 use crate::term::layout::StyleTty;
-use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering};
 
 #[derive(Component, Default)]
 pub struct TitleBarUi;
 
 pub fn render_title_bar_system(
-    mut commands: Commands,
-    render_title_bar: Query<Entity, With<TitleBarUi>>,
+    mut render_title_bar: Query<&mut TerminalRendering, With<TitleBarUi>>,
 ) {
     let rendered_text = vec!["n_dit".to_owned()];
-    for id in render_title_bar.iter() {
-        commands
-            .get_entity(id)
-            .update_rendering(rendered_text.clone());
+    for mut tr in render_title_bar.iter_mut() {
+        tr.update(rendered_text.clone());
     }
 }
 

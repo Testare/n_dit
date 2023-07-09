@@ -35,7 +35,7 @@ pub struct RenderPause(Option<Instant>);
 pub struct RenderTtyPlugin;
 
 impl TerminalRendering {
-    pub fn new(rendering: Vec<String>, last_update: u32) -> Self {
+    pub fn new(rendering: Vec<String>) -> Self {
         TerminalRendering {
             rendering: rendering.clone().into(),
             render_cache: rendering,
@@ -47,7 +47,7 @@ impl TerminalRendering {
         self.rendering = new_rendering.clone();
     }
 
-    pub fn update(&mut self, new_rendering: Vec<String>, frame_count: u32) {
+    pub fn update(&mut self, new_rendering: Vec<String>) {
         self.rendering = new_rendering.clone().into();
         self.render_cache = (&self.rendering).into();
     }
@@ -199,48 +199,5 @@ impl Default for TerminalRendering {
 impl PartialEq<TerminalRendering> for TerminalRendering {
     fn eq(&self, rhs: &TerminalRendering) -> bool {
         self.render_cache.iter().eq(rhs.render_cache.iter())
-    }
-}
-
-// Command to reduce boilerplate for updating renderings
-pub trait UpdateRendering {
-    fn update_rendering(&mut self, text: Vec<String>) -> &mut Self;
-}
-
-struct UpdateRenderCommand(Vec<String>);
-
-impl<'w, 's, 'a> UpdateRendering for EntityCommands<'w, 's, 'a> {
-    fn update_rendering(&mut self, rendering: Vec<String>) -> &mut Self {
-        self.add(UpdateRenderCommand(rendering));
-        self
-    }
-}
-
-impl<'w, 's, 'a> UpdateRendering for Option<EntityCommands<'w, 's, 'a>> {
-    fn update_rendering(&mut self, rendering: Vec<String>) -> &mut Self {
-        if let Some(entity) = self {
-            entity.add(UpdateRenderCommand(rendering));
-        } else {
-            log::warn!(
-                "Unable to update rendering for entity (Rendering: {:?})",
-                rendering
-            );
-        }
-        self
-    }
-}
-
-impl EntityCommand for UpdateRenderCommand {
-    fn write(self, id: Entity, world: &mut World) {
-        let frame_count = world
-            .get_resource::<FrameCount>()
-            .expect("frame count needed for rendering")
-            .0;
-        let mut entity = world.entity_mut(id);
-        if let Some(mut tr) = entity.get_mut::<TerminalRendering>() {
-            if tr.string_rendering().iter().ne(self.0.iter()) {
-                tr.update(self.0, frame_count);
-            }
-        }
     }
 }

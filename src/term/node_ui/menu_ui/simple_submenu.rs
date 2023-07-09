@@ -9,7 +9,7 @@ use super::{NodePieceQ, NodeUi, SelectedEntity, SimpleSubmenu};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
 use crate::term::node_ui::NodeUiQItem;
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering};
 use crate::term::TerminalFocusMode;
 
 pub struct SimpleSubMenuPlugin<S> {
@@ -86,19 +86,17 @@ fn render_simple_submenu<'w, 's, T: SimpleSubmenu + Component>(
     mut commands: Commands,
     node_pieces: Query<NodePieceQ>,
     players: Query<&SelectedEntity, With<Player>>,
-    ui: Query<(Entity, &CalculatedSizeTty, &ForPlayer), With<T>>,
+    mut uis: Query<(&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering), With<T>>,
     render_param: StaticSystemParam<'w, 's, T::RenderSystemParam>,
 ) {
     let render_param = render_param.into_inner();
-    for (id, size, ForPlayer(player)) in ui.iter() {
+    for (size, ForPlayer(player), mut tr) in uis.iter_mut() {
         if let Ok(selected_entity) = players.get(*player) {
             let rendering = selected_entity
                 .of(&node_pieces)
                 .and_then(|selected| T::render(*player, &selected, &size, &render_param))
                 .unwrap_or_default();
-            commands
-                .entity(id)
-                .update_rendering(rendering.fit_to_size(size));
+            tr.update(rendering.fit_to_size(size));
         }
     }
 }

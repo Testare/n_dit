@@ -7,7 +7,7 @@ use taffy::style::Dimension;
 use super::{NodePieceQ, NodeUi, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
 use crate::term::node_ui::NodeUiQItem;
-use crate::term::render::{RenderTtySet, UpdateRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering};
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiDescription;
@@ -56,10 +56,18 @@ impl MenuUiDescription {
         mut commands: Commands,
         node_pieces: Query<NodePieceQ>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
-        ui: Query<(Entity, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
+        mut ui: Query<
+            (
+                Entity,
+                &CalculatedSizeTty,
+                &ForPlayer,
+                &mut TerminalRendering,
+            ),
+            With<MenuUiDescription>,
+        >,
         action_descs: Query<&Description, With<Action>>,
     ) {
-        for (id, size, ForPlayer(player)) in ui.iter() {
+        for (id, size, ForPlayer(player), mut tr) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
                 let rendering = selected_entity
                     .of(&node_pieces)
@@ -78,9 +86,7 @@ impl MenuUiDescription {
                         Some(menu)
                     })
                     .unwrap_or_default();
-                commands
-                    .entity(id)
-                    .update_rendering(rendering.fit_to_size(size));
+                tr.update(rendering.fit_to_size(size));
             }
         }
     }
