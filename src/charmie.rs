@@ -14,13 +14,6 @@ pub enum ColorSupportLevel {
     Plain,
 }
 
-// Defines a color with optional support at different levels
-pub struct CharmieColor {
-    true_color: Option<(u8, u8, u8)>,
-    ansi_256: Option<u8>,
-    basic: Option<String>,
-}
-
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
@@ -30,6 +23,15 @@ pub struct CharacterMapImage {
 pub enum BrokenCharacterFillBehavior {
     Char(char),
     Gap,
+}
+
+impl BrokenCharacterFillBehavior {
+    fn to_chr_opt(&self) -> Option<char> {
+        match self {
+            Self::Char(chr) => Some(*chr),
+            _ => None,
+        }
+    }
 }
 
 impl Default for BrokenCharacterFillBehavior {
@@ -133,6 +135,10 @@ impl CharmieRow {
     }
 
     pub fn add_effect(&mut self, len: u32, style: &ContentStyle) -> &mut Self {
+        if len == 0 {
+            return self;
+        }
+        self.fuse_tail_half_char();
         match self.segments.last_mut() {
             Some(CharmieSegment::Effect {
                 len: last_len,
@@ -158,11 +164,62 @@ impl CharmieRow {
     }
 
     pub fn add_gap(&mut self, len: u32) -> &mut Self {
+        if len == 0 {
+            return self;
+        }
+        self.fuse_tail_half_char();
         if let Some(CharmieSegment::Empty { len: last_len }) = self.segments.last_mut() {
             *last_len += len;
         } else {
             self.segments.push(CharmieSegment::Empty { len });
         }
+        self
+    }
+
+    pub fn add_half_char(
+        &mut self,
+        half_char: char,
+        replace_char: Option<char>,
+        first_half: bool,
+        style: &ContentStyle,
+    ) -> &mut Self {
+        if half_char.width().unwrap_or_default() < 2 {
+            return self;
+        }
+        if !self.segments.is_empty() {
+            if let Some(CharmieSegment::HalfChar {
+                half_char: last_half_char,
+                replace_char: last_replace_char,
+                first_half: true,
+                style: last_style,
+            }) = self.segments.last().cloned()
+            {
+                self.segments.pop();
+                if half_char == last_half_char && !first_half {
+                    self.add_text(half_char.to_string(), &add_styles(&last_style, &style));
+                    return self;
+                }
+                if let Some(last_replace_char) = last_replace_char {
+                    self.add_text(last_replace_char.to_string(), &last_style);
+                } else {
+                    self.add_gap(1);
+                }
+            }
+            if !first_half {
+                if let Some(replace_char) = replace_char {
+                    self.add_text(replace_char.to_string(), &style);
+                } else {
+                    self.add_gap(1);
+                }
+                return self;
+            }
+        }
+        self.segments.push(CharmieSegment::HalfChar {
+            half_char,
+            replace_char,
+            first_half,
+            style: *style,
+        });
         self
     }
 
@@ -172,6 +229,10 @@ impl CharmieRow {
     }
 
     pub fn add_text<S: Borrow<str>>(&mut self, text: S, style: &ContentStyle) -> &mut Self {
+        if text.borrow().len() == 0 {
+            return self;
+        }
+        self.fuse_tail_half_char();
         match self.segments.last_mut() {
             Some(CharmieSegment::Textual {
                 text: last_text,
@@ -189,6 +250,30 @@ impl CharmieRow {
 
     pub fn add_styled_text<D: Display>(&mut self, styled_content: StyledContent<D>) -> &mut Self {
         self.add_text(styled_content.content().to_string(), styled_content.style());
+        self
+    }
+
+    fn fuse_tail_half_char(&mut self) -> &mut Self {
+        if self.len() > 1
+            && self
+                .segments
+                .last()
+                .map(|seg| seg.is_half_char())
+                .unwrap_or(true)
+        {
+            if let Some(CharmieSegment::HalfChar {
+                replace_char,
+                style,
+                ..
+            }) = self.segments.pop()
+            {
+                if let Some(replace_char) = replace_char {
+                    self.add_text(replace_char.to_string(), &style);
+                } else {
+                    self.add_gap(1);
+                }
+            }
+        }
         self
     }
 
@@ -301,7 +386,7 @@ impl CharmieRow {
                         result.add_gap(segment.len() - clip_len);
                     }
                 },
-                CharmieSegment::Textual { .. } => {
+                CharmieSegment::Textual { .. } | CharmieSegment::HalfChar { .. } => {
                     result += segment;
                 },
             }
@@ -345,7 +430,11 @@ impl CharmieRow {
                                         len: take_until - skip_start,
                                     }
                                 },
+                                CharmieSegment::HalfChar { .. } => {
+                                    row += segment;
+                                },
                                 CharmieSegment::Textual { text, style } => {
+                                    let mut tail_half_char: Option<char> = None;
                                     let text: String = text
                                         .chars()
                                         .scan(0, |index, ch| {
@@ -363,37 +452,35 @@ impl CharmieRow {
                                             if char_width == 2 {
                                                 if current_idx + 1 == skip_start {
                                                     // Full width character sliced in half at the beginning
-                                                    match bcfb {
-                                                        BrokenCharacterFillBehavior::Char(
-                                                            fill_ch,
-                                                        ) => return Some(Some(fill_ch)),
-                                                        BrokenCharacterFillBehavior::Gap => {
-                                                            row +=
-                                                                &CharmieSegment::Empty { len: 1 };
-                                                            return Some(None);
-                                                        },
-                                                    }
+                                                    row.add_half_char(
+                                                        ch,
+                                                        bcfb.to_chr_opt(),
+                                                        false,
+                                                        style,
+                                                    );
+                                                    return Some(None);
                                                 } else if current_idx + 1 == take_until {
                                                     // Full width character sliced in half at the end
-                                                    match bcfb {
-                                                        BrokenCharacterFillBehavior::Char(
-                                                            fill_ch,
-                                                        ) => return Some(Some(fill_ch)),
-                                                        BrokenCharacterFillBehavior::Gap => {
-                                                            return None;
-                                                        },
-                                                    }
+                                                    tail_half_char = Some(ch);
+                                                    return None;
                                                 }
                                             }
                                             Some(Some(ch))
                                         })
                                         .filter_map(|c| c)
                                         .collect();
-
                                     row += CharmieSegment::Textual {
                                         text,
                                         style: *style,
                                     };
+                                    if let Some(tail_half_char) = tail_half_char {
+                                        row.add_half_char(
+                                            tail_half_char,
+                                            bcfb.to_chr_opt(),
+                                            true,
+                                            style,
+                                        );
+                                    }
                                 },
                             }
                         }
@@ -485,6 +572,12 @@ impl AddAssign<&CharmieSegment> for CharmieRow {
                 text,
                 style: format,
             } => self.add_text(text.as_str(), format),
+            CharmieSegment::HalfChar {
+                half_char,
+                replace_char,
+                first_half,
+                style,
+            } => self.add_half_char(*half_char, *replace_char, *first_half, style),
         };
     }
 }
@@ -498,6 +591,12 @@ impl AddAssign<CharmieSegment> for CharmieRow {
                 text,
                 style: format,
             } => self.add_text(text.as_str(), &format),
+            CharmieSegment::HalfChar {
+                half_char,
+                replace_char,
+                first_half,
+                style,
+            } => self.add_half_char(half_char, replace_char, first_half, &style),
         };
     }
 }
@@ -508,31 +607,56 @@ impl AddAssign<CharmieSegment> for CharmieRow {
 ///
 #[derive(Debug, Clone, PartialEq)]
 enum CharmieSegment {
-    Textual { text: String, style: ContentStyle },
-    Empty { len: u32 },
-    Effect { len: u32, style: ContentStyle },
+    Textual {
+        text: String,
+        style: ContentStyle,
+    },
+    Empty {
+        len: u32,
+    },
+    Effect {
+        len: u32,
+        style: ContentStyle,
+    },
+    HalfChar {
+        half_char: char,
+        replace_char: Option<char>,
+        first_half: bool,
+        style: ContentStyle,
+    },
 }
 
 impl CharmieSegment {
+    fn is_half_char(&self) -> bool {
+        matches!(self, Self::HalfChar { .. })
+    }
+
     fn with_effect(&self, effect_style: &ContentStyle) -> Self {
         match self {
             Self::Textual { text, style } => Self::Textual {
                 text: text.to_string(),
-                style: Self::add_styles(style, &effect_style),
+                style: add_styles(style, &effect_style),
             },
             Self::Effect { len, style } => Self::Effect {
                 len: *len,
-                style: Self::add_styles(style, effect_style),
+                style: add_styles(style, effect_style),
             },
             Self::Empty { len } => Self::Effect {
                 len: *len,
                 style: *effect_style,
             },
+            Self::HalfChar {
+                half_char: chr,
+                replace_char: replace_chr,
+                first_half,
+                style,
+            } => Self::HalfChar {
+                half_char: *chr,
+                first_half: *first_half,
+                replace_char: *replace_chr,
+                style: add_styles(style, effect_style),
+            },
         }
-    }
-
-    fn add_styles(_lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyle {
-        *rhs
     }
 
     fn len(&self) -> u32 {
@@ -540,6 +664,7 @@ impl CharmieSegment {
             Self::Textual { text, .. } => text.width() as u32,
             Self::Empty { len } => *len,
             Self::Effect { len, .. } => *len,
+            Self::HalfChar { .. } => 1u32,
         }
     }
 }
@@ -557,6 +682,12 @@ impl Display for CharmieSegment {
             CharmieSegment::Effect { len, style } => {
                 let segment = format!("{:lensize$}", "", lensize = *len as usize);
                 write!(f, "{}", style.apply(segment))
+            },
+            CharmieSegment::HalfChar {
+                replace_char: replace_chr,
+                ..
+            } => {
+                write!(f, "{}", replace_chr.unwrap_or(' '))
             },
         }
     }
@@ -589,6 +720,16 @@ impl<D: Display> From<StyledContent<D>> for CharmieSegment {
     }
 }
 
+// HELPER FUNCTION: Combine styles
+fn add_styles(lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyle {
+    ContentStyle {
+        foreground_color: rhs.foreground_color.or(lhs.foreground_color),
+        background_color: rhs.background_color.or(lhs.background_color),
+        attributes: rhs.attributes | lhs.attributes,
+        // underline_color
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crossterm::style::Stylize;
@@ -597,51 +738,45 @@ mod tests {
     use super::*;
 
     #[test]
-    fn current_undesirable_behavior_with_drawing_over_fullwidth_characters() {
+    fn merging_clipped_sides_of_fullwidth_characters() {
         let row = CharmieRow::of_plain_text("世Hello界world");
         let effect = CharmieRow::of_effect(2, &ContentStyle::new().red());
 
-        // Undesired behavior: Effect splits fullwidth characters
         let affected = row.draw(&effect, 1, BrokenCharacterFillBehavior::Char('_'));
-        let _desired = format! {"{}ello界world", "世H".red()};
-        let expected = format! {"_{}ello界world", "_H".red()};
+        let expected = format! {"{}ello界world", "世H".red()};
         assert_eq!(expected, affected.to_string());
 
         let affected = row.draw(&effect, 6, BrokenCharacterFillBehavior::Char('_'));
-        let _desired = format! {"世Hell{}world", "o界".red()};
-        let expected = format! {"世Hell{}_world", "o_".red()};
+        let expected = format! {"世Hell{}world", "o界".red()};
         assert_eq!(expected, affected.to_string());
-
-        // Undesired behavior: Gaps split full-width characters at beginning and end
-        let _desired = "世Hello界world";
 
         let drawing = row.draw(
             &CharmieRow::of_gap(1),
             0,
             BrokenCharacterFillBehavior::Char('_'),
         );
-        assert_eq!(drawing.to_string(), "__Hello界world");
+        assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(1),
             7,
             BrokenCharacterFillBehavior::Char('_'),
         );
-        assert_eq!(drawing.to_string(), "世Hello__world");
+        assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(2),
             1,
             BrokenCharacterFillBehavior::Char('_'),
         );
-        assert_eq!(drawing.to_string(), "__Hello界world");
+        assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(2),
             6,
             BrokenCharacterFillBehavior::Char('_'),
         );
-        assert_eq!(drawing.to_string(), "世Hello__world");
+        assert_eq!(drawing.to_string(), "世Hello界world");
     }
 
     #[test]
