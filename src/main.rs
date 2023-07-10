@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::time::Duration;
 
-use bevy::app::ScheduleRunnerSettings;
 use bevy::prelude::*;
 use old_game_core::{error, loader, node_from_def, GameState, Inventory, NodeDef, Pickup};
 use simplelog::{LevelFilter, WriteLogger};
@@ -12,16 +11,17 @@ fn main() -> error::Result<()> {
     log::trace!("{:?}", load_state());
     App::new()
         // .add_plugins(MinimalPlugins)
-        .add_plugin(HierarchyPlugin)
-        .add_plugin(bevy::core::TaskPoolPlugin::default())
-        .add_plugin(TypeRegistrationPlugin)
-        .add_plugin(bevy::time::TimePlugin)
-        .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_millis(25)))
-        .add_plugin(bevy::app::ScheduleRunnerPlugin)
-        .add_plugin(FrameCountPlugin)
-        .add_plugin(game_core::NDitCorePlugin)
-        .add_plugin(n_dit::term::CharmiePlugin)
-        .add_plugin(n_dit::demo::DemoPlugin)
+        .add_plugins((
+            HierarchyPlugin,
+            bevy::core::TaskPoolPlugin::default(),
+            TypeRegistrationPlugin,
+            bevy::time::TimePlugin,
+            bevy::app::ScheduleRunnerPlugin::run_loop(Duration::from_millis(25)),
+            FrameCountPlugin,
+            game_core::NDitCorePlugin,
+            n_dit::term::CharmiePlugin,
+            n_dit::demo::DemoPlugin,
+        ))
         .run();
 
     Ok(())

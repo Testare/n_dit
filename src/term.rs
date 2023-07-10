@@ -5,12 +5,13 @@ pub mod layout;
 pub mod node_ui;
 mod render;
 
+use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
 
 pub mod prelude {
     pub use game_core::prelude::*;
 
-    pub use super::input_event::{CrosstermEvent, KeyEvent, MouseEvent};
+    pub use super::input_event::{CrosstermEvent, Key, KeyEvent, MouseEvent};
 }
 
 use std::io::stdout;
@@ -48,7 +49,7 @@ struct TermConfig {
 
 #[derive(Deref, Resource)]
 struct TermEventListener {
-    rx: Mutex<Receiver<CrosstermEvent>>,
+    rx: Mutex<Receiver<crossterm::event::Event>>,
 }
 
 impl TerminalWindow {
@@ -196,15 +197,15 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TerminalWindow>()
             .init_resource::<DrawConfiguration>()
             .add_state::<TerminalFocusMode>()
-            .add_plugin(render::RenderTtyPlugin::default())
-            .add_plugin(node_ui::NodeUiPlugin::default())
-            .add_plugin(layout::TaffyTuiLayoutPlugin::default())
+            .add_plugins(render::RenderTtyPlugin::default())
+            .add_plugins(node_ui::NodeUiPlugin::default())
+            .add_plugins(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
             .add_event::<MouseEvent>()
-            .add_system(term_event_listener)
-            .add_system(terminal_size_adjustment)
-            .add_system(exit_key);
+            .add_systems(First, term_event_listener.in_set(NDitCoreSet::RawInputs))
+            .add_systems(Update, terminal_size_adjustment)
+            .add_systems(Last, exit_key);
     }
 }
 
@@ -237,14 +238,14 @@ fn term_event_listener(
         Ok(rx) => {
             loop {
                 match rx.try_recv() {
-                    Ok(CrosstermEvent::Mouse(mouse_event)) => {
-                        ev_mouse.send(mouse_event);
+                    Ok(crossterm::event::Event::Mouse(mouse_event)) => {
+                        ev_mouse.send(MouseEvent(mouse_event));
                     },
-                    Ok(CrosstermEvent::Key(key_event)) => {
-                        ev_key.send(key_event);
+                    Ok(crossterm::event::Event::Key(key_event)) => {
+                        ev_key.send(key_event.into());
                     },
                     Ok(event) => {
-                        ev_crossterm.send(event);
+                        ev_crossterm.send(CrosstermEvent(event));
                     },
                     Err(TryRecvError::Empty) => {
                         break;
@@ -268,10 +269,10 @@ fn terminal_size_adjustment(
     mut window: ResMut<TerminalWindow>,
 ) {
     for input in inputs.iter() {
-        if let CrosstermEvent::Resize(width, height) = input {
+        if let crossterm::event::Event::Resize(width, height) = **input {
             window.set_size(UVec2 {
-                x: *width as u32,
-                y: *height as u32,
+                x: width as u32,
+                y: height as u32,
             });
         }
     }

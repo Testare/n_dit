@@ -6,7 +6,6 @@ mod simple_submenu;
 mod stats;
 
 pub use actions::MenuUiActions;
-use bevy::app::SystemAppConfig;
 use bevy::ecs::query::WorldQuery;
 use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
@@ -36,10 +35,6 @@ pub trait SimpleSubmenu {
             },
             ..default()
         })
-    }
-
-    fn layout_event_system() -> Option<SystemAppConfig> {
-        None
     }
 
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize>;

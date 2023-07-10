@@ -1,26 +1,26 @@
 use crate::prelude::*;
 
-#[derive(Clone, Component, Debug, Deref, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, Reflect)]
 pub struct Actions(pub Vec<Entity>);
 
-#[derive(Clone, Component, Debug, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Reflect)]
 pub struct Action {
     pub name: String,
 }
 
-#[derive(Clone, Component, Debug, Deref, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, Reflect)]
 pub struct ActionRange(u32);
 
-#[derive(Clone, Component, Debug, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Reflect)]
 pub enum ActionEffect {
     Damage(usize),
     Heal(usize),
 }
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 pub struct Prereqs(pub Vec<Prerequisite>);
 
-#[derive(Clone, Debug, FromReflect, Reflect)]
+#[derive(Clone, Debug, Reflect)]
 pub enum Prerequisite {
     MinSize(u32),
 }

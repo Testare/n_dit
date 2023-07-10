@@ -5,7 +5,7 @@ use super::{GridUi, NodeCursor};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::prelude::*;
 
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct Scroll2D(pub UVec2);
 
 pub fn adjust_scroll(

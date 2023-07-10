@@ -64,6 +64,7 @@ pub fn adjust_available_moves(
 
                 if selected_action.is_some()
                     && ui_focus
+                        .into_inner()
                         .map(|focused_entity| grid_uis.contains(focused_entity))
                         .unwrap_or(true)
                 {

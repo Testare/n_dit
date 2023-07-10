@@ -13,7 +13,7 @@ use crate::term::layout::{
 };
 use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, TerminalRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Debug, Default)]
@@ -404,14 +404,22 @@ impl MenuUiCardSelection {
 
 impl Plugin for MenuUiCardSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems((
-            MenuUiCardSelection::kb_card_selection.in_set(NDitCoreSet::ProcessInputs),
-            MenuUiCardSelection::card_selection_focus_status_change
-                .in_set(RenderTtySet::PreCalculateLayout),
-            MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
-            MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::PreCalculateLayout),
-            MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
-        ));
+        app.add_systems(
+            PreUpdate,
+            (
+                MenuUiCardSelection::kb_card_selection.in_set(NDitCoreSet::ProcessInputs),
+                MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
+            ),
+        )
+        .add_systems(
+            RENDER_TTY_SCHEDULE,
+            (
+                MenuUiCardSelection::card_selection_focus_status_change
+                    .in_set(RenderTtySet::PreCalculateLayout),
+                MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::PreCalculateLayout),
+                MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
+            ),
+        );
     }
 }
 

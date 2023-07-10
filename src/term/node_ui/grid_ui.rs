@@ -19,7 +19,7 @@ use super::{
 };
 use crate::term::layout::{LayoutMouseTarget, StyleTty, UiFocusOnClick};
 use crate::term::prelude::*;
-use crate::term::render::RenderTtySet;
+use crate::term::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 
 #[derive(Component, Default)]
 pub struct GridUi;
@@ -46,10 +46,12 @@ pub struct PlayerUiQ {
 impl Plugin for GridUi {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            PreUpdate,
             (grid_inputs::handle_layout_events, grid_inputs::kb_grid)
                 .in_set(NDitCoreSet::ProcessInputs),
         )
         .add_systems(
+            Update,
             (
                 adjust_node_cursor_when_curio_moves,
                 available_moves::adjust_available_moves,
@@ -59,6 +61,7 @@ impl Plugin for GridUi {
                 .in_set(NDitCoreSet::PostProcessCommands),
         )
         .add_systems(
+            RENDER_TTY_SCHEDULE,
             (scroll::adjust_scroll, render_grid::render_grid_system)
                 .chain()
                 .in_set(RenderTtySet::PostCalculateLayout),

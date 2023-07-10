@@ -27,7 +27,7 @@ impl<'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
 }
 
 impl EntityCommand for AddToGridCommand {
-    fn write(self, id: Entity, world: &mut World) {
+    fn apply(self, id: Entity, world: &mut World) {
         let AddToGridCommand {
             grid_entity,
             points,

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::iter::Rev;
 use std::vec::IntoIter;
 
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::reflect::Reflect;
 use bitvec::slice::BitSlice;
 use bitvec::vec::BitVec;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ pub mod commands;
 /// * A reference to its location on the map
 /// * An id for an item in the containing EntityGrid, if the square is occupied.
 /// * A reference to the next square occupied by the item, if any.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromReflect, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 pub struct Square {
     item: Option<Entity>,
     next: Option<UVec2>,
@@ -43,7 +43,7 @@ pub struct Square {
 /// have at least one square of representation in the grid, possibly more. These squares are
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
-#[derive(Clone, Component, Debug, PartialEq, Eq, Serialize, Deserialize, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 pub struct EntityGrid {
     width: u32,
     height: u32,

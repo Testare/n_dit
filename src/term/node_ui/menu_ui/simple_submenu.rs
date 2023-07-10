@@ -2,15 +2,13 @@ use std::marker::PhantomData;
 
 use bevy::ecs::system::StaticSystemParam;
 use game_core::player::{ForPlayer, Player};
-use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedEntity, SimpleSubmenu};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
 use crate::term::node_ui::NodeUiQItem;
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, TerminalRendering};
-use crate::term::TerminalFocusMode;
+use crate::term::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
 pub struct SimpleSubMenuPlugin<S> {
     _marker: PhantomData<S>,
@@ -19,15 +17,12 @@ pub struct SimpleSubMenuPlugin<S> {
 impl<S: SimpleSubmenu + Component + Sync + Send + 'static> Plugin for SimpleSubMenuPlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            RENDER_TTY_SCHEDULE,
             (
                 style_simple_submenu::<S>.in_set(RenderTtySet::PreCalculateLayout),
                 render_simple_submenu::<S>.in_set(RenderTtySet::PostCalculateLayout),
-            )
-                .in_set(OnUpdate(TerminalFocusMode::Node)),
+            ),
         );
-        if let Some(layout_system) = S::layout_event_system() {
-            app.add_system(layout_system.in_set(NDitCoreSet::ProcessInputs));
-        }
     }
 }
 

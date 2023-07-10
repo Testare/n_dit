@@ -10,6 +10,8 @@ use crate::term::prelude::*;
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
 
+pub const RENDER_TTY_SCHEDULE: Update = Update;
+
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum RenderTtySet {
     AdjustLayoutStyle,
@@ -73,16 +75,37 @@ impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<RenderPause>()
             .add_systems(
-                (apply_system_buffers, write_rendering_to_terminal)
+                RENDER_TTY_SCHEDULE,
+                (apply_deferred, write_rendering_to_terminal)
+                    .chain()
                     .in_set(RenderTtySet::RenderToTerminal),
             )
-            .add_system((pause_rendering_on_resize).in_base_set(CoreSet::PreUpdate))
-            .configure_set(RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::ProcessCommandsFlush))
-            .configure_set(RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout))
-            .configure_set(RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout))
-            .configure_set(RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout))
-            .configure_set(RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts))
-            .configure_set(RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal));
+            .add_systems(PreUpdate, pause_rendering_on_resize)
+            // TODO Merge these statements
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::ProcessCommandsFlush),
+            )
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout),
+            )
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout),
+            )
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout),
+            )
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts),
+            )
+            .configure_set(
+                RENDER_TTY_SCHEDULE,
+                RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal),
+            );
     }
 }
 
@@ -91,7 +114,10 @@ pub fn pause_rendering_on_resize(
     mut render_pause: ResMut<RenderPause>,
 ) {
     for event in event_reader.iter() {
-        if matches!(event, CrosstermEvent::Resize { .. }) {
+        if matches!(
+            event,
+            CrosstermEvent(crossterm::event::Event::Resize { .. })
+        ) {
             **render_pause =
                 Some(Instant::now() + Duration::from_millis(PAUSE_RENDERING_ON_RESIZE_MILLIS));
         }

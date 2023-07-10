@@ -28,7 +28,7 @@ pub enum NDitError {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Event)]
 pub struct Op<O> {
     pub op: O,
     pub player: Entity,
@@ -39,7 +39,7 @@ pub trait OpSubtype: Clone {
     type Error;
 }
 
-#[derive(Clone, Debug, getset::Getters)]
+#[derive(Clone, Debug, Event, getset::Getters)]
 pub struct OpResult<O: OpSubtype> {
     #[getset(get = "pub")]
     source: Op<O>,
@@ -76,23 +76,30 @@ impl Plugin for NDitCorePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Op<node::NodeOp>>()
             .add_event::<OpResult<node::NodeOp>>()
-            .configure_sets((
-                NDitCoreSet::RawInputs.in_base_set(CoreSet::First),
-                NDitCoreSet::ProcessInputs
-                    .in_base_set(CoreSet::PreUpdate)
-                    .after(NDitCoreSet::RawInputs),
-                NDitCoreSet::ProcessCommands
-                    .in_base_set(CoreSet::Update)
-                    .after(NDitCoreSet::ProcessInputs),
-                NDitCoreSet::ProcessCommandsFlush
-                    .in_base_set(CoreSet::Update)
-                    .after(NDitCoreSet::ProcessCommands),
-                NDitCoreSet::PostProcessCommands
-                    .in_base_set(CoreSet::Update)
-                    .after(NDitCoreSet::ProcessCommandsFlush),
-            ))
-            .add_system(apply_system_buffers.in_set(NDitCoreSet::ProcessCommandsFlush))
-            .add_systems((card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands))
+            .configure_sets(
+                First,
+                (NDitCoreSet::RawInputs.before(NDitCoreSet::ProcessInputs),),
+            )
+            .configure_sets(
+                PreUpdate,
+                (NDitCoreSet::ProcessInputs.before(NDitCoreSet::ProcessCommands),),
+            )
+            .configure_sets(
+                Update,
+                (
+                    NDitCoreSet::ProcessCommands,
+                    NDitCoreSet::ProcessCommandsFlush,
+                    NDitCoreSet::PostProcessCommands,
+                )
+                    .chain(),
+            )
+            .add_systems(
+                Update,
+                (
+                    apply_deferred.in_set(NDitCoreSet::ProcessCommandsFlush),
+                    (card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands),
+                ),
+            )
             .add_plugin(node::NodePlugin);
     }
 }

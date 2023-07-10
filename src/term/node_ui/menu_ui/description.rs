@@ -7,7 +7,7 @@ use taffy::style::Dimension;
 use super::{NodePieceQ, NodeUi, SelectedAction, SelectedEntity};
 use crate::term::layout::{CalculatedSizeTty, FitToSize, StyleTty};
 use crate::term::node_ui::NodeUiQItem;
-use crate::term::render::{RenderTtySet, TerminalRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiDescription;
@@ -88,10 +88,13 @@ impl MenuUiDescription {
 
 impl Plugin for MenuUiDescription {
     fn build(&self, app: &mut App) {
-        app.add_systems((
-            Self::style_update_system.in_set(RenderTtySet::PreCalculateLayout),
-            Self::render_system.in_set(RenderTtySet::PostCalculateLayout),
-        ));
+        app.add_systems(
+            RENDER_TTY_SCHEDULE,
+            (
+                Self::style_update_system.in_set(RenderTtySet::PreCalculateLayout),
+                Self::render_system.in_set(RenderTtySet::PostCalculateLayout),
+            ),
+        );
     }
 }
 

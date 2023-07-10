@@ -6,13 +6,13 @@ mod card_action;
 
 pub use card_action::{Action, ActionEffect, ActionRange, Actions, Prereqs, Prerequisite};
 
-#[derive(Component, Debug, Default, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
     ordering: Vec<Entity>,
 }
 
-#[derive(Component, Debug, FromReflect, Reflect, getset::Getters)]
+#[derive(Component, Debug, Reflect, getset::Getters)]
 pub struct Card {
     card_name: String,
     #[getset(get = "pub")]
@@ -21,21 +21,21 @@ pub struct Card {
     nickname: Option<String>,
 }
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 pub struct MovementSpeed(pub u32);
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 pub struct MaximumSize(pub u32);
 
 #[derive(Clone, Component, Deref, Reflect)]
 pub struct Description(String);
 
-#[derive(Component, Deref, FromReflect, Reflect)]
+#[derive(Component, Deref, Reflect)]
 struct Tags {
     tags: Vec<Tag>,
 }
 
-#[derive(FromReflect, Reflect)]
+#[derive(Reflect)]
 enum Tag {
     Damage,
     Healing,

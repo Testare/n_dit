@@ -11,10 +11,10 @@ pub use rule::AccessPointLoadingRule;
 
 pub struct NodePlugin;
 
-#[derive(Component, Debug, FromReflect, Reflect)]
+#[derive(Component, Debug, Reflect)]
 pub struct PlayerTurn(Entity);
 
-#[derive(Component, FromReflect, Reflect)]
+#[derive(Component, Reflect)]
 pub struct Node;
 
 /// Indicates this Player is in the node
@@ -27,7 +27,7 @@ pub struct NodePiece {
     display_id: String,
 }
 
-#[derive(Debug, FromReflect, Reflect)]
+#[derive(Debug, Reflect)]
 pub struct Mon(pub u32);
 
 #[derive(Component, Debug, Reflect)]
@@ -64,14 +64,14 @@ pub struct Curio {
     name: String,
 }
 
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct MovesTaken(pub u32);
 
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct IsTapped(pub bool);
 
 // Should it be "IsActivated" or should a node have an "ActivatedPiece"
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct ActivatedPiece(Option<Entity>);
 
 #[derive(Component, Deref, DerefMut, Eq, PartialEq)]
@@ -157,6 +157,7 @@ impl FromWorld for NoOpAction {
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NoOpAction>().add_systems(
+            Update,
             (access_point_ops, ready_to_go_ops, curio_ops).in_set(NDitCoreSet::ProcessCommands),
         );
     }

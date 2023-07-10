@@ -28,7 +28,7 @@ use crate::term::TerminalFocusMode;
 
 /// Event that tells us to show a specific Node entity
 /// Should likely be replaced with a gamecore Op
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct ShowNode {
     pub player: Entity,
     pub node: Entity,
@@ -52,15 +52,16 @@ pub struct AvailableMoves(HashSet<UVec2>);
 pub struct AvailableActionTargets(HashSet<UVec2>);
 
 /// Cursor that the user controls to select pieces in the node
-#[derive(Component, Debug, Default, Deref, DerefMut, FromReflect, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
             .add_event::<ShowNode>()
-            .add_system(setup::create_node_ui.in_schedule(OnEnter(TerminalFocusMode::Node)))
+            .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
             .add_systems(
+                PreUpdate,
                 (
                     inputs::kb_focus_cycle,
                     inputs::kb_ready,
@@ -68,14 +69,16 @@ impl Plugin for NodeUiPlugin {
                 )
                     .in_set(NDitCoreSet::ProcessInputs),
             )
-            .add_plugin(MenuUiCardSelection::plugin())
-            .add_plugin(MenuUiStats::plugin())
-            .add_plugin(MenuUiLabel::plugin())
-            .add_plugin(MenuUiActions::plugin())
-            .add_plugin(MenuUiDescription::plugin())
-            .add_plugin(GridUi::plugin())
-            .add_plugin(MessageBarUi::plugin())
-            .add_plugin(TitleBarUi::plugin());
+            .add_plugins((
+                MenuUiCardSelection::plugin(),
+                MenuUiStats::plugin(),
+                MenuUiLabel::plugin(),
+                MenuUiActions::plugin(),
+                MenuUiDescription::plugin(),
+                GridUi::plugin(),
+                MessageBarUi::plugin(),
+                TitleBarUi::plugin(),
+            ));
     }
 }
 

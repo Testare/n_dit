@@ -4,7 +4,7 @@ use pad::PadStr;
 use taffy::prelude::Style;
 
 use super::input_event::{KeyModifiers, MouseEventKind};
-use super::render::{RenderTtySet, TerminalRendering};
+use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
 use crate::charmie::CharacterMapImage;
 use crate::term::prelude::*;
@@ -23,7 +23,7 @@ struct NodeTty(taffy::node::Node);
 #[derive(Component)]
 pub struct LayoutRoot;
 
-#[derive(Component, CopyGetters, Debug, Getters)]
+#[derive(Component, CopyGetters, Debug, Event, Getters)]
 pub struct LayoutEvent {
     #[getset(get_copy = "pub")]
     entity: Entity,
@@ -108,28 +108,29 @@ impl Plugin for TaffyTuiLayoutPlugin {
         app.init_resource::<Taffy>()
             .add_event::<LayoutEvent>()
             .add_systems(
-                (remove_ui_focus_if_not_displayed, apply_ui_next)
-                    .chain()
-                    .in_base_set(CoreSet::Last),
+                Last,
+                (remove_ui_focus_if_not_displayed, apply_ui_next).chain(),
             )
             .add_systems(
-                (generate_layout_events, update_ui_focus_on_click).in_base_set(CoreSet::PreUpdate),
+                PreUpdate,
+                (generate_layout_events, update_ui_focus_on_click),
             )
             .add_systems(
+                RENDER_TTY_SCHEDULE,
                 (
-                    taffy_apply_style_updates,
-                    taffy_new_style_components,
-                    apply_system_buffers,
-                    taffy_apply_hierarchy_updates,
-                    calculate_layouts,
-                )
-                    .chain()
-                    .in_set(RenderTtySet::CalculateLayout),
-            )
-            .add_systems(
-                (apply_system_buffers, render_layouts)
-                    .chain()
-                    .in_set(RenderTtySet::RenderLayouts),
+                    (
+                        taffy_apply_style_updates,
+                        taffy_new_style_components,
+                        apply_deferred,
+                        taffy_apply_hierarchy_updates,
+                        calculate_layouts,
+                    )
+                        .chain()
+                        .in_set(RenderTtySet::CalculateLayout),
+                    (apply_deferred, render_layouts)
+                        .chain()
+                        .in_set(RenderTtySet::RenderLayouts),
+                ),
             );
     }
 }
@@ -170,12 +171,12 @@ fn generate_layout_events(
     >,
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
 ) {
-    for event @ MouseEvent {
+    for event @ MouseEvent(crossterm::event::MouseEvent {
         kind,
         column,
         row,
         modifiers,
-    } in crossterm_events.iter()
+    }) in crossterm_events.iter()
     {
         let (event_x, event_y) = (*column as u32, *row as u32);
 

@@ -13,7 +13,7 @@ use crate::term::layout::{
 };
 use crate::term::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::term::prelude::*;
-use crate::term::render::{RenderTtySet, TerminalRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::term::{KeyMap, Submap};
 
 #[derive(Component, Default, Debug)]
@@ -226,15 +226,23 @@ impl MenuUiActions {
 
 impl Plugin for MenuUiActions {
     fn build(&self, app: &mut App) {
-        app.add_systems((
-            Self::sys_on_focus_action_menu
-                .before(Self::kb_action_menu)
-                .in_set(NDitCoreSet::ProcessInputs),
-            Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
-            Self::sys_adjust_style_action_menu.in_set(RenderTtySet::PreCalculateLayout),
-            Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
-            Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
-        ));
+        app.add_systems(
+            PreUpdate,
+            (
+                Self::sys_on_focus_action_menu
+                    .before(Self::kb_action_menu)
+                    .in_set(NDitCoreSet::ProcessInputs),
+                Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
+                Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
+            ),
+        )
+        .add_systems(
+            RENDER_TTY_SCHEDULE,
+            (
+                Self::sys_adjust_style_action_menu.in_set(RenderTtySet::PreCalculateLayout),
+                Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
+            ),
+        );
     }
 }
 

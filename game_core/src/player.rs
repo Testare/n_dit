@@ -23,5 +23,5 @@ impl Default for PlayerBundle {
     }
 }
 
-#[derive(Component, Debug, FromReflect, Reflect)]
+#[derive(Component, Debug, Reflect)]
 pub struct Players(Vec<Entity>);
