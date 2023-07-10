@@ -11,7 +11,7 @@ pub use key_map::{KeyMap, Submap};
 pub mod prelude {
     pub use game_core::prelude::*;
 
-    pub use super::input_event::{CrosstermEvent, Key, KeyEvent, MouseEvent};
+    pub use super::input_event::{CrosstermEvent, KeyEvent, MouseEvent};
 }
 
 use std::io::stdout;

@@ -13,7 +13,7 @@ use game_core::prelude::*;
 use crate::term::input_event::KeyCode;
 use crate::term::layout::LayoutEvent;
 use crate::term::node_ui::{NodeCursor, ShowNode};
-use crate::term::prelude::{Key, KeyEvent};
+use crate::term::prelude::KeyEvent;
 use crate::term::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
@@ -21,7 +21,7 @@ pub struct DemoPlugin;
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(demo_startup)
+        app.add_systems(Startup, demo_startup)
             .add_systems(PostUpdate, (debug_key, log_ops));
     }
 }

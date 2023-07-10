@@ -2,7 +2,7 @@ use game_core::prelude::*;
 
 use super::{NodeUi, NodeUiQItem};
 use crate::term::layout::StyleTty;
-use crate::term::render::{RenderTtySet, TerminalRendering};
+use crate::term::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
 #[derive(Component, Default)]
 pub struct TitleBarUi;
@@ -18,7 +18,10 @@ pub fn render_title_bar_system(
 
 impl Plugin for TitleBarUi {
     fn build(&self, app: &mut App) {
-        app.add_system(render_title_bar_system.in_set(RenderTtySet::PostCalculateLayout));
+        app.add_systems(
+            RENDER_TTY_SCHEDULE,
+            render_title_bar_system.in_set(RenderTtySet::PostCalculateLayout),
+        );
     }
 }
 

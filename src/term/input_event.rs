@@ -1,4 +1,4 @@
-pub use crossterm::event::{KeyCode, KeyEvent as Key, KeyModifiers, MouseButton, MouseEventKind};
+pub use crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEventKind};
 use game_core::prelude::*;
 
 #[derive(Clone, Copy, Deref, DerefMut, Event)]
