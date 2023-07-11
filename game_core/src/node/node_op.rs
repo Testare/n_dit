@@ -1,4 +1,4 @@
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::{Has, WorldQuery};
 
 use super::{
     AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
@@ -73,7 +73,6 @@ pub struct CurioQ {
     movement_speed: Option<&'static mut MovementSpeed>,
     max_size: Option<&'static mut MaximumSize>,
     actions: Option<&'static Actions>,
-    prevent_no_op: Option<&'static PreventNoOp>,
 }
 
 pub fn curio_ops(
@@ -236,7 +235,7 @@ pub fn ready_to_go_ops(
     no_op_action: Res<NoOpAction>,
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
-    cards: Query<(&Card, Option<&Actions>, Option<&PreventNoOp>)>,
+    cards: Query<(&Card, Option<&Actions>, Has<PreventNoOp>)>,
     mut players: Query<(Entity, &OnTeam, &InNode, &mut IsReadyToGo), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
@@ -303,7 +302,7 @@ pub fn ready_to_go_ops(
                                             ))
                                             .remove::<AccessPoint>();
 
-                                        if prevent_no_op.is_none() {
+                                        if !prevent_no_op {
                                             // Add No Op action
                                             let mut new_actions = card_actions
                                                 .cloned()
