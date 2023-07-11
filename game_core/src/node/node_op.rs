@@ -52,7 +52,7 @@ pub enum NodeOpError {
 
 impl OpSubtype for NodeOp {
     type Error = NodeOpError;
-    type Metadata = ();
+    type Metadata = crate::common::Metadata;
 }
 
 #[derive(WorldQuery)]
@@ -169,7 +169,7 @@ pub fn curio_ops(
 
                             return None;
                         }
-                        Some(())
+                        Some(Default::default())
                     });
                     // TODO use actual results
                     ev_results.send(OpResult::new(
@@ -218,7 +218,7 @@ pub fn curio_ops(
                             }
                             **curio_q.tapped = true;
                             **active_curio = None;
-                            Ok(())
+                            Ok(Metadata::default())
                         });
                     ev_results.send(OpResult::new(fullop, node_op_result));
                 },

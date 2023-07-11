@@ -1,6 +1,8 @@
-mod metadata;
+pub mod metadata;
 
 use bevy::prelude::{Reflect, UVec2};
+
+pub use metadata::Metadata;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum Compass {
