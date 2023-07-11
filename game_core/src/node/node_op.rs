@@ -9,9 +9,9 @@ use crate::card::{
     MovementSpeed, Prereqs,
 };
 use crate::node::{AccessPoint, Curio};
+use crate::op::{OpResult, OpSubtype};
 use crate::player::Player;
 use crate::prelude::*;
-use crate::{OpResult, OpSubtype};
 
 const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 

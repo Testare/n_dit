@@ -9,8 +9,9 @@ mod scroll;
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
 use game_core::node::{AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
+use game_core::op::OpResult;
 use game_core::player::Player;
-use game_core::{NDitCoreSet, OpResult};
+use game_core::NDitCoreSet;
 pub use scroll::Scroll2D;
 
 use super::{

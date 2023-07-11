@@ -1,6 +1,8 @@
-use bevy::prelude::UVec2;
+mod metadata;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+use bevy::prelude::{Reflect, UVec2};
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum Compass {
     North = 1,
     East = 2,
