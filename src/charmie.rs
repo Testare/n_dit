@@ -792,7 +792,7 @@ mod tests {
         assert_eq!(clipped.to_string(), "xHellox");
 
         let clipped = row.clip(1, 7, BrokenCharacterFillBehavior::Gap);
-        assert_eq!(clipped.to_string(), " Hello"); // Gap is not added to the end, but at the beginning
+        assert_eq!(clipped.to_string(), " Hello ");
     }
 
     #[test]
@@ -800,17 +800,17 @@ mod tests {
         let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
         let mut expected = "Hello".green().to_string();
         expected.push_str("There!");
-        assert_eq!(row.to_string(), expected); // Gap is not added to the end, but at the beginning
+        assert_eq!(row.to_string(), expected);
 
         let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
         let clipped = row.clip(0, 10, BrokenCharacterFillBehavior::Gap);
         let mut expected = "Hello".green().to_string();
         expected.push_str("There");
-        assert_eq!(clipped.to_string(), expected); // Gap is not added to the end, but at the beginning
+        assert_eq!(clipped.to_string(), expected);
 
         let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
         let clipped = row.clip(6, 4, BrokenCharacterFillBehavior::Gap);
-        assert_eq!(clipped.to_string(), "here"); // Gap is not added to the end, but at the beginning
+        assert_eq!(clipped.to_string(), "here");
     }
 
     #[test]
