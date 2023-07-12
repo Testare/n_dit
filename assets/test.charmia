@@ -1,0 +1,111 @@
+
+[ani.spin]
+
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+-o
+"""
+fg = """
+-r
+
+"""
+bg = """
+-R
+"""
+
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+--o
+"""
+fg = """
+--y
+
+"""
+bg = """
+--Y
+"""
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+
+---o
+"""
+fg = """
+
+---g
+"""
+bg = """
+
+---G
+"""
+
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+
+
+--o
+"""
+fg = """
+
+
+--b
+"""
+bg = """
+
+
+--B
+"""
+
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+
+
+-o
+"""
+fg = """
+
+
+-p
+"""
+bg = """
+
+
+-P
+"""
+
+[[ani.spin.frame]]
+timing = 50.0
+text = """
+
+o
+"""
+fg = """
+
+w
+"""
+bg = """
+
+W
+"""
+[ani.spin.frame.values]
+colors.w = "white"
+colors.W = "black"
+
+[values]
+gap = "-"
+
+[values.colors]
+r = "red"
+R = "dark red"
+y = "yellow"
+Y = "dark yellow"
+g = "lime"
+G = "green"
+b = "blue"
+B = "navy"
+p = "magenta"
+P = "purple"

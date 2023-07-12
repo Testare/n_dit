@@ -1,3 +1,5 @@
+mod charmie_def;
+
 use std::borrow::Borrow;
 use std::fmt::Display;
 use std::ops::AddAssign;
