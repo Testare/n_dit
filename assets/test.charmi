@@ -4,14 +4,14 @@ text = """
 r =0  v
 """
 fg = """
-  ygb
+  y b
  o   i
-r BBB v
+r  BB v
 """
 bg = """
   bgy
  i   o
-v www r
+v  ww r
 """
 att = """
 
@@ -23,10 +23,10 @@ att = """
 [values.colors]
 r = "red"
 o = 208
-y = "olive"
+y = "yellow"
 g = "green"
 b = "blue"
-i = "navy"
+i = "dark blue"
 v = "purple"
 w = [255, 255, 255]
 B = "black"
