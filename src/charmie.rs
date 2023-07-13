@@ -7,6 +7,7 @@ use std::ops::AddAssign;
 
 use bevy::reflect::TypeUuid;
 use crossterm::style::{ContentStyle, StyledContent};
+use itertools::Itertools;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[derive(Debug, Default)]
@@ -48,6 +49,11 @@ impl Default for BrokenCharacterFillBehavior {
 impl CharacterMapImage {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Mostly useful for debugging
+    pub fn to_string(&self) -> String {
+        self.rows.iter().map(|row| row.to_string()).join("\n")
     }
 
     // Draws map onto this image, expanding the image as necessary, at the location specified.

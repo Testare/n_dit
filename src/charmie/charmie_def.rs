@@ -1,6 +1,6 @@
 use bevy::utils::HashMap;
 use crossterm::style::{ContentStyle, Stylize};
-use itertools::Itertools;
+use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -106,51 +106,43 @@ impl From<CharmieDef> for CharacterMapImage {
             .text
             .map(|text| text.lines().map(|s| s.to_owned()).collect())
             .unwrap_or_default();
-        let fg_lines: Vec<Vec<char>> = value
-            .fg
-            .map(|text| str_to_char_array(text.as_str()))
-            .unwrap_or_default();
-        let bg_lines: Vec<Vec<char>> = value
-            .bg
-            .map(|text| str_to_char_array(text.as_str()))
-            .unwrap_or_default();
-        let height = text_lines.len().max(fg_lines.len()).max(bg_lines.len());
+        let styles = style_iters(value.fg.as_ref(), value.bg.as_ref(), color_map);
+
+        let height = text_lines.len().max(styles.len());
         let width = text_lines
             .iter()
             .map(String::len)
             .max()
-            .max(fg_lines.iter().map(Vec::len).max())
-            .max(bg_lines.iter().map(Vec::len).max())
+            .max(styles.iter().map(Vec::len).max())
             .unwrap_or_default();
         let mut charmi = CharacterMapImage::new();
+        let mut style_row_iter = styles.into_iter();
         for y in 0..height {
             let mut row = CharmieRow::new();
             let mut x = 0;
-            let fg_line = fg_lines.get(y);
-            let bg_line = bg_lines.get(y);
+
+            let mut style_iter = style_row_iter
+                .next()
+                .into_iter()
+                .flat_map(|v| v.into_iter());
             let text_line = text_lines.get(y).map(|s| s.as_str()).unwrap_or_default();
             for ch in text_line.chars().chain(std::iter::repeat(gap_ch)) {
-                let mut style = ContentStyle::default().stylize();
-                let fg = fg_line.and_then(|line| {
-                    let color = color_map.get(line.get(x)?)?;
-                    style = style.with(*color);
-                    Some(color)
-                });
-                let bg = bg_line.and_then(|line| {
-                    let color = color_map.get(line.get(x)?)?;
-                    style = style.on(*color);
-                    Some(color)
-                });
+                let style = style_iter.next().flatten();
                 if ch == gap_ch {
-                    if bg.is_some() || fg.is_some() {
+                    if let Some(style) = style {
                         row.add_effect(1, &style);
                     } else {
                         row.add_gap(1);
                     }
                 } else {
-                    row.add_char(ch, &style);
+                    row.add_char(ch, &style.unwrap_or_default());
                 }
-                x += ch.width().unwrap_or_default();
+                let chr_width = ch.width().unwrap_or_default();
+                if chr_width > 1 {
+                    // drop next style section
+                    style_iter.next();
+                }
+                x += chr_width;
                 if x == width {
                     break;
                 }
@@ -161,8 +153,49 @@ impl From<CharmieDef> for CharacterMapImage {
     }
 }
 
-fn str_to_char_array(input: &str) -> Vec<Vec<char>> {
-    input.lines().map(|line| line.chars().collect()).collect()
+// Helper method for converting fg and bg to an array of arrays of styles
+fn style_iters(
+    fg: Option<&String>,
+    bg: Option<&String>,
+    char_map: HashMap<char, crossterm::style::Color>,
+) -> Vec<Vec<Option<ContentStyle>>> {
+    let fg = fg.into_iter().flat_map(|s| s.lines()).map(|line| {
+        // TODO return Result<> if character not in char map and not space
+        line.trim_end().chars().map(|c| char_map.get(&c).copied())
+    });
+    let bg = bg
+        .into_iter()
+        .flat_map(|s| s.lines())
+        .map(|line| line.trim_end().chars().map(|c| char_map.get(&c).copied()));
+    fg.zip_longest(bg)
+        .map(|lines| {
+            let (left, right) = match lines {
+                EitherOrBoth::Left(left) => (Some(left), None),
+                EitherOrBoth::Right(right) => (None, Some(right)),
+                EitherOrBoth::Both(left, right) => (Some(left), Some(right)),
+            };
+            left.into_iter()
+                .flatten()
+                .zip_longest(right.into_iter().flatten())
+                .map(|cell| {
+                    let (left, right) = match cell {
+                        EitherOrBoth::Left(left) => (left, None),
+                        EitherOrBoth::Right(right) => (None, right),
+                        EitherOrBoth::Both(left, right) => (left, right),
+                    };
+                    let mut style = None;
+                    if let Some(fg_color) = left {
+                        style = Some(ContentStyle::new().with(fg_color));
+                    }
+                    if let Some(bg_color) = right {
+                        let unwrapped_style = style.unwrap_or_else(|| ContentStyle::new());
+                        style = Some(unwrapped_style.on(bg_color))
+                    }
+                    style
+                })
+                .collect()
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -208,6 +241,11 @@ mod test {
                 .with_effect(1, &ContentStyle::new().red().on(white))
                 .with_gap(1)
                 .with_styled_text("v".stylize().red().on_red()),
+        );
+        println!(
+            "EXPECTED\n{}\n\nACTUAL\n{}",
+            expected.to_string(),
+            charmi.to_string()
         );
         assert_eq!(charmi, expected)
     }
