@@ -1,9 +1,11 @@
+mod charmie_actor;
 mod charmie_def;
 
 use std::borrow::Borrow;
 use std::fmt::Display;
 use std::ops::AddAssign;
 
+use bevy::reflect::TypeUuid;
 use crossterm::style::{ContentStyle, StyledContent};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -16,7 +18,8 @@ pub enum ColorSupportLevel {
     Plain,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, TypeUuid)]
+#[uuid = "a58d71d0-9e0f-4c6d-a078-c5321756579c"]
 pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
 }
@@ -250,6 +253,23 @@ impl CharmieRow {
         self
     }
 
+    pub fn add_char(&mut self, ch: char, style: &ContentStyle) -> &mut Self {
+        self.fuse_tail_half_char();
+        match self.segments.last_mut() {
+            Some(CharmieSegment::Textual {
+                text: last_text,
+                style: format,
+            }) if *format == *style => last_text.push(ch),
+            _ => {
+                self.segments.push(CharmieSegment::Textual {
+                    text: ch.into(),
+                    style: *style,
+                });
+            },
+        }
+        self
+    }
+
     pub fn add_styled_text<D: Display>(&mut self, styled_content: StyledContent<D>) -> &mut Self {
         self.add_text(styled_content.content().to_string(), styled_content.style());
         self
@@ -279,6 +299,10 @@ impl CharmieRow {
         self
     }
 
+    pub fn of_char(ch: char, style: &ContentStyle) -> Self {
+        CharmieRow::new().with_char(ch, style)
+    }
+
     pub fn of_effect(len: u32, style: &ContentStyle) -> Self {
         CharmieRow::new().with_effect(len, style)
     }
@@ -297,6 +321,11 @@ impl CharmieRow {
 
     pub fn of_text<S: Borrow<str>>(text: S, style: &ContentStyle) -> Self {
         CharmieRow::new().with_text(text, style)
+    }
+
+    pub fn with_char(mut self, ch: char, style: &ContentStyle) -> Self {
+        self.add_char(ch, style);
+        self
     }
 
     pub fn with_effect(mut self, len: u32, style: &ContentStyle) -> Self {

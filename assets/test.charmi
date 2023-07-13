@@ -1,22 +1,22 @@
 text = """
-   ygb
-  o   i
- r =0  v
+  ygb
+ o   i
+r =0  v
 """
 fg = """
-   ygb
-  o   i
- r BB  v
+  ygb
+ o   i
+r BBB v
 """
 bg = """
-   bgy
-  i   o
- v ww  r
+  bgy
+ i   o
+v www r
 """
 att = """
 
 
-   bb
+  bb
 """
 # underline none
 
