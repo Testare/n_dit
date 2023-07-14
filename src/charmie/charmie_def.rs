@@ -7,7 +7,7 @@ use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize, Serializer};
 use unicode_width::UnicodeWidthChar;
 
-use super::charmie_actor::{CharmieActor, CharmieAnimation};
+use super::charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 use super::{CharacterMapImage, CharmieRow, CharmieSegment};
 
 static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
@@ -470,11 +470,8 @@ impl From<CharmieDef> for CharacterMapImage {
 
 impl From<CharmieAnimationDef> for CharmieAnimation {
     fn from(value: CharmieAnimationDef) -> Self {
-        let CharmieAnimationDef {
-            values,
-            frames: frame,
-        } = value;
-        frame
+        let CharmieAnimationDef { values, frames } = value;
+        frames
             .into_iter()
             .map(|frame| {
                 (
@@ -485,15 +482,37 @@ impl From<CharmieAnimationDef> for CharmieAnimation {
             .collect()
     }
 }
-// From<CharmieAnimation> for CharmieAnimationDef {
+impl From<CharmieAnimation> for CharmieAnimationDef {
+    fn from(value: CharmieAnimation) -> Self {
+        let CharmieAnimation { frames, timings } = value;
+
+        let mut last_timing = 0.0;
+        let frames = frames
+            .into_iter()
+            .zip(timings.into_iter())
+            .map(|(frame, timing)| {
+                let CharmieAnimationFrame { charmi } = frame;
+                let frame = CharmieFrameDef {
+                    timing: timing - last_timing,
+                    charmi: charmi.into(),
+                };
+                last_timing = timing;
+                frame
+            })
+            .collect();
+
+        CharmieAnimationDef {
+            frames,
+            values: None,
+        }
+    }
+}
 
 impl From<CharmieActorDef> for CharmieActor {
     fn from(value: CharmieActorDef) -> Self {
-        let CharmieActorDef {
-            animations: ani,
-            values,
-        } = value;
-        ani.into_iter()
+        let CharmieActorDef { animations, values } = value;
+        animations
+            .into_iter()
             .map(|(name, animation)| {
                 (
                     name,
@@ -501,6 +520,20 @@ impl From<CharmieActorDef> for CharmieActor {
                 )
             })
             .collect()
+    }
+}
+
+impl From<CharmieActor> for CharmieActorDef {
+    fn from(value: CharmieActor) -> Self {
+        let CharmieActor { animations } = value;
+        let animations = animations
+            .into_iter()
+            .map(|(name, animation)| (name, CharmieAnimationDef::from(animation)))
+            .collect();
+        CharmieActorDef {
+            animations,
+            values: None,
+        }
     }
 }
 
@@ -576,7 +609,11 @@ mod test {
         use crate::charmie::charmie_actor::{CharmieActor, CharmieAnimation};
 
         pub fn test_charmie_actor() -> CharmieActor {
-            let animation = [
+            [("spin", test_charmie_animation())].into_iter().collect()
+        }
+
+        pub fn test_charmie_animation() -> CharmieAnimation {
+            [
                 (
                     50.0,
                     CharacterMapImage::default()
@@ -625,9 +662,7 @@ mod test {
                 ),
             ]
             .into_iter()
-            .collect();
-
-            [("spin", animation)].into_iter().collect()
+            .collect()
         }
 
         pub fn test_character_map_image() -> CharacterMapImage {
@@ -693,6 +728,24 @@ mod test {
     }
 
     #[test]
+    fn charmi_animation_to_definition_and_back() {
+        let animation = utils::test_charmie_animation();
+        let charmi_def: CharmieAnimationDef = animation.clone().into();
+        println!("Charmi Animation Def:\n{:?}\n\n", charmi_def);
+        let back = charmi_def.into();
+        assert_eq!(animation, back);
+    }
+
+    #[test]
+    fn charmi_actor_to_definition_and_back() {
+        let actor = utils::test_charmie_actor();
+        let charmi_def: CharmieActorDef = actor.clone().into();
+        println!("Charmi Actor Def:\n{:?}\n\n", charmi_def);
+        let back = charmi_def.into();
+        assert_eq!(actor, back);
+    }
+
+    #[test]
     fn charmi_to_definition_to_toml_and_back() {
         let charmi = utils::test_character_map_image();
         let charmi_def: CharmieDef = charmi.clone().into();
@@ -700,6 +753,36 @@ mod test {
             .expect("charmie definition should deserialize successfully");
         println!("TOML for charmi:\n{}", toml_str);
         let back_charmi_def: CharmieDef = toml::from_str(toml_str.as_str())
+            .expect("conversion to charmie definition should succeed");
+        assert_eq!(charmi_def, back_charmi_def);
+
+        let back_charmi = charmi_def.into();
+        assert_eq!(charmi, back_charmi);
+    }
+
+    #[test]
+    fn charmi_animation_to_definition_to_toml_and_back() {
+        let charmi = utils::test_charmie_animation();
+        let charmi_def: CharmieAnimationDef = charmi.clone().into();
+        let toml_str = toml::to_string(&charmi_def)
+            .expect("charmie definition should deserialize successfully");
+        println!("TOML for charmi:\n{}", toml_str);
+        let back_charmi_def: CharmieAnimationDef = toml::from_str(toml_str.as_str())
+            .expect("conversion to charmie definition should succeed");
+        assert_eq!(charmi_def, back_charmi_def);
+
+        let back_charmi = charmi_def.into();
+        assert_eq!(charmi, back_charmi);
+    }
+
+    #[test]
+    fn charmi_actor_to_definition_to_toml_and_back() {
+        let charmi = utils::test_charmie_actor();
+        let charmi_def: CharmieActorDef = charmi.clone().into();
+        let toml_str = toml::to_string(&charmi_def)
+            .expect("charmie definition should deserialize successfully");
+        println!("TOML for charmi:\n{}", toml_str);
+        let back_charmi_def: CharmieActorDef = toml::from_str(toml_str.as_str())
             .expect("conversion to charmie definition should succeed");
         assert_eq!(charmi_def, back_charmi_def);
 

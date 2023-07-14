@@ -8,19 +8,19 @@ use super::CharacterMapImage;
 #[derive(Clone, Debug, Default, TypeUuid, PartialEq)]
 #[uuid = "3dd4417c-1c8f-4ed6-9702-100b1423620a"]
 pub struct CharmieActor {
-    animations: HashMap<String, CharmieAnimation>,
+    pub(super) animations: HashMap<String, CharmieAnimation>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CharmieAnimation {
-    frames: Vec<CharmieAnimationFrame>,
-    timings: Vec<f32>, // f32 = last frame of animation
+    pub(super) frames: Vec<CharmieAnimationFrame>,
+    pub(super) timings: Vec<f32>, // f32 = last frame of animation
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CharmieAnimationFrame {
     // Might eventually contain other metadata, such as anchor points
-    charmi: CharacterMapImage,
+    pub(super) charmi: CharacterMapImage,
 }
 
 impl CharmieActor {
