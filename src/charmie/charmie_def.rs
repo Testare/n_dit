@@ -5,7 +5,7 @@ use bevy::utils::HashMap;
 use crossterm::style::{Color, ContentStyle, Stylize};
 use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize, Serializer};
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthChar;
 
 use super::charmie_actor::{CharmieActor, CharmieAnimation};
 use super::{CharacterMapImage, CharmieRow, CharmieSegment};
@@ -47,13 +47,15 @@ struct CharmieFrameDef {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct CharmieAnimationDef {
-    frame: Vec<CharmieFrameDef>,
+    #[serde(rename = "f")]
+    frames: Vec<CharmieFrameDef>,
     values: Option<Values>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct CharmieActorDef {
-    ani: HashMap<String, CharmieAnimationDef>,
+    #[serde(rename = "a")]
+    animations: HashMap<String, CharmieAnimationDef>,
     values: Option<Values>,
 }
 
@@ -468,7 +470,10 @@ impl From<CharmieDef> for CharacterMapImage {
 
 impl From<CharmieAnimationDef> for CharmieAnimation {
     fn from(value: CharmieAnimationDef) -> Self {
-        let CharmieAnimationDef { values, frame } = value;
+        let CharmieAnimationDef {
+            values,
+            frames: frame,
+        } = value;
         frame
             .into_iter()
             .map(|frame| {
@@ -484,7 +489,10 @@ impl From<CharmieAnimationDef> for CharmieAnimation {
 
 impl From<CharmieActorDef> for CharmieActor {
     fn from(value: CharmieActorDef) -> Self {
-        let CharmieActorDef { ani, values } = value;
+        let CharmieActorDef {
+            animations: ani,
+            values,
+        } = value;
         ani.into_iter()
             .map(|(name, animation)| {
                 (

@@ -1,7 +1,4 @@
-
-[ani.spin]
-
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 -o
@@ -13,7 +10,7 @@ bg = """
 -R
 """
 
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 --o
@@ -24,7 +21,7 @@ fg = """
 bg = """
 --Y
 """
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 
@@ -39,7 +36,7 @@ bg = """
 ---G
 """
 
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 
@@ -57,7 +54,7 @@ bg = """
 --B
 """
 
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 
@@ -75,7 +72,7 @@ bg = """
 -P
 """
 
-[[ani.spin.frame]]
+[[a.spin.f]]
 timing = 50.0
 text = """
 
@@ -89,7 +86,7 @@ bg = """
 
 W
 """
-[ani.spin.frame.values]
+[a.spin.f.values]
 colors.w = "white"
 colors.W = "black"
 
