@@ -8,7 +8,6 @@ text = """
 """
 fg = """
 -r
-
 """
 bg = """
 -R
@@ -21,7 +20,6 @@ text = """
 """
 fg = """
 --y
-
 """
 bg = """
 --Y
@@ -103,8 +101,8 @@ r = "red"
 R = "dark red"
 y = "yellow"
 Y = "dark yellow"
-g = "lime"
-G = "green"
+g = "green"
+G = "dark green"
 b = "blue"
 B = "navy"
 p = "magenta"

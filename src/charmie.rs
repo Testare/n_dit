@@ -109,6 +109,16 @@ impl CharacterMapImage {
         self.rows.push(row);
         self
     }
+
+    pub fn with_blank_row(mut self) -> Self {
+        self.rows.push(CharmieRow::default());
+        self
+    }
+
+    pub fn with_row<B: FnOnce(CharmieRow) -> CharmieRow>(mut self, builder: B) -> Self {
+        self.rows.push(builder(CharmieRow::default()));
+        self
+    }
 }
 
 impl From<&CharacterMapImage> for Vec<String> {
@@ -143,6 +153,16 @@ pub struct CharmieRow {
 impl CharmieRow {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn trim_end(&mut self) -> u32 {
+        if let Some(CharmieSegment::Empty { len }) = self.segments.last() {
+            let len = *len;
+            self.segments.pop();
+            len
+        } else {
+            0
+        }
     }
 
     pub fn add_effect(&mut self, len: u32, style: &ContentStyle) -> &mut Self {

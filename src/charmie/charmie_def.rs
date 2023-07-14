@@ -7,6 +7,7 @@ use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize, Serializer};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
+use super::charmie_actor::{CharmieActor, CharmieAnimation};
 use super::{CharacterMapImage, CharmieRow, CharmieSegment};
 
 static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
@@ -29,7 +30,7 @@ struct CharmieDef {
     values: Option<Values>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 struct Values {
     #[serde(serialize_with = "char_map_serialize")]
     colors: Option<HashMap<char, ColorDef>>,
@@ -39,11 +40,8 @@ struct Values {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct CharmieFrameDef {
-    text: Option<String>,
-    fg: Option<String>,
-    bg: Option<String>,
-    attr: Option<String>,
-    values: Option<Values>,
+    #[serde(flatten)]
+    charmi: CharmieDef,
     timing: f32,
 }
 
@@ -99,6 +97,28 @@ impl std::ops::Add<&Values> for &Values {
             },
             gap: rhs.gap.as_ref().or(self.gap.as_ref()).cloned(),
         }
+    }
+}
+
+impl CharmieDef {
+    fn with_additional_values(mut self, values: &Option<Values>) -> Self {
+        self.values = match (self.values.as_ref(), values) {
+            (Some(prev_values), Some(new_values)) => Some(new_values + prev_values),
+            (Some(values), None) | (None, Some(values)) => Some(values.clone()),
+            (None, None) => None,
+        };
+        self
+    }
+}
+
+impl CharmieAnimationDef {
+    fn with_additional_values(mut self, values: &Option<Values>) -> Self {
+        self.values = match (self.values.as_ref(), values) {
+            (Some(prev_values), Some(new_values)) => Some(new_values + prev_values),
+            (Some(values), None) | (None, Some(values)) => Some(values.clone()),
+            (None, None) => None,
+        };
+        self
     }
 }
 
@@ -439,9 +459,40 @@ impl From<CharmieDef> for CharacterMapImage {
                     break;
                 }
             }
+            row.trim_end();
             charmi.push_row(row);
         }
         charmi
+    }
+}
+
+impl From<CharmieAnimationDef> for CharmieAnimation {
+    fn from(value: CharmieAnimationDef) -> Self {
+        let CharmieAnimationDef { values, frame } = value;
+        frame
+            .into_iter()
+            .map(|frame| {
+                (
+                    frame.timing,
+                    CharacterMapImage::from(frame.charmi.with_additional_values(&values)),
+                )
+            })
+            .collect()
+    }
+}
+// From<CharmieAnimation> for CharmieAnimationDef {
+
+impl From<CharmieActorDef> for CharmieActor {
+    fn from(value: CharmieActorDef) -> Self {
+        let CharmieActorDef { ani, values } = value;
+        ani.into_iter()
+            .map(|(name, animation)| {
+                (
+                    name,
+                    CharmieAnimation::from(animation.with_additional_values(&values)),
+                )
+            })
+            .collect()
     }
 }
 
@@ -512,39 +563,97 @@ mod test {
 
     use super::*;
 
-    fn test_character_map_image() -> CharacterMapImage {
-        let mut charmi: CharacterMapImage = CharacterMapImage::new();
-        let orange = Color::AnsiValue(208);
-        let white = Color::Rgb {
-            r: 255,
-            g: 255,
-            b: 255,
-        };
-        charmi.push_row(
-            CharmieRow::of_gap(2)
-                .with_char('y', &ContentStyle::new().yellow().on_blue())
-                .with_char('g', &ContentStyle::new().on_green())
-                .with_char('b', &ContentStyle::new().blue().on_yellow())
-                .with_gap(2),
-        );
-        charmi.push_row(
-            CharmieRow::of_gap(1)
-                .with_styled_text("o".stylize().with(orange).on_dark_blue())
-                .with_gap(3)
-                .with_styled_text("i".stylize().dark_blue().on(orange))
-                .with_gap(1),
-        );
-        charmi.push_row(
-            CharmieRow::of_char('r', &ContentStyle::new().red().on_dark_magenta())
-                .with_gap(1)
-                .with_plain_text("=")
-                .with_styled_text("0".stylize().black().on(white))
-                .with_effect(1, &ContentStyle::new().black().on(white))
-                .with_gap(1)
-                .with_styled_text("v".stylize().dark_magenta().on_red()),
-        );
+    mod utils {
+        use super::*;
+        use crate::charmie::charmie_actor::{CharmieActor, CharmieAnimation};
 
-        charmi
+        pub fn test_charmie_actor() -> CharmieActor {
+            let animation = [
+                (
+                    50.0,
+                    CharacterMapImage::default()
+                        .with_row(|row| row.with_gap(1).with_styled_text("o".red().on_dark_red())),
+                ),
+                (
+                    50.0,
+                    CharacterMapImage::default().with_row(|row| {
+                        row.with_gap(2)
+                            .with_styled_text("o".yellow().on_dark_yellow())
+                    }),
+                ),
+                (
+                    50.0,
+                    CharacterMapImage::default()
+                        .with_blank_row()
+                        .with_row(|row| {
+                            row.with_gap(3)
+                                .with_styled_text("o".green().on_dark_green())
+                        }),
+                ),
+                (
+                    50.0,
+                    CharacterMapImage::default()
+                        .with_blank_row()
+                        .with_blank_row()
+                        .with_row(|row| {
+                            row.with_gap(2).with_styled_text("o".blue().on_dark_blue())
+                        }),
+                ),
+                (
+                    50.0,
+                    CharacterMapImage::default()
+                        .with_blank_row()
+                        .with_blank_row()
+                        .with_row(|row| {
+                            row.with_gap(1)
+                                .with_styled_text("o".magenta().on_dark_magenta())
+                        }),
+                ),
+                (
+                    50.0,
+                    CharacterMapImage::default()
+                        .with_blank_row()
+                        .with_row(|row| row.with_styled_text("o".white().on_black())),
+                ),
+            ]
+            .into_iter()
+            .collect();
+
+            [("spin", animation)].into_iter().collect()
+        }
+
+        pub fn test_character_map_image() -> CharacterMapImage {
+            let mut charmi: CharacterMapImage = CharacterMapImage::new();
+            let orange = Color::AnsiValue(208);
+            let white = Color::Rgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            };
+            charmi.push_row(
+                CharmieRow::of_gap(2)
+                    .with_char('y', &ContentStyle::new().yellow().on_blue())
+                    .with_char('g', &ContentStyle::new().on_green())
+                    .with_char('b', &ContentStyle::new().blue().on_yellow()),
+            );
+            charmi.push_row(
+                CharmieRow::of_gap(1)
+                    .with_styled_text("o".stylize().with(orange).on_dark_blue())
+                    .with_gap(3)
+                    .with_styled_text("i".stylize().dark_blue().on(orange)),
+            );
+            charmi.push_row(
+                CharmieRow::of_char('r', &ContentStyle::new().red().on_dark_magenta())
+                    .with_gap(1)
+                    .with_plain_text("=")
+                    .with_styled_text("0".stylize().black().on(white))
+                    .with_effect(1, &ContentStyle::new().black().on(white))
+                    .with_gap(1)
+                    .with_styled_text("v".stylize().dark_magenta().on_red()),
+            );
+
+            charmi
+        }
     }
 
     #[test]
@@ -568,7 +677,7 @@ mod test {
 
     #[test]
     fn charmi_to_definition_and_back() {
-        let charmi = test_character_map_image();
+        let charmi = utils::test_character_map_image();
         let charmi_def: CharmieDef = charmi.clone().into();
         println!("Charmie Def:\n{:?}\n\n", charmi_def);
         let back_charmi = charmi_def.into();
@@ -577,7 +686,7 @@ mod test {
 
     #[test]
     fn charmi_to_definition_to_toml_and_back() {
-        let charmi = test_character_map_image();
+        let charmi = utils::test_character_map_image();
         let charmi_def: CharmieDef = charmi.clone().into();
         let toml_str = toml::to_string(&charmi_def)
             .expect("charmie definition should deserialize successfully");
@@ -601,7 +710,7 @@ mod test {
             toml::from_str(result_str.as_str()).expect("test definition should parse successfully");
 
         let charmi: CharacterMapImage = charmie_def.into();
-        let expected: CharacterMapImage = test_character_map_image();
+        let expected: CharacterMapImage = utils::test_character_map_image();
         println!(
             "EXPECTED\n{}\n\nACTUAL\n{}",
             expected.to_string(),
@@ -611,16 +720,19 @@ mod test {
     }
 
     #[test]
-    fn load_test_charmi_actor_file() {
+    fn load_test_charmia_file() {
         let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         test_charmi.push("assets/test.charmia");
-        let result_str = std::fs::read_to_string(test_charmi);
+        let result_str = std::fs::read_to_string(test_charmi).expect("text file to exist");
         log::debug!("CHARMIE STR: {:?}", result_str);
 
-        let charmie_def: Result<CharmieActorDef, _> =
-            toml::from_str(result_str.expect("text file to exist").as_str());
+        let charmie_def: CharmieActorDef =
+            toml::from_str(result_str.as_str()).expect("test definition should parse successfully");
 
-        log::debug!("CHARMIE DEF: {:?}", charmie_def);
-        charmie_def.expect("test definition should parse successfully");
+        log::debug!("CHARMIE DEF:l\n\n {:?}", charmie_def);
+
+        let charmia = CharmieActor::from(charmie_def);
+        let expected = utils::test_charmie_actor();
+        assert_eq!(charmia, expected);
     }
 }
