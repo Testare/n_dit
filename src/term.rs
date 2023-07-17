@@ -1,4 +1,5 @@
 mod configuration;
+mod fx;
 pub mod input_event;
 mod key_map;
 pub mod layout;
@@ -25,7 +26,7 @@ use input_event::CrosstermEvent;
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
-use crate::charmie::CharmieAnimation;
+use crate::charmie::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 enum TerminalFocusMode {
@@ -196,15 +197,20 @@ impl Plugin for CharmiePlugin {
         app.init_resource::<TermConfig>()
             .init_resource::<TermEventListener>()
             .init_resource::<TerminalWindow>()
+            .init_resource::<fx::Fx>()
             .init_resource::<DrawConfiguration>()
             .add_asset::<CharmieAnimation>()
+            .add_asset::<CharmieActor>()
             .add_state::<TerminalFocusMode>()
+            .add_asset_loader(CharmiaLoader)
+            .add_asset_loader(CharmiLoader)
             .add_plugins(render::RenderTtyPlugin::default())
             .add_plugins(node_ui::NodeUiPlugin::default())
             .add_plugins(layout::TaffyTuiLayoutPlugin::default())
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
             .add_event::<MouseEvent>()
+            .add_systems(Startup, fx::sys_init_fx)
             .add_systems(First, term_event_listener.in_set(NDitCoreSet::RawInputs))
             .add_systems(Update, terminal_size_adjustment)
             .add_systems(Last, exit_key);

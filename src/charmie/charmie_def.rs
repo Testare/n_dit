@@ -14,7 +14,7 @@ static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
-enum ColorDef {
+pub enum ColorDef {
     Named(String),
     Ansi(u8),
     Rgb(u8, u8, u8),
@@ -22,7 +22,7 @@ enum ColorDef {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-struct CharmieDef {
+pub struct CharmieDef {
     text: Option<String>,
     fg: Option<String>,
     bg: Option<String>,
@@ -31,7 +31,7 @@ struct CharmieDef {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
-struct Values {
+pub struct Values {
     #[serde(serialize_with = "char_map_serialize")]
     colors: Option<HashMap<char, ColorDef>>,
     attr: Option<HashMap<char, String>>, // Option<HashMap<char, Vec<String>>> ?
@@ -39,21 +39,21 @@ struct Values {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-struct CharmieFrameDef {
+pub struct CharmieFrameDef {
     #[serde(flatten)]
     charmi: CharmieDef,
     timing: f32,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-struct CharmieAnimationDef {
+pub struct CharmieAnimationDef {
     #[serde(rename = "f")]
     frames: Vec<CharmieFrameDef>,
     values: Option<Values>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-struct CharmieActorDef {
+pub struct CharmieActorDef {
     #[serde(rename = "a")]
     animations: HashMap<String, CharmieAnimationDef>,
     values: Option<Values>,

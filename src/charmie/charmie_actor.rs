@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::ops::AddAssign;
 
 use bevy::asset::Asset;
 use bevy::reflect::{Reflect, TypePath, TypeUuid};
@@ -6,14 +7,16 @@ use bevy::utils::HashMap;
 
 use super::CharacterMapImage;
 
-#[derive(Clone, Debug, Default, PartialEq, TypeUuid)]
+#[derive(Clone, Debug, Default, PartialEq, TypeUuid, TypePath)]
 #[uuid = "3dd4417c-1c8f-4ed6-9702-100b1423620a"]
+#[type_path = "charmi"]
 pub struct CharmieActor {
     pub(super) animations: HashMap<String, CharmieAnimation>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
 #[uuid = "e9cccab6-b268-455d-b71b-c37b6247455b"]
+#[type_path = "charmi"]
 pub struct CharmieAnimation {
     pub(super) frames: Vec<CharmieAnimationFrame>,
     pub(super) timings: Vec<f32>, // f32 = last frame of animation
@@ -31,7 +34,7 @@ impl CharmieActor {
         self
     }
 
-    pub fn get_animation<S: Borrow<str>>(&self, name: S) -> Option<&CharmieAnimation> {
+    pub fn animation<S: Borrow<str>>(&self, name: S) -> Option<&CharmieAnimation> {
         self.animations.get(name.borrow())
     }
 }
@@ -71,11 +74,45 @@ impl CharmieAnimation {
             .next()
     }
 
+    pub fn frame(&self, index: usize) -> Option<&CharmieAnimationFrame> {
+        self.frames.get(index)
+    }
+
     pub fn add_frame(&mut self, timing: f32, frame: CharmieAnimationFrame) -> &mut Self {
         let last_time = self.timings.last().cloned().unwrap_or_default();
         self.frames.push(frame);
         self.timings.push(last_time + timing);
         self
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (f32, &CharmieAnimationFrame)> {
+        self.timings
+            .iter()
+            .scan(0.0f32, |last_time, &current_time| {
+                let timing = current_time - *last_time;
+                *last_time = current_time;
+                Some(timing)
+            })
+            .zip(self.frames.iter())
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (f32, CharmieAnimationFrame)> {
+        self.timings
+            .into_iter()
+            .scan(0.0f32, |last_time, current_time| {
+                let timing = current_time - *last_time;
+                *last_time = current_time;
+                Some(timing)
+            })
+            .zip(self.frames.into_iter())
+    }
+}
+
+impl AddAssign<CharmieAnimation> for CharmieAnimation {
+    fn add_assign(&mut self, rhs: CharmieAnimation) {
+        for (timing, frame) in rhs.into_iter() {
+            self.add_frame(timing, frame);
+        }
     }
 }
 

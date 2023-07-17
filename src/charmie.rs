@@ -1,14 +1,17 @@
 mod charmie_actor;
 mod charmie_def;
+mod loader;
 
 use std::borrow::Borrow;
 use std::fmt::Display;
 use std::ops::AddAssign;
 
-use bevy::reflect::{impl_reflect_struct, TypePath, TypeUuid};
+use bevy::reflect::{TypePath, TypeUuid};
 pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
+pub use charmie_def::{CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef};
 use crossterm::style::{ContentStyle, StyledContent};
 use itertools::Itertools;
+pub use loader::{CharmiLoader, CharmiaLoader};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[derive(Debug, Default)]
