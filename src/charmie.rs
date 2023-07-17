@@ -5,7 +5,8 @@ use std::borrow::Borrow;
 use std::fmt::Display;
 use std::ops::AddAssign;
 
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{impl_reflect_struct, TypePath, TypeUuid};
+pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 use crossterm::style::{ContentStyle, StyledContent};
 use itertools::Itertools;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -19,8 +20,8 @@ pub enum ColorSupportLevel {
     Plain,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, TypeUuid)]
-#[uuid = "a58d71d0-9e0f-4c6d-a078-c5321756579c"]
+#[derive(Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
+#[uuid = "a58d71d0-9e0f-4c6d-a078-c5621756579c"]
 pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
 }

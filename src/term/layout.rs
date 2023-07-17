@@ -314,7 +314,7 @@ fn calculate_layouts(
                 if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
                     let layout = taffy.layout(**node).unwrap();
                     if let Some(name) = name_opt {
-                        log::trace!("{} layout: {:?}", name.as_str(), layout);
+                        log::debug!("{} layout: {:?}", name.as_str(), layout);
                     }
                     translation.0.x = layout.location.x as u32 + offset.x;
                     translation.0.y = layout.location.y as u32 + offset.y;
@@ -454,6 +454,8 @@ fn update_layout_traversal<F: FnMut(Entity, UVec2) -> UVec2>(
     }
 }
 
+// TODO Make it so if a Node has NodeTty and children, but the children don't have NodeTty, it counts as a leaf
+// Or just... That children are rendered on top/below parent nodes? IDK
 pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<Entity> {
     if let Ok(children) = children_query.get(root) {
         children

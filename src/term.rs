@@ -25,6 +25,7 @@ use input_event::CrosstermEvent;
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
+use crate::charmie::CharmieAnimation;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 enum TerminalFocusMode {
@@ -196,6 +197,7 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TermEventListener>()
             .init_resource::<TerminalWindow>()
             .init_resource::<DrawConfiguration>()
+            .add_asset::<CharmieAnimation>()
             .add_state::<TerminalFocusMode>()
             .add_plugins(render::RenderTtyPlugin::default())
             .add_plugins(node_ui::NodeUiPlugin::default())

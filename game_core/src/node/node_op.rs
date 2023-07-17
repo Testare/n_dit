@@ -1,8 +1,9 @@
 use bevy::ecs::query::{Has, WorldQuery};
 
 use super::{
-    AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped, MovesTaken,
-    NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, PreventNoOp, Team, TeamPhase, Teams,
+    key, AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped,
+    MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, PreventNoOp, Team,
+    TeamPhase, Teams,
 };
 use crate::card::{
     Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
@@ -213,12 +214,15 @@ pub fn curio_ops(
                                     }
                                 }
                             }
-                            if let Some(effect) = effect {
-                                effect.apply_effect(&mut grid, curio_id, *target);
-                            }
+                            let mut action_metadata = if let Some(effect) = effect {
+                                effect.apply_effect(&mut grid, curio_id, *target)
+                            } else {
+                                Default::default()
+                            };
+                            action_metadata.put(key::NODE_ID, **node);
                             **curio_q.tapped = true;
                             **active_curio = None;
-                            Ok(Metadata::default())
+                            Ok(action_metadata)
                         });
                     ev_results.send(OpResult::new(fullop, node_op_result));
                 },

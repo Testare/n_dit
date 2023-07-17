@@ -1,3 +1,4 @@
+mod attack_animation;
 mod grid_ui;
 mod inputs;
 mod menu_ui;
@@ -68,6 +69,19 @@ impl Plugin for NodeUiPlugin {
                     inputs::kb_skirm_focus,
                 )
                     .in_set(NDitCoreSet::ProcessInputs),
+            )
+            .add_systems(
+                Update,
+                (
+                    attack_animation::sys_create_attack_animation
+                        .in_set(NDitCoreSet::PostProcessCommands),
+                    (
+                        attack_animation::sys_update_animations,
+                        attack_animation::sys_render_animations,
+                    )
+                        .chain()
+                        .before(NDitCoreSet::PostProcessCommands),
+                ),
             )
             .add_plugins((
                 MenuUiCardSelection::plugin(),

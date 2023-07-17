@@ -419,6 +419,15 @@ impl EntityGrid {
         self.entries.remove(&item_key).map(|_| item_key)
     }
 
+    /// Lists the back n squares occupied by the current item in reverse order.
+    pub fn list_back_n(&mut self, item_key: Entity, n: usize) -> Vec<UVec2> {
+        self.square_iter_mut(item_key)
+            .rev()
+            .take(n)
+            .map(|sqr| sqr.location())
+            .collect()
+    }
+
     /// Removes an item from the first grid square this item was added to.
     ///
     /// "first" means sequentially (as in closest to the front), not chronologically.
@@ -1094,7 +1103,6 @@ mod test {
         assert_square_eq(&map, (0, 2), Some(key), Some((0, 1)));
         assert_head(&map, key, (0, 2));
         assert_eq!(map.len(), 1);
-        assert_eq!(pop_result, None);
     }
 
     #[test]

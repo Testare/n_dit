@@ -22,7 +22,7 @@ pub enum RenderTtySet {
     RenderToTerminal,
 }
 
-#[derive(Clone, Component)]
+#[derive(Clone, Component, Debug)]
 pub struct TerminalRendering {
     render_cache: Vec<String>,
     rendering: CharacterMapImage,

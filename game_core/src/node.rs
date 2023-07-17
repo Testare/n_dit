@@ -9,6 +9,13 @@ use getset::CopyGetters;
 pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
 
+pub mod key {
+    use typed_key::{typed_key, Key};
+
+    use super::*;
+
+    pub const NODE_ID: Key<Entity> = typed_key!("node_id");
+}
 pub struct NodePlugin;
 
 #[derive(Component, Debug, Reflect)]

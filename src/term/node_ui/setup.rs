@@ -1,7 +1,9 @@
 use game_core::node::Node;
+use game_core::player::ForPlayer;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::term::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
+use crate::term::node_ui::attack_animation::{AnimationPlayer, NodeUiAttackAnimation};
 use crate::term::node_ui::grid_ui::GridUi;
 use crate::term::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -80,6 +82,16 @@ pub fn create_node_ui(
                     });
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
+                .id();
+
+            let animation = commands
+                .spawn((
+                    Name::new("GridAnimationPlayer"),
+                    NodeUiAttackAnimation,
+                    ForPlayer(*player),
+                    AnimationPlayer::default(),
+                    TerminalRendering::default(),
+                ))
                 .id();
 
             commands.entity(*player).insert((

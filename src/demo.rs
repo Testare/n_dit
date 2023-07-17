@@ -7,6 +7,7 @@ use game_core::node::{
     IsTapped, MovesTaken, Node, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamColor,
     TeamPhase, Teams,
 };
+use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
 
@@ -22,7 +23,41 @@ pub struct DemoPlugin;
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, demo_startup)
-            .add_systems(PostUpdate, (debug_key, log_ops));
+            .add_systems(PostUpdate, (debug_key, log_ops, log_op_results));
+    }
+}
+
+fn log_ops(mut node_ops: EventReader<Op<NodeOp>>) {
+    for op in node_ops.iter() {
+        log::debug!("NODE_OP {:?}", op)
+    }
+}
+
+fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
+    for op in node_ops.iter() {
+        log::debug!("NODE_OP_RESULT {:?}", op)
+    }
+}
+
+fn debug_key(
+    mut ev_keys: EventReader<KeyEvent>,
+    nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
+    mut layout_events: EventReader<LayoutEvent>,
+) {
+    for layout_event in layout_events.iter() {
+        log::trace!("LAYOUT EVENT: {:?}", layout_event);
+    }
+    for KeyEvent { code, .. } in ev_keys.iter() {
+        if *code == KeyCode::Char('/') {
+            log::debug!("Debug event occured");
+
+            for (_, entity_grid, cursor) in nodes.iter() {
+                log::debug!("# Node ({:?})", cursor);
+                for entry in entity_grid.entities() {
+                    log::debug!("Entity: {:?}", entry);
+                }
+            }
+        }
     }
 }
 
@@ -265,32 +300,4 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
 
     load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
-}
-
-fn log_ops(mut node_ops: EventReader<Op<NodeOp>>) {
-    for op in node_ops.iter() {
-        log::debug!("NODE_OP {:?}", op)
-    }
-}
-
-fn debug_key(
-    mut ev_keys: EventReader<KeyEvent>,
-    nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
-    mut layout_events: EventReader<LayoutEvent>,
-) {
-    for layout_event in layout_events.iter() {
-        log::trace!("LAYOUT EVENT: {:?}", layout_event);
-    }
-    for KeyEvent { code, .. } in ev_keys.iter() {
-        if *code == KeyCode::Char('/') {
-            log::debug!("Debug event occured");
-
-            for (_, entity_grid, cursor) in nodes.iter() {
-                log::debug!("# Node ({:?})", cursor);
-                for entry in entity_grid.entities() {
-                    log::debug!("Entity: {:?}", entry);
-                }
-            }
-        }
-    }
 }

@@ -1,0 +1,53 @@
+[[a.attack.f]]
+timing = 20.0
+bg = """
+
+
+                 
+            rr   
+         rr oo rr
+            rr   
+"""
+
+[[a.attack.f]]
+timing = 20.0
+bg = """
+
+
+            rr   
+         rr oo rr
+      rr oo    oo rr
+         rr oo rr
+            rr   
+"""
+
+[[a.attack.f]]
+timing = 20.0
+bg = """
+      
+         rr rr rr
+      rr oo oo oo rr
+   rr oo          oo rr
+   rr oo          oo rr
+   rr oo          oo rr
+      rr oo oo oo rr
+         rr rr rr
+"""
+
+[[a.attack.f]]
+timing = 20.0
+bg = """
+         rr rr rr
+      rr oo oo oo rr
+   rr oo          oo rr
+rr oo                oo rr
+rr oo                oo rr
+rr oo                oo rr
+   rr oo          oo rr
+      rr oo oo oo rr
+         rr rr rr
+"""
+
+[values.colors]
+r = "red"
+o = "dark red"

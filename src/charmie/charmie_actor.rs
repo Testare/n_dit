@@ -1,17 +1,19 @@
 use std::borrow::Borrow;
 
-use bevy::reflect::TypeUuid;
+use bevy::asset::Asset;
+use bevy::reflect::{Reflect, TypePath, TypeUuid};
 use bevy::utils::HashMap;
 
 use super::CharacterMapImage;
 
-#[derive(Clone, Debug, Default, TypeUuid, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, TypeUuid)]
 #[uuid = "3dd4417c-1c8f-4ed6-9702-100b1423620a"]
 pub struct CharmieActor {
     pub(super) animations: HashMap<String, CharmieAnimation>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
+#[uuid = "e9cccab6-b268-455d-b71b-c37b6247455b"]
 pub struct CharmieAnimation {
     pub(super) frames: Vec<CharmieAnimationFrame>,
     pub(super) timings: Vec<f32>, // f32 = last frame of animation
@@ -52,6 +54,10 @@ impl From<HashMap<String, CharmieAnimation>> for CharmieActor {
 }
 
 impl CharmieAnimation {
+    pub fn duration(&self) -> f32 {
+        self.timings.last().copied().unwrap_or_default()
+    }
+
     pub fn image_for_timing(&self, timing: f32) -> Option<&CharacterMapImage> {
         self.frame_for_timing(timing).map(|frame| &frame.charmi)
     }
@@ -104,5 +110,15 @@ impl FromIterator<(f32, CharmieAnimationFrame)> for CharmieAnimation {
             accumulated_time += timing;
         }
         Self { frames, timings }
+    }
+}
+
+impl CharmieAnimationFrame {
+    pub fn charmi(&self) -> &CharacterMapImage {
+        &self.charmi
+    }
+
+    pub fn into_charmi(self) -> CharacterMapImage {
+        self.charmi
     }
 }

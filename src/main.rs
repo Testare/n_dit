@@ -12,6 +12,7 @@ fn main() -> error::Result<()> {
     App::new()
         // .add_plugins(MinimalPlugins)
         .add_plugins((
+            AssetPlugin::default(),
             HierarchyPlugin,
             bevy::core::TaskPoolPlugin::default(),
             TypeRegistrationPlugin,

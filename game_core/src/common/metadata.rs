@@ -10,6 +10,7 @@ use typed_key::Key;
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 
+#[derive(Debug)]
 pub enum MetadataErr {
     SerdeError(serde_json::error::Error),
     KeyNotFound(String),
@@ -53,14 +54,14 @@ impl Metadata {
         }
     }
 
-    pub fn put<T: Serialize>(&mut self, key: Key<T>, data: &T) -> Result<()> {
-        let data_str = serde_json::to_string(data)?;
+    pub fn put<T: Serialize, B: Borrow<T>>(&mut self, key: Key<T>, data: B) -> Result<()> {
+        let data_str = serde_json::to_string(data.borrow())?;
         self.0.insert(key.name().to_string(), data_str);
         Ok(())
     }
 
-    pub fn put_field<T: Serialize>(&mut self, field: &str, data: &T) -> Result<()> {
-        let data_str = serde_json::to_string(data)?;
+    pub fn put_field<T: Serialize, B: Borrow<T>>(&mut self, field: &str, data: B) -> Result<()> {
+        let data_str = serde_json::to_string(data.borrow())?;
         self.0.insert(field.to_string(), data_str);
         Ok(())
     }
