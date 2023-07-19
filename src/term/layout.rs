@@ -314,7 +314,7 @@ fn calculate_layouts(
                 if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
                     let layout = taffy.layout(**node).unwrap();
                     if let Some(name) = name_opt {
-                        log::debug!("{} layout: {:?}", name.as_str(), layout);
+                        log::trace!("{} layout: {:?}", name.as_str(), layout);
                     }
                     translation.0.x = layout.location.x as u32 + offset.x;
                     translation.0.y = layout.location.y as u32 + offset.y;

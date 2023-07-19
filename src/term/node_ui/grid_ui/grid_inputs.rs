@@ -3,7 +3,7 @@ use std::ops::Deref;
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, NodeOp, NodePiece, OnTeam, Pickup,
-    Team, TeamPhase,
+    Team, TeamPhase, IsTapped,
 };
 use game_core::player::{ForPlayer, Player};
 
@@ -136,7 +136,7 @@ pub fn kb_grid(
         ),
         With<Player>,
     >,
-    node_pieces: Query<(Option<&Actions>,), With<NodePiece>>,
+    node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     grid_uis: Query<(), With<GridUi>>,
@@ -187,7 +187,10 @@ pub fn kb_grid(
                         },
                         NamedInput::Activate => {
                             if let Some(selected_action_index) = **selected_action {
-                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                selected_entity.of(&node_pieces).and_then(|(actions, is_tapped)| {
+                                    if **is_tapped {
+                                        return None;
+                                    }
                                     let action = *actions?.get(selected_action_index)?;
                                     ev_node_op.send(Op::new(
                                         player,
@@ -200,7 +203,10 @@ pub fn kb_grid(
                                     Some(())
                                 });
                             } else if is_controlling_active_curio {
-                                selected_entity.of(&node_pieces).and_then(|(actions,)| {
+                                selected_entity.of(&node_pieces).and_then(|(actions, is_tapped)| {
+                                    if **is_tapped {
+                                        return None;
+                                    }
                                     match actions.map(|actions| (actions.len(), actions)) {
                                         None | Some((0, _)) => {
                                             ev_node_op.send(Op::new(

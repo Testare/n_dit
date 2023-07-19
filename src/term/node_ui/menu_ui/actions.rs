@@ -1,6 +1,6 @@
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, ActionRange, Actions};
-use game_core::node::{NodeOp, NodePiece};
+use game_core::node::{NodeOp, NodePiece, IsTapped};
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -31,7 +31,7 @@ impl MenuUiActions {
             ),
             With<Player>,
         >,
-        node_pieces: Query<(&Actions,), With<NodePiece>>,
+        node_pieces: Query<(&Actions, &IsTapped), With<NodePiece>>,
         mut ev_keys: EventReader<KeyEvent>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
@@ -51,7 +51,7 @@ impl MenuUiActions {
                 key_map
                     .named_input_for_key(Submap::Node, *code, *modifiers)
                     .and_then(|named_input| {
-                        if let Some((actions,)) = selected_entity.of(&node_pieces) {
+                        if let Some((actions, is_tapped)) = selected_entity.of(&node_pieces) {
                             match named_input {
                                 NamedInput::Direction(dir) => {
                                     let actions_bound = actions.len();
@@ -73,7 +73,9 @@ impl MenuUiActions {
                                     **selected_action = None;
                                 },
                                 NamedInput::Activate => {
-                                    if let Some(action) =
+                                    if **is_tapped {
+                                        **selected_action = None;
+                                    } else if let Some(action) =
                                         actions.get(selected_action.unwrap_or_default())
                                     {
                                         if rangeless_actions.contains(*action) {

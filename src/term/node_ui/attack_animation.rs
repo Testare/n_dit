@@ -1,28 +1,27 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crossterm::style::Stylize;
-use game_core::node::{InNode, NodeOp};
+use game_core::node::{InNode, NodeOp, NodePiece, Node};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::{card, node};
 
+use super::{SelectedAction, NodeCursor, SelectedEntity};
+use super::registry::GlyphRegistry;
 use crate::charmie::{
     BrokenCharacterFillBehavior, CharacterMapImage, CharmieActor, CharmieAnimation,
     CharmieAnimationFrame,
 };
+use crate::term::configuration::UiFormat;
 use crate::term::fx::Fx;
 use crate::term::prelude::*;
 use crate::term::render::TerminalRendering;
-/*
- * I have to decide how to actually do this
- *
- * An Animation entity could have Frames as individual children?
- *
- * Then the Animation contains a
- */
 
+// TODO Refactor this module into two separate modules: One for animation players, and
+// then one under grid_ui for the attack animation specific logic
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &'static str = "attack";
+const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of render_square
 
 #[derive(Component)]
 pub struct NodeUiAttackAnimation;
@@ -35,6 +34,7 @@ pub struct AnimationPlayer {
     speed: f32,
     state: AnimationPlayerState,
     duration: f32,
+    unload_when_finished: bool
 }
 
 impl Default for AnimationPlayer {
@@ -46,6 +46,7 @@ impl Default for AnimationPlayer {
             speed: 1000.0,
             state: AnimationPlayerState::Unloaded,
             duration: 0.0,
+            unload_when_finished: false,
         }
     }
 }
@@ -58,11 +59,12 @@ impl AnimationPlayer {
         )
     }
 
+
     fn load(
         &mut self,
         handle: Handle<CharmieAnimation>,
         assets_animations: &Assets<CharmieAnimation>,
-    ) {
+    ) -> &mut Self {
         self.duration = assets_animations
             .get(&handle)
             .map(|animation| animation.duration())
@@ -71,6 +73,7 @@ impl AnimationPlayer {
         self.last_update = Instant::now();
         self.state = AnimationPlayerState::Paused;
         self.timing = 0.0;
+        self
     }
 
     fn frame(&self, assets_animation: &Assets<CharmieAnimation>) -> Option<CharmieAnimationFrame> {
@@ -84,10 +87,21 @@ impl AnimationPlayer {
         self.animation = None;
         self.timing = 0.0;
         self.state = AnimationPlayerState::Unloaded;
+        self.unload_when_finished = false; // Reset each time
     }
 
-    fn play_once(&mut self) {
+    fn play_once(&mut self) -> &mut Self {
         self.state = AnimationPlayerState::PlayOnce;
+        self
+    }
+
+    fn unload_when_finished(&mut self) -> &mut Self {
+        self.unload_when_finished = true;
+        self
+    }
+
+    fn finished(&self) -> bool {
+        self.state == AnimationPlayerState::Finished || self.state == AnimationPlayerState::FinishedAndUnloaded
     }
 
     fn advance(&mut self) {
@@ -101,6 +115,10 @@ impl AnimationPlayer {
             if self.timing >= self.duration {
                 if play_once {
                     self.state = AnimationPlayerState::Finished;
+                    if self.unload_when_finished {
+                        self.unload();
+                        self.state = AnimationPlayerState::FinishedAndUnloaded;
+                    }
                 } else if looping {
                     self.timing -= self.duration;
                 }
@@ -116,6 +134,7 @@ pub enum AnimationPlayerState {
     Unloaded,
     Paused,
     Finished,
+    FinishedAndUnloaded,
     PlayOnce,
     Loop,
 }
@@ -131,6 +150,8 @@ pub fn sys_create_attack_animation(
         With<NodeUiAttackAnimation>,
     >,
     assets_actor: Res<Assets<CharmieActor>>,
+    glyph_registry: Res<GlyphRegistry>,
+    node_pieces: Query<&NodePiece>,
 ) {
     for node_op_result in ev_node_op.iter() {
         if let Op {
@@ -142,12 +163,28 @@ pub fn sys_create_attack_animation(
                 let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
                 let fatal = metadata.get(card::key::FATAL).ok()?;
                 let node_id = metadata.get(node::key::NODE_ID).ok()?;
+                let target_head = if fatal {
+                    metadata
+                        .get(card::key::TARGET_ENTITY)
+                        .ok()
+                        .and_then(|target_id| {
+                            let display_id = get_assert!(target_id, node_pieces)?.display_id();
+                            let (head_str, _) = glyph_registry
+                                .get(display_id)
+                                .cloned()
+                                .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+                            Some(head_str)
+                            // Some(())
+                        })
+                } else {
+                    None
+                };
                 let head = fatal.then(|| damages.last().copied()).flatten();
                 let base_animation = assets_actor
                     .get(&fx.0)
                     .map(|actor| {
                         actor
-                            .animation("attack")
+                            .animation(ATTACK_BASE_ANIM)
                             .expect("Should have attack animation")
                     })
                     .expect("FX should be loaded");
@@ -155,6 +192,7 @@ pub fn sys_create_attack_animation(
                     &damages,
                     base_animation,
                     *target,
+                    target_head,
                 ));
                 let players_in_node: HashSet<Entity> = players
                     .iter()
@@ -164,8 +202,9 @@ pub fn sys_create_attack_animation(
                 for (mut animation_player, ForPlayer(player)) in attack_animation_player.iter_mut()
                 {
                     if players_in_node.contains(player) {
-                        animation_player.load(animation_handle.clone(), assets_animation.as_ref());
-                        animation_player.play_once();
+                        animation_player.load(animation_handle.clone(), assets_animation.as_ref())
+                            .play_once()
+                            .unload_when_finished();
                     }
                 }
 
@@ -178,7 +217,11 @@ pub fn sys_create_attack_animation(
 
 pub fn sys_update_animations(mut animation_player: Query<&mut AnimationPlayer>) {
     for mut animation_player in animation_player.iter_mut() {
-        animation_player.advance();
+        if animation_player.is_playing() {
+            // Do the check here so that change detection can work
+            animation_player.advance();
+
+        }
     }
 }
 
@@ -196,10 +239,27 @@ pub fn sys_render_animations(
     }
 }
 
+pub fn sys_reset_state_after_animation_plays(
+    changed_aps: Query<(&AnimationPlayer, &ForPlayer), Changed<AnimationPlayer>>,
+    mut players: Query<(&mut SelectedAction, &mut SelectedEntity, &NodeCursor, &InNode), With<Player>>,
+    nodes: Query<(&EntityGrid,), With<Node>>,
+) {
+    for (ap, for_player) in changed_aps.iter() {
+        if ap.finished() {
+            get_assert_mut!(**for_player, players, |(selected_action, selected_entity, node_cursor, in_node)| {
+                let (grid,) = get_assert!(**in_node, &nodes)?;
+                node_cursor.adjust_to_self(selected_entity, selected_action, grid);
+                Some(())
+            });
+        }
+    }
+}
+
 fn generate_animation_from_damages(
     damages: &Vec<UVec2>,
     base_animation: &CharmieAnimation,
     target: UVec2,
+    target_head: Option<String>,
 ) -> CharmieAnimation {
     let target = UVec2 {
         x: target.x * 3 + 1,
@@ -208,16 +268,28 @@ fn generate_animation_from_damages(
     let base_offset = UVec2 { x: 12, y: 8 };
     let damage_cell = CharacterMapImage::new()
         .with_row(|row| row.with_styled_text("[]".stylize().white().on_dark_red()));
+    let target_head = target_head.map(|target_head_str| CharacterMapImage::new()
+        .with_row(|row| row.with_styled_text(target_head_str.stylize().white().on_dark_red()))
+    );
     let damages: CharmieAnimation = (0..damages.len())
         .map(|i| {
             let mut frame = CharacterMapImage::default();
-            for UVec2 { x, y } in damages.iter().skip(i) {
-                frame = frame.draw(
-                    &damage_cell,
-                    x * 3 + 1,
-                    y * 2 + 1,
-                    BrokenCharacterFillBehavior::Gap,
-                );
+            for (i, UVec2 { x, y }) in damages.iter().enumerate().skip(i) {
+                if let (Some(target_head), true) = (&target_head, i == damages.len() - 1) {
+                    frame = frame.draw(
+                        &target_head,
+                        x * 3 + 1,
+                        y * 2 + 1,
+                        BrokenCharacterFillBehavior::Gap,
+                    );
+                } else {
+                    frame = frame.draw(
+                        &damage_cell,
+                        x * 3 + 1,
+                        y * 2 + 1,
+                        BrokenCharacterFillBehavior::Gap,
+                    );
+                }
             }
             (DAMAGE_TIMING, frame)
         })

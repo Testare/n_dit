@@ -192,6 +192,7 @@ pub fn curio_ops(
                         .and_then(|curio_id| {
                             let mut curio_q = get_assert_mut!(curio_id, curios)
                                 .ok_or(NodeOpError::InternalError)?;
+                            debug_assert!(!**curio_q.tapped, "Active curio should not be tapped");
                             if !curio_q
                                 .actions
                                 .ok_or(NodeOpError::NoSuchAction)?
