@@ -1,6 +1,6 @@
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, ActionRange, Actions};
-use game_core::node::{NodeOp, NodePiece, IsTapped};
+use game_core::node::{IsTapped, NodeOp, NodePiece};
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;

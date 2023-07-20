@@ -2,8 +2,8 @@ use std::ops::Deref;
 
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{
-    ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, NodeOp, NodePiece, OnTeam, Pickup,
-    Team, TeamPhase, IsTapped,
+    ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
+    Pickup, Team, TeamPhase,
 };
 use game_core::player::{ForPlayer, Player};
 
@@ -187,58 +187,62 @@ pub fn kb_grid(
                         },
                         NamedInput::Activate => {
                             if let Some(selected_action_index) = **selected_action {
-                                selected_entity.of(&node_pieces).and_then(|(actions, is_tapped)| {
-                                    if **is_tapped {
-                                        return None;
-                                    }
-                                    let action = *actions?.get(selected_action_index)?;
-                                    ev_node_op.send(Op::new(
-                                        player,
-                                        NodeOp::PerformCurioAction {
-                                            action,
-                                            curio: **selected_entity,
-                                            target: **cursor,
-                                        },
-                                    ));
-                                    Some(())
-                                });
+                                selected_entity.of(&node_pieces).and_then(
+                                    |(actions, is_tapped)| {
+                                        if **is_tapped {
+                                            return None;
+                                        }
+                                        let action = *actions?.get(selected_action_index)?;
+                                        ev_node_op.send(Op::new(
+                                            player,
+                                            NodeOp::PerformCurioAction {
+                                                action,
+                                                curio: **selected_entity,
+                                                target: **cursor,
+                                            },
+                                        ));
+                                        Some(())
+                                    },
+                                );
                             } else if is_controlling_active_curio {
-                                selected_entity.of(&node_pieces).and_then(|(actions, is_tapped)| {
-                                    if **is_tapped {
-                                        return None;
-                                    }
-                                    match actions.map(|actions| (actions.len(), actions)) {
-                                        None | Some((0, _)) => {
-                                            ev_node_op.send(Op::new(
-                                                player,
-                                                NodeOp::PerformCurioAction {
-                                                    action: **no_op_action,
-                                                    curio: **selected_entity,
-                                                    target: default(),
-                                                },
-                                            ));
-                                        },
-                                        Some((1, actions)) => {
-                                            let action = *actions.0.get(0).expect(
-                                                "if the len is 1, there should be an action at 0",
-                                            );
-                                            if rangeless_actions.contains(action) {
+                                selected_entity.of(&node_pieces).and_then(
+                                    |(actions, is_tapped)| {
+                                        if **is_tapped {
+                                            return None;
+                                        }
+                                        match actions.map(|actions| (actions.len(), actions)) {
+                                            None | Some((0, _)) => {
                                                 ev_node_op.send(Op::new(
                                                     player,
                                                     NodeOp::PerformCurioAction {
-                                                        action,
+                                                        action: **no_op_action,
                                                         curio: **selected_entity,
                                                         target: default(),
                                                     },
                                                 ));
-                                            } else {
-                                                **selected_action = Some(0);
-                                            }
-                                        },
-                                        _ => {},
-                                    }
-                                    Some(())
-                                });
+                                            },
+                                            Some((1, actions)) => {
+                                                let action = *actions.0.get(0).expect(
+                                                "if the len is 1, there should be an action at 0",
+                                            );
+                                                if rangeless_actions.contains(action) {
+                                                    ev_node_op.send(Op::new(
+                                                        player,
+                                                        NodeOp::PerformCurioAction {
+                                                            action,
+                                                            curio: **selected_entity,
+                                                            target: default(),
+                                                        },
+                                                    ));
+                                                } else {
+                                                    **selected_action = Some(0);
+                                                }
+                                            },
+                                            _ => {},
+                                        }
+                                        Some(())
+                                    },
+                                );
                                 // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op

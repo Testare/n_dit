@@ -8,6 +8,7 @@ mod rule;
 use getset::CopyGetters;
 pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
+use serde::{Deserialize, Serialize};
 
 pub mod key {
     use typed_key::{typed_key, Key};
@@ -15,6 +16,11 @@ pub mod key {
     use super::*;
 
     pub const NODE_ID: Key<Entity> = typed_key!("node_id");
+    pub const CURIO: Key<Entity> = typed_key!("curio");
+    pub const TAPPED: Key<bool> = typed_key!("tapped");
+    pub const PICKUP: Key<Pickup> = typed_key!("pickup");
+    pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
+    pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
 }
 pub struct NodePlugin;
 
@@ -34,10 +40,10 @@ pub struct NodePiece {
     display_id: String,
 }
 
-#[derive(Debug, Reflect)]
+#[derive(Debug, Deserialize, Reflect, Serialize)]
 pub struct Mon(pub u32);
 
-#[derive(Component, Debug, Reflect)]
+#[derive(Component, Debug, Deserialize, Reflect, Serialize)]
 pub enum Pickup {
     Mon(Mon),
     Card(Entity),

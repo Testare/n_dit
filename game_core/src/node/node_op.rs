@@ -40,15 +40,18 @@ pub enum NodeOp {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum NodeOpError {
     NoActiveCurio,
     NoAccessPoint,
     NoSuchAction,
     NoSuchCard,
+    NoMovementSpeed,
     InvalidTarget,
     PrereqsNotSatisfied,
     OutOfRange,
     InternalError,
+    NoMovementRemains,
 }
 
 impl OpSubtype for NodeOp {
@@ -121,62 +124,76 @@ pub fn curio_ops(
                     }
                 },
                 NodeOp::MoveActiveCurio { dir } => {
-                    let result = active_curio.and_then(|active_curio_id| {
-                        let mut curio_q = curios.get_mut(active_curio_id).ok()?;
-                        debug_assert!(!**curio_q.tapped, "a tapped curio was active");
-                        let movement_speed = **curio_q.movement_speed?;
-                        if movement_speed == **curio_q.moves_taken {
-                            return None;
-                        }
-                        let head = grid.head(active_curio_id)?;
-                        let next_pt = head + *dir;
-                        if grid.square_is_closed(next_pt) {
-                            return None;
-                        }
-                        if let Some(entity_at_pt) = grid.item_at(next_pt) {
-                            if entity_at_pt == active_curio_id {
-                                // Curios can move onto their own squares
-                            } else if let Ok(pickup) = pickups.get(entity_at_pt) {
-                                // TODO EntityGrid.remove
-                                let entity_pt_len = grid.len_of(entity_at_pt);
-                                grid.pop_back_n(entity_at_pt, entity_pt_len);
-                                log::debug!("Picked up: {:?}", pickup);
-                            } else {
-                                return None;
+                    let result = active_curio.ok_or(NodeOpError::NoActiveCurio).and_then(
+                        |active_curio_id| {
+                            let mut metadata = Metadata::default();
+                            metadata.put(key::CURIO, active_curio_id);
+                            let mut curio_q = curios
+                                .get_mut(active_curio_id)
+                                .map_err(|_| NodeOpError::InternalError)?;
+                            debug_assert!(!**curio_q.tapped, "a tapped curio was active");
+                            let movement_speed =
+                                **curio_q.movement_speed.ok_or(NodeOpError::NoMovementSpeed)?;
+                            if movement_speed == **curio_q.moves_taken {
+                                return Err(NodeOpError::NoMovementRemains);
                             }
-                        }
-                        grid.push_front(next_pt, active_curio_id);
-                        **curio_q.moves_taken += 1;
-                        if grid.len_of(active_curio_id) as u32
-                            > curio_q.max_size.map(|ms| **ms).unwrap_or(1)
-                        {
-                            grid.pop_back(active_curio_id);
-                        }
-                        if movement_speed == **curio_q.moves_taken {
-                            if curio_q
-                                .actions
-                                .as_ref()
-                                .map(|curio_actions| {
-                                    curio_actions
-                                        .iter()
-                                        .find(|action| **action != **no_op_action)
-                                        .is_none()
-                                })
-                                .unwrap_or(true)
+                            let head = grid
+                                .head(active_curio_id)
+                                .ok_or(NodeOpError::InternalError)?;
+                            let next_pt = head + *dir;
+                            if grid.square_is_closed(next_pt) {
+                                return Err(NodeOpError::InvalidTarget);
+                            }
+                            if let Some(entity_at_pt) = grid.item_at(next_pt) {
+                                if entity_at_pt == active_curio_id {
+                                    // Curios can move onto their own squares
+                                } else if let Ok(pickup) = pickups.get(entity_at_pt) {
+                                    // TODO EntityGrid.remove
+                                    let entity_pt_len = grid.len_of(entity_at_pt);
+                                    grid.pop_back_n(entity_at_pt, entity_pt_len);
+                                    metadata.put(key::PICKUP, pickup);
+                                    log::debug!("Picked up: {:?}", pickup);
+                                } else {
+                                    return Err(NodeOpError::InvalidTarget);
+                                }
+                            }
+                            grid.push_front(next_pt, active_curio_id);
+                            **curio_q.moves_taken += 1;
+                            if grid.len_of(active_curio_id) as u32
+                                > curio_q.max_size.map(|ms| **ms).unwrap_or(1)
                             {
-                                **curio_q.tapped = true;
-                                **active_curio = None;
+                                metadata.put(
+                                    key::DROPPED_SQUARE,
+                                    grid.back(active_curio_id)
+                                        .expect("should be at least once square"),
+                                );
+                                grid.pop_back(active_curio_id);
                             }
+                            let remaining_moves = movement_speed - **curio_q.moves_taken;
 
-                            return None;
-                        }
-                        Some(Default::default())
-                    });
+                            metadata.put(key::REMAINING_MOVES, &remaining_moves);
+                            if movement_speed == **curio_q.moves_taken {
+                                if curio_q
+                                    .actions
+                                    .as_ref()
+                                    .map(|curio_actions| {
+                                        curio_actions
+                                            .iter()
+                                            .find(|action| **action != **no_op_action)
+                                            .is_none()
+                                    })
+                                    .unwrap_or(true)
+                                {
+                                    metadata.put(key::TAPPED, true);
+                                    **curio_q.tapped = true;
+                                    **active_curio = None;
+                                }
+                            }
+                            Ok(metadata)
+                        },
+                    );
                     // TODO use actual results
-                    ev_results.send(OpResult::new(
-                        fullop,
-                        result.ok_or(NodeOpError::InternalError),
-                    ));
+                    ev_results.send(OpResult::new(fullop, result));
                 },
                 NodeOp::PerformCurioAction {
                     action: action_id,

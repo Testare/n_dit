@@ -1,13 +1,13 @@
 use std::time::Instant;
 
 use crossterm::style::Stylize;
-use game_core::node::{InNode, NodeOp, NodePiece, Node};
+use game_core::node::{InNode, Node, NodeOp, NodePiece};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::{card, node};
 
-use super::{SelectedAction, NodeCursor, SelectedEntity};
 use super::registry::GlyphRegistry;
+use super::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::charmie::{
     BrokenCharacterFillBehavior, CharacterMapImage, CharmieActor, CharmieAnimation,
     CharmieAnimationFrame,
@@ -34,7 +34,7 @@ pub struct AnimationPlayer {
     speed: f32,
     state: AnimationPlayerState,
     duration: f32,
-    unload_when_finished: bool
+    unload_when_finished: bool,
 }
 
 impl Default for AnimationPlayer {
@@ -58,7 +58,6 @@ impl AnimationPlayer {
             AnimationPlayerState::Loop | AnimationPlayerState::PlayOnce
         )
     }
-
 
     fn load(
         &mut self,
@@ -101,7 +100,8 @@ impl AnimationPlayer {
     }
 
     fn finished(&self) -> bool {
-        self.state == AnimationPlayerState::Finished || self.state == AnimationPlayerState::FinishedAndUnloaded
+        self.state == AnimationPlayerState::Finished
+            || self.state == AnimationPlayerState::FinishedAndUnloaded
     }
 
     fn advance(&mut self) {
@@ -202,7 +202,8 @@ pub fn sys_create_attack_animation(
                 for (mut animation_player, ForPlayer(player)) in attack_animation_player.iter_mut()
                 {
                     if players_in_node.contains(player) {
-                        animation_player.load(animation_handle.clone(), assets_animation.as_ref())
+                        animation_player
+                            .load(animation_handle.clone(), assets_animation.as_ref())
                             .play_once()
                             .unload_when_finished();
                     }
@@ -220,7 +221,6 @@ pub fn sys_update_animations(mut animation_player: Query<&mut AnimationPlayer>) 
         if animation_player.is_playing() {
             // Do the check here so that change detection can work
             animation_player.advance();
-
         }
     }
 }
@@ -241,13 +241,27 @@ pub fn sys_render_animations(
 
 pub fn sys_reset_state_after_animation_plays(
     changed_aps: Query<(&AnimationPlayer, &ForPlayer), Changed<AnimationPlayer>>,
-    mut players: Query<(&mut SelectedAction, &mut SelectedEntity, &NodeCursor, &InNode), With<Player>>,
+    mut players: Query<
+        (
+            &mut SelectedAction,
+            &mut SelectedEntity,
+            &NodeCursor,
+            &InNode,
+        ),
+        With<Player>,
+    >,
     nodes: Query<(&EntityGrid,), With<Node>>,
 ) {
     for (ap, for_player) in changed_aps.iter() {
         if ap.finished() {
-            get_assert_mut!(**for_player, players, |(selected_action, selected_entity, node_cursor, in_node)| {
+            get_assert_mut!(**for_player, players, |(
+                mut selected_action,
+                selected_entity,
+                node_cursor,
+                in_node,
+            )| {
                 let (grid,) = get_assert!(**in_node, &nodes)?;
+                **selected_action = None;
                 node_cursor.adjust_to_self(selected_entity, selected_action, grid);
                 Some(())
             });
@@ -268,9 +282,10 @@ fn generate_animation_from_damages(
     let base_offset = UVec2 { x: 12, y: 8 };
     let damage_cell = CharacterMapImage::new()
         .with_row(|row| row.with_styled_text("[]".stylize().white().on_dark_red()));
-    let target_head = target_head.map(|target_head_str| CharacterMapImage::new()
-        .with_row(|row| row.with_styled_text(target_head_str.stylize().white().on_dark_red()))
-    );
+    let target_head = target_head.map(|target_head_str| {
+        CharacterMapImage::new()
+            .with_row(|row| row.with_styled_text(target_head_str.stylize().white().on_dark_red()))
+    });
     let damages: CharmieAnimation = (0..damages.len())
         .map(|i| {
             let mut frame = CharacterMapImage::default();

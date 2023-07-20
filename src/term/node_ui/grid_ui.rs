@@ -8,17 +8,18 @@ mod scroll;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
+use game_core::node::{self, AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
 use game_core::op::OpResult;
-use game_core::player::Player;
+use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 pub use scroll::Scroll2D;
 
+use super::menu_ui::MenuUiActions;
 use super::{
     AvailableActionTargets, AvailableMoves, NodeCursor, NodeUi, NodeUiQItem, SelectedAction,
     SelectedEntity,
 };
-use crate::term::layout::{LayoutMouseTarget, StyleTty, UiFocusOnClick};
+use crate::term::layout::{LayoutMouseTarget, StyleTty, UiFocusNext, UiFocusOnClick};
 use crate::term::prelude::*;
 use crate::term::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 
@@ -54,7 +55,7 @@ impl Plugin for GridUi {
         .add_systems(
             Update,
             (
-                adjust_node_cursor_when_curio_moves,
+                react_to_curio_movement,
                 available_moves::adjust_available_moves,
                 range_of_action::get_range_of_action,
             )
@@ -101,56 +102,61 @@ impl NodeUi for GridUi {
     }
 }
 
-fn adjust_node_cursor_when_curio_moves(
+fn react_to_curio_movement(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
-    nodes: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
+    nodes: Query<(&EntityGrid,), With<Node>>,
+    action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
     mut players: Query<
         (
             &InNode,
             &mut NodeCursor,
             &mut SelectedEntity,
             &mut SelectedAction,
+            &mut UiFocusNext,
         ),
         With<Player>,
     >,
 ) {
     for op_result in ev_op_result.iter() {
-        if op_result.result().is_err() {
-            continue;
-        }
-        match op_result.source().op() {
-            NodeOp::MoveActiveCurio { .. } => {
-                get_assert_mut!(op_result.source().player(), players, |(
-                    node,
-                    mut node_cursor,
-                    selected_entity,
-                    selected_action,
-                )| {
-                    let (grid, active_curio) = get_assert!(**node, nodes)?;
-                    let active_curio = (**active_curio)?;
-                    node_cursor.adjust_to(
-                        grid.head(active_curio)?,
-                        selected_entity,
-                        selected_action,
-                        grid,
+        if let Ok(metadata) = op_result.result() {
+            match op_result.source().op() {
+                NodeOp::MoveActiveCurio { .. } => {
+                    let player = op_result.source().player();
+                    get_assert_mut!(
+                        op_result.source().player(),
+                        players,
+                        |(
+                            node,
+                            mut node_cursor,
+                            selected_entity,
+                            selected_action,
+                            mut ui_focus_next,
+                        )| {
+                            let (grid,) = get_assert!(**node, nodes)?;
+                            let curio = metadata.get(node::key::CURIO).ok()?;
+                            let remaining_moves = metadata.get(node::key::REMAINING_MOVES).ok()?;
+                            let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
+                            // let active_curio = (**active_curio)?;
+                            node_cursor.adjust_to(
+                                grid.head(curio)?,
+                                selected_entity,
+                                selected_action,
+                                grid,
+                            );
+                            if remaining_moves == 0 && !tapped {
+                                let action_menu_id = action_menus
+                                    .iter()
+                                    .filter(|(_, for_player)| ***for_player == player)
+                                    .next()?
+                                    .0;
+                                **ui_focus_next = Some(action_menu_id);
+                            }
+                            Some(())
+                        }
                     );
-                    Some(())
-                });
-            },
-            NodeOp::PerformCurioAction { .. } => {
-                get_assert_mut!(op_result.source().player(), players, |(
-                    node,
-                    mut node_cursor,
-                    selected_entity,
-                    selected_action,
-                )| {
-                    let (grid, _) = get_assert!(**node, nodes)?;
-                    let cursor_pt = **node_cursor;
-                    node_cursor.adjust_to(cursor_pt, selected_entity, selected_action, grid);
-                    Some(())
-                });
-            },
-            _ => {},
+                },
+                _ => {},
+            }
         }
     }
 }
