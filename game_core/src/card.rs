@@ -49,10 +49,10 @@ impl Deck {
 
     pub fn index_of_card(&self, entity: Entity) -> Option<usize> {
         // TODO use ordering when I actually use ordering logic here
-        self.cards
+        self.ordering
             .iter()
             .enumerate()
-            .find(|(_, (card, _))| **card == entity)
+            .find(|(_, card)| **card == entity)
             .map(|(index, _)| index)
     }
 
