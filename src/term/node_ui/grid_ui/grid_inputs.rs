@@ -246,13 +246,15 @@ pub fn kb_grid(
                             }
                         },
                         NamedInput::Undo => {
-                            if is_controlling_active_curio && selected_action.is_some() {
+                            if selected_action.is_some() {
                                 **selected_action = None;
-                                active_curio.and_then(|active_curio_id| {
-                                    let head = grid.head(active_curio_id)?;
-                                    cursor.adjust_to(head, selected_entity, selected_action, grid);
-                                    Some(())
-                                });
+                                if is_controlling_active_curio {
+                                    active_curio.and_then(|active_curio_id| {
+                                        **cursor = grid.head(active_curio_id)?;
+                                        Some(())
+                                    });
+                                }
+                                cursor.adjust_to_self(selected_entity, selected_action, grid);
                             }
                         },
                         _ => {},
