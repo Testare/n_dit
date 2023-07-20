@@ -31,7 +31,7 @@ impl MenuUiActions {
             ),
             With<Player>,
         >,
-        node_pieces: Query<(&Actions, &IsTapped), With<NodePiece>>,
+        node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         mut ev_keys: EventReader<KeyEvent>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
@@ -73,7 +73,7 @@ impl MenuUiActions {
                                     **selected_action = None;
                                 },
                                 NamedInput::Activate => {
-                                    if **is_tapped {
+                                    if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
                                         **selected_action = None;
                                     } else if let Some(action) =
                                         actions.get(selected_action.unwrap_or_default())
