@@ -1,3 +1,4 @@
+use charmi::CharacterMapImage;
 use game_core::player::{ForPlayer, Player};
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
@@ -6,7 +7,6 @@ use taffy::prelude::Style;
 use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
-use crate::charmie::CharacterMapImage;
 use crate::term::prelude::*;
 
 #[derive(Default)]

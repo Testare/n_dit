@@ -84,15 +84,13 @@ pub fn create_node_ui(
                 })
                 .id();
 
-            let animation = commands
-                .spawn((
-                    Name::new("GridAnimationPlayer"),
-                    NodeUiAttackAnimation,
-                    ForPlayer(*player),
-                    AnimationPlayer::default(),
-                    TerminalRendering::default(),
-                ))
-                .id();
+            commands.spawn((
+                Name::new("GridAnimationPlayer"),
+                NodeUiAttackAnimation,
+                ForPlayer(*player),
+                AnimationPlayer::default(),
+                TerminalRendering::default(),
+            ));
 
             commands.entity(*player).insert((
                 NodeCursor::default(),

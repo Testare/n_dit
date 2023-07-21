@@ -8,7 +8,7 @@ mod scroll;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{self, AccessPoint, ActiveCurio, InNode, IsTapped, Node, NodeOp, NodePiece};
+use game_core::node::{self, AccessPoint, InNode, IsTapped, Node, NodeOp, NodePiece};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;

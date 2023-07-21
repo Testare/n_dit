@@ -1,8 +1,7 @@
 use std::borrow::Borrow;
 use std::ops::AddAssign;
 
-use bevy::asset::Asset;
-use bevy::reflect::{Reflect, TypePath, TypeUuid};
+use bevy::reflect::{TypePath, TypeUuid};
 use bevy::utils::HashMap;
 
 use super::CharacterMapImage;

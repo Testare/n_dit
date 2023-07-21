@@ -1808,6 +1808,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
+name = "charmi"
+version = "0.1.0"
+dependencies = [
+ "bevy 0.11.0",
+ "crossterm",
+ "itertools 0.10.5",
+ "serde",
+ "toml",
+ "unicode-width",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3068,6 +3080,7 @@ version = "0.1.0"
 dependencies = [
  "aquamarine",
  "bevy 0.11.0",
+ "charmi",
  "crossterm",
  "env_logger",
  "game_core",

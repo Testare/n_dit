@@ -1,5 +1,9 @@
 use std::time::Instant;
 
+use charmi::{
+    BrokenCharacterFillBehavior, CharacterMapImage, CharmieActor, CharmieAnimation,
+    CharmieAnimationFrame,
+};
 use crossterm::style::Stylize;
 use game_core::node::{InNode, Node, NodeOp, NodePiece};
 use game_core::op::OpResult;
@@ -8,10 +12,6 @@ use game_core::{card, node};
 
 use super::registry::GlyphRegistry;
 use super::{NodeCursor, SelectedAction, SelectedEntity};
-use crate::charmie::{
-    BrokenCharacterFillBehavior, CharacterMapImage, CharmieActor, CharmieAnimation,
-    CharmieAnimationFrame,
-};
 use crate::term::configuration::UiFormat;
 use crate::term::fx::Fx;
 use crate::term::prelude::*;

@@ -1,3 +1,4 @@
+use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
@@ -5,7 +6,6 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
-use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::input_event::{MouseButton, MouseEventKind};
 use crate::term::key_map::NamedInput;
 use crate::term::layout::{

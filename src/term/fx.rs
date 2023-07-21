@@ -1,8 +1,7 @@
 use bevy::asset::Handle;
 use bevy::ecs::system::Resource;
+use charmi::CharmieActor;
 use game_core::prelude::*;
-
-use crate::charmie::{CharmieActor, CharmieAnimation};
 
 pub const FX_ACTOR: &'static str = "cq_term/fx.charmia";
 

@@ -21,12 +21,12 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
+use charmi::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
 use input_event::CrosstermEvent;
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
-use crate::charmie::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 enum TerminalFocusMode {

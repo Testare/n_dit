@@ -1,11 +1,11 @@
 use std::io::{stdout, Write};
 use std::time::{Duration, Instant};
 
+use charmi::CharacterMapImage;
 use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 
 use super::TerminalWindow;
-use crate::charmie::CharacterMapImage;
 use crate::term::prelude::*;
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;

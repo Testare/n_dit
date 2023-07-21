@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 old_game_core = { path = "old_game_core" }
 game_core = { path = "game_core" }
+charmi = { path = "charmi" }
 log = "0.4"
 simplelog = "^0.10.0"
 serde_json = "1.0"

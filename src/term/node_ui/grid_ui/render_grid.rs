@@ -1,5 +1,6 @@
 use std::cmp;
 
+use charmi::{CharacterMapImage, CharmieRow};
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use itertools::Itertools;
@@ -9,7 +10,6 @@ use super::super::NodeCursor;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
-use crate::charmie::{CharacterMapImage, CharmieRow};
 use crate::term::configuration::{DrawConfiguration, UiFormat};
 use crate::term::layout::CalculatedSizeTty;
 use crate::term::node_ui::attack_animation::{AnimationPlayer, NodeUiAttackAnimation};
