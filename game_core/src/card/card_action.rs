@@ -1,3 +1,4 @@
+use crate::common::metadata::MetadataErr;
 use crate::prelude::*;
 
 // Is this really the best place for this module?
@@ -64,21 +65,21 @@ impl ActionEffect {
         grid: &mut Mut<EntityGrid>,
         _source: Entity,
         target: UVec2,
-    ) -> Metadata {
+    ) -> Result<Metadata, MetadataErr> {
         let mut action_metadata = Metadata::default();
-        match self {
+        Ok(match self {
             ActionEffect::Damage(dmg) => {
                 if let Some(key) = grid.item_at(target) {
                     let damages = grid.list_back_n(key, *dmg);
-                    action_metadata.put(key::TARGET_ENTITY, key);
-                    action_metadata.put(key::DAMAGES, damages);
-                    action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg);
+                    action_metadata.put(key::TARGET_ENTITY, key)?;
+                    action_metadata.put(key::DAMAGES, damages)?;
+                    action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg)?;
                     grid.pop_back_n(key, *dmg);
                     // TODO pop_back_n returns removed locations and old head as result for other systems
                 }
                 action_metadata
             },
             ActionEffect::Heal(_healing) => todo!("Healing not implemented yet"),
-        }
+        })
     }
 }

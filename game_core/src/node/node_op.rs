@@ -1,4 +1,5 @@
 use bevy::ecs::query::{Has, WorldQuery};
+use thiserror::Error;
 
 use super::{
     key, AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped,
@@ -9,6 +10,7 @@ use crate::card::{
     Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
     MovementSpeed, Prereqs,
 };
+use crate::common::metadata::MetadataErr;
 use crate::node::{AccessPoint, Curio};
 use crate::op::{OpResult, OpSubtype};
 use crate::player::Player;
@@ -39,19 +41,29 @@ pub enum NodeOp {
     ReadyToGo,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug, Error)]
 #[non_exhaustive]
 pub enum NodeOpError {
+    #[error("No curio is currently active")]
     NoActiveCurio,
-    NoAccessPoint,
+    #[error("No access point")]
     NoSuchAction,
+    #[error("No such card")]
     NoSuchCard,
+    #[error("This piece doesn't have a movement speed")]
     NoMovementSpeed,
-    InvalidTarget,
-    PrereqsNotSatisfied,
-    OutOfRange,
-    InternalError,
+    #[error("No movement remains")]
     NoMovementRemains,
+    #[error("This is not a valid target for this action")]
+    InvalidTarget, // TODO include target type
+    #[error("This action's requirements are not satisfied")]
+    PrereqsNotSatisfied, // TODO include failed prereq
+    #[error("Out of range")]
+    OutOfRange,
+    #[error("A glitch has occurred")]
+    InternalError,
+    #[error("Glitch occurred with metadata while performing op: {0}")]
+    MetadataSerializationError(#[from] MetadataErr),
 }
 
 impl OpSubtype for NodeOp {
@@ -127,7 +139,7 @@ pub fn curio_ops(
                     let result = active_curio.ok_or(NodeOpError::NoActiveCurio).and_then(
                         |active_curio_id| {
                             let mut metadata = Metadata::default();
-                            metadata.put(key::CURIO, active_curio_id);
+                            metadata.put(key::CURIO, active_curio_id)?;
                             let mut curio_q = curios
                                 .get_mut(active_curio_id)
                                 .map_err(|_| NodeOpError::InternalError)?;
@@ -151,7 +163,7 @@ pub fn curio_ops(
                                     // TODO EntityGrid.remove
                                     let entity_pt_len = grid.len_of(entity_at_pt);
                                     grid.pop_back_n(entity_at_pt, entity_pt_len);
-                                    metadata.put(key::PICKUP, pickup);
+                                    metadata.put(key::PICKUP, pickup)?;
                                     log::debug!("Picked up: {:?}", pickup);
                                 } else {
                                     return Err(NodeOpError::InvalidTarget);
@@ -165,13 +177,13 @@ pub fn curio_ops(
                                 metadata.put(
                                     key::DROPPED_SQUARE,
                                     grid.back(active_curio_id)
-                                        .expect("should be at least once square"),
-                                );
+                                        .expect("piece should be at least one square long"),
+                                )?;
                                 grid.pop_back(active_curio_id);
                             }
                             let remaining_moves = movement_speed - **curio_q.moves_taken;
 
-                            metadata.put(key::REMAINING_MOVES, &remaining_moves);
+                            metadata.put(key::REMAINING_MOVES, &remaining_moves)?;
                             if movement_speed == **curio_q.moves_taken {
                                 if curio_q
                                     .actions
@@ -184,7 +196,7 @@ pub fn curio_ops(
                                     })
                                     .unwrap_or(true)
                                 {
-                                    metadata.put(key::TAPPED, true);
+                                    metadata.put(key::TAPPED, true)?;
                                     **curio_q.tapped = true;
                                     **active_curio = None;
                                 }
@@ -232,12 +244,13 @@ pub fn curio_ops(
                                     }
                                 }
                             }
+                            // TODO action metadata should be lower
                             let mut action_metadata = if let Some(effect) = effect {
-                                effect.apply_effect(&mut grid, curio_id, *target)
+                                effect.apply_effect(&mut grid, curio_id, *target)?
                             } else {
                                 Default::default()
                             };
-                            action_metadata.put(key::NODE_ID, **node);
+                            action_metadata.put(key::NODE_ID, **node)?;
                             **curio_q.tapped = true;
                             **active_curio = None;
                             Ok(action_metadata)

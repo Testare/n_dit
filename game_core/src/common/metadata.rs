@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use bevy::prelude::Reflect;
 use serde::{Deserialize, Serialize};
@@ -11,12 +12,18 @@ use typed_key::Key;
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 
-#[derive(Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum MetadataErr {
     #[error("error from serde_json in metadata: {0}")]
-    SerdeError(#[from] serde_json::error::Error),
+    SerdeError(#[from] Arc<serde_json::error::Error>),
     #[error("required metadata key not found [{0}]")]
     RequiredKeyNotFound(String),
+}
+
+impl From<serde_json::error::Error> for MetadataErr {
+    fn from(value: serde_json::error::Error) -> Self {
+        Self::SerdeError(Arc::new(value))
+    }
 }
 
 type Result<T> = std::result::Result<T, MetadataErr>;
