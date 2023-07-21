@@ -40,13 +40,7 @@ impl CharacterMapImage {
     }
 
     // Draws map onto this image, expanding the image as necessary, at the location specified.
-    pub fn draw(
-        &self,
-        map: &CharacterMapImage,
-        x: u32,
-        y: u32,
-        bcfb: Option<char>,
-    ) -> Self {
+    pub fn draw(&self, map: &CharacterMapImage, x: u32, y: u32, bcfb: Option<char>) -> Self {
         let y = y as usize;
         let mut result = self.clone();
 
@@ -69,14 +63,7 @@ impl CharacterMapImage {
         }
     }
 
-    pub fn clip(
-        &self,
-        x: u32,
-        y: u32,
-        width: u32,
-        height: u32,
-        bcfb: Option<char>,
-    ) -> Self {
+    pub fn clip(&self, x: u32, y: u32, width: u32, height: u32, bcfb: Option<char>) -> Self {
         CharacterMapImage {
             rows: self
                 .rows
@@ -492,12 +479,7 @@ impl CharmieRow {
                                             if char_width == 2 {
                                                 if current_idx + 1 == skip_start {
                                                     // Full width character sliced in half at the beginning
-                                                    row.add_half_char(
-                                                        ch,
-                                                        bcfb,
-                                                        false,
-                                                        style,
-                                                    );
+                                                    row.add_half_char(ch, bcfb, false, style);
                                                     return Some(None);
                                                 } else if current_idx + 1 == take_until {
                                                     // Full width character sliced in half at the end
@@ -514,12 +496,7 @@ impl CharmieRow {
                                         style: *style,
                                     };
                                     if let Some(tail_half_char) = tail_half_char {
-                                        row.add_half_char(
-                                            tail_half_char,
-                                            bcfb,
-                                            true,
-                                            style,
-                                        );
+                                        row.add_half_char(tail_half_char, bcfb, true, style);
                                     }
                                 },
                             }
@@ -790,32 +767,16 @@ mod tests {
         let expected = format! {"世Hell{}world", "o界".red()};
         assert_eq!(expected, affected.to_string());
 
-        let drawing = row.draw(
-            &CharmieRow::of_gap(1),
-            0,
-            Some('_'),
-        );
+        let drawing = row.draw(&CharmieRow::of_gap(1), 0, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(
-            &CharmieRow::of_gap(1),
-            7,
-            Some('_'),
-        );
+        let drawing = row.draw(&CharmieRow::of_gap(1), 7, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(
-            &CharmieRow::of_gap(2),
-            1,
-            Some('_'),
-        );
+        let drawing = row.draw(&CharmieRow::of_gap(2), 1, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(
-            &CharmieRow::of_gap(2),
-            6,
-            Some('_'),
-        );
+        let drawing = row.draw(&CharmieRow::of_gap(2), 6, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
     }
 
@@ -909,11 +870,7 @@ mod tests {
         let drawing = row.draw(&gap_draw_row, 16, bcr);
         assert_eq!(drawing.to_string(), "世Hello界world  [  ]");
 
-        let drawing = row.draw(
-            &CharmieRow::of_gap(2),
-            0,
-            Some('_'),
-        );
+        let drawing = row.draw(&CharmieRow::of_gap(2), 0, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
     }
 }

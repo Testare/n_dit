@@ -133,8 +133,9 @@ fn react_to_curio_movement(
                             mut ui_focus_next,
                         )| {
                             let (grid,) = get_assert!(**node, nodes)?;
-                            let curio = metadata.get(node::key::CURIO).ok()?;
-                            let remaining_moves = metadata.get(node::key::REMAINING_MOVES).ok()?;
+                            let curio = metadata.get_required(node::key::CURIO).ok()?;
+                            let remaining_moves =
+                                metadata.get_required(node::key::REMAINING_MOVES).ok()?;
                             let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
                             // let active_curio = (**active_curio)?;
                             node_cursor.adjust_to(

@@ -1,9 +1,6 @@
 use std::time::Instant;
 
-use charmi::{
-    CharacterMapImage, CharmieActor, CharmieAnimation,
-    CharmieAnimationFrame,
-};
+use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 use crossterm::style::Stylize;
 use game_core::node::{InNode, Node, NodeOp, NodePiece};
 use game_core::op::OpResult;
@@ -161,12 +158,13 @@ pub fn sys_create_attack_animation(
         {
             node_op_result.result().as_ref().ok().and_then(|metadata| {
                 let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
-                let fatal = metadata.get(card::key::FATAL).ok()?;
-                let node_id = metadata.get(node::key::NODE_ID).ok()?;
+                let fatal = metadata.get_or_default(card::key::FATAL).ok()?;
+                let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
                 let target_head = if fatal {
                     metadata
-                        .get(card::key::TARGET_ENTITY)
+                        .get_optional(card::key::TARGET_ENTITY)
                         .ok()
+                        .flatten()
                         .and_then(|target_id| {
                             let display_id = get_assert!(target_id, node_pieces)?.display_id();
                             let (head_str, _) = glyph_registry
@@ -291,19 +289,9 @@ fn generate_animation_from_damages(
             let mut frame = CharacterMapImage::default();
             for (i, UVec2 { x, y }) in damages.iter().enumerate().skip(i) {
                 if let (Some(target_head), true) = (&target_head, i == damages.len() - 1) {
-                    frame = frame.draw(
-                        &target_head,
-                        x * 3 + 1,
-                        y * 2 + 1,
-                        None
-                    );
+                    frame = frame.draw(&target_head, x * 3 + 1, y * 2 + 1, None);
                 } else {
-                    frame = frame.draw(
-                        &damage_cell,
-                        x * 3 + 1,
-                        y * 2 + 1,
-                        None
-                    );
+                    frame = frame.draw(&damage_cell, x * 3 + 1, y * 2 + 1, None);
                 }
             }
             (DAMAGE_TIMING, frame)

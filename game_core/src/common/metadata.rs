@@ -4,22 +4,19 @@ use std::collections::HashMap;
 use bevy::prelude::Reflect;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use thiserror::Error;
 use typed_key::Key;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize, Reflect)]
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]
 pub struct Metadata(HashMap<String, String>);
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum MetadataErr {
-    SerdeError(serde_json::error::Error),
-    KeyNotFound(String),
-}
-
-impl From<serde_json::error::Error> for MetadataErr {
-    fn from(value: serde_json::error::Error) -> Self {
-        MetadataErr::SerdeError(value)
-    }
+    #[error("error from serde_json in metadata: {0}")]
+    SerdeError(#[from] serde_json::error::Error),
+    #[error("required metadata key not found [{0}]")]
+    RequiredKeyNotFound(String),
 }
 
 type Result<T> = std::result::Result<T, MetadataErr>;
@@ -33,24 +30,58 @@ impl Metadata {
         Metadata::default()
     }
 
+    /*
     pub fn get<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<T> {
         self.0
             .get(&key.name().to_string())
-            .ok_or_else(|| MetadataErr::KeyNotFound(key.name().to_owned()))
+            .ok_or_else(|| MetadataErr::RequiredKeyNotFound(key.name().to_owned()))
             .and_then(|data| Ok(serde_json::from_str(data)?))
-    }
+    }*/
 
-    pub fn get_field<'a, T: Deserialize<'a>>(&'a self, field: &str) -> Result<T> {
-        self.0
-            .get(&field.to_string())
-            .ok_or_else(|| MetadataErr::KeyNotFound(field.to_owned()))
-            .and_then(|data| Ok(serde_json::from_str(data)?))
+    pub fn get_optional<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<Option<T>> {
+        if let Some(value_str) = self.0.get(&key.name().to_string()) {
+            Ok(Some(serde_json::from_str(value_str)?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn get_or_default<'a, T: Deserialize<'a> + Default>(&'a self, key: Key<T>) -> Result<T> {
-        match self.get(key) {
-            Err(MetadataErr::KeyNotFound(_)) => Ok(T::default()),
-            t => t,
+        self.get_optional(key).map(|opt| opt.unwrap_or_default())
+    }
+
+    pub fn get_required<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<T> {
+        if let Some(value_str) = self.0.get(&key.name().to_string()) {
+            Ok(serde_json::from_str(value_str)?)
+        } else {
+            Err(MetadataErr::RequiredKeyNotFound(key.name().to_owned()))
+        }
+    }
+
+    pub fn get_field_optional<'a, T: Deserialize<'a>>(&'a self, field: &str) -> Result<Option<T>> {
+        if let Some(value_str) = self.0.get(&field.to_string()) {
+            Ok(Some(serde_json::from_str(value_str)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_field_or_default<'a, T: Deserialize<'a> + Default>(
+        &'a self,
+        field: &str,
+    ) -> Result<T> {
+        if let Some(value_str) = self.0.get(&field.to_string()) {
+            Ok(serde_json::from_str(value_str)?)
+        } else {
+            Ok(Default::default())
+        }
+    }
+
+    pub fn get_field_required<'a, T: Deserialize<'a>>(&'a self, field: &str) -> Result<T> {
+        if let Some(value_str) = self.0.get(field) {
+            Ok(serde_json::from_str(value_str)?)
+        } else {
+            Err(MetadataErr::RequiredKeyNotFound(field.to_owned()))
         }
     }
 
