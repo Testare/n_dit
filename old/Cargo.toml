@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "old_game_core",
+    "old_ui"
+]

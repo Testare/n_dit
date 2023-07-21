@@ -606,7 +606,7 @@ mod test {
 
     mod utils {
         use super::*;
-        use crate::charmie::charmie_actor::{CharmieActor, CharmieAnimation};
+        use crate::charmie_actor::{CharmieActor, CharmieAnimation};
 
         pub fn test_charmie_actor() -> CharmieActor {
             [("spin", test_charmie_animation())].into_iter().collect()
