@@ -29,27 +29,6 @@ pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum BrokenCharacterFillBehavior {
-    Char(char),
-    Gap,
-}
-
-impl BrokenCharacterFillBehavior {
-    fn to_chr_opt(&self) -> Option<char> {
-        match self {
-            Self::Char(chr) => Some(*chr),
-            _ => None,
-        }
-    }
-}
-
-impl Default for BrokenCharacterFillBehavior {
-    fn default() -> Self {
-        Self::Char(' ')
-    }
-}
-
 impl CharacterMapImage {
     pub fn new() -> Self {
         Self::default()
@@ -66,7 +45,7 @@ impl CharacterMapImage {
         map: &CharacterMapImage,
         x: u32,
         y: u32,
-        bcfb: BrokenCharacterFillBehavior,
+        bcfb: Option<char>,
     ) -> Self {
         let y = y as usize;
         let mut result = self.clone();
@@ -96,7 +75,7 @@ impl CharacterMapImage {
         y: u32,
         width: u32,
         height: u32,
-        bcfb: BrokenCharacterFillBehavior,
+        bcfb: Option<char>,
     ) -> Self {
         CharacterMapImage {
             rows: self
@@ -396,7 +375,7 @@ impl CharmieRow {
     pub fn fit_to_len(&mut self, len: u32) -> &mut Self {
         let self_len = self.len();
         if self_len > len {
-            *self = self.clip(0, len, BrokenCharacterFillBehavior::Gap);
+            *self = self.clip(0, len, None);
         } else if self_len < len {
             self.add_gap(len - self_len);
         }
@@ -411,7 +390,7 @@ impl CharmieRow {
         self
     }
 
-    pub fn draw(&self, row: &CharmieRow, x: u32, bcfb: BrokenCharacterFillBehavior) -> Self {
+    pub fn draw(&self, row: &CharmieRow, x: u32, bcfb: Option<char>) -> Self {
         let mut result = if x > 0 {
             self.clip(0, x, bcfb)
         } else {
@@ -465,7 +444,7 @@ impl CharmieRow {
 
     /// Note: FillBehavior only applies to character that get cut in half.
     /// It does not fill in empty space in the clip, such as if the width is bigger than the source's width
-    pub fn clip(&self, clip_start: u32, width: u32, bcfb: BrokenCharacterFillBehavior) -> Self {
+    pub fn clip(&self, clip_start: u32, width: u32, bcfb: Option<char>) -> Self {
         let clip_end = clip_start + width;
         self.segments
             .iter()
@@ -515,7 +494,7 @@ impl CharmieRow {
                                                     // Full width character sliced in half at the beginning
                                                     row.add_half_char(
                                                         ch,
-                                                        bcfb.to_chr_opt(),
+                                                        bcfb,
                                                         false,
                                                         style,
                                                     );
@@ -537,7 +516,7 @@ impl CharmieRow {
                                     if let Some(tail_half_char) = tail_half_char {
                                         row.add_half_char(
                                             tail_half_char,
-                                            bcfb.to_chr_opt(),
+                                            bcfb,
                                             true,
                                             style,
                                         );
@@ -803,39 +782,39 @@ mod tests {
         let row = CharmieRow::of_plain_text("世Hello界world");
         let effect = CharmieRow::of_effect(2, &ContentStyle::new().red());
 
-        let affected = row.draw(&effect, 1, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 1, Some('_'));
         let expected = format! {"{}ello界world", "世H".red()};
         assert_eq!(expected, affected.to_string());
 
-        let affected = row.draw(&effect, 6, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 6, Some('_'));
         let expected = format! {"世Hell{}world", "o界".red()};
         assert_eq!(expected, affected.to_string());
 
         let drawing = row.draw(
             &CharmieRow::of_gap(1),
             0,
-            BrokenCharacterFillBehavior::Char('_'),
+            Some('_'),
         );
         assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(1),
             7,
-            BrokenCharacterFillBehavior::Char('_'),
+            Some('_'),
         );
         assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(2),
             1,
-            BrokenCharacterFillBehavior::Char('_'),
+            Some('_'),
         );
         assert_eq!(drawing.to_string(), "世Hello界world");
 
         let drawing = row.draw(
             &CharmieRow::of_gap(2),
             6,
-            BrokenCharacterFillBehavior::Char('_'),
+            Some('_'),
         );
         assert_eq!(drawing.to_string(), "世Hello界world");
     }
@@ -844,13 +823,13 @@ mod tests {
     fn test_clipping_charmie_row_with_fullwidth_characters() {
         let row = CharmieRow::of_plain_text("世Hello界world");
 
-        let clipped = row.clip(0, 9, BrokenCharacterFillBehavior::Gap);
+        let clipped = row.clip(0, 9, None);
         assert_eq!(clipped.to_string(), "世Hello界");
 
-        let clipped = row.clip(1, 7, BrokenCharacterFillBehavior::Char('x'));
+        let clipped = row.clip(1, 7, Some('x'));
         assert_eq!(clipped.to_string(), "xHellox");
 
-        let clipped = row.clip(1, 7, BrokenCharacterFillBehavior::Gap);
+        let clipped = row.clip(1, 7, None);
         assert_eq!(clipped.to_string(), " Hello ");
     }
 
@@ -862,13 +841,13 @@ mod tests {
         assert_eq!(row.to_string(), expected);
 
         let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
-        let clipped = row.clip(0, 10, BrokenCharacterFillBehavior::Gap);
+        let clipped = row.clip(0, 10, None);
         let mut expected = "Hello".green().to_string();
         expected.push_str("There");
         assert_eq!(clipped.to_string(), expected);
 
         let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
-        let clipped = row.clip(6, 4, BrokenCharacterFillBehavior::Gap);
+        let clipped = row.clip(6, 4, None);
         assert_eq!(clipped.to_string(), "here");
     }
 
@@ -877,22 +856,22 @@ mod tests {
         let row = CharmieRow::of_plain_text("世Hello界world");
         let effect = CharmieRow::new().with_effect(2, &ContentStyle::new().red());
 
-        let affected = row.draw(&effect, 0, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 0, Some('_'));
         let expected = format! {"{}Hello界world", "世".red()};
         assert_eq!(expected, affected.to_string());
 
-        let affected = row.draw(&effect, 2, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 2, Some('_'));
         let expected = format! {"世{}llo界world", "He".red()};
         assert_eq!(expected, affected.to_string());
 
-        let affected = row.draw(&effect, 15, BrokenCharacterFillBehavior::Char('_'));
+        let affected = row.draw(&effect, 15, Some('_'));
         let expected = format! {"世Hello界world {}", "  ".red()};
         assert_eq!(expected, affected.to_string());
     }
 
     #[test]
     fn test_draw_charmie_row() {
-        let bcr = BrokenCharacterFillBehavior::Char('_');
+        let bcr = Some('_');
         let row = CharmieRow::of_plain_text("世Hello界world");
         let draw_row = CharmieRow::of_plain_text("Mimsy");
         let gap_draw_row = CharmieRow::of_plain_text("[")
@@ -933,7 +912,7 @@ mod tests {
         let drawing = row.draw(
             &CharmieRow::of_gap(2),
             0,
-            BrokenCharacterFillBehavior::Char('_'),
+            Some('_'),
         );
         assert_eq!(drawing.to_string(), "世Hello界world");
     }

@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use charmi::{
-    BrokenCharacterFillBehavior, CharacterMapImage, CharmieActor, CharmieAnimation,
+    CharacterMapImage, CharmieActor, CharmieAnimation,
     CharmieAnimationFrame,
 };
 use crossterm::style::Stylize;
@@ -295,14 +295,14 @@ fn generate_animation_from_damages(
                         &target_head,
                         x * 3 + 1,
                         y * 2 + 1,
-                        BrokenCharacterFillBehavior::Gap,
+                        None
                     );
                 } else {
                     frame = frame.draw(
                         &damage_cell,
                         x * 3 + 1,
                         y * 2 + 1,
-                        BrokenCharacterFillBehavior::Gap,
+                        None
                     );
                 }
             }
