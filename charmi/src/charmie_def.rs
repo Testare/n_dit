@@ -793,7 +793,7 @@ mod test {
     #[test]
     fn load_test_charmi_file() {
         let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        test_charmi.push("assets/test.charmi");
+        test_charmi.push("tests/data/test.charmi");
         let result_str = std::fs::read_to_string(test_charmi).expect("test file should exist");
         log::debug!("CHARMI STR: {:?}", result_str);
 
@@ -813,7 +813,7 @@ mod test {
     #[test]
     fn load_test_charmia_file() {
         let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        test_charmi.push("assets/test.charmia");
+        test_charmi.push("tests/data/test.charmia");
         let result_str = std::fs::read_to_string(test_charmi).expect("text file to exist");
         log::debug!("CHARMIE STR: {:?}", result_str);
 
