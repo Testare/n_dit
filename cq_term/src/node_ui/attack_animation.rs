@@ -158,6 +158,9 @@ pub fn sys_create_attack_animation(
         {
             node_op_result.result().as_ref().ok().and_then(|metadata| {
                 let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
+                if damages.is_empty() {
+                    return None;
+                }
                 let fatal = metadata.get_or_default(card::key::FATAL).ok()?;
                 let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
                 let target_head = if fatal {

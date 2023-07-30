@@ -1,5 +1,5 @@
 use game_core::card::MovementSpeed;
-use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
+use game_core::node::{AccessPoint, InNode, IsTapped, MovesTaken, Node, NodeOp, NodePiece, Pickup};
 use game_core::player::Player;
 
 use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
@@ -8,7 +8,7 @@ use crate::layout::UiFocus;
 use crate::node_ui::SelectedAction;
 use crate::prelude::*;
 
-pub fn adjust_available_moves(
+pub fn sys_adjust_available_moves(
     mut players: Query<
         (
             Entity,
@@ -20,13 +20,7 @@ pub fn adjust_available_moves(
         ),
         (With<Player>,),
     >,
-    changed_access_points: Query<
-        (),
-        (
-            With<AccessPoint>,
-            Or<(Changed<AccessPoint>, Changed<MovementSpeed>)>,
-        ),
-    >,
+    mut ev_node_op: EventReader<Op<NodeOp>>,
     changed_cursor: Query<(), Changed<NodeCursor>>,
     node_grids: Query<(&EntityGrid,), With<Node>>,
     pickups: Query<(), With<Pickup>>,
@@ -41,11 +35,13 @@ pub fn adjust_available_moves(
     >,
     grid_uis: Query<(), With<GridUi>>,
 ) {
+    let players_who_performed_op: HashSet<Entity> =
+        ev_node_op.iter().map(|op| op.player()).collect();
     for (player, ui_focus, selected_action, selected_entity, node_id, mut available_moves) in
         players.iter_mut()
     {
         if !changed_cursor.contains(player)
-            && selected_entity.of(&changed_access_points).is_none()
+            && !players_who_performed_op.contains(&player)
             && !ui_focus.is_changed()
         {
             continue;

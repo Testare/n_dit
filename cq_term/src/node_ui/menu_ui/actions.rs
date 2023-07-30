@@ -1,4 +1,5 @@
 use charmi::{CharacterMapImage, CharmieRow};
+use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
@@ -100,36 +101,59 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
+        mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut layout_events: EventReader<LayoutEvent>,
-        actions_of_piece: Query<&Actions, With<NodePiece>>,
+        node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         mut players: Query<(&mut SelectedAction, &SelectedEntity), With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
+        rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
     ) {
         for layout_event in layout_events.iter() {
-            if let Ok(ForPlayer(player)) = ui_actions.get(layout_event.entity()) {
-                get_assert_mut!(*player, players, |(
+            if let Ok(ForPlayer(player_id)) = ui_actions.get(layout_event.entity()) {
+                get_assert_mut!(*player_id, players, |(
                     mut selected_action,
                     selected_entity,
                 )| {
-                    let actions = selected_entity.of(&actions_of_piece);
+                    if let Some((actions, is_tapped)) = selected_entity.of(&node_pieces) {
+                        // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
+                        match layout_event.event_kind() {
+                            MouseEventKind::Down(MouseButton::Left) => {
+                                if layout_event.pos().y > 0
+                                    && layout_event.pos().y <= actions.len() as u32
+                                {
+                                    let clicked_action_idx = (layout_event.pos().y - 1) as usize;
+                                    let clicked_action = Some(clicked_action_idx);
 
-                    // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
-                    match layout_event.event_kind() {
-                        MouseEventKind::Down(MouseButton::Left) => {
-                            if actions.is_some()
-                                && layout_event.pos().y > 0
-                                && layout_event.pos().y <= actions.unwrap().len() as u32
-                            {
-                                let clicked_action = Some((layout_event.pos().y - 1) as usize);
-                                if **selected_action != clicked_action {
-                                    **selected_action = Some((layout_event.pos().y - 1) as usize);
-                                } else if layout_event.double_click() {
-                                } else {
-                                    **selected_action = None;
+                                    if **selected_action != clicked_action {
+                                        **selected_action =
+                                            Some((layout_event.pos().y - 1) as usize);
+                                    } else if layout_event.double_click()
+                                        || !layout_event
+                                            .modifiers()
+                                            .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
+                                            .is_empty()
+                                    {
+                                        let action_id = actions[clicked_action_idx];
+                                        if matches!(is_tapped, Some(IsTapped(false)))
+                                            && rangeless_actions.contains(action_id)
+                                        {
+                                            **selected_action = None;
+                                            ev_node_op.send(Op::new(
+                                                *player_id,
+                                                NodeOp::PerformCurioAction {
+                                                    action: action_id,
+                                                    curio: **selected_entity,
+                                                    target: default(),
+                                                },
+                                            ))
+                                        }
+                                    } else {
+                                        **selected_action = None;
+                                    }
                                 }
-                            }
-                        },
-                        _ => {},
+                            },
+                            _ => {},
+                        }
                     }
                     Some(())
                 });

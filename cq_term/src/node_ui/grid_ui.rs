@@ -55,8 +55,8 @@ impl Plugin for GridUi {
         .add_systems(
             Update,
             (
-                react_to_curio_movement,
-                available_moves::adjust_available_moves,
+                sys_react_to_node_op,
+                available_moves::sys_adjust_available_moves,
                 range_of_action::get_range_of_action,
             )
                 .chain()
@@ -102,10 +102,11 @@ impl NodeUi for GridUi {
     }
 }
 
-fn react_to_curio_movement(
+fn sys_react_to_node_op(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
     nodes: Query<(&EntityGrid,), With<Node>>,
     action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
+    grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
     mut players: Query<
         (
             &InNode,
@@ -120,8 +121,24 @@ fn react_to_curio_movement(
     for op_result in ev_op_result.iter() {
         if let Ok(metadata) = op_result.result() {
             match op_result.source().op() {
+                NodeOp::PerformCurioAction { .. } => {
+                    let player = op_result.source().player();
+                    players
+                        .get_mut(player)
+                        .ok()
+                        .and_then(|(_, _, _, _, mut focus_next)| {
+                            let grid_ui_id = grid_uis
+                                .iter()
+                                .filter(|(_, for_player)| ***for_player == player)
+                                .next()?
+                                .0;
+                            **focus_next = Some(grid_ui_id);
+                            Some(())
+                        });
+                },
                 NodeOp::MoveActiveCurio { .. } => {
                     let player = op_result.source().player();
+                    // NOTE this will probably fail when an AI takes an action
                     get_assert_mut!(
                         op_result.source().player(),
                         players,

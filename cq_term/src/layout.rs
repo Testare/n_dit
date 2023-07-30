@@ -217,16 +217,16 @@ fn generate_layout_events(
 /// Not quite sure where in the frame this should go
 fn update_ui_focus_on_click(
     mut ev_layout: EventReader<LayoutEvent>,
-    mut players: Query<&mut UiFocusNext, With<Player>>,
+    mut players: Query<(&mut UiFocusNext, &UiFocus), With<Player>>,
     ui_focus_targets: Query<(&ForPlayer, DebugName), With<UiFocusOnClick>>,
 ) {
     for layout_event in ev_layout.iter() {
         if matches!(layout_event.event_kind(), MouseEventKind::Down(_)) {
             ui_focus_targets.get(layout_event.entity()).ok().and_then(
                 |(ForPlayer(player), debug_name)| {
-                    let mut focus = players.get_mut(*player).ok()?;
-                    if **focus != Some(layout_event.entity()) {
-                        **focus = Some(layout_event.entity());
+                    let (mut focus_next, focus) = players.get_mut(*player).ok()?;
+                    if **focus_next == **focus && **focus_next != Some(layout_event.entity()) {
+                        **focus_next = Some(layout_event.entity());
                         log::debug!("Set focus for player {:?} to {:?}", *player, debug_name);
                     }
                     Some(())
