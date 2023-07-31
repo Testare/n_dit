@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use crossterm::event::KeyModifiers;
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
@@ -31,13 +32,14 @@ pub fn handle_layout_events(
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     teams: Query<&TeamPhase, With<Team>>,
     pickups: Query<(), With<Pickup>>,
-    curios: Query<&OnTeam, With<Curio>>,
+    curios: Query<(&OnTeam, &Actions), With<Curio>>,
+    actions: Query<(&ActionRange,), With<Action>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
     for event in ev_mouse.iter() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventKind::Down(button) = event.event_kind() {
-                log::debug!("Clicked on the grid");
+                log::trace!("Clicked on the grid");
                 get_assert_mut!(*player, players, |(
                     node,
                     team,
@@ -52,40 +54,67 @@ pub fn handle_layout_events(
                         x: clicked_pos.x / 3,
                         y: clicked_pos.y / 2,
                     };
-
-                    if **cursor.deref() != clicked_node_pos {
-                        **cursor = clicked_node_pos;
-                    }
-
+                    let alternative_click = *button == MouseButton::Right
+                        || (*button == MouseButton::Left
+                            && (event
+                                .modifiers()
+                                .intersects(KeyModifiers::SHIFT | KeyModifiers::ALT)
+                                || event.double_click()));
                     let is_controlling_active_curio =
                         active_curio.is_some() && **current_turn == **team;
 
-                    let now_selected_entity = grid.item_at(**cursor);
-                    if selected_entity.0 != now_selected_entity
-                        && (now_selected_entity.is_some() || !is_controlling_active_curio)
-                    {
-                        selected_entity.0 = now_selected_entity;
-                        **selected_action = None;
-                    }
+                    if !alternative_click {
+                        if **cursor.deref() != clicked_node_pos {
+                            **cursor = clicked_node_pos;
+                        }
 
-                    if *button == MouseButton::Right {
-                        if is_controlling_active_curio {
+                        let now_selected_entity = grid.item_at(**cursor);
+                        if selected_entity.0 != now_selected_entity
+                            && (now_selected_entity.is_some() || !is_controlling_active_curio)
+                        {
+                            selected_entity.0 = now_selected_entity;
+                            **selected_action = None;
+                        }
+                    } else {
+                        let selected_action = selected_action.and_then(|selected_action| {
+                            selected_entity.of(&curios)?.1.get(selected_action).copied()
+                        });
+                        let pt_in_range = selected_action
+                            .as_ref()
+                            .and_then(|selected_action| {
+                                let (range,) = actions.get(*selected_action).ok()?;
+                                Some(range.in_range(
+                                    grid,
+                                    selected_entity.unwrap(),
+                                    clicked_node_pos,
+                                ))
+                            })
+                            .unwrap_or(false);
+                        if let (Some(action), true) = (selected_action, pt_in_range) {
+                            ev_node_op.send(Op::new(
+                                *player,
+                                NodeOp::PerformCurioAction {
+                                    action,
+                                    curio: **selected_entity,
+                                    target: clicked_node_pos,
+                                },
+                            ));
+                        } else if is_controlling_active_curio {
                             let active_curio_id = active_curio.unwrap();
                             let head = grid.head(active_curio_id).unwrap();
                             // TODO A lot of this logic is duplicated in node_op. Finding a way
                             // to condense it would be great
-                            if selected_action.is_some() {}
-                            if head.manhattan_distance(cursor.deref()) == 1 {
+                            if head.manhattan_distance(&clicked_node_pos) == 1 {
                                 // TODO Possible better UI: Clicking on any moveable-square will move the curio one space in that direction
-                                let valid_move_target = grid.square_is_free(**cursor)
-                                    || if let Some(pt_key) = grid.item_at(**cursor) {
+                                let valid_move_target = grid.square_is_free(clicked_node_pos)
+                                    || if let Some(pt_key) = grid.item_at(clicked_node_pos) {
                                         pt_key == active_curio_id || pickups.contains(pt_key)
                                     } else {
                                         false
                                     };
 
                                 if valid_move_target {
-                                    if let [Some(dir), _] = head.dirs_to(cursor.deref()) {
+                                    if let [Some(dir), _] = head.dirs_to(&clicked_node_pos) {
                                         ev_node_op.send(Op::new(
                                             *player,
                                             NodeOp::MoveActiveCurio { dir },
@@ -102,7 +131,7 @@ pub fn handle_layout_events(
                             // apply it
                         } else if *team_phase == TeamPhase::Play {
                             if let Some(pt_key) = grid.item_at(**cursor) {
-                                if let Ok(curio_team) = curios.get(pt_key) {
+                                if let Ok((curio_team, _)) = curios.get(pt_key) {
                                     if curio_team == team {
                                         ev_node_op.send(Op::new(
                                             *player,

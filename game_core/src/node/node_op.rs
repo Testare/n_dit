@@ -233,7 +233,7 @@ pub fn curio_ops(
                             let (effect, range, prereqs) = get_assert!(*action_id, actions)
                                 .ok_or(NodeOpError::InternalError)?;
                             if let Some(range) = range {
-                                if !range.in_range(&grid, curio_id, *target) {
+                                if !range.in_range(grid.as_ref(), curio_id, *target) {
                                     return Err(NodeOpError::OutOfRange);
                                 }
                             }

@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::common::metadata::MetadataErr;
 use crate::prelude::*;
 
@@ -44,8 +46,9 @@ impl ActionRange {
         ActionRange(range)
     }
 
-    pub fn in_range(&self, grid: &Mut<EntityGrid>, source: Entity, target: UVec2) -> bool {
-        grid.head(source)
+    pub fn in_range(&self, grid: &EntityGrid, source: Entity, target: UVec2) -> bool {
+        grid.borrow()
+            .head(source)
             .map(|head| head.manhattan_distance(&target) <= self.0)
             .unwrap_or_default()
     }
