@@ -18,6 +18,7 @@ use crate::render::TerminalRendering;
 // then one under grid_ui for the attack animation specific logic
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &'static str = "attack";
+const PICKUP_BASE_ANIM: &'static str = "attack";
 const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of render_square
 
 #[derive(Component)]
@@ -151,68 +152,88 @@ pub fn sys_create_attack_animation(
     node_pieces: Query<&NodePiece>,
 ) {
     for node_op_result in ev_node_op.iter() {
-        if let Op {
-            op: NodeOp::PerformCurioAction { target, .. },
-            ..
-        } = node_op_result.source()
-        {
-            node_op_result.result().as_ref().ok().and_then(|metadata| {
-                let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
-                if damages.is_empty() {
-                    return None;
-                }
-                let fatal = metadata.get_or_default(card::key::FATAL).ok()?;
-                let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
-                let target_head = if fatal {
-                    metadata
-                        .get_optional(card::key::TARGET_ENTITY)
-                        .ok()
-                        .flatten()
-                        .and_then(|target_id| {
-                            let display_id = get_assert!(target_id, node_pieces)?.display_id();
-                            let (head_str, _) = glyph_registry
-                                .get(display_id)
-                                .cloned()
-                                .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
-                            Some(head_str)
-                            // Some(())
-                        })
-                } else {
-                    None
-                };
-                let head = fatal.then(|| damages.last().copied()).flatten();
-                let base_animation = assets_actor
-                    .get(&fx.0)
-                    .map(|actor| {
-                        actor
-                            .animation(ATTACK_BASE_ANIM)
-                            .expect("Should have attack animation")
-                    })
-                    .expect("FX should be loaded");
-                let animation_handle = assets_animation.add(generate_animation_from_damages(
-                    &damages,
-                    base_animation,
-                    *target,
-                    target_head,
-                ));
-                let players_in_node: HashSet<Entity> = players
-                    .iter()
-                    .filter(|(_, InNode(id))| *id == node_id)
-                    .map(|(x, _)| x)
-                    .collect();
-                for (mut animation_player, ForPlayer(player)) in attack_animation_player.iter_mut()
-                {
-                    if players_in_node.contains(player) {
-                        animation_player
-                            .load(animation_handle.clone(), assets_animation.as_ref())
-                            .play_once()
-                            .unload_when_finished();
+        if let Some((node_id, animation_handle)) = match node_op_result.source().op() {
+            NodeOp::PerformCurioAction { target, .. } => {
+                node_op_result.result().as_ref().ok().and_then(|metadata| {
+                    let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
+                    if damages.is_empty() {
+                        return None;
                     }
-                }
+                    let fatal = metadata.get_or_default(card::key::FATAL).ok()?;
+                    let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
+                    let target_head = if fatal {
+                        metadata
+                            .get_optional(card::key::TARGET_ENTITY)
+                            .ok()
+                            .flatten()
+                            .and_then(|target_id| {
+                                let display_id = get_assert!(target_id, node_pieces)?.display_id();
+                                let (head_str, _) = glyph_registry
+                                    .get(display_id)
+                                    .cloned()
+                                    .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+                                Some(head_str)
+                                // Some(())
+                            })
+                    } else {
+                        None
+                    };
+                    let head = fatal.then(|| damages.last().copied()).flatten();
+                    let base_animation = assets_actor
+                        .get(&fx.0)
+                        .map(|actor| {
+                            actor
+                                .animation(ATTACK_BASE_ANIM)
+                                .expect("Should have attack animation")
+                        })
+                        .expect("FX should be loaded");
+                    let animation_handle = assets_animation.add(generate_animation_from_damages(
+                        &damages,
+                        base_animation,
+                        *target,
+                        target_head,
+                    ));
+                    log::debug!("DAMAGES: {:?} HEAD: {:?}", damages, head);
+                    Some((node_id, animation_handle))
+                })
+            },
+            NodeOp::MoveActiveCurio { .. } => {
+                node_op_result.result().as_ref().ok().and_then(|metadata| {
+                    metadata.get_optional(node::key::PICKUP).ok().flatten()?;
+                    let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
+                    let target_pt = metadata.get_required(node::key::TARGET_POINT).ok()?;
 
-                log::debug!("DAMAGES: {:?} HEAD: {:?}", damages, head);
-                Some(())
-            });
+                    let base_animation = assets_actor
+                        .get(&fx.0)
+                        .map(|actor| {
+                            actor
+                                .animation(PICKUP_BASE_ANIM)
+                                .expect("Should have pickup animation")
+                        })
+                        .expect("FX should be loaded");
+                    let animation_handle =
+                        assets_animation.add(generate_pickup_animation(base_animation, target_pt));
+
+                    // Some((node_id, ))
+                    // todo!("K")
+                    Some((node_id, animation_handle))
+                })
+            },
+            _ => None,
+        } {
+            let players_in_node: HashSet<Entity> = players
+                .iter()
+                .filter(|(_, InNode(id))| *id == node_id)
+                .map(|(x, _)| x)
+                .collect();
+            for (mut animation_player, ForPlayer(player)) in attack_animation_player.iter_mut() {
+                if players_in_node.contains(player) {
+                    animation_player
+                        .load(animation_handle.clone(), assets_animation.as_ref())
+                        .play_once()
+                        .unload_when_finished();
+                }
+            }
         }
     }
 }
@@ -321,5 +342,34 @@ fn generate_animation_from_damages(
         })
         .collect();
     generated_animation += damages;
+    generated_animation
+}
+
+fn generate_pickup_animation(base_animation: &CharmieAnimation, target: UVec2) -> CharmieAnimation {
+    let target = UVec2 {
+        x: target.x * 3 + 1,
+        y: target.y * 2 + 1,
+    };
+    let base_offset = UVec2 { x: 12, y: 8 };
+    let full_damage_charmi = CharacterMapImage::new();
+    let generated_animation = base_animation
+        .iter()
+        .map(|(timing, frame)| {
+            let clipped_charmi = frame.charmi().clip(
+                base_offset.x.saturating_sub(target.x),
+                base_offset.y.saturating_sub(target.y),
+                1024,
+                1024,
+                Default::default(),
+            );
+            let drawn_charmi = full_damage_charmi.draw(
+                &clipped_charmi,
+                target.x.saturating_sub(base_offset.x),
+                target.y.saturating_sub(base_offset.y),
+                Default::default(),
+            );
+            (timing, drawn_charmi)
+        })
+        .collect();
     generated_animation
 }

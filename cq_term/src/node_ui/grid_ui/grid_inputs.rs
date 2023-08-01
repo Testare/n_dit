@@ -32,7 +32,7 @@ pub fn handle_layout_events(
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     teams: Query<&TeamPhase, With<Team>>,
     pickups: Query<(), With<Pickup>>,
-    curios: Query<(&OnTeam, &Actions), With<Curio>>,
+    curios: Query<(&OnTeam, &Actions, &IsTapped), With<Curio>>,
     actions: Query<(&ActionRange,), With<Action>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
@@ -77,7 +77,11 @@ pub fn handle_layout_events(
                         }
                     } else {
                         let selected_action = selected_action.and_then(|selected_action| {
-                            selected_entity.of(&curios)?.1.get(selected_action).copied()
+                            let (_, actions, tapped) = selected_entity.of(&curios)?;
+                            if **tapped {
+                                return None;
+                            }
+                            actions.get(selected_action).copied()
                         });
                         let pt_in_range = selected_action
                             .as_ref()
@@ -131,7 +135,7 @@ pub fn handle_layout_events(
                             // apply it
                         } else if *team_phase == TeamPhase::Play {
                             if let Some(pt_key) = grid.item_at(**cursor) {
-                                if let Ok((curio_team, _)) = curios.get(pt_key) {
+                                if let Ok((curio_team, _, _)) = curios.get(pt_key) {
                                     if curio_team == team {
                                         ev_node_op.send(Op::new(
                                             *player,

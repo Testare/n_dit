@@ -21,6 +21,7 @@ pub mod key {
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
+    pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
 }
 pub struct NodePlugin;
 

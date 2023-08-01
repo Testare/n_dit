@@ -139,6 +139,7 @@ pub fn curio_ops(
                     let result = active_curio.ok_or(NodeOpError::NoActiveCurio).and_then(
                         |active_curio_id| {
                             let mut metadata = Metadata::default();
+                            metadata.put(key::NODE_ID, **node)?;
                             metadata.put(key::CURIO, active_curio_id)?;
                             let mut curio_q = curios
                                 .get_mut(active_curio_id)
@@ -153,6 +154,7 @@ pub fn curio_ops(
                                 .head(active_curio_id)
                                 .ok_or(NodeOpError::InternalError)?;
                             let next_pt = head + *dir;
+                            metadata.put(key::TARGET_POINT, next_pt)?;
                             if grid.square_is_closed(next_pt) {
                                 return Err(NodeOpError::InvalidTarget);
                             }
