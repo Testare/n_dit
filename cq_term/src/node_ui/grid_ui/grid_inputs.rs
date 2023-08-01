@@ -6,13 +6,14 @@ use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
     Pickup, Team, TeamPhase,
 };
+use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2D};
 use crate::input_event::{MouseButton, MouseEventKind};
 use crate::key_map::NamedInput;
 use crate::layout::{LayoutEvent, UiFocus};
-use crate::node_ui::{NodeCursor, SelectedAction, SelectedEntity};
+use crate::node_ui::{NodeCursor, SelectedAction, SelectedEntity, NodeUiOp};
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
@@ -35,6 +36,7 @@ pub fn handle_layout_events(
     curios: Query<(&OnTeam, &Actions, &IsTapped), With<Curio>>,
     actions: Query<(&ActionRange,), With<Action>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
+    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for event in ev_mouse.iter() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
@@ -64,7 +66,7 @@ pub fn handle_layout_events(
                         active_curio.is_some() && **current_turn == **team;
 
                     if !alternative_click {
-                        if **cursor.deref() != clicked_node_pos {
+                        /*if **cursor.deref() != clicked_node_pos {
                             **cursor = clicked_node_pos;
                         }
 
@@ -74,7 +76,8 @@ pub fn handle_layout_events(
                         {
                             selected_entity.0 = now_selected_entity;
                             **selected_action = None;
-                        }
+                        }*/
+                        ev_node_ui_op.send(NodeUiOp::MoveNodeCursor(clicked_node_pos.into()).for_player(*player))
                     } else {
                         let selected_action = selected_action.and_then(|selected_action| {
                             let (_, actions, tapped) = selected_entity.of(&curios)?;

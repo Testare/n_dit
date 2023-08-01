@@ -12,7 +12,9 @@ use std::ops::Deref;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
-use game_core::player::ForPlayer;
+use game_core::node::{InNode, OnTeam, Node};
+use game_core::op::OpSubtype;
+use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 pub use messagebar_ui::MessageBarUi;
 use registry::GlyphRegistry;
@@ -33,6 +35,27 @@ use crate::TerminalFocusMode;
 pub struct ShowNode {
     pub player: Entity,
     pub node: Entity,
+}
+
+#[derive(Clone, Debug)]
+pub enum NodeUiOp {
+    ChangeFocus(FocusTarget),
+    MoveNodeCursor(CompassOrPoint),
+    MoveMenuCursor,
+    SetSelectedAction,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum FocusTarget {
+    Next,
+    Prev,
+    Grid,
+    CardMenu,
+    ActionMenu,
+}
+
+impl OpSubtype for NodeUiOp {
+    type Error = ();
 }
 
 /// Plugin for NodeUI
@@ -60,6 +83,7 @@ impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GlyphRegistry>()
             .add_event::<ShowNode>()
+            .add_event::<Op<NodeUiOp>>()
             .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
             .add_systems(
                 PreUpdate,
@@ -73,6 +97,7 @@ impl Plugin for NodeUiPlugin {
             .add_systems(
                 Update,
                 (
+                    sys_process_ui_op_move_cursor.in_set(NDitCoreSet::ProcessCommands),
                     attack_animation::sys_create_attack_animation
                         .in_set(NDitCoreSet::PostProcessCommands),
                     (
@@ -182,6 +207,36 @@ impl NodeCursor {
         if *selected_entity.deref().deref() != item_at_pt {
             **selected_entity = item_at_pt;
             **selected_action = None;
+        }
+    }
+}
+
+
+fn sys_process_ui_op_move_cursor(
+    mut ev_node_ui_op: EventReader<Op<NodeUiOp>>,
+    mut players: Query<
+        (
+            &InNode,
+            &mut NodeCursor,
+            &mut SelectedEntity,
+            &mut SelectedAction,
+        ),
+        With<Player>,
+    >,
+    nodes: Query<(&EntityGrid,), With<Node>>
+) {
+    for Op { player, op } in ev_node_ui_op.iter() {
+        if let NodeUiOp::MoveNodeCursor(compass_or_point) = op {
+            get_assert_mut!(*player, &mut players, |(InNode(node), mut cursor, selected_entity, selected_action)| {
+                let (grid,) = get_assert!(*node, nodes)?;
+
+                let next_pt = compass_or_point.point_from(**cursor);
+                if **cursor != next_pt {
+                    **cursor = next_pt;
+                }
+                cursor.adjust_to_self(selected_entity, selected_action, grid);
+                Some(())
+            });
         }
     }
 }

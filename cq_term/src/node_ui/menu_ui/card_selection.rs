@@ -416,7 +416,8 @@ impl Plugin for MenuUiCardSelectionPlugin {
             (
                 MenuUiCardSelection::card_selection_focus_status_change
                     .in_set(RenderTtySet::PreCalculateLayout),
-                MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::PreCalculateLayout),
+                // TODO instead, PreCalculateLayout should be after ProcessCommands
+                MenuUiCardSelection::style_card_selection.after(super::super::sys_process_ui_op_move_cursor).in_set(RenderTtySet::PreCalculateLayout),
                 MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
             ),
         );

@@ -15,6 +15,37 @@ pub enum Compass {
     West = 8,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
+pub enum CompassOrPoint {
+    Compass(Compass),
+    Point(UVec2)
+}
+
+impl CompassOrPoint {
+    pub fn point_from(&self, from: UVec2) -> UVec2 {
+        match self {
+            Self::Compass(compass) => {
+                from + *compass
+            },
+            Self::Point(point) => {
+                *point
+            }
+        }
+    }
+}
+
+impl From<UVec2> for CompassOrPoint {
+    fn from(value: UVec2) -> Self {
+        CompassOrPoint::Point(value)
+    }
+}
+
+impl From<Compass> for CompassOrPoint {
+    fn from(value: Compass) -> Self {
+        CompassOrPoint::Compass(value)
+    }
+}
+
 impl Compass {
     pub const ALL_DIRECTIONS: [Compass; 4] =
         [Compass::North, Compass::East, Compass::South, Compass::West];

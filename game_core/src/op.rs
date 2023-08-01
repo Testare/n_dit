@@ -7,8 +7,11 @@ pub struct Op<O> {
 }
 
 pub trait OpSubtype: Clone {
-    type Metadata;
     type Error;
+    
+    fn for_player(self, player: Entity) -> Op<Self> {
+        Op::new(player, self)
+    }
 }
 
 #[derive(Clone, Debug, Event, getset::Getters)]
@@ -16,11 +19,11 @@ pub struct OpResult<O: OpSubtype> {
     #[getset(get = "pub")]
     source: Op<O>,
     #[getset(get = "pub")]
-    result: Result<O::Metadata, O::Error>,
+    result: Result<Metadata, O::Error>,
 }
 
 impl<O: OpSubtype> OpResult<O> {
-    pub fn new(source: &Op<O>, result: Result<O::Metadata, O::Error>) -> Self {
+    pub fn new(source: &Op<O>, result: Result<Metadata, O::Error>) -> Self {
         OpResult {
             source: source.clone(),
             result,

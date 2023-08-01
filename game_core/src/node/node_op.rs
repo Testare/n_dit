@@ -68,7 +68,6 @@ pub enum NodeOpError {
 
 impl OpSubtype for NodeOp {
     type Error = NodeOpError;
-    type Metadata = crate::common::Metadata;
 }
 
 #[derive(WorldQuery)]
