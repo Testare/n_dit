@@ -20,13 +20,13 @@ use crate::{KeyMap, Submap};
 pub fn handle_layout_events(
     mut ev_mouse: EventReader<LayoutEvent>,
     ui: Query<(&ForPlayer, &Scroll2D), With<GridUi>>,
-    mut players: Query<
+    players: Query<
         (
             &InNode,
             &OnTeam,
-            &mut NodeCursor,
-            &mut SelectedEntity,
-            &mut SelectedAction,
+            &NodeCursor,
+            &SelectedEntity,
+            &SelectedAction,
         ),
         With<Player>,
     >,
@@ -42,12 +42,12 @@ pub fn handle_layout_events(
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventKind::Down(button) = event.event_kind() {
                 log::trace!("Clicked on the grid");
-                get_assert_mut!(*player, players, |(
+                get_assert!(*player, players, |(
                     node,
                     team,
-                    mut cursor,
-                    mut selected_entity,
-                    mut selected_action,
+                    cursor,
+                    selected_entity,
+                    selected_action,
                 )| {
                     let (grid, active_curio, current_turn) = get_assert!(**node, nodes)?;
                     let team_phase = get_assert!(**team, teams)?;
@@ -66,17 +66,6 @@ pub fn handle_layout_events(
                         active_curio.is_some() && **current_turn == **team;
 
                     if !alternative_click {
-                        /*if **cursor.deref() != clicked_node_pos {
-                            **cursor = clicked_node_pos;
-                        }
-
-                        let now_selected_entity = grid.item_at(**cursor);
-                        if selected_entity.0 != now_selected_entity
-                            && (now_selected_entity.is_some() || !is_controlling_active_curio)
-                        {
-                            selected_entity.0 = now_selected_entity;
-                            **selected_action = None;
-                        }*/
                         ev_node_ui_op.send(
                             NodeUiOp::MoveNodeCursor(clicked_node_pos.into()).for_player(*player),
                         )
