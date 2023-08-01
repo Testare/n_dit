@@ -6,6 +6,7 @@ pub mod layout;
 pub mod node_ui;
 mod render;
 // Temporary module to run the game while we get it set up
+mod animation;
 pub mod demo;
 
 use game_core::NDitCoreSet;

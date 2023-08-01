@@ -1,5 +1,6 @@
 mod available_moves;
 mod borders;
+mod grid_animation;
 mod grid_inputs;
 mod range_of_action;
 mod render_grid;
@@ -12,6 +13,7 @@ use game_core::node::{self, AccessPoint, InNode, IsTapped, Node, NodeOp, NodePie
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
+pub use grid_animation::GridUiAnimation;
 pub use scroll::Scroll2D;
 
 use super::menu_ui::MenuUiActions;
@@ -55,12 +57,22 @@ impl Plugin for GridUi {
         .add_systems(
             Update,
             (
-                sys_react_to_node_op,
-                available_moves::sys_adjust_available_moves,
-                range_of_action::get_range_of_action,
-            )
-                .chain()
-                .in_set(NDitCoreSet::PostProcessCommands),
+                (
+                    sys_react_to_node_op,
+                    available_moves::sys_adjust_available_moves,
+                    range_of_action::get_range_of_action,
+                )
+                    .chain()
+                    .in_set(NDitCoreSet::PostProcessCommands),
+                grid_animation::sys_create_grid_animation.in_set(NDitCoreSet::PostProcessCommands),
+                (
+                    grid_animation::sys_update_animations,
+                    grid_animation::sys_render_animations,
+                    grid_animation::sys_reset_state_after_animation_plays,
+                )
+                    .chain()
+                    .before(NDitCoreSet::PostProcessCommands),
+            ),
         )
         .add_systems(
             RENDER_TTY_SCHEDULE,

@@ -2,9 +2,9 @@ use game_core::node::Node;
 use game_core::player::ForPlayer;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
+use crate::animation::AnimationPlayer;
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
-use crate::node_ui::grid_animation::{AnimationPlayer, GridUiAnimation};
-use crate::node_ui::grid_ui::GridUi;
+use crate::node_ui::grid_ui::{GridUi, GridUiAnimation};
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
@@ -84,6 +84,7 @@ pub fn create_node_ui(
                 })
                 .id();
 
+            // This could probably live in GridUiPlugin when node loading is formalized
             commands.spawn((
                 Name::new("GridAnimationPlayer"),
                 GridUiAnimation,

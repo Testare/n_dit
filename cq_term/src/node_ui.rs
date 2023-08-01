@@ -1,4 +1,3 @@
-mod grid_animation;
 mod grid_ui;
 mod inputs;
 mod menu_ui;
@@ -96,18 +95,7 @@ impl Plugin for NodeUiPlugin {
             )
             .add_systems(
                 Update,
-                (
-                    sys_process_ui_op_move_cursor.in_set(NDitCoreSet::ProcessCommands),
-                    grid_animation::sys_create_grid_animation
-                        .in_set(NDitCoreSet::PostProcessCommands),
-                    (
-                        grid_animation::sys_update_animations,
-                        grid_animation::sys_render_animations,
-                        grid_animation::sys_reset_state_after_animation_plays,
-                    )
-                        .chain()
-                        .before(NDitCoreSet::PostProcessCommands),
-                ),
+                (sys_process_ui_op_move_cursor.in_set(NDitCoreSet::ProcessCommands),),
             )
             .add_plugins((
                 MenuUiCardSelection::plugin(),

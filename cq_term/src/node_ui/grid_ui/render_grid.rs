@@ -8,11 +8,12 @@ use itertools::Itertools;
 use super::super::registry::GlyphRegistry;
 use super::super::NodeCursor;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
+use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
+use crate::animation::AnimationPlayer;
 use crate::configuration::{DrawConfiguration, UiFormat};
 use crate::layout::CalculatedSizeTty;
-use crate::node_ui::grid_animation::{AnimationPlayer, GridUiAnimation};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
