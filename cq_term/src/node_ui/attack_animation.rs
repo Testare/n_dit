@@ -199,9 +199,16 @@ pub fn sys_create_attack_animation(
             },
             NodeOp::MoveActiveCurio { .. } => {
                 node_op_result.result().as_ref().ok().and_then(|metadata| {
-                    metadata.get_optional(node::key::PICKUP).ok().flatten()?;
+                    let pickup = metadata.get_optional(node::key::PICKUP).ok().flatten()?;
                     let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
                     let target_pt = metadata.get_required(node::key::TARGET_POINT).ok()?;
+
+                    let (pickup_display, format) = glyph_registry
+                        .get(pickup.default_diplay_id())
+                        .cloned()
+                        .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+                    let pickup_display = CharacterMapImage::new()
+                        .with_row(|row| row.with_styled_text(format.apply(pickup_display)));
 
                     let base_animation = assets_actor
                         .get(&fx.0)
@@ -211,11 +218,12 @@ pub fn sys_create_attack_animation(
                                 .expect("Should have pickup animation")
                         })
                         .expect("FX should be loaded");
-                    let animation_handle =
-                        assets_animation.add(generate_pickup_animation(base_animation, target_pt));
+                    let animation_handle = assets_animation.add(generate_pickup_animation(
+                        base_animation,
+                        target_pt,
+                        pickup_display,
+                    ));
 
-                    // Some((node_id, ))
-                    // todo!("K")
                     Some((node_id, animation_handle))
                 })
             },
@@ -345,14 +353,18 @@ fn generate_animation_from_damages(
     generated_animation
 }
 
-fn generate_pickup_animation(base_animation: &CharmieAnimation, target: UVec2) -> CharmieAnimation {
+fn generate_pickup_animation(
+    base_animation: &CharmieAnimation,
+    target: UVec2,
+    pickup_display: CharacterMapImage,
+) -> CharmieAnimation {
     let target = UVec2 {
         x: target.x * 3 + 1,
         y: target.y * 2 + 1,
     };
     let base_offset = UVec2 { x: 12, y: 8 };
     let full_damage_charmi = CharacterMapImage::new();
-    let generated_animation = base_animation
+    let mut generated_animation = base_animation
         .iter()
         .map(|(timing, frame)| {
             let clipped_charmi = frame.charmi().clip(
@@ -371,5 +383,15 @@ fn generate_pickup_animation(base_animation: &CharmieAnimation, target: UVec2) -
             (timing, drawn_charmi)
         })
         .collect();
+    let float_animation = (0..target.y)
+        .rev()
+        .map(|y| {
+            (
+                (1000.0 / target.y as f32),
+                CharacterMapImage::new().draw(&pickup_display, target.x, y, None),
+            )
+        })
+        .collect();
+    generated_animation += float_animation;
     generated_animation
 }

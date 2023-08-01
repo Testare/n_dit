@@ -51,6 +51,16 @@ pub enum Pickup {
     Item(Entity),
 }
 
+impl Pickup {
+    pub fn default_diplay_id(&self) -> &'static str {
+        match self {
+            Self::Mon(_) => "pickup:mon",
+            Self::Card(_) => "pickup:card",
+            Self::Item(_) => "pickup:item",
+        }
+    }
+}
+
 #[derive(Component, CopyGetters, Reflect, Default)]
 pub struct AccessPoint {
     #[getset(get_copy = "pub")]

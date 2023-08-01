@@ -4,8 +4,8 @@ use game_core::card::{
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
-    IsTapped, MovesTaken, Node, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamColor,
-    TeamPhase, Teams,
+    IsTapped, Mon, MovesTaken, Node, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, Team,
+    TeamColor, TeamPhase, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
@@ -225,11 +225,23 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             ))
             .add_to_grid(node_id, vec![(12, 2)]);
             node.spawn((
+                NodePiece::new("env:access_point"),
+                AccessPoint::default(),
+                OnTeam(player_team),
+            ))
+            .add_to_grid(node_id, vec![(12, 10)]);
+            node.spawn((
                 Pickup::Card(hack),
                 NodePiece::new("pickup:card"),
                 Description::new("A card! Get this card! /it;s a good card! A very good card!"),
             ))
             .add_to_grid(node_id, vec![(4, 3)]);
+            node.spawn((
+                Pickup::Mon(Mon(1000)),
+                NodePiece::new("pickup:mon"),
+                Description::new("Put food on the table, and cards in your deck"),
+            ))
+            .add_to_grid(node_id, vec![(11, 10)]);
 
             node.spawn((
                 NodePiece::new("curio:death"),
