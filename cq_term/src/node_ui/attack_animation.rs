@@ -18,7 +18,7 @@ use crate::render::TerminalRendering;
 // then one under grid_ui for the attack animation specific logic
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &'static str = "attack";
-const PICKUP_BASE_ANIM: &'static str = "attack";
+const PICKUP_BASE_ANIM: &'static str = "pickup";
 const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of render_square
 
 #[derive(Component)]

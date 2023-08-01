@@ -76,6 +76,86 @@ rr oo                oo rr
 [[a.attack.f]]
 timing = 800.0
 
+[[a.pickup.f]]
+timing = 50.0
+bg = """
+
+
+
+
+
+
+            yy   
+
+         yy oo yy
+
+            yy   
+"""
+
+[[a.pickup.f]]
+timing = 50.0
+bg = """
+
+
+
+
+            yy   
+
+         yy oo yy
+
+      yy oo    oo yy
+
+         yy oo yy
+
+            yy   
+"""
+
+[[a.pickup.f]]
+timing = 50.0
+bg = """
+
+
+         yy yy yy
+
+      yy oo oo oo yy
+
+   yy oo          oo yy
+
+   yy oo          oo yy
+
+   yy oo          oo yy
+
+      yy oo oo oo yy
+
+         yy yy yy
+"""
+
+[[a.pickup.f]]
+timing = 50.0
+bg = """
+         yy yy yy
+
+      yy oo oo oo yy
+
+   yy oo          oo yy
+
+yy oo                oo yy
+
+yy oo                oo yy
+
+yy oo                oo yy
+
+   yy oo          oo yy
+
+      yy oo oo oo yy
+
+         yy yy yy
+"""
+[[a.pickup.f]]
+timing = 50.0
+
 [values.colors]
 r = "red"
 o = "dark red"
+y = "yellow"
+
