@@ -22,7 +22,7 @@ use super::{
     SelectedEntity,
 };
 use crate::layout::{LayoutMouseTarget, StyleTty, UiFocusNext, UiFocusOnClick};
-use crate::prelude::*;
+use crate::{prelude::*, TerminalFocusMode};
 use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 
 #[derive(Component, Default)]
@@ -54,6 +54,7 @@ impl Plugin for GridUi {
             (grid_inputs::handle_layout_events, grid_inputs::kb_grid)
                 .in_set(NDitCoreSet::ProcessInputs),
         )
+        .add_systems(OnEnter(TerminalFocusMode::Node), grid_animation::sys_create_grid_animation_player)
         .add_systems(
             Update,
             (
@@ -64,7 +65,7 @@ impl Plugin for GridUi {
                 )
                     .chain()
                     .in_set(NDitCoreSet::PostProcessCommands),
-                grid_animation::sys_create_grid_animation.in_set(NDitCoreSet::PostProcessCommands),
+                grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
                 (
                     grid_animation::sys_update_animations,
                     grid_animation::sys_render_animations,

@@ -10,6 +10,7 @@ use super::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::animation::AnimationPlayer;
 use crate::configuration::UiFormat;
 use crate::fx::Fx;
+use crate::node_ui::ShowNode;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -24,7 +25,7 @@ const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of rend
 pub struct GridUiAnimation;
 
 // This is an incredibly rough draft of how this logic should work.
-pub fn sys_create_grid_animation(
+pub fn sys_grid_animations(
     fx: Res<Fx>,
     mut ev_node_op: EventReader<OpResult<NodeOp>>,
     players: Query<(Entity, &InNode), With<Player>>,
@@ -277,4 +278,19 @@ fn generate_pickup_animation(
         .collect();
     generated_animation += float_animation;
     generated_animation
+}
+
+pub fn sys_create_grid_animation_player(
+    mut commands: Commands, 
+    mut ev_show_node: EventReader<ShowNode>
+) {
+    for show_node in ev_show_node.iter() {
+        commands.spawn((
+            Name::new("GridAnimationPlayer"),
+            GridUiAnimation,
+            ForPlayer(show_node.player),
+            AnimationPlayer::default(),
+            TerminalRendering::default(),
+        ));
+    }
 }

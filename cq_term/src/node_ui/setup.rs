@@ -84,15 +84,6 @@ pub fn create_node_ui(
                 })
                 .id();
 
-            // This could probably live in GridUiPlugin when node loading is formalized
-            commands.spawn((
-                Name::new("GridAnimationPlayer"),
-                GridUiAnimation,
-                ForPlayer(*player),
-                AnimationPlayer::default(),
-                TerminalRendering::default(),
-            ));
-
             commands.entity(*player).insert((
                 NodeCursor::default(),
                 SelectedEntity(node_q.grid.item_at(default())),
