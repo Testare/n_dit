@@ -1,6 +1,10 @@
 pub mod metadata;
 
-use bevy::prelude::{Reflect, UVec2};
+use std::ops::Deref;
+
+use bevy::ecs::query::{QueryEntityError, ReadOnlyWorldQuery, WorldQuery};
+use bevy::ecs::system::SystemParam;
+use bevy::prelude::{Component, Deref, Entity, Name, ParamSet, Query, Reflect, UVec2, With};
 pub use metadata::Metadata;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
@@ -68,5 +72,60 @@ impl GridPoints for UVec2 {
             dirs.push(Compass::West);
         }
         [dirs.get(0).copied(), dirs.get(1).copied()]
+    }
+}
+
+#[derive(SystemParam)]
+pub struct IndexedQuery<'w, 's, I, Q, F = ()>(
+    Query<'w, 's, (&'static I, Entity)>,
+    Query<'w, 's, Q, F>,
+)
+where
+    I: Deref<Target = Entity> + Component,
+    Q: WorldQuery + 'static,
+    F: ReadOnlyWorldQuery + 'static;
+
+impl<'w, 's, I, Q, F> IndexedQuery<'w, 's, I, Q, F>
+where
+    I: Deref<Target = Entity> + Component,
+    Q: WorldQuery + 'static,
+    F: ReadOnlyWorldQuery + 'static,
+{
+    fn unindexed(&self) -> &Query<'w, 's, Q, F> {
+        &self.1
+    }
+
+    fn unindex_mut(&mut self) -> &mut Query<'w, 's, Q, F> {
+        &mut self.1
+    }
+
+    fn into_unindexed(self) -> Query<'w, 's, Q, F> {
+        self.1
+    }
+
+    fn id_for(&self, index: Entity) -> Option<Entity> {
+        self.0.iter().find(|(i, _)| ***i == index).map(|(_, id)| id)
+    }
+
+    fn get_for(
+        &self,
+        index: Entity,
+    ) -> Result<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
+        if let Some(id) = self.id_for(index) {
+            self.1.get(id)
+        } else {
+            Err(QueryEntityError::NoSuchEntity(index))
+        }
+    }
+
+    fn get_for_mut(
+        &mut self,
+        index: Entity,
+    ) -> Result<<Q as WorldQuery>::Item<'_>, QueryEntityError> {
+        if let Some(id) = self.id_for(index) {
+            self.1.get_mut(id)
+        } else {
+            Err(QueryEntityError::NoSuchEntity(index))
+        }
     }
 }
