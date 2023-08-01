@@ -18,18 +18,14 @@ pub enum Compass {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum CompassOrPoint {
     Compass(Compass),
-    Point(UVec2)
+    Point(UVec2),
 }
 
 impl CompassOrPoint {
     pub fn point_from(&self, from: UVec2) -> UVec2 {
         match self {
-            Self::Compass(compass) => {
-                from + *compass
-            },
-            Self::Point(point) => {
-                *point
-            }
+            Self::Compass(compass) => from + *compass,
+            Self::Point(point) => *point,
         }
     }
 }

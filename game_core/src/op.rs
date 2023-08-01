@@ -8,7 +8,7 @@ pub struct Op<O> {
 
 pub trait OpSubtype: Clone {
     type Error;
-    
+
     fn for_player(self, player: Entity) -> Op<Self> {
         Op::new(player, self)
     }

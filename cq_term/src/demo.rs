@@ -13,7 +13,7 @@ use game_core::prelude::*;
 
 use crate::input_event::KeyCode;
 use crate::layout::LayoutEvent;
-use crate::node_ui::{NodeCursor, ShowNode, NodeUiOp};
+use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::KeyMap;
 
@@ -27,10 +27,7 @@ impl Plugin for DemoPlugin {
     }
 }
 
-fn log_ops(
-    mut ops_node: EventReader<Op<NodeOp>>,
-    mut ops_node_ui: EventReader<Op<NodeUiOp>>,
-) {
+fn log_ops(mut ops_node: EventReader<Op<NodeOp>>, mut ops_node_ui: EventReader<Op<NodeUiOp>>) {
     for op in ops_node.iter() {
         log::debug!("NODE_OP {:?}", op)
     }

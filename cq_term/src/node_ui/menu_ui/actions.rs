@@ -265,7 +265,7 @@ impl Plugin for MenuUiActions {
         .add_systems(
             RENDER_TTY_SCHEDULE,
             (
-                Self::sys_adjust_style_action_menu.in_set(RenderTtySet::PreCalculateLayout),
+                Self::sys_adjust_style_action_menu.in_set(RenderTtySet::AdjustLayoutStyle),
                 Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
             ),
         );

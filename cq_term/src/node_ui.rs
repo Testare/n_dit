@@ -12,7 +12,7 @@ use std::ops::Deref;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
-use game_core::node::{InNode, OnTeam, Node};
+use game_core::node::{InNode, Node, OnTeam};
 use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
@@ -211,7 +211,6 @@ impl NodeCursor {
     }
 }
 
-
 fn sys_process_ui_op_move_cursor(
     mut ev_node_ui_op: EventReader<Op<NodeUiOp>>,
     mut players: Query<
@@ -223,11 +222,16 @@ fn sys_process_ui_op_move_cursor(
         ),
         With<Player>,
     >,
-    nodes: Query<(&EntityGrid,), With<Node>>
+    nodes: Query<(&EntityGrid,), With<Node>>,
 ) {
     for Op { player, op } in ev_node_ui_op.iter() {
         if let NodeUiOp::MoveNodeCursor(compass_or_point) = op {
-            get_assert_mut!(*player, &mut players, |(InNode(node), mut cursor, selected_entity, selected_action)| {
+            get_assert_mut!(*player, &mut players, |(
+                InNode(node),
+                mut cursor,
+                selected_entity,
+                selected_action,
+            )| {
                 let (grid,) = get_assert!(*node, nodes)?;
 
                 let next_pt = compass_or_point.point_from(**cursor);

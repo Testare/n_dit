@@ -19,7 +19,7 @@ impl<S: SimpleSubmenu + Component + Sync + Send + 'static> Plugin for SimpleSubM
         app.add_systems(
             RENDER_TTY_SCHEDULE,
             (
-                style_simple_submenu::<S>.in_set(RenderTtySet::PreCalculateLayout),
+                style_simple_submenu::<S>.in_set(RenderTtySet::AdjustLayoutStyle),
                 render_simple_submenu::<S>.in_set(RenderTtySet::PostCalculateLayout),
             ),
         );

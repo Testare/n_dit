@@ -79,7 +79,7 @@ impl Plugin for MessageBarUiPlugin {
             .add_systems(
                 RENDER_TTY_SCHEDULE,
                 (
-                    style_message_bar.in_set(RenderTtySet::PreCalculateLayout),
+                    style_message_bar.in_set(RenderTtySet::AdjustLayoutStyle),
                     render_message_bar.in_set(RenderTtySet::PostCalculateLayout),
                 ),
             );

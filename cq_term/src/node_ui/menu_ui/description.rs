@@ -91,7 +91,7 @@ impl Plugin for MenuUiDescription {
         app.add_systems(
             RENDER_TTY_SCHEDULE,
             (
-                Self::style_update_system.in_set(RenderTtySet::PreCalculateLayout),
+                Self::style_update_system.in_set(RenderTtySet::AdjustLayoutStyle),
                 Self::render_system.in_set(RenderTtySet::PostCalculateLayout),
             ),
         );
