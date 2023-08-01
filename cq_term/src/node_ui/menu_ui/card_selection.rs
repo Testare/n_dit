@@ -128,29 +128,25 @@ impl MenuUiCardSelection {
             (Entity, &UiFocus, &Deck, &SelectedEntity),
             (Changed<UiFocus>, With<Player>),
         >,
-        mut card_selection_menus: Query<(&MenuUiCardSelection, &mut SelectedItem, &ForPlayer)>,
+        mut card_selection_menus: IndexedQuery<
+            ForPlayer,
+            (Entity, &MenuUiCardSelection, &mut SelectedItem),
+        >,
         access_points: Query<&AccessPoint>,
     ) {
         for (player, ui_focus, deck, selected_entity) in players.iter() {
-            if let Some((menu_ui_card_selection, mut selected_item, _)) =
-                ui_focus.and_then(|ui_focus| card_selection_menus.get_mut(ui_focus).ok())
+            if let Ok((id, menu_ui_card_selection, mut selected_item)) =
+                card_selection_menus.get_for_mut(player)
             {
-                // If the menu_ui is focused, but no selected_item created, create a default
-                if selected_item.is_none() {
-                    **selected_item = selected_entity
-                        .of(&access_points)
-                        .and_then(|ap| deck.index_of_card(ap.card()?))
-                        .or(Some(menu_ui_card_selection.scroll));
-                }
-            } else {
-                for (_, mut selected_item, for_player) in card_selection_menus.iter_mut() {
-                    if for_player.0 == player {
-                        // If the ui focus changes from card_selection, clear selected_item
-                        if selected_item.is_some() {
-                            **selected_item = None;
-                        }
-                        break;
+                if **ui_focus == Some(id) {
+                    if selected_item.is_none() {
+                        **selected_item = selected_entity
+                            .of(&access_points)
+                            .and_then(|ap| deck.index_of_card(ap.card()?))
+                            .or(Some(menu_ui_card_selection.scroll));
                     }
+                } else if selected_item.is_some() {
+                    **selected_item = None;
                 }
             }
         }

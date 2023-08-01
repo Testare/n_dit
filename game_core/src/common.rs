@@ -102,6 +102,7 @@ impl GridPoints for UVec2 {
     }
 }
 
+/// Future improvement: iter methods for when there are multiple results
 #[derive(SystemParam)]
 pub struct IndexedQuery<'w, 's, I, Q, F = ()>(
     Query<'w, 's, (&'static I, Entity)>,
@@ -118,23 +119,30 @@ where
     Q: WorldQuery + 'static,
     F: ReadOnlyWorldQuery + 'static,
 {
-    fn unindexed(&self) -> &Query<'w, 's, Q, F> {
+    pub fn unindexed(&self) -> &Query<'w, 's, Q, F> {
         &self.1
     }
 
-    fn unindex_mut(&mut self) -> &mut Query<'w, 's, Q, F> {
+    pub fn unindex_mut(&mut self) -> &mut Query<'w, 's, Q, F> {
         &mut self.1
     }
 
-    fn into_unindexed(self) -> Query<'w, 's, Q, F> {
+    pub fn into_unindexed(self) -> Query<'w, 's, Q, F> {
         self.1
     }
 
-    fn id_for(&self, index: Entity) -> Option<Entity> {
-        self.0.iter().find(|(i, _)| ***i == index).map(|(_, id)| id)
+    /// If there are multiple, returns the first one it finds
+    pub fn id_for(&self, index: Entity) -> Option<Entity> {
+        self.0.iter().find_map(|(i, id)| {
+            if **i == index && self.1.contains(id) {
+                Some(id)
+            } else {
+                None
+            }
+        })
     }
 
-    fn get_for(
+    pub fn get_for(
         &self,
         index: Entity,
     ) -> Result<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
@@ -145,7 +153,7 @@ where
         }
     }
 
-    fn get_for_mut(
+    pub fn get_for_mut(
         &mut self,
         index: Entity,
     ) -> Result<<Q as WorldQuery>::Item<'_>, QueryEntityError> {
