@@ -3,7 +3,7 @@ use game_core::player::ForPlayer;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
-use crate::node_ui::attack_animation::{AnimationPlayer, NodeUiAttackAnimation};
+use crate::node_ui::grid_animation::{AnimationPlayer, GridUiAnimation};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -86,7 +86,7 @@ pub fn create_node_ui(
 
             commands.spawn((
                 Name::new("GridAnimationPlayer"),
-                NodeUiAttackAnimation,
+                GridUiAnimation,
                 ForPlayer(*player),
                 AnimationPlayer::default(),
                 TerminalRendering::default(),

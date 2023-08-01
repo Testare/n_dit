@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use bevy::ecs::query::{QueryEntityError, ReadOnlyWorldQuery, WorldQuery};
 use bevy::ecs::system::SystemParam;
-use bevy::prelude::{Component, Deref, Entity, Name, ParamSet, Query, Reflect, UVec2, With};
+use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
 pub use metadata::Metadata;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]

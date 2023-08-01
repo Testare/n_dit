@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crossterm::event::KeyModifiers;
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{

@@ -1,4 +1,4 @@
-mod attack_animation;
+mod grid_animation;
 mod grid_ui;
 mod inputs;
 mod menu_ui;
@@ -98,12 +98,12 @@ impl Plugin for NodeUiPlugin {
                 Update,
                 (
                     sys_process_ui_op_move_cursor.in_set(NDitCoreSet::ProcessCommands),
-                    attack_animation::sys_create_attack_animation
+                    grid_animation::sys_create_grid_animation
                         .in_set(NDitCoreSet::PostProcessCommands),
                     (
-                        attack_animation::sys_update_animations,
-                        attack_animation::sys_render_animations,
-                        attack_animation::sys_reset_state_after_animation_plays,
+                        grid_animation::sys_update_animations,
+                        grid_animation::sys_render_animations,
+                        grid_animation::sys_reset_state_after_animation_plays,
                     )
                         .chain()
                         .before(NDitCoreSet::PostProcessCommands),

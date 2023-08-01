@@ -15,14 +15,14 @@ use crate::prelude::*;
 use crate::render::TerminalRendering;
 
 // TODO Refactor this module into two separate modules: One for animation players, and
-// then one under grid_ui for the attack animation specific logic
+// then one under grid_ui for the grid animation specific logic
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &'static str = "attack";
 const PICKUP_BASE_ANIM: &'static str = "pickup";
 const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of render_square
 
 #[derive(Component)]
-pub struct NodeUiAttackAnimation;
+pub struct GridUiAnimation;
 
 #[derive(Component)]
 pub struct AnimationPlayer {
@@ -138,15 +138,12 @@ pub enum AnimationPlayerState {
 }
 
 // This is an incredibly rough draft of how this logic should work.
-pub fn sys_create_attack_animation(
+pub fn sys_create_grid_animation(
     fx: Res<Fx>,
     mut ev_node_op: EventReader<OpResult<NodeOp>>,
     players: Query<(Entity, &InNode), With<Player>>,
     mut assets_animation: ResMut<Assets<CharmieAnimation>>,
-    mut attack_animation_player: Query<
-        (&mut AnimationPlayer, &ForPlayer),
-        With<NodeUiAttackAnimation>,
-    >,
+    mut grid_animation_player: Query<(&mut AnimationPlayer, &ForPlayer), With<GridUiAnimation>>,
     assets_actor: Res<Assets<CharmieActor>>,
     glyph_registry: Res<GlyphRegistry>,
     node_pieces: Query<&NodePiece>,
@@ -234,7 +231,7 @@ pub fn sys_create_attack_animation(
                 .filter(|(_, InNode(id))| *id == node_id)
                 .map(|(x, _)| x)
                 .collect();
-            for (mut animation_player, ForPlayer(player)) in attack_animation_player.iter_mut() {
+            for (mut animation_player, ForPlayer(player)) in grid_animation_player.iter_mut() {
                 if players_in_node.contains(player) {
                     animation_player
                         .load(animation_handle.clone(), assets_animation.as_ref())

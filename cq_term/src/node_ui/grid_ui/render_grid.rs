@@ -12,7 +12,7 @@ use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
 use crate::configuration::{DrawConfiguration, UiFormat};
 use crate::layout::CalculatedSizeTty;
-use crate::node_ui::attack_animation::{AnimationPlayer, NodeUiAttackAnimation};
+use crate::node_ui::grid_animation::{AnimationPlayer, GridUiAnimation};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -34,19 +34,19 @@ pub fn render_grid_system(
         ),
         With<GridUi>,
     >,
-    attack_animation: Query<
+    grid_animation: Query<
         (&AnimationPlayer, &TerminalRendering, &ForPlayer),
-        (With<NodeUiAttackAnimation>, Without<GridUi>),
+        (With<GridUiAnimation>, Without<GridUi>),
     >,
 ) {
     for (size, scroll, ForPlayer(player), mut rendering) in render_grid_q.iter_mut() {
         if let Ok(player_ui_q) = players.get(*player) {
             if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
-                let attack_animation = attack_animation
+                let grid_animation = grid_animation
                     .iter()
                     .filter(|(_, _, for_player)| *player == ***for_player)
                     .next();
-                if attack_animation.is_none() {
+                if grid_animation.is_none() {
                     log::error!("Cannot find attack animation for player {:?}.", player);
                     continue;
                 }
@@ -59,7 +59,7 @@ pub fn render_grid_system(
                     &node_pieces,
                     &glyph_registry,
                     &draw_config,
-                    attack_animation.unwrap(),
+                    grid_animation.unwrap(),
                 );
 
                 rendering.update_charmie(grid_rendering);
@@ -77,7 +77,7 @@ fn render_grid(
     node_pieces: &Query<NodePieceQ>,
     glyph_registry: &GlyphRegistry,
     draw_config: &DrawConfiguration,
-    attack_animation: (&AnimationPlayer, &TerminalRendering, &ForPlayer),
+    grid_animation: (&AnimationPlayer, &TerminalRendering, &ForPlayer),
 ) -> CharacterMapImage {
     // TODO Break DrawConfiguration down into parts and resources
 
@@ -277,8 +277,8 @@ fn render_grid(
             .skip(skip_y)
             .take(size.height())
             .collect();
-    if attack_animation.0.is_playing() {
-        let clipped_attack = attack_animation.1.charmie().clip(
+    if grid_animation.0.is_playing() {
+        let clipped_attack = grid_animation.1.charmie().clip(
             scroll.x,
             scroll.y,
             size.width32(),
