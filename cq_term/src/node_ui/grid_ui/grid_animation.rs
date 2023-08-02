@@ -281,8 +281,8 @@ fn generate_pickup_animation(
 }
 
 pub fn sys_create_grid_animation_player(
-    mut commands: Commands, 
-    mut ev_show_node: EventReader<ShowNode>
+    mut commands: Commands,
+    mut ev_show_node: EventReader<ShowNode>,
 ) {
     for show_node in ev_show_node.iter() {
         commands.spawn((

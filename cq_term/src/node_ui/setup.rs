@@ -1,10 +1,8 @@
 use game_core::node::Node;
-use game_core::player::ForPlayer;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::animation::AnimationPlayer;
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
-use crate::node_ui::grid_ui::{GridUi, GridUiAnimation};
+use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
