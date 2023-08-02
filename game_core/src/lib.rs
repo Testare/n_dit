@@ -19,6 +19,8 @@ pub enum NDitCoreSet {
     ProcessCommands,
     ProcessCommandsFlush,
     PostProcessCommands,
+    ProcessUiOps,
+    PostProcessUiOps,
 }
 
 #[derive(Debug, Error)]
@@ -50,6 +52,8 @@ impl Plugin for NDitCorePlugin {
                     NDitCoreSet::ProcessCommands,
                     NDitCoreSet::ProcessCommandsFlush,
                     NDitCoreSet::PostProcessCommands,
+                    NDitCoreSet::ProcessUiOps,
+                    NDitCoreSet::PostProcessUiOps,
                 )
                     .chain(),
             )

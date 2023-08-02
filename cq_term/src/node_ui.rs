@@ -73,7 +73,14 @@ impl Plugin for NodeUiPlugin {
             )
             .add_systems(
                 Update,
-                (node_ui_op::sys_process_ui_op_move_cursor.in_set(NDitCoreSet::ProcessCommands),),
+                (
+                    (
+                        node_ui_op::sys_node_ui_op_move_cursor,
+                        node_ui_op::sys_node_ui_op_set_selected_action,
+                    )
+                        .in_set(NDitCoreSet::ProcessUiOps),
+                    node_ui_op::sys_adjust_selected_entity.in_set(NDitCoreSet::PostProcessUiOps),
+                ),
             )
             .add_plugins((
                 MenuUiCardSelection::plugin(),

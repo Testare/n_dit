@@ -84,7 +84,7 @@ impl Plugin for RenderTtyPlugin {
             // TODO Merge these statements
             .configure_set(
                 RENDER_TTY_SCHEDULE,
-                RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::ProcessCommandsFlush),
+                RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::PostProcessUiOps),
             )
             .configure_set(
                 RENDER_TTY_SCHEDULE,

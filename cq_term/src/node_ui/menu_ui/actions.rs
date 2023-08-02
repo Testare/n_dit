@@ -3,6 +3,7 @@ use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, ActionRange, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
+use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -12,7 +13,7 @@ use crate::key_map::NamedInput;
 use crate::layout::{
     CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
 };
-use crate::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
+use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
@@ -22,26 +23,16 @@ pub struct MenuUiActions;
 
 impl MenuUiActions {
     pub fn kb_action_menu(
-        mut players: Query<
-            (
-                Entity,
-                &UiFocus,
-                &KeyMap,
-                &SelectedEntity,
-                &mut SelectedAction,
-            ),
-            With<Player>,
-        >,
-        node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         mut ev_keys: EventReader<KeyEvent>,
+        players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
+        node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
         rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+        mut ev_node_op: EventWriter<Op<NodeOp>>,
+        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.iter() {
-            for (player_id, focus, key_map, selected_entity, mut selected_action) in
-                players.iter_mut()
-            {
+            for (player_id, focus, key_map, selected_entity, selected_action) in players.iter() {
                 if (**focus)
                     .map(|focused_ui| !action_menu_uis.contains(focused_ui))
                     .unwrap_or(true)
@@ -67,15 +58,21 @@ impl MenuUiActions {
                                             % actions_bound,
                                     );
                                     if **selected_action != next_action {
-                                        **selected_action = next_action;
+                                        NodeUiOp::SetSelectedAction(next_action)
+                                            .for_p(player_id)
+                                            .send(&mut ev_node_ui_op);
                                     }
                                 },
                                 NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
-                                    **selected_action = None;
+                                    NodeUiOp::SetSelectedAction(None)
+                                        .for_p(player_id)
+                                        .send(&mut ev_node_ui_op);
                                 },
                                 NamedInput::Activate => {
                                     if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
-                                        **selected_action = None;
+                                        NodeUiOp::SetSelectedAction(None)
+                                            .for_p(player_id)
+                                            .send(&mut ev_node_ui_op);
                                     } else if let Some(action) =
                                         actions.get(selected_action.unwrap_or_default())
                                     {
@@ -101,12 +98,12 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut layout_events: EventReader<LayoutEvent>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         mut players: Query<(&mut SelectedAction, &SelectedEntity), With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
         rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+        mut ev_node_op: EventWriter<Op<NodeOp>>,
     ) {
         for layout_event in layout_events.iter() {
             if let Ok(ForPlayer(player_id)) = ui_actions.get(layout_event.entity()) {

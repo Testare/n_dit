@@ -64,9 +64,8 @@ pub fn handle_layout_events(
                         active_curio.is_some() && **current_turn == **team;
 
                     if !alternative_click {
-                        ev_node_ui_op.send(
-                            NodeUiOp::MoveNodeCursor(clicked_node_pos.into()).for_player(*player),
-                        )
+                        ev_node_ui_op
+                            .send(NodeUiOp::MoveNodeCursor(clicked_node_pos.into()).for_p(*player))
                     } else {
                         let selected_action = selected_action.and_then(|selected_action| {
                             let (_, actions, tapped) = selected_entity.of(&curios)?;
@@ -147,6 +146,7 @@ pub fn handle_layout_events(
 
 pub fn kb_grid(
     no_op_action: Res<NoOpAction>,
+    mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     mut players: Query<
         (
@@ -155,17 +155,17 @@ pub fn kb_grid(
             &OnTeam,
             &UiFocus,
             &KeyMap,
-            &mut NodeCursor,
-            &mut SelectedEntity,
-            &mut SelectedAction,
+            &NodeCursor,
+            &SelectedEntity,
+            &SelectedAction,
         ),
         With<Player>,
     >,
     node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
-    mut ev_keys: EventReader<KeyEvent>,
-    mut ev_node_op: EventWriter<Op<NodeOp>>,
     grid_uis: Query<(), With<GridUi>>,
     rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+    mut ev_node_op: EventWriter<Op<NodeOp>>,
+    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
         for (
@@ -174,9 +174,9 @@ pub fn kb_grid(
             OnTeam(team),
             UiFocus(focus_opt),
             key_map,
-            mut cursor,
+            cursor,
             selected_entity,
-            mut selected_action,
+            selected_action,
         ) in players.iter_mut()
         {
             if focus_opt
@@ -195,19 +195,11 @@ pub fn kb_grid(
 
                     match named_input {
                         NamedInput::Direction(dir) => {
-                            if selected_action.is_some() {
-                                // Do not adjust selected entity/action
-                                **cursor = (**cursor + dir).min(grid.index_bounds());
-                            } else if is_controlling_active_curio {
-                                ev_node_op.send(Op::new(player, NodeOp::MoveActiveCurio { dir }));
+                            if is_controlling_active_curio && selected_action.is_none() {
+                                ev_node_op.send(NodeOp::MoveActiveCurio { dir }.for_p(player));
                             } else {
-                                let next_cursor_pt = (**cursor + dir).min(grid.index_bounds());
-                                cursor.adjust_to(
-                                    next_cursor_pt,
-                                    selected_entity,
-                                    selected_action,
-                                    grid,
-                                )
+                                ev_node_ui_op
+                                    .send(NodeUiOp::MoveNodeCursor(dir.into()).for_p(player))
                             }
                         },
                         NamedInput::Activate => {
@@ -259,8 +251,6 @@ pub fn kb_grid(
                                                             target: default(),
                                                         },
                                                     ));
-                                                } else {
-                                                    **selected_action = Some(0);
                                                 }
                                             },
                                             _ => {},
@@ -268,7 +258,7 @@ pub fn kb_grid(
                                         Some(())
                                     },
                                 );
-                                // If the curio has an action menu, focus on it
+                            // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
                                 ev_node_op
                                     .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
@@ -276,14 +266,18 @@ pub fn kb_grid(
                         },
                         NamedInput::Undo => {
                             if selected_action.is_some() {
-                                **selected_action = None;
+                                NodeUiOp::SetSelectedAction(None)
+                                    .for_p(player)
+                                    .send(&mut ev_node_ui_op);
                                 if is_controlling_active_curio {
                                     active_curio.and_then(|active_curio_id| {
-                                        **cursor = grid.head(active_curio_id)?;
+                                        let head = grid.head(active_curio_id)?;
+                                        NodeUiOp::MoveNodeCursor(head.into())
+                                            .for_p(player)
+                                            .send(&mut ev_node_ui_op);
                                         Some(())
                                     });
                                 }
-                                cursor.adjust_to_self(selected_entity, selected_action, grid);
                             }
                         },
                         _ => {},

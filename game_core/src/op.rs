@@ -1,15 +1,15 @@
 use crate::prelude::*;
 
 #[derive(Clone, Debug, Event)]
-pub struct Op<O> {
+pub struct Op<O: OpSubtype> {
     pub op: O,
     pub player: Entity,
 }
 
-pub trait OpSubtype: Clone {
+pub trait OpSubtype: Clone + Send + Sync + 'static {
     type Error;
 
-    fn for_player(self, player: Entity) -> Op<Self> {
+    fn for_p(self, player: Entity) -> Op<Self> {
         Op::new(player, self)
     }
 }
@@ -31,7 +31,7 @@ impl<O: OpSubtype> OpResult<O> {
     }
 }
 
-impl<O> Op<O> {
+impl<O: OpSubtype> Op<O> {
     pub fn new(player: Entity, op: O) -> Self {
         Op { op, player }
     }
@@ -42,5 +42,9 @@ impl<O> Op<O> {
 
     pub fn player(&self) -> Entity {
         self.player
+    }
+
+    pub fn send(self, evw: &mut EventWriter<Op<O>>) {
+        evw.send(self)
     }
 }
