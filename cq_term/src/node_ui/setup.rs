@@ -1,4 +1,5 @@
 use game_core::node::Node;
+use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
@@ -17,11 +18,11 @@ pub fn create_node_ui(
     mut commands: Commands,
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
-    node_qs: Query<NodeUiQ, With<Node>>,
+    node_qs: Query<(NodeUiQ, &Name), With<Node>>,
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.iter().next() {
-        if let Ok(node_q) = node_qs.get(*node) {
+        if let Ok((node_q, node_name)) = node_qs.get(*node) {
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
@@ -48,22 +49,126 @@ pub fn create_node_ui(
                                     flex_grow: 1.0,
                                     ..default()
                                 }),
-                                Name::new("Title Bar Spacing"),
+                                Name::new("Title Bar Left"),
                             ));
-
                             title_bar.spawn((
                                 StyleTty(taffy::prelude::Style {
                                     size: Size {
-                                        width: Dimension::Points(7.0),
+                                        width: Dimension::Points(node_name.as_str().width() as f32),
                                         height: Dimension::Auto,
                                     },
                                     flex_grow: 0.0,
-                                    flex_shrink: 0.0,
+                                    flex_shrink: 1.0,
                                     ..default()
                                 }),
-                                TerminalRendering::new(vec!["[Ready]".to_owned()]),
-                                Name::new("Ready Button"),
+                                TerminalRendering::new(vec![node_name.to_string()]),
+                                Name::new("Node Title"),
                             ));
+                            title_bar
+                                .spawn((
+                                    StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Auto,
+                                            height: Dimension::Auto,
+                                        },
+                                        max_size: Size {
+                                            width: Dimension::Points(60.0),
+                                            height: Dimension::Auto,
+                                        },
+                                        flex_grow: 1.0,
+                                        justify_content: JustifyContent::Center,
+                                        ..default()
+                                    }),
+                                    Name::new("Title Bar Right"),
+                                ))
+                                .with_children(|title_bar_right| {
+                                    title_bar_right.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            size: Size {
+                                                width: Dimension::Points(7.0),
+                                                height: Dimension::Auto,
+                                            },
+                                            flex_grow: 0.0,
+                                            flex_shrink: 0.0,
+                                            ..default()
+                                        }),
+                                        TerminalRendering::new(vec!["[Pause]".to_owned()]),
+                                        Name::new("Pause Button"),
+                                    ));
+
+                                    title_bar_right.spawn((StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Points(1.0),
+                                            height: Dimension::Auto,
+                                        },
+                                        min_size: Size { ..default() },
+                                        flex_grow: 0.0,
+                                        flex_shrink: 2.0,
+                                        ..default()
+                                    }),));
+
+                                    title_bar_right.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            size: Size {
+                                                width: Dimension::Points(7.0),
+                                                height: Dimension::Auto,
+                                            },
+                                            flex_grow: 0.0,
+                                            flex_shrink: 0.0,
+                                            ..default()
+                                        }),
+                                        TerminalRendering::new(vec!["[Ready]".to_owned()]),
+                                        Name::new("Ready Button"),
+                                    ));
+
+                                    title_bar_right.spawn((StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Points(1.0),
+                                            height: Dimension::Auto,
+                                        },
+                                        flex_grow: 0.0,
+                                        flex_shrink: 2.0,
+                                        ..default()
+                                    }),));
+
+                                    title_bar_right.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            size: Size {
+                                                width: Dimension::Points(6.0),
+                                                height: Dimension::Auto,
+                                            },
+                                            flex_grow: 0.0,
+                                            flex_shrink: 0.0,
+                                            ..default()
+                                        }),
+                                        TerminalRendering::new(vec!["[Help]".to_owned()]),
+                                        Name::new("Help Button"),
+                                    ));
+
+                                    title_bar_right.spawn((StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Points(1.0),
+                                            height: Dimension::Auto,
+                                        },
+                                        flex_grow: 0.0,
+                                        flex_shrink: 2.0,
+                                        ..default()
+                                    }),));
+
+                                    title_bar_right.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            size: Size {
+                                                width: Dimension::Points(6.0),
+                                                height: Dimension::Auto,
+                                            },
+                                            flex_grow: 0.0,
+                                            flex_shrink: 0.0,
+                                            ..default()
+                                        }),
+                                        TerminalRendering::new(vec!["[Quit]".to_owned()]),
+                                        Name::new("Quit Button"),
+                                    ));
+                                });
                         });
                     root.spawn((
                         StyleTty(taffy::prelude::Style {

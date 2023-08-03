@@ -198,6 +198,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             AccessPointLoadingRule::Staggered,
             ActiveCurio::default(),
             EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap(),
+            Name::new("Demo Node"),
         ))
         .with_children(|node| {
             let node_id = node.parent_entity();

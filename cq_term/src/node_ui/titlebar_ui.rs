@@ -36,7 +36,15 @@ impl NodeUi for TitleBarUi {
         StyleTty(Style {
             size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(3.),
+                height: Dimension::Points(2.),
+            },
+            padding: Rect {
+                bottom: Dimension::Points(1.0),
+                ..default()
+            },
+            max_size: Size {
+                width: Dimension::Points(100.0),
+                height: Dimension::Auto,
             },
             flex_shrink: 0.0,
             ..default()
