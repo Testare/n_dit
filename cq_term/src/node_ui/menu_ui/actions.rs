@@ -98,74 +98,72 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
-        mut layout_events: EventReader<LayoutEvent>,
+        mut ev_mouse: EventReader<LayoutEvent>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
-        mut players: Query<(&mut SelectedAction, &SelectedEntity), With<Player>>,
+        players: Query<&SelectedEntity, With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
         rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
+        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
-        for layout_event in layout_events.iter() {
-            if let Ok(ForPlayer(player_id)) = ui_actions.get(layout_event.entity()) {
-                get_assert_mut!(*player_id, players, |(
-                    mut selected_action,
-                    selected_entity,
-                )| {
-                    if let Some((actions, is_tapped)) = selected_entity.of(&node_pieces) {
-                        // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
-                        match layout_event.event_kind() {
-                            MouseEventKind::Down(MouseButton::Left) => {
-                                if layout_event.pos().y > 0
-                                    && layout_event.pos().y <= actions.len() as u32
-                                {
-                                    let clicked_action_idx = (layout_event.pos().y - 1) as usize;
-                                    let clicked_action = Some(clicked_action_idx);
+        for layout_event in ev_mouse.iter() {
+            ui_actions
+                .get(layout_event.entity())
+                .ok()
+                .and_then(|ForPlayer(player_id)| {
+                    let selected_entity = get_assert!(*player_id, players)?;
+                    let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
+                    // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
+                    match layout_event.event_kind() {
+                        MouseEventKind::Down(MouseButton::Left) => {
+                            if layout_event.pos().y > 0
+                                && layout_event.pos().y <= actions.len() as u32
+                            {
+                                let clicked_action = (layout_event.pos().y - 1) as usize;
+                                NodeUiOp::SetSelectedAction(Some(clicked_action))
+                                    .for_p(*player_id)
+                                    .send(&mut ev_node_ui_op);
 
-                                    if **selected_action != clicked_action {
-                                        **selected_action =
-                                            Some((layout_event.pos().y - 1) as usize);
-                                    } else if layout_event.double_click()
-                                        || !layout_event
-                                            .modifiers()
-                                            .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
-                                            .is_empty()
+                                if layout_event.double_click()
+                                    || !layout_event
+                                        .modifiers()
+                                        .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
+                                        .is_empty()
+                                {
+                                    let action_id = actions[clicked_action];
+                                    if matches!(is_tapped, Some(IsTapped(false)))
+                                        && rangeless_actions.contains(action_id)
                                     {
-                                        let action_id = actions[clicked_action_idx];
-                                        if matches!(is_tapped, Some(IsTapped(false)))
-                                            && rangeless_actions.contains(action_id)
-                                        {
-                                            **selected_action = None;
-                                            ev_node_op.send(Op::new(
-                                                *player_id,
-                                                NodeOp::PerformCurioAction {
-                                                    action: action_id,
-                                                    curio: **selected_entity,
-                                                    target: default(),
-                                                },
-                                            ))
-                                        }
-                                    } else {
-                                        **selected_action = None;
+                                        ev_node_op.send(Op::new(
+                                            *player_id,
+                                            NodeOp::PerformCurioAction {
+                                                action: action_id,
+                                                curio: **selected_entity,
+                                                target: default(),
+                                            },
+                                        ))
                                     }
                                 }
-                            },
-                            _ => {},
-                        }
+                            }
+                        },
+                        _ => {},
                     }
                     Some(())
                 });
-            }
         }
     }
 
     pub fn sys_on_focus_action_menu(
-        mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
+        mut players: Query<(&UiFocus, &SelectedAction), (Changed<UiFocus>, With<Player>)>,
         action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
+        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for (action_menu, ForPlayer(player)) in action_menus.iter() {
-            if let Ok((ui_focus, mut selected_action)) = players.get_mut(*player) {
+            if let Ok((ui_focus, selected_action)) = players.get_mut(*player) {
                 if **ui_focus == Some(action_menu) && selected_action.is_none() {
-                    **selected_action = Some(0);
+                    NodeUiOp::SetSelectedAction(Some(0))
+                        .for_p(*player)
+                        .send(&mut ev_node_ui_op);
                 }
             }
         }
@@ -254,7 +252,7 @@ impl Plugin for MenuUiActions {
             (
                 Self::sys_on_focus_action_menu
                     .before(Self::kb_action_menu)
-                    .in_set(NDitCoreSet::ProcessInputs),
+                    .in_set(NDitCoreSet::ProcessInputs), // TODO is this the correct set?
                 Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
                 Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
             ),

@@ -2,15 +2,15 @@ use game_core::card::Actions;
 use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam,
 };
-use game_core::player::{ForPlayer, Player};
+use game_core::op::OpSubtype;
+use game_core::player::Player;
 
 use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
-use super::{SelectedAction, SelectedEntity};
+use super::node_ui_op::FocusTarget;
+use super::{NodeUiOp, SelectedAction, SelectedEntity};
 use crate::key_map::NamedInput;
-use crate::layout::{
-    ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder, UiFocusNext,
-};
+use crate::layout::UiFocus;
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
@@ -34,42 +34,31 @@ pub fn kb_ready(
 }
 
 pub fn kb_skirm_focus(
-    mut players: Query<
+    mut ev_keys: EventReader<KeyEvent>,
+    players: Query<
         (
             Entity,
             &InNode,
             &OnTeam,
             &UiFocus,
-            &mut UiFocusNext,
             &KeyMap,
             &SelectedEntity,
             &SelectedAction,
         ),
         With<Player>,
     >,
-    mut ev_keys: EventReader<KeyEvent>,
-    skirm_uis: Query<
-        (Entity, &ForPlayer),
-        Or<(With<GridUi>, With<MenuUiCardSelection>, With<MenuUiActions>)>,
-    >,
     nodes: Query<(&ActiveCurio, &CurrentTurn), With<Node>>,
-    access_points: Query<(), (With<AccessPoint>, With<NodePiece>)>,
     action_pieces: Query<&Actions, With<NodePiece>>,
-    grid_uis: Query<(Entity, &ForPlayer), With<GridUi>>,
-    card_menus: Query<(Entity, &ForPlayer), With<MenuUiCardSelection>>,
-    action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
+    access_points: Query<(), (With<AccessPoint>, With<NodePiece>)>,
+    skirm_uis: Query<(), Or<(With<GridUi>, With<MenuUiCardSelection>, With<MenuUiActions>)>>,
+    grid_uis: Query<(), With<GridUi>>,
+    card_menus: Query<(), With<MenuUiCardSelection>>,
+    action_menus: Query<(), With<MenuUiActions>>,
+    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (
-            player,
-            in_node,
-            team,
-            focus,
-            mut focus_next,
-            key_map,
-            selected_entity,
-            selected_action,
-        ) in players.iter_mut()
+        for (player, in_node, team, focus, key_map, selected_entity, selected_action) in
+            players.iter()
         {
             if (**focus)
                 .map(|focused_ui| !skirm_uis.contains(focused_ui))
@@ -77,19 +66,6 @@ pub fn kb_skirm_focus(
             {
                 continue;
             }
-
-            let grid_id = grid_uis
-                .iter()
-                .find(|(_, fp)| ***fp == player)
-                .map(|(id, _)| id);
-            let card_menu_id = card_menus
-                .iter()
-                .find(|(_, fp)| ***fp == player)
-                .map(|(id, _)| id);
-            let action_menu_id = action_menus
-                .iter()
-                .find(|(_, fp)| ***fp == player)
-                .map(|(id, _)| id);
 
             let active_curio = get_assert!(**in_node, nodes, |(active_curio, turn)| {
                 if **turn == **team {
@@ -99,79 +75,54 @@ pub fn kb_skirm_focus(
                 }
             });
 
-            if grid_id.is_none() {
-                log::error!("Missing Grid UI entity");
-            }
-            if card_menu_id.is_none() {
-                log::error!("Missing Card Menu entity");
-            }
-            if action_menu_id.is_none() {
-                log::error!("Missing Action Menu entity");
-            }
-
-            key_map
+            if let Some(focus_target) = key_map
                 .named_input_for_key(Submap::Node, *code, *modifiers)
                 .and_then(|named_input| {
                     match named_input {
-                        NamedInput::Undo => {
-                            if **focus != grid_id {
-                                **focus_next = grid_id
-                            }
-                        },
                         NamedInput::Activate => {
                             // Activate on an access_point => Focus card selection menu
-                            if (focus.is_none() || **focus == grid_id)
+                            if (focus.map(|focus| grid_uis.contains(focus)).unwrap_or(true))
                                 && selected_entity.of(&access_points).is_some()
                             {
-                                **focus_next = card_menu_id;
-                            } else if **focus == action_menu_id {
-                                **focus_next = grid_id;
+                                Some(FocusTarget::CardMenu)
+                            } else if focus
+                                .map(|focus| action_menus.contains(focus))
+                                .unwrap_or_default()
+                            {
+                                Some(FocusTarget::Grid)
                             } else if let Some(actions) =
                                 active_curio.and_then(|curio_id| action_pieces.get(curio_id).ok())
                             {
                                 if actions.len() > 1 && selected_action.is_none() {
-                                    **focus_next = action_menu_id;
+                                    Some(FocusTarget::ActionMenu)
+                                } else {
+                                    None
                                 }
+                            } else {
+                                None
                             }
                         },
                         NamedInput::AltActivate => {
-                            if **focus == card_menu_id {
-                                **focus_next = grid_id;
+                            if focus
+                                .map(|focus| card_menus.contains(focus))
+                                .unwrap_or_default()
+                            {
+                                Some(FocusTarget::Grid)
+                            } else {
+                                None
                             }
                         },
-                        _ => {},
+                        NamedInput::MenuFocusNext => Some(FocusTarget::Next),
+                        NamedInput::MenuFocusPrev => Some(FocusTarget::Prev),
+                        NamedInput::Undo => Some(FocusTarget::Grid),
+                        _ => None,
                     }
-                    Some(())
-                });
-        }
-    }
-}
-
-pub fn kb_focus_cycle(
-    mut players: Query<(Entity, &mut UiFocusNext, &KeyMap), With<Player>>,
-    mut ev_keys: EventReader<KeyEvent>,
-    ui_nodes: Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,
-) {
-    for KeyEvent { code, modifiers } in ev_keys.iter() {
-        for (player, mut ui_focus, key_map) in players.iter_mut() {
-            key_map
-                .named_input_for_key(Submap::Node, *code, *modifiers)
-                .and_then(|named_input| {
-                    match named_input {
-                        NamedInput::MenuFocusNext => {
-                            let next_ui_focus =
-                                ui_focus_cycle_next(**ui_focus, player, 0, &ui_nodes);
-                            **ui_focus = next_ui_focus;
-                        },
-                        NamedInput::MenuFocusPrev => {
-                            let next_ui_focus =
-                                ui_focus_cycle_prev(**ui_focus, player, 0, &ui_nodes);
-                            **ui_focus = next_ui_focus;
-                        },
-                        _ => {},
-                    }
-                    Some(())
-                });
+                })
+            {
+                NodeUiOp::ChangeFocus(focus_target)
+                    .for_p(player)
+                    .send(&mut ev_node_ui_op)
+            }
         }
     }
 }

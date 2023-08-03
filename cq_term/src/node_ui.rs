@@ -7,8 +7,6 @@ mod registry;
 mod setup;
 mod titlebar_ui;
 
-use std::ops::Deref;
-
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
@@ -64,12 +62,7 @@ impl Plugin for NodeUiPlugin {
             .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
             .add_systems(
                 PreUpdate,
-                (
-                    inputs::kb_focus_cycle,
-                    inputs::kb_ready,
-                    inputs::kb_skirm_focus,
-                )
-                    .in_set(NDitCoreSet::ProcessInputs),
+                (inputs::kb_ready, inputs::kb_skirm_focus).in_set(NDitCoreSet::ProcessInputs),
             )
             .add_systems(
                 Update,
@@ -77,6 +70,7 @@ impl Plugin for NodeUiPlugin {
                     (
                         node_ui_op::sys_node_ui_op_move_cursor,
                         node_ui_op::sys_node_ui_op_set_selected_action,
+                        node_ui_op::sys_node_ui_op_change_focus,
                     )
                         .in_set(NDitCoreSet::ProcessUiOps),
                     node_ui_op::sys_adjust_selected_entity.in_set(NDitCoreSet::PostProcessUiOps),
@@ -147,39 +141,5 @@ pub trait NodeUi: Component + Default {
 
     fn plugin() -> Self::UiPlugin {
         Self::UiPlugin::default()
-    }
-}
-
-impl NodeCursor {
-    // Perhaps this should just be changing the cursor and then adjust_to_self
-    fn adjust_to(
-        &mut self,
-        pt: UVec2,
-        mut selected_entity: Mut<SelectedEntity>,
-        mut selected_action: Mut<SelectedAction>,
-        grid: &EntityGrid,
-    ) {
-        if self.0 != pt {
-            self.0 = pt;
-            let item_at_pt = grid.item_at(pt);
-            if *selected_entity.deref().deref() != item_at_pt {
-                **selected_entity = item_at_pt;
-                **selected_action = None;
-            }
-        }
-    }
-
-    // Perhaps this should be done in response to an event
-    fn adjust_to_self(
-        &self,
-        mut selected_entity: Mut<SelectedEntity>,
-        mut selected_action: Mut<SelectedAction>,
-        grid: &EntityGrid,
-    ) {
-        let item_at_pt = grid.item_at(self.0);
-        if *selected_entity.deref().deref() != item_at_pt {
-            **selected_entity = item_at_pt;
-            **selected_action = None;
-        }
     }
 }

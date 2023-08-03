@@ -1,15 +1,19 @@
 use game_core::node::{CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
 use game_core::op::OpSubtype;
-use game_core::player::Player;
+use game_core::player::{ForPlayer, Player};
 
+use super::grid_ui::GridUi;
+use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
 use super::{NodeCursor, SelectedAction, SelectedEntity};
+use crate::layout::{
+    ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder, UiFocusNext,
+};
 use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub enum NodeUiOp {
     ChangeFocus(FocusTarget),
     MoveNodeCursor(CompassOrPoint),
-    MoveMenuCursor,
     SetSelectedAction(Option<usize>),
 }
 
@@ -24,6 +28,33 @@ pub enum FocusTarget {
 
 impl OpSubtype for NodeUiOp {
     type Error = ();
+}
+
+pub fn sys_node_ui_op_change_focus(
+    mut ev_node_ui_op: EventReader<Op<NodeUiOp>>,
+    ui_nodes: Query<(Entity, &StyleTty, &UiFocusCycleOrder, &ForPlayer)>,
+    action_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiActions>>,
+    grid_uis: IndexedQuery<ForPlayer, Entity, With<GridUi>>,
+    card_selection_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiCardSelection>>,
+    mut players: Query<(&UiFocus, &mut UiFocusNext), With<Player>>,
+) {
+    for Op { player, op } in ev_node_ui_op.iter() {
+        if let NodeUiOp::ChangeFocus(focus_target) = op {
+            get_assert_mut!(*player, &mut players, |(focus, mut focus_next)| {
+                let next_focus = match focus_target {
+                    FocusTarget::Next => ui_focus_cycle_next(**focus, *player, 0, &ui_nodes),
+                    FocusTarget::Prev => ui_focus_cycle_prev(**focus, *player, 0, &ui_nodes),
+                    FocusTarget::ActionMenu => action_menus.get_for(*player).ok(),
+                    FocusTarget::Grid => grid_uis.get_for(*player).ok(),
+                    FocusTarget::CardMenu => card_selection_menus.get_for(*player).ok(),
+                };
+                if **focus != next_focus {
+                    **focus_next = next_focus
+                }
+                Some(())
+            });
+        }
+    }
 }
 
 pub fn sys_node_ui_op_set_selected_action(

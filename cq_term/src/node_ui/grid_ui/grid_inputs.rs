@@ -148,7 +148,7 @@ pub fn kb_grid(
     no_op_action: Res<NoOpAction>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
-    mut players: Query<
+    players: Query<
         (
             Entity, // Solid candidate for making a WorldQuery derive
             &InNode,
@@ -177,7 +177,7 @@ pub fn kb_grid(
             cursor,
             selected_entity,
             selected_action,
-        ) in players.iter_mut()
+        ) in players.iter()
         {
             if focus_opt
                 .map(|focused_ui| !grid_uis.contains(focused_ui))

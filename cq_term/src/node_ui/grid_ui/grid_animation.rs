@@ -1,12 +1,11 @@
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use crossterm::style::Stylize;
-use game_core::node::{InNode, Node, NodeOp, NodePiece};
+use game_core::node::{InNode, NodeOp, NodePiece};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::{card, node};
 
 use super::super::registry::GlyphRegistry;
-use super::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::animation::AnimationPlayer;
 use crate::configuration::UiFormat;
 use crate::fx::Fx;
@@ -150,36 +149,6 @@ pub fn sys_render_animations(
                 .map(|frame| frame.into_charmi())
                 .unwrap_or_default(),
         );
-    }
-}
-
-pub fn sys_reset_state_after_animation_plays(
-    changed_aps: Query<(&AnimationPlayer, &ForPlayer), Changed<AnimationPlayer>>,
-    mut players: Query<
-        (
-            &mut SelectedAction,
-            &mut SelectedEntity,
-            &NodeCursor,
-            &InNode,
-        ),
-        With<Player>,
-    >,
-    nodes: Query<(&EntityGrid,), With<Node>>,
-) {
-    for (ap, for_player) in changed_aps.iter() {
-        if ap.finished() {
-            get_assert_mut!(**for_player, players, |(
-                mut selected_action,
-                selected_entity,
-                node_cursor,
-                in_node,
-            )| {
-                let (grid,) = get_assert!(**in_node, &nodes)?;
-                **selected_action = None;
-                node_cursor.adjust_to_self(selected_entity, selected_action, grid);
-                Some(())
-            });
-        }
     }
 }
 
