@@ -73,7 +73,11 @@ impl Plugin for NodeUiPlugin {
                         node_ui_op::sys_node_ui_op_change_focus,
                     )
                         .in_set(NDitCoreSet::ProcessUiOps),
-                    node_ui_op::sys_adjust_selected_entity.in_set(NDitCoreSet::PostProcessUiOps),
+                    (
+                        node_ui_op::sys_adjust_selected_entity,
+                        // node_ui_op::sys_adjust_selected_action,
+                    )
+                        .in_set(NDitCoreSet::PostProcessUiOps),
                 ),
             )
             .add_plugins((

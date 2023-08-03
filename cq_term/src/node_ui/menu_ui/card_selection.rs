@@ -2,6 +2,7 @@ use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
+use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -11,7 +12,8 @@ use crate::key_map::NamedInput;
 use crate::layout::{
     CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
 };
-use crate::node_ui::{NodeUi, NodeUiQItem, SelectedAction, SelectedEntity};
+use crate::node_ui::node_ui_op::FocusTarget;
+use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
@@ -47,7 +49,8 @@ impl MenuUiCardSelection {
             With<Player>,
         >,
         access_points: Query<&AccessPoint, With<NodePiece>>,
-        mut node_command: EventWriter<Op<NodeOp>>,
+        mut ev_node_op: EventWriter<Op<NodeOp>>,
+        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for layout_event in layout_events.iter() {
             if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
@@ -65,7 +68,11 @@ impl MenuUiCardSelection {
                             card_selection.scroll = card_selection.scroll.saturating_sub(1);
                         },
                         MouseEventKind::Down(MouseButton::Left) => {
+                            NodeUiOp::ChangeFocus(FocusTarget::CardMenu)
+                                .for_p(*player)
+                                .send(&mut ev_node_ui_op);
                             let height = size.height32();
+
                             let padding: u32 = is_padded.0.into();
                             let UVec2 { x, y } = layout_event.pos();
                             if x == 0 && max_scroll != 0 {
@@ -100,12 +107,12 @@ impl MenuUiCardSelection {
                                     **selected_item = Some(index);
 
                                     if access_point.card() == Some(card_id) {
-                                        node_command.send(Op::new(
+                                        ev_node_op.send(Op::new(
                                             *player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
                                         ));
                                     } else if played_cards.can_be_played(deck, card_id) {
-                                        node_command.send(Op::new(
+                                        ev_node_op.send(Op::new(
                                             *player,
                                             NodeOp::LoadAccessPoint {
                                                 access_point_id,

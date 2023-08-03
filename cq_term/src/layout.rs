@@ -1,5 +1,5 @@
 use charmi::CharacterMapImage;
-use game_core::player::{ForPlayer, Player};
+use game_core::player::ForPlayer;
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::Style;
@@ -107,14 +107,8 @@ impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
             .add_event::<LayoutEvent>()
-            .add_systems(
-                Last,
-                (remove_ui_focus_if_not_displayed, apply_ui_next).chain(),
-            )
-            .add_systems(
-                PreUpdate,
-                (generate_layout_events, update_ui_focus_on_click),
-            )
+            .add_systems(Last, remove_ui_focus_if_not_displayed)
+            .add_systems(PreUpdate, generate_layout_events)
             .add_systems(
                 RENDER_TTY_SCHEDULE,
                 (
@@ -150,14 +144,6 @@ fn remove_ui_focus_if_not_displayed(
             if not_focusable {
                 **next_focus = None;
             }
-        }
-    }
-}
-
-fn apply_ui_next(mut ui_focus: Query<(&mut UiFocus, &UiFocusNext)>) {
-    for (mut ui_focus, ui_focus_next) in ui_focus.iter_mut() {
-        if **ui_focus != **ui_focus_next {
-            **ui_focus = **ui_focus_next;
         }
     }
 }
@@ -210,28 +196,6 @@ fn generate_layout_events(
         }
         if matches!(kind, MouseEventKind::Down(_)) {
             last_click.replace((std::time::Instant::now(), *event));
-        }
-    }
-}
-
-/// Not quite sure where in the frame this should go
-fn update_ui_focus_on_click(
-    mut ev_layout: EventReader<LayoutEvent>,
-    mut players: Query<(&mut UiFocusNext, &UiFocus), With<Player>>,
-    ui_focus_targets: Query<(&ForPlayer, DebugName), With<UiFocusOnClick>>,
-) {
-    for layout_event in ev_layout.iter() {
-        if matches!(layout_event.event_kind(), MouseEventKind::Down(_)) {
-            ui_focus_targets.get(layout_event.entity()).ok().and_then(
-                |(ForPlayer(player), debug_name)| {
-                    let (mut focus_next, focus) = players.get_mut(*player).ok()?;
-                    if **focus_next == **focus && **focus_next != Some(layout_event.entity()) {
-                        **focus_next = Some(layout_event.entity());
-                        log::debug!("Set focus for player {:?} to {:?}", *player, debug_name);
-                    }
-                    Some(())
-                },
-            );
         }
     }
 }

@@ -13,6 +13,7 @@ use crate::key_map::NamedInput;
 use crate::layout::{
     CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
 };
+use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -116,6 +117,9 @@ impl MenuUiActions {
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
                         MouseEventKind::Down(MouseButton::Left) => {
+                            NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)
+                                .for_p(*player_id)
+                                .send(&mut ev_node_ui_op);
                             if layout_event.pos().y > 0
                                 && layout_event.pos().y <= actions.len() as u32
                             {
@@ -150,22 +154,6 @@ impl MenuUiActions {
                     }
                     Some(())
                 });
-        }
-    }
-
-    pub fn sys_on_focus_action_menu(
-        mut players: Query<(&UiFocus, &SelectedAction), (Changed<UiFocus>, With<Player>)>,
-        action_menus: Query<(Entity, &ForPlayer), With<MenuUiActions>>,
-        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
-    ) {
-        for (action_menu, ForPlayer(player)) in action_menus.iter() {
-            if let Ok((ui_focus, selected_action)) = players.get_mut(*player) {
-                if **ui_focus == Some(action_menu) && selected_action.is_none() {
-                    NodeUiOp::SetSelectedAction(Some(0))
-                        .for_p(*player)
-                        .send(&mut ev_node_ui_op);
-                }
-            }
         }
     }
 
@@ -250,9 +238,6 @@ impl Plugin for MenuUiActions {
         app.add_systems(
             PreUpdate,
             (
-                Self::sys_on_focus_action_menu
-                    .before(Self::kb_action_menu)
-                    .in_set(NDitCoreSet::ProcessInputs), // TODO is this the correct set?
                 Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
                 Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
             ),

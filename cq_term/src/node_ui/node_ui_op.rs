@@ -6,7 +6,7 @@ use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
 use super::{NodeCursor, SelectedAction, SelectedEntity};
 use crate::layout::{
-    ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder, UiFocusNext,
+    ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder,
 };
 use crate::prelude::*;
 
@@ -36,11 +36,11 @@ pub fn sys_node_ui_op_change_focus(
     action_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiActions>>,
     grid_uis: IndexedQuery<ForPlayer, Entity, With<GridUi>>,
     card_selection_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiCardSelection>>,
-    mut players: Query<(&UiFocus, &mut UiFocusNext), With<Player>>,
+    mut players: Query<&mut UiFocus, With<Player>>,
 ) {
     for Op { player, op } in ev_node_ui_op.iter() {
         if let NodeUiOp::ChangeFocus(focus_target) = op {
-            get_assert_mut!(*player, &mut players, |(focus, mut focus_next)| {
+            get_assert_mut!(*player, &mut players, |mut focus| {
                 let next_focus = match focus_target {
                     FocusTarget::Next => ui_focus_cycle_next(**focus, *player, 0, &ui_nodes),
                     FocusTarget::Prev => ui_focus_cycle_prev(**focus, *player, 0, &ui_nodes),
@@ -49,7 +49,7 @@ pub fn sys_node_ui_op_change_focus(
                     FocusTarget::CardMenu => card_selection_menus.get_for(*player).ok(),
                 };
                 if **focus != next_focus {
-                    **focus_next = next_focus
+                    **focus = next_focus
                 }
                 Some(())
             });
@@ -125,3 +125,15 @@ pub fn sys_adjust_selected_entity(
         });
     }
 }
+
+/*pub fn sys_adjust_selected_action(
+    mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
+    action_menus: Query<(), With<MenuUiActions>>
+) {
+    for (ui_focus, mut selected_action) in players.iter_mut() {
+        if ui_focus.map(|focus|action_menus.contains(focus)).unwrap_or(false)
+            && selected_action.is_none() {
+                **selected_action = Some(0);
+        }
+    }
+}*/

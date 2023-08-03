@@ -11,6 +11,7 @@ use super::{GridUi, Scroll2D};
 use crate::input_event::{MouseButton, MouseEventKind};
 use crate::key_map::NamedInput;
 use crate::layout::{LayoutEvent, UiFocus};
+use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeCursor, NodeUiOp, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
@@ -40,6 +41,9 @@ pub fn handle_layout_events(
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventKind::Down(button) = event.event_kind() {
                 log::trace!("Clicked on the grid");
+                NodeUiOp::ChangeFocus(FocusTarget::Grid)
+                    .for_p(*player)
+                    .send(&mut ev_node_ui_op);
                 get_assert!(*player, players, |(
                     node,
                     team,
