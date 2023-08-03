@@ -37,7 +37,34 @@ pub fn create_node_ui(
                     TerminalRendering::default(),
                 ))
                 .with_children(|root| {
-                    root.spawn(super::titlebar_ui::TitleBarUi::bundle(*player, &node_q));
+                    root.spawn(super::titlebar_ui::TitleBarUi::bundle(*player, &node_q))
+                        .with_children(|title_bar| {
+                            title_bar.spawn((
+                                StyleTty(taffy::prelude::Style {
+                                    size: Size {
+                                        width: Dimension::Auto,
+                                        height: Dimension::Auto,
+                                    },
+                                    flex_grow: 1.0,
+                                    ..default()
+                                }),
+                                Name::new("Title Bar Spacing"),
+                            ));
+
+                            title_bar.spawn((
+                                StyleTty(taffy::prelude::Style {
+                                    size: Size {
+                                        width: Dimension::Points(7.0),
+                                        height: Dimension::Auto,
+                                    },
+                                    flex_grow: 0.0,
+                                    flex_shrink: 0.0,
+                                    ..default()
+                                }),
+                                TerminalRendering::new(vec!["[Ready]".to_owned()]),
+                                Name::new("Ready Button"),
+                            ));
+                        });
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
                             size: Size {

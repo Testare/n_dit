@@ -148,6 +148,7 @@ fn remove_ui_focus_if_not_displayed(
     }
 }
 
+/// TODO rename from layout events to MouseTtyEvent, don't require layout components for click
 fn generate_layout_events(
     mut crossterm_events: EventReader<MouseEvent>,
     mut layout_event_writer: EventWriter<LayoutEvent>,
@@ -294,31 +295,35 @@ fn calculate_layouts(
     }
 }
 
+/// TODO consider moving this to render.rs and change "LayoutRoot" to "RenderRoot", as it doesn't
+/// need layout specific logic.
 pub fn render_layouts(
     mut render_layouts: Query<
-        (Entity, &CalculatedSizeTty, Option<&mut TerminalRendering>),
+        (&CalculatedSizeTty, &Children, &mut TerminalRendering),
         With<LayoutRoot>,
     >,
-    children: Query<&Children>,
+    q_children: Query<&Children, Without<LayoutRoot>>,
     child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
-    for (root_id, root_size, rendering) in render_layouts.iter_mut() {
-        let mut leaves: Vec<(&TerminalRendering, &GlobalTranslationTty)> =
-            collect_leaves(root_id, &children)
-                .into_iter()
-                .filter_map(|id| child_renderings.get(id).ok())
-                .collect();
-        leaves.sort_by_cached_key(|leaf_info| (leaf_info.1.x as u32, leaf_info.1.y as u32));
+    for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
+        let mut children: Vec<Entity> = Vec::from(&**root_children);
 
         let mut charmie = CharacterMapImage::new();
-        for leaf in leaves {
-            charmie = charmie.draw(leaf.0.charmie(), leaf.1.x, leaf.1.y, Default::default());
+        while !children.is_empty() {
+            let mut next_children: Vec<Entity> = default();
+            for id in children.into_iter() {
+                if let Ok(my_children) = q_children.get(id) {
+                    next_children.extend(&**my_children);
+                }
+                if let Ok((rendering, pos)) = child_renderings.get(id) {
+                    charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
+                }
+            }
+            children = next_children;
         }
-        charmie.fit_to_size(root_size.width32(), root_size.height32());
 
-        if let Some(mut rendering) = rendering {
-            rendering.update_charmie(charmie);
-        }
+        charmie.fit_to_size(root_size.width32(), root_size.height32());
+        rendering.update_charmie(charmie);
     }
 }
 
@@ -415,19 +420,6 @@ fn update_layout_traversal<F: FnMut(Entity, UVec2) -> UVec2>(
         for child in children.into_iter() {
             update_layout_traversal(*child, children_query, new_offset, update_fn);
         }
-    }
-}
-
-// TODO Make it so if a Node has NodeTty and children, but the children don't have NodeTty, it counts as a leaf
-// Or just... That children are rendered on top/below parent nodes? IDK
-pub fn collect_leaves(root: Entity, children_query: &Query<&Children>) -> Vec<Entity> {
-    if let Ok(children) = children_query.get(root) {
-        children
-            .into_iter()
-            .flat_map(|child| collect_leaves(*child, children_query))
-            .collect()
-    } else {
-        vec![root]
     }
 }
 
