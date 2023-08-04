@@ -126,14 +126,17 @@ pub fn sys_adjust_selected_entity(
     }
 }
 
-/*pub fn sys_adjust_selected_action(
+pub fn sys_adjust_selected_action(
     mut players: Query<(&UiFocus, &mut SelectedAction), (Changed<UiFocus>, With<Player>)>,
-    action_menus: Query<(), With<MenuUiActions>>
+    action_menus: Query<(), With<MenuUiActions>>,
 ) {
     for (ui_focus, mut selected_action) in players.iter_mut() {
-        if ui_focus.map(|focus|action_menus.contains(focus)).unwrap_or(false)
-            && selected_action.is_none() {
-                **selected_action = Some(0);
+        if ui_focus
+            .map(|focus| action_menus.contains(focus))
+            .unwrap_or(false)
+            && selected_action.is_none()
+        {
+            **selected_action = Some(0);
         }
     }
-}*/
+}
