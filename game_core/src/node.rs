@@ -22,6 +22,7 @@ pub mod key {
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
+    pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
 }
 pub struct NodePlugin;
 
@@ -110,7 +111,7 @@ pub struct ActiveCurio(pub Option<Entity>);
 #[derive(Component, Deref, DerefMut)]
 pub struct Teams(pub Vec<Entity>);
 
-#[derive(Component, PartialEq)]
+#[derive(Component, Debug, PartialEq)]
 pub enum TeamPhase {
     Setup,
     Play,

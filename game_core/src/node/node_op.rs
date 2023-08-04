@@ -276,6 +276,7 @@ pub fn ready_to_go_ops(
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
     mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
+    mut ev_op_result: EventWriter<OpResult<NodeOp>>,
 ) {
     for op in ops.iter() {
         if let Op {
@@ -299,7 +300,8 @@ pub fn ready_to_go_ops(
                                 && team == player_team
                                 && access_point.card.is_some()
                         });
-                    if valid_op {
+                    let result = if valid_op {
+                        let mut metadata: Metadata = default();
                         let relevant_teams_are_ready = players.iter().all(
                             |(iter_player, OnTeam(team), _, IsReadyToGo(ready_to_go))| {
                                 !relevant_teams.contains(team)
@@ -307,6 +309,7 @@ pub fn ready_to_go_ops(
                                     || iter_player == *player
                             },
                         );
+                        metadata.put(key::ALL_TEAM_MEMBERS_READY, relevant_teams_are_ready);
                         if relevant_teams_are_ready {
                             let relevant_access_points: Vec<(Entity, Option<Entity>)> =
                                 access_points
@@ -366,7 +369,11 @@ pub fn ready_to_go_ops(
                         } else {
                             players.get_mut(*player).unwrap().3 .0 = true;
                         };
-                    }
+                        Ok(metadata)
+                    } else {
+                        Err(NodeOpError::InternalError)
+                    };
+                    ev_op_result.send(OpResult::new(op, result));
                 }
             }
         }

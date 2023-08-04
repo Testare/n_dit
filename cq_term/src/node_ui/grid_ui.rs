@@ -119,7 +119,7 @@ impl NodeUi for GridUi {
     }
 }
 
-// Should not be in grid UI
+// TODO move to node_ui
 fn sys_react_to_node_op(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
     nodes: Query<(&EntityGrid,), With<Node>>,
@@ -157,6 +157,11 @@ fn sys_react_to_node_op(
                         }
                         Some(())
                     });
+                },
+                NodeOp::ReadyToGo => {
+                    NodeUiOp::ChangeFocus(FocusTarget::Grid)
+                        .for_p(op_result.source().player())
+                        .send(&mut ev_node_ui_op);
                 },
                 _ => {},
             }

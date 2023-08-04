@@ -168,6 +168,7 @@ pub fn kb_grid(
     node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
     grid_uis: Query<(), With<GridUi>>,
     rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
+    teams: Query<&TeamPhase, With<Team>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
@@ -196,6 +197,7 @@ pub fn kb_grid(
                 .and_then(|named_input| {
                     let (grid, active_curio, turn) = get_assert!(*node, nodes)?;
                     let is_controlling_active_curio = active_curio.is_some() && **turn == *team;
+                    let team_phase = teams.get(*team).ok()?;
 
                     match named_input {
                         NamedInput::Direction(dir) => {
@@ -210,7 +212,7 @@ pub fn kb_grid(
                             if let Some(selected_action_index) = **selected_action {
                                 selected_entity.of(&node_pieces).and_then(
                                     |(actions, is_tapped)| {
-                                        if **is_tapped {
+                                        if **is_tapped || *team_phase == TeamPhase::Setup {
                                             return None;
                                         }
                                         let action = *actions?.get(selected_action_index)?;
@@ -264,8 +266,10 @@ pub fn kb_grid(
                                 );
                             // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
-                                ev_node_op
-                                    .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
+                                if **turn == *team && *team_phase != TeamPhase::Setup {
+                                    ev_node_op
+                                        .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
+                                }
                             }
                         },
                         NamedInput::Undo => {
