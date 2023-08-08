@@ -39,6 +39,13 @@ impl CharacterMapImage {
         self.rows.iter().map(|row| row.to_string()).join("\n")
     }
 
+    pub fn apply_effect(&mut self, style: &ContentStyle) -> &mut Self {
+        for row in self.rows.iter_mut() {
+            row.apply_effect(style);
+        }
+        self
+    }
+
     // Draws map onto this image, expanding the image as necessary, at the location specified.
     pub fn draw(&self, map: &CharacterMapImage, x: u32, y: u32, bcfb: Option<char>) -> Self {
         let y = y as usize;

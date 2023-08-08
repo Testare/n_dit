@@ -1,8 +1,10 @@
+use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::Node;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder};
+use crate::base_ui::ButtonUiBundle;
+use crate::layout::{LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -82,19 +84,10 @@ pub fn create_node_ui(
                                     Name::new("Title Bar Right"),
                                 ))
                                 .with_children(|title_bar_right| {
-                                    title_bar_right.spawn((
-                                        StyleTty(taffy::prelude::Style {
-                                            size: Size {
-                                                width: Dimension::Points(7.0),
-                                                height: Dimension::Auto,
-                                            },
-                                            flex_grow: 0.0,
-                                            flex_shrink: 0.0,
-                                            ..default()
-                                        }),
-                                        TerminalRendering::new(vec!["[Pause]".to_owned()]),
-                                        Name::new("Pause Button"),
-                                    ));
+                                    title_bar_right.spawn((ButtonUiBundle::new(
+                                        "Pause",
+                                        ContentStyle::new().green(),
+                                    ),));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
@@ -108,17 +101,8 @@ pub fn create_node_ui(
                                     }),));
 
                                     title_bar_right.spawn((
-                                        StyleTty(taffy::prelude::Style {
-                                            size: Size {
-                                                width: Dimension::Points(7.0),
-                                                height: Dimension::Auto,
-                                            },
-                                            flex_grow: 0.0,
-                                            flex_shrink: 0.0,
-                                            ..default()
-                                        }),
-                                        TerminalRendering::new(vec!["[Ready]".to_owned()]),
-                                        Name::new("Ready Button"),
+                                        ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
+                                        LayoutMouseTargetDisabled,
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
@@ -131,19 +115,10 @@ pub fn create_node_ui(
                                         ..default()
                                     }),));
 
-                                    title_bar_right.spawn((
-                                        StyleTty(taffy::prelude::Style {
-                                            size: Size {
-                                                width: Dimension::Points(6.0),
-                                                height: Dimension::Auto,
-                                            },
-                                            flex_grow: 0.0,
-                                            flex_shrink: 0.0,
-                                            ..default()
-                                        }),
-                                        TerminalRendering::new(vec!["[Help]".to_owned()]),
-                                        Name::new("Help Button"),
-                                    ));
+                                    title_bar_right.spawn((ButtonUiBundle::new(
+                                        "Help",
+                                        ContentStyle::new().yellow(),
+                                    ),));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
@@ -155,19 +130,10 @@ pub fn create_node_ui(
                                         ..default()
                                     }),));
 
-                                    title_bar_right.spawn((
-                                        StyleTty(taffy::prelude::Style {
-                                            size: Size {
-                                                width: Dimension::Points(6.0),
-                                                height: Dimension::Auto,
-                                            },
-                                            flex_grow: 0.0,
-                                            flex_shrink: 0.0,
-                                            ..default()
-                                        }),
-                                        TerminalRendering::new(vec!["[Quit]".to_owned()]),
-                                        Name::new("Quit Button"),
-                                    ));
+                                    title_bar_right.spawn((ButtonUiBundle::new(
+                                        "Quit",
+                                        ContentStyle::new().red(),
+                                    ),));
                                 });
                         });
                     root.spawn((

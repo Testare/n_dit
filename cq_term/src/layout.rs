@@ -40,6 +40,9 @@ pub struct LayoutEvent {
 #[derive(Component, Debug)]
 pub struct LayoutMouseTarget;
 
+#[derive(Component, Debug)]
+pub struct LayoutMouseTargetDisabled;
+
 /// Indicates a UI element that should be focused on
 /// when clicked on.
 #[derive(Component, Debug)]
@@ -154,7 +157,11 @@ fn generate_layout_events(
     mut layout_event_writer: EventWriter<LayoutEvent>,
     layout_elements: Query<
         (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
-        (With<StyleTty>, With<LayoutMouseTarget>),
+        (
+            With<StyleTty>,
+            With<LayoutMouseTarget>,
+            Without<LayoutMouseTargetDisabled>,
+        ),
     >,
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
 ) {

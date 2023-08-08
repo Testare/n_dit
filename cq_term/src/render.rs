@@ -1,4 +1,5 @@
 use std::io::{stdout, Write};
+use std::ops::Deref;
 use std::time::{Duration, Instant};
 
 use charmi::CharacterMapImage;
@@ -39,6 +40,15 @@ impl TerminalRendering {
         TerminalRendering {
             rendering: rendering.clone().into(),
             render_cache: rendering,
+        }
+    }
+
+    pub fn update_if_changed(
+        mut rendering: Mut<TerminalRendering>,
+        new_rendering: CharacterMapImage,
+    ) {
+        if *rendering.deref().charmie() == new_rendering {
+            rendering.update_charmie(new_rendering);
         }
     }
 

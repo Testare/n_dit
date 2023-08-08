@@ -1,6 +1,9 @@
+use std::borrow::Cow;
 use std::marker::PhantomData;
 
+use bevy::ecs::query::Has;
 use charmi::CharacterMapImage;
+use crossterm::style::ContentStyle;
 use game_core::node::NodeOp;
 use game_core::op::OpSubtype;
 use game_core::player::ForPlayer;
@@ -8,51 +11,63 @@ use game_core::NDitCoreSet;
 use unicode_width::UnicodeWidthStr;
 
 use super::NodeUiOp;
-use crate::layout::CalculatedSizeTty;
+use crate::layout::{CalculatedSizeTty, LayoutMouseTargetDisabled};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
 #[derive(Component, Reflect)]
-struct ButtonUi<O: OpSubtype> {
-    op: O,
+struct ButtonUi {
     text: String,
     short_text: String,
     // Color?
 }
 
-struct ButtonUiPlugin<O> {
-    _phantom_data: PhantomData<O>,
+#[derive(Component)]
+pub struct FlexibleTextUi {
+    style: ContentStyle,
+    text: String,
 }
 
-impl<O: OpSubtype + Send + Sync + 'static> Plugin for ButtonUiPlugin<O> {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (sys_mouse_button_ui::<O>,).in_set(NDitCoreSet::ProcessInputs),
-        );
-    }
+#[derive(Component, Reflect)]
+pub enum TextUiBorder {
+    Brackets,
+    Parenthesis,
 }
 
-fn sys_mouse_button_ui<O: OpSubtype>(
-    buttons: Query<(&ButtonUi<O>, &ForPlayer)>,
-    mut ev_op: EventWriter<Op<O>>,
+#[derive(Component)]
+pub struct DisabledTextEffect(ContentStyle);
+
+fn sys_render_flexible_text(
+    mut buttons: Query<(
+        &FlexibleTextUi,
+        &CalculatedSizeTty,
+        &mut TerminalRendering,
+        Has<LayoutMouseTargetDisabled>,
+        Option<&TextUiBorder>,
+        Option<&DisabledTextEffect>,
+    )>,
 ) {
-    for (button, for_player) in buttons.iter() {
-        button.op.clone().for_p(**for_player).send(&mut ev_op)
-    }
-}
-
-fn sys_render_button<O: OpSubtype>(
-    mut buttons: Query<(&ButtonUi<O>, &CalculatedSizeTty, &mut TerminalRendering)>,
-) {
-    for (button, size, mut rendering) in buttons.iter_mut() {
-        let text = if size.x < button.text.width() as u32 + 2 {
-            &button.text
+    for (text_ui, size, mut rendering, disabled, text_ui_border, disabled_text_effect) in
+        buttons.iter_mut()
+    {
+        let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
+        // TODO This is not unicode safe
+        let text_len = size.width().saturating_sub(borders_len).max(1);
+        let render_text = if text_len < text_ui.text.width() {
+            text_ui.text.chars().take(text_len).collect()
         } else {
-            &button.short_text
+            Cow::from(text_ui.text.as_str())
+        };
+        if render_text.width() > text_len {
+            panic!("UNICODE buttons not supported yet.");
+        }
+        let render_text = match text_ui_border {
+            None => render_text,
+            Some(TextUiBorder::Brackets) => Cow::from(format!("[{}]", render_text)),
+            Some(TextUiBorder::Parenthesis) => Cow::from(format!("[{}]", render_text)),
         };
         let next_rendering =
-            CharacterMapImage::new().with_row(|mut row| row.with_plain_text(format!("[{}]", text)));
+            CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
         rendering.update_charmie(next_rendering)
     }
     // TODO allow configuring short buttons to be always on

@@ -1,3 +1,4 @@
+pub mod base_ui;
 mod configuration;
 mod fx;
 pub mod input_event;
@@ -207,9 +208,12 @@ impl Plugin for CharmiePlugin {
             .add_state::<TerminalFocusMode>()
             .add_asset_loader(CharmiaLoader)
             .add_asset_loader(CharmiLoader)
-            .add_plugins(render::RenderTtyPlugin::default())
-            .add_plugins(node_ui::NodeUiPlugin::default())
-            .add_plugins(layout::TaffyTuiLayoutPlugin::default())
+            .add_plugins((
+                base_ui::BaseUiPlugin::default(),
+                layout::TaffyTuiLayoutPlugin::default(),
+                node_ui::NodeUiPlugin::default(),
+                render::RenderTtyPlugin::default(),
+            ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
             .add_event::<MouseEvent>()
