@@ -6,6 +6,7 @@ use crossterm::style::{ContentStyle, Stylize};
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 use unicode_width::UnicodeWidthStr;
+use pad::PadStr;
 
 use crate::layout::{CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty};
 use crate::prelude::*;
@@ -101,18 +102,11 @@ pub fn sys_render_flexible_text(
         let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
         // TODO This is not unicode safe
         let text_len = size.width().saturating_sub(borders_len).max(1);
-        let render_text = if text_len < text_ui.text.width() {
-            text_ui.text.chars().take(text_len).collect()
-        } else {
-            Cow::from(text_ui.text.as_str())
-        };
-        if render_text.width() > text_len {
-            panic!("UNICODE text support coming soon!");
-        }
+        let render_text = text_ui.text.with_exact_width(text_len);
         let render_text = match text_ui_border {
             None => render_text,
-            Some(TextUiBorder::Brackets) => Cow::from(format!("[{}]", render_text)),
-            Some(TextUiBorder::Parenthesis) => Cow::from(format!("[{}]", render_text)),
+            Some(TextUiBorder::Brackets) => format!("[{}]", render_text),
+            Some(TextUiBorder::Parenthesis) => format!("[{}]", render_text),
         };
         let mut next_rendering =
             CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
