@@ -1,10 +1,12 @@
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::Node;
+use game_core::player::ForPlayer;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::base_ui::ButtonUiBundle;
 use crate::layout::{LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder};
+use crate::node_ui::button_ui::ReadyButton;
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -101,6 +103,8 @@ pub fn create_node_ui(
                                     }),));
 
                                     title_bar_right.spawn((
+                                        ForPlayer(*player),
+                                        ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         LayoutMouseTargetDisabled,
                                     ));

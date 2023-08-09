@@ -64,6 +64,10 @@ pub enum NodeOpError {
     InternalError,
     #[error("Glitch occurred with metadata while performing op: {0}")]
     MetadataSerializationError(#[from] MetadataErr),
+    #[error("Could not find access point")]
+    NoAccessPoint,
+    #[error("You can't play that card")]
+    UnplayableCard,
 }
 
 impl OpSubtype for NodeOp {
@@ -386,6 +390,7 @@ pub fn access_point_ops(
     cards: Query<CardInfo>,
     mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
     mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
+    mut ev_op_result: EventWriter<OpResult<NodeOp>>,
 ) {
     for node_op in ops.iter() {
         if let Ok((mut played_cards, deck)) = players.get_mut(node_op.player()) {
@@ -394,24 +399,30 @@ pub fn access_point_ops(
                     access_point_id,
                     card_id,
                 } => {
-                    if let Ok((mut access_point, mut node_piece)) =
-                        access_points.get_mut(*access_point_id)
-                    {
-                        if !played_cards.can_be_played(deck, *card_id) {
-                            continue;
-                        }
-                        *played_cards.entry(*card_id).or_default() += 1;
-                        let mut access_point_commands = commands.entity(*access_point_id);
+                    let op_result = access_points
+                        .get_mut(*access_point_id)
+                        .map_err(|_| NodeOpError::NoAccessPoint)
+                        .and_then(|(mut access_point, mut node_piece)| {
+                            if !played_cards.can_be_played(deck, *card_id) {
+                                return Err(NodeOpError::UnplayableCard);
+                            }
+                            let card_info =
+                                cards.get(*card_id).map_err(|_| NodeOpError::NoSuchCard)?;
+                            *played_cards.entry(*card_id).or_default() += 1;
+                            let mut access_point_commands = commands.entity(*access_point_id);
 
-                        if let Some(card_id) = access_point.card {
-                            let played_count = played_cards.entry(card_id).or_default();
-                            *played_count = played_count.saturating_sub(1);
+                            if let Some(card_id) = access_point.card {
+                                let played_count = played_cards.entry(card_id).or_default();
+                                *played_count = played_count.saturating_sub(1);
 
-                            access_point_commands
-                                .remove::<(Description, MovementSpeed, MaximumSize, Actions)>();
-                        }
-                        access_point.card = Some(*card_id);
-                        if let Ok(card_info) = cards.get(*card_id) {
+                                access_point_commands.remove::<(
+                                    Description,
+                                    MovementSpeed,
+                                    MaximumSize,
+                                    Actions,
+                                )>();
+                            }
+                            access_point.card = Some(*card_id);
                             node_piece.set_display_id(card_info.card.display_id().clone());
                             if let Some(description) = card_info.description {
                                 access_point_commands.insert(description.clone());
@@ -425,8 +436,9 @@ pub fn access_point_ops(
                             if let Some(actions) = card_info.actions {
                                 access_point_commands.insert(actions.clone());
                             }
-                        }
-                    }
+                            Ok(Default::default())
+                        });
+                    ev_op_result.send(OpResult::new(node_op, op_result));
                 },
                 NodeOp::UnloadAccessPoint { access_point_id } => {
                     if let Ok((mut access_point, mut node_piece)) =

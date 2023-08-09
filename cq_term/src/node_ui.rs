@@ -78,6 +78,7 @@ impl Plugin for NodeUiPlugin {
                     (
                         node_ui_op::sys_adjust_selected_action,
                         node_ui_op::sys_adjust_selected_entity,
+                        button_ui::sys_ready_button_disable,
                     )
                         .chain()
                         .in_set(NDitCoreSet::PostProcessUiOps),

@@ -17,9 +17,9 @@ pub trait OpSubtype: Clone + Send + Sync + 'static {
 #[derive(Clone, Debug, Event, getset::Getters)]
 pub struct OpResult<O: OpSubtype> {
     #[getset(get = "pub")]
-    source: Op<O>,
+    pub source: Op<O>,
     #[getset(get = "pub")]
-    result: Result<Metadata, O::Error>,
+    pub result: Result<Metadata, O::Error>,
 }
 
 impl<O: OpSubtype> OpResult<O> {
