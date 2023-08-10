@@ -59,11 +59,11 @@ pub fn get_range_of_action(
             let available_moves = player_q.available_moves.deref();
             let entity = (**player_q.selected_entity)?;
             let grid = node_grids.get(**player_q.in_node).ok()?;
-            let entity_head = grid.head(entity)?;
             let UVec2 {
                 x: width,
                 y: height,
             } = grid.bounds();
+
             let pts: HashSet<UVec2> = (0..width)
                 .flat_map(|x| {
                     (0..height).filter_map(move |y| {
@@ -79,17 +79,23 @@ pub fn get_range_of_action(
                         if available_moves.contains(&pt) {
                             return None;
                         }
-                        if entity_head.x.abs_diff(pt.x) + entity_head.y.abs_diff(pt.y) <= **range {
+                        if range.in_range_of(&grid, entity, pt) {
                             return Some(pt);
                         }
+
                         // TODO only run this if the player has selected to perform an action
+                        if range.in_range_of_pts(available_moves, pt) {
+                            return Some(pt);
+                        }
+
+                        /*
                         for UVec2 { x, y } in available_moves.iter() {
                             // For some of the weird curio ideas I have, we'll need to make changes
                             // to this logic
                             if x.abs_diff(pt.x) + y.abs_diff(pt.y) <= **range {
                                 return Some(pt);
                             }
-                        }
+                        }*/
                         None
                     })
                 })

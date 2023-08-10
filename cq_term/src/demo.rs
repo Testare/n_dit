@@ -1,6 +1,6 @@
 use game_core::card::{
     Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
-    MovementSpeed, Prereqs, Prerequisite,
+    MovementSpeed, Prereqs, Prerequisite, RangeShape,
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
@@ -130,6 +130,46 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             Description::new("Range(2) Deletes 2 sectors from target"),
         ),))
         .id();
+    let act_square = commands
+        .spawn(((
+            Action {
+                name: "Square".to_owned(),
+            },
+            ActionRange::new(2).shaped(RangeShape::Square),
+            ActionEffect::Damage(2),
+            Description::new("Range(2[]) Deletes 2 sectors from target"),
+        ),))
+        .id();
+    let act_calamari = commands
+        .spawn(((
+            Action {
+                name: "Calamari".to_owned(),
+            },
+            ActionRange::new(1).headless(true),
+            ActionEffect::Damage(2),
+            Description::new("Range(1*) Deletes 2 sectors from target"),
+        ),))
+        .id();
+    let act_circle = commands
+        .spawn(((
+            Action {
+                name: "Circle".to_owned(),
+            },
+            ActionRange::new(5).shaped(RangeShape::Circle),
+            ActionEffect::Damage(2),
+            Description::new("Range(2o) Deletes 2 sectors from target"),
+        ),))
+        .id();
+    let act_ff_bow = commands
+        .spawn(((
+            Action {
+                name: "FF Bow".to_owned(),
+            },
+            ActionRange::new(4).min_range(3),
+            ActionEffect::Damage(2),
+            Description::new("Range(2-3) Deletes 2 sectors from target"),
+        ),))
+        .id();
 
     let hack = commands
         .spawn((
@@ -168,8 +208,9 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .spawn((
             Card::new("Super Bug", "curio:death", None),
             Description::new("Testing utility"),
-            MaximumSize(2),
-            MovementSpeed(30),
+            MaximumSize(4),
+            MovementSpeed(6),
+            Actions(vec![act_square, act_calamari, act_circle, act_ff_bow]),
         ))
         .id();
     let card_4 = commands

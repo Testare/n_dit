@@ -82,7 +82,7 @@ pub fn handle_layout_events(
                             .as_ref()
                             .and_then(|selected_action| {
                                 let (range,) = actions.get(*selected_action).ok()?;
-                                Some(range.in_range(
+                                Some(range.in_range_of(
                                     grid,
                                     selected_entity.unwrap(),
                                     clicked_node_pos,

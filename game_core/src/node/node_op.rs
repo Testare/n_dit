@@ -165,9 +165,7 @@ pub fn curio_ops(
                                 if entity_at_pt == active_curio_id {
                                     // Curios can move onto their own squares
                                 } else if let Ok(pickup) = pickups.get(entity_at_pt) {
-                                    // TODO EntityGrid.remove
-                                    let entity_pt_len = grid.len_of(entity_at_pt);
-                                    grid.pop_back_n(entity_at_pt, entity_pt_len);
+                                    grid.remove_entity(entity_at_pt);
                                     metadata.put(key::PICKUP, pickup)?;
                                     log::debug!("Picked up: {:?}", pickup);
                                 } else {
@@ -238,7 +236,7 @@ pub fn curio_ops(
                             let (effect, range, prereqs) = get_assert!(*action_id, actions)
                                 .ok_or(NodeOpError::InternalError)?;
                             if let Some(range) = range {
-                                if !range.in_range(grid.as_ref(), curio_id, *target) {
+                                if !range.in_range_of(grid.as_ref(), curio_id, *target) {
                                     return Err(NodeOpError::OutOfRange);
                                 }
                             }
@@ -357,8 +355,7 @@ pub fn ready_to_go_ops(
                                         Some(())
                                     })
                                     .unwrap_or_else(|| {
-                                        let piece_len = grid.len_of(node_piece);
-                                        grid.pop_back_n(node_piece, piece_len);
+                                        grid.remove_entity(node_piece);
                                         // Leaving access points lying around seems bug prone, but so does despawning them?
                                         // TODO Use play phase checks in ops, then remove the following line
                                         commands.entity(node_piece).despawn()

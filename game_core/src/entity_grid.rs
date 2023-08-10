@@ -406,17 +406,20 @@ impl EntityGrid {
     /// None.
     ///
     /// If item_key is invalid, will return None as well.
-    pub fn pop_back_n(&mut self, item_key: Entity, n: usize) -> Option<Entity> {
+    pub fn pop_back_n(&mut self, item_key: Entity, n: usize) -> Vec<UVec2> {
+        let removed_squares = Vec::new();
         for (i, sqr) in self.square_iter_mut(item_key).rev().enumerate() {
             if i == n {
                 // If there are still squares left after removing n squares
                 sqr.set_next(None);
-                return None; //
+                return removed_squares; //
             } else {
                 sqr.clear();
             }
         }
-        self.entries.remove(&item_key).map(|_| item_key)
+        self.entries.remove(&item_key);
+        removed_squares
+
     }
 
     /// Lists the back n squares occupied by the current item in reverse order.
@@ -676,11 +679,13 @@ impl EntityGrid {
     /// Removes an item from the [`EntityGrid`], frees all squares it occupies, and returns it.
     ///
     /// Returns None if the item_key isn't valid.
-    pub fn take_item(&mut self, item_key: Entity) -> Option<Entity> {
-        for sqr in self.square_iter_mut(item_key) {
+    pub fn remove_entity(&mut self, item_key: Entity) -> Vec<UVec2> {
+        let former_pts = self.square_iter_mut(item_key).map(|sqr|{
             sqr.clear();
-        }
-        self.entries.remove(&item_key).map(|_| item_key)
+            sqr.location()
+        }).collect();
+        self.entries.remove(&item_key);
+        former_pts
     }
     // HELPER FUNCTIONS
 

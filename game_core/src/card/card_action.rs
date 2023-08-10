@@ -1,5 +1,7 @@
 use std::borrow::Borrow;
 
+use bitvec::macros::internal::funty::Floating;
+
 use crate::common::metadata::MetadataErr;
 use crate::prelude::*;
 
@@ -24,8 +26,35 @@ pub struct Action {
     pub name: String,
 }
 
-#[derive(Clone, Component, Debug, Deref, Reflect)]
-pub struct ActionRange(u32);
+#[derive(Clone, Component, Debug, Reflect)]
+pub struct ActionRange {
+    shape: RangeShape,
+    max_range: u32,
+    min_range: u32,
+    headless: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, Reflect)]
+pub enum RangeShape {
+    #[default]
+    Diamond,
+    Square,
+    Circle,
+}
+
+impl RangeShape {
+    fn dist(&self, from_pt: UVec2, target: UVec2) -> u32 {
+        let dist = UVec2 {
+            x: from_pt.x.abs_diff(target.x),
+            y: from_pt.y.abs_diff(target.y),
+        };
+        match self {
+            Self::Diamond => dist.x + dist.y,
+            Self::Circle => dist.x * dist.x + dist.y * dist.y,
+            Self::Square => dist.x.max(dist.y),
+        }
+    }
+}
 
 #[derive(Clone, Component, Debug, Reflect)]
 pub enum ActionEffect {
@@ -43,14 +72,61 @@ pub enum Prerequisite {
 
 impl ActionRange {
     pub fn new(range: u32) -> Self {
-        ActionRange(range)
+        ActionRange {
+            max_range: range,
+            min_range: 0,
+            shape: RangeShape::Diamond,
+            headless: false,
+        }
     }
 
-    pub fn in_range(&self, grid: &EntityGrid, source: Entity, target: UVec2) -> bool {
-        grid.borrow()
-            .head(source)
-            .map(|head| head.manhattan_distance(&target) <= self.0)
-            .unwrap_or_default()
+    pub fn shaped(mut self, shape: RangeShape) -> Self {
+        self.shape = shape;
+        self
+    }
+
+    pub fn headless(mut self, headless: bool) -> Self {
+        self.headless = headless;
+        self
+    }
+
+    pub fn min_range(mut self, min_range: u32) -> Self {
+        if min_range <= self.max_range {
+            self.min_range = min_range;
+        } else {
+            log::error!(
+                "Tried to set min range of an action below the max range: min {} > max {}",
+                min_range,
+                self.max_range
+            );
+        }
+        self
+    }
+
+    pub fn in_range_of(&self, grid: &EntityGrid, source: Entity, target: UVec2) -> bool {
+        if self.headless {
+            grid.square_iter(source)
+                .any(|sqr| self.in_range_of_pt(sqr.location(), target))
+        } else {
+            grid.head(source)
+                .map(|head| self.in_range_of_pt(head, target))
+                .unwrap_or_default()
+        }
+    }
+
+    fn in_range_of_pt(&self, from_pt: UVec2, target: UVec2) -> bool {
+        let dist = self.shape.dist(from_pt, target);
+        self.min_range <= dist && dist <= self.max_range
+    }
+
+    pub fn in_range_of_pts<P: Borrow<UVec2>, I: IntoIterator<Item = P>>(
+        &self,
+        from_pts: I,
+        target: UVec2,
+    ) -> bool {
+        from_pts
+            .into_iter()
+            .any(|pt| self.in_range_of_pt(*pt.borrow(), target))
     }
 }
 
@@ -78,7 +154,6 @@ impl ActionEffect {
                     action_metadata.put(key::DAMAGES, damages)?;
                     action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg)?;
                     grid.pop_back_n(key, *dmg);
-                    // TODO pop_back_n returns removed locations and old head as result for other systems
                 }
                 action_metadata
             },
