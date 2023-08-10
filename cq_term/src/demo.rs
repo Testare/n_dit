@@ -203,6 +203,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         .with_children(|node| {
             let node_id = node.parent_entity();
 
+            /*
             node.spawn((
                 NodePiece::new("curio:hack"),
                 OnTeam(player_team),
@@ -215,6 +216,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 IsTapped(false),
             ))
             .add_to_grid(node_id, vec![(5, 4), (5, 3)]);
+            */
 
             node.spawn((
                 NodePiece::new("env:access_point"),

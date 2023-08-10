@@ -1,15 +1,37 @@
 use bevy::ecs::query::Has;
+use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, IsReadyToGo, Node, NodeOp, NodePiece, OnTeam, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 
-use crate::layout::LayoutMouseTargetDisabled;
+use crate::layout::{LayoutEvent, LayoutMouseTargetDisabled};
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct ReadyButton;
+
+#[derive(Clone, Copy, Component, Reflect)]
+pub struct EndTurnButton;
+
+pub fn mouse_ready_button(
+    mut evr_mouse: EventReader<LayoutEvent>,
+    ready_button: Query<&ForPlayer, With<ReadyButton>>,
+    mut evw_node_op: EventWriter<Op<NodeOp>>,
+) {
+    for mouse_event in evr_mouse.iter() {
+        if !matches!(
+            mouse_event.event_kind(),
+            MouseEventKind::Down(MouseButton::Left)
+        ) {
+            continue;
+        }
+        if let Ok(for_player) = ready_button.get(mouse_event.entity()) {
+            NodeOp::ReadyToGo.for_p(**for_player).send(&mut evw_node_op);
+        }
+    }
+}
 
 pub fn sys_ready_button_disable(
     mut commands: Commands,

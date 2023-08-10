@@ -304,13 +304,17 @@ fn calculate_layouts(
 
 /// TODO consider moving this to render.rs and change "LayoutRoot" to "RenderRoot", as it doesn't
 /// need layout specific logic.
+/// First you'll need to make a "VisibilityTty" thing that equates to taffy's Stlye Display:None
 pub fn render_layouts(
     mut render_layouts: Query<
         (&CalculatedSizeTty, &Children, &mut TerminalRendering),
         With<LayoutRoot>,
     >,
     q_children: Query<&Children, Without<LayoutRoot>>,
-    child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
+    child_renderings: Query<
+        (&TerminalRendering, &GlobalTranslationTty, Option<&StyleTty>),
+        Without<LayoutRoot>,
+    >,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
         let mut children: Vec<Entity> = Vec::from(&**root_children);
@@ -322,7 +326,13 @@ pub fn render_layouts(
                 if let Ok(my_children) = q_children.get(id) {
                     next_children.extend(&**my_children);
                 }
-                if let Ok((rendering, pos)) = child_renderings.get(id) {
+                if let Ok((rendering, pos, style)) = child_renderings.get(id) {
+                    if style
+                        .map(|style| style.0.display == taffy::prelude::Display::None)
+                        .unwrap_or(false)
+                    {
+                        continue;
+                    }
                     charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
                 }
             }

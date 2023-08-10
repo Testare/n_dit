@@ -3,10 +3,10 @@ use std::borrow::{Borrow, Cow};
 use bevy::ecs::query::Has;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
+use pad::PadStr;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 use unicode_width::UnicodeWidthStr;
-use pad::PadStr;
 
 use crate::layout::{CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty};
 use crate::prelude::*;
@@ -36,11 +36,11 @@ pub struct ButtonUiBundle {
 }
 
 impl ButtonUiBundle {
-    pub fn new<S: Borrow<str>>(text: S, style: ContentStyle) -> Self {
+    pub fn new<S: Borrow<str>>(text: S, text_style: ContentStyle) -> Self {
         ButtonUiBundle {
             name: Name::from(format!("Button ({})", text.borrow())),
             text_ui: FlexibleTextUi {
-                style,
+                style: text_style,
                 text: text.borrow().to_string(),
             },
             borders: TextUiBorder::Brackets,
@@ -66,6 +66,43 @@ impl ButtonUiBundle {
                 ..default()
             }),
         }
+    }
+
+    pub fn new_with_style_tty<S: Borrow<str>>(
+        text: S,
+        text_style: ContentStyle,
+        style: StyleTty,
+    ) -> Self {
+        let mut init_bundle = Self::new(text, text_style);
+        let taffy::prelude::Style {
+            size: base_size,
+            min_size: base_min_size,
+            max_size: base_max_size,
+            ..
+        } = init_bundle.style_tty.0;
+        let default_style = taffy::prelude::Style::default();
+        let size = if style.0.size == default_style.size {
+            base_size
+        } else {
+            style.0.size
+        };
+        let min_size = if style.0.size == default_style.size {
+            base_min_size
+        } else {
+            style.0.min_size
+        };
+        let max_size = if style.0.size == default_style.size {
+            base_max_size
+        } else {
+            style.0.max_size
+        };
+        init_bundle.style_tty = StyleTty(taffy::prelude::Style {
+            size,
+            min_size,
+            max_size,
+            ..style.0
+        });
+        init_bundle
     }
 }
 
