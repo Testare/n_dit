@@ -419,7 +419,6 @@ impl EntityGrid {
         }
         self.entries.remove(&item_key);
         removed_squares
-
     }
 
     /// Lists the back n squares occupied by the current item in reverse order.
@@ -680,10 +679,13 @@ impl EntityGrid {
     ///
     /// Returns None if the item_key isn't valid.
     pub fn remove_entity(&mut self, item_key: Entity) -> Vec<UVec2> {
-        let former_pts = self.square_iter_mut(item_key).map(|sqr|{
-            sqr.clear();
-            sqr.location()
-        }).collect();
+        let former_pts = self
+            .square_iter_mut(item_key)
+            .map(|sqr| {
+                sqr.clear();
+                sqr.location()
+            })
+            .collect();
         self.entries.remove(&item_key);
         former_pts
     }

@@ -2,7 +2,7 @@ use charmi::CharacterMapImage;
 use game_core::player::ForPlayer;
 use getset::{CopyGetters, Getters};
 use pad::PadStr;
-use taffy::prelude::Style;
+use taffy::prelude::{Display, Style};
 
 use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -75,11 +75,14 @@ pub struct UiFocusCycleOrder(pub u32);
 pub struct StyleTty(pub taffy::prelude::Style);
 
 // Actually these components probably should be part of render
-#[derive(Component, Debug, Default, Deref)]
+#[derive(Clone, Component, Copy, Debug, Default, Deref)]
 pub struct GlobalTranslationTty(UVec2);
 
-#[derive(Component, Debug, Default, Deref)]
+#[derive(Clone, Component, Copy, Debug, Default, Deref)]
 pub struct CalculatedSizeTty(UVec2);
+
+#[derive(Clone, Component, Copy, Debug, Deref)]
+pub struct VisibilityTty(bool);
 
 impl NodeTty {
     fn new(taffy: &mut Taffy, style: Style) -> Self {
@@ -103,6 +106,31 @@ impl CalculatedSizeTty {
 
     pub fn height(&self) -> usize {
         self.0.y as usize
+    }
+}
+
+impl Default for VisibilityTty {
+    fn default() -> Self {
+        VisibilityTty(true)
+    }
+}
+
+impl VisibilityTty {
+    pub fn invisible() -> Self {
+        VisibilityTty(false)
+    }
+}
+
+impl StyleTty {
+    fn taffy_style(&self, vis: Option<&VisibilityTty>) -> Style {
+        if *vis.copied().unwrap_or_default() {
+            self.0
+        } else {
+            Style {
+                display: Display::None,
+                ..self.0
+            }
+        }
     }
 }
 
@@ -134,14 +162,17 @@ impl Plugin for TaffyTuiLayoutPlugin {
 
 fn remove_ui_focus_if_not_displayed(
     mut ui_foci: Query<&mut UiFocusNext>,
-    styles: Query<&StyleTty>,
+    styles: Query<(&StyleTty, Option<&VisibilityTty>)>,
 ) {
     for mut next_focus in ui_foci.iter_mut() {
         if next_focus.is_some() {
             let not_focusable = next_focus
                 .and_then(|focus| {
-                    let style = styles.get(focus).ok()?;
-                    Some(style.display == taffy::style::Display::None)
+                    let (style, visibility) = styles.get(focus).ok()?;
+                    Some(
+                        style.display == taffy::style::Display::None
+                            || !*visibility.copied().unwrap_or_default(),
+                    )
                 })
                 .unwrap_or(true);
             if not_focusable {
@@ -211,11 +242,14 @@ fn generate_layout_events(
 fn taffy_new_style_components(
     mut commands: Commands,
     mut taffy: ResMut<Taffy>,
-    new_styles: Query<(Entity, &StyleTty), (Added<StyleTty>, Without<NodeTty>)>,
+    new_styles: Query<
+        (Entity, &StyleTty, Option<&VisibilityTty>),
+        (Added<StyleTty>, Without<NodeTty>),
+    >,
 ) {
-    for (id, style) in new_styles.iter() {
+    for (id, style, vis) in new_styles.iter() {
         commands.get_entity(id).unwrap().insert((
-            NodeTty::new(&mut taffy, **style),
+            NodeTty::new(&mut taffy, style.taffy_style(vis)),
             CalculatedSizeTty::default(),
             GlobalTranslationTty::default(),
         ));
@@ -224,10 +258,15 @@ fn taffy_new_style_components(
 
 fn taffy_apply_style_updates(
     mut taffy: ResMut<Taffy>,
-    changed_styles: Query<(&NodeTty, &StyleTty), Changed<StyleTty>>,
+    changed_styles: Query<
+        (&NodeTty, &StyleTty, Option<&VisibilityTty>),
+        Or<(Changed<StyleTty>, Changed<VisibilityTty>)>,
+    >,
 ) {
-    for (node_id, style) in changed_styles.iter() {
-        (**taffy).set_style(**node_id, **style).unwrap()
+    for (node_id, style, vis) in changed_styles.iter() {
+        (**taffy)
+            .set_style(**node_id, style.taffy_style(vis))
+            .unwrap()
     }
 }
 
@@ -310,11 +349,9 @@ pub fn render_layouts(
         (&CalculatedSizeTty, &Children, &mut TerminalRendering),
         With<LayoutRoot>,
     >,
+    visibility: Query<&VisibilityTty>,
     q_children: Query<&Children, Without<LayoutRoot>>,
-    child_renderings: Query<
-        (&TerminalRendering, &GlobalTranslationTty, Option<&StyleTty>),
-        Without<LayoutRoot>,
-    >,
+    child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
         let mut children: Vec<Entity> = Vec::from(&**root_children);
@@ -323,16 +360,13 @@ pub fn render_layouts(
         while !children.is_empty() {
             let mut next_children: Vec<Entity> = default();
             for id in children.into_iter() {
+                if matches!(visibility.get(id), Ok(VisibilityTty(false))) {
+                    continue;
+                }
                 if let Ok(my_children) = q_children.get(id) {
                     next_children.extend(&**my_children);
                 }
-                if let Ok((rendering, pos, style)) = child_renderings.get(id) {
-                    if style
-                        .map(|style| style.0.display == taffy::prelude::Display::None)
-                        .unwrap_or(false)
-                    {
-                        continue;
-                    }
+                if let Ok((rendering, pos)) = child_renderings.get(id) {
                     charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
                 }
             }

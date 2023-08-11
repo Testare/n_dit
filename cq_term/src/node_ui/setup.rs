@@ -7,6 +7,7 @@ use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::base_ui::ButtonUiBundle;
 use crate::layout::{
     LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
+    VisibilityTty,
 };
 use crate::node_ui::button_ui::ReadyButton;
 use crate::node_ui::grid_ui::GridUi;
@@ -114,14 +115,8 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         ForPlayer(*player),
                                         ReadyButton,
-                                        ButtonUiBundle::new_with_style_tty(
-                                            "End Turn",
-                                            ContentStyle::new().blue(),
-                                            StyleTty(taffy::prelude::Style {
-                                                display: Display::None,
-                                                ..default()
-                                            }),
-                                        ),
+                                        ButtonUiBundle::new("End Turn", ContentStyle::new().blue()),
+                                        VisibilityTty::invisible(),
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
