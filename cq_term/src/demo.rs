@@ -280,7 +280,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             node.spawn((
                 Pickup::Card(hack),
                 NodePiece::new("pickup:card"),
-                Description::new("A card! Get this card! /it;s a good card! A very good card!"),
+                Description::new("A card! Get this card! It's a good card! A very good card!"),
             ))
             .add_to_grid(node_id, vec![(4, 3)]);
             node.spawn((

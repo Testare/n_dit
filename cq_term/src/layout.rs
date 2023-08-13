@@ -346,21 +346,21 @@ fn calculate_layouts(
 /// First you'll need to make a "VisibilityTty" thing that equates to taffy's Stlye Display:None
 pub fn render_layouts(
     mut render_layouts: Query<
-        (&CalculatedSizeTty, &Children, &mut TerminalRendering),
+        (&CalculatedSizeTty, AsDeref<Children>, &mut TerminalRendering),
         With<LayoutRoot>,
     >,
-    visibility: Query<&VisibilityTty>,
+    visibility: Query<AsDeref<VisibilityTty>>,
     q_children: Query<&Children, Without<LayoutRoot>>,
     child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
-        let mut children: Vec<Entity> = Vec::from(&**root_children);
+        let mut children: Vec<Entity> = Vec::from(root_children);
 
         let mut charmie = CharacterMapImage::new();
         while !children.is_empty() {
             let mut next_children: Vec<Entity> = default();
             for id in children.into_iter() {
-                if matches!(visibility.get(id), Ok(VisibilityTty(false))) {
+                if matches!(visibility.get(id), Ok(false)) {
                     continue;
                 }
                 if let Ok(my_children) = q_children.get(id) {
