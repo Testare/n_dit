@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
@@ -9,28 +9,27 @@ use bevy::ecs::storage::Table;
 use bevy::ecs::world::unsafe_world_cell::UnsafeWorldCell;
 use bevy::prelude::Component;
 
-pub type Copied<T> = ModifiedQ<CopiedQ<T>>;
-pub type AsDeref<T> = ModifiedQ<AsDerefQ<T>>;
-pub type OrDefault<T> = ModifiedQ<OrDefaultQ<T>>;
-pub type OrDefaultOfDeref<T> = OrDefault<AsDeref<T>>;
-pub struct OrBool<const V: bool, T>(PhantomData<T>);
-pub struct OrUsize<const V: usize, T>(PhantomData<T>);
-pub struct OrU32<const V: u32, T>(PhantomData<T>);
+
+pub type AsDerefCopiedOrDefault<T> = OrDefault<Copied<AsDeref<T>>>;
+pub type AsDerefClonedOrDefault<T> = OrDefault<Cloned<AsDeref<T>>>;
 
 
-pub type AsDerefMut<T> = ModifiedQMut<AsDerefMutQ<T>>;
 
-pub struct ModifiedQ<T>(PhantomData<T>);
-pub struct ModifiedQMut<T>(PhantomData<T>);
+/// An empty structure type
+/// Used to simplify the different modified queries
+/// so we don't have as much boilerplate for all the implementations
+pub struct ModQ<T>(PhantomData<T>);
+pub struct ModQMut<T>(PhantomData<T>);
 
 pub struct CopiedQ<T>(PhantomData<T>);
+pub struct ClonedQ<T>(PhantomData<T>);
 pub struct AsDerefQ<T>(PhantomData<T>);
-pub struct AsDeref2Q<T>(PhantomData<T>);
 pub struct AsDerefMutQ<T>(PhantomData<T>);
 pub struct OrDefaultQ<T>(PhantomData<T>);
 
+/// Traits
 
-pub trait ModifiedQuery {
+pub trait ModQuery {
     type FromQuery: ReadOnlyWorldQuery;
     type ModItem<'q>;
 
@@ -39,19 +38,34 @@ pub trait ModifiedQuery {
     fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort>;
 }
 
-pub trait ModifiedQueryMut {
+pub trait ModQueryMut {
     type FromQuery: WorldQuery;
     type ModItem<'q>; 
-    type ReadOnly: ReadOnlyWorldQuery<State = <<Self as ModifiedQueryMut>::FromQuery as WorldQuery>::State>;
+    type ReadOnly: ReadOnlyWorldQuery<State = <<Self as ModQueryMut>::FromQuery as WorldQuery>::State>;
 
     fn modify_reference<'s>(from: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s>;
 
     fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort>;
 }
 
+/// ModifiedQuery: Components
 
+pub type Cloned<T> = ModQ<ClonedQ<T>>;
+impl <T: Component + Clone> ModQuery for ClonedQ<T> {
+    type FromQuery = &'static T;
+    type ModItem<'a> = T;
 
-impl <T: Component + Copy> ModifiedQuery for CopiedQ<T> {
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        t.clone()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+pub type Copied<T> = ModQ<CopiedQ<T>>;
+impl <T: Component + Copy> ModQuery for CopiedQ<T> {
     type FromQuery = &'static T;
     type ModItem<'a> = T;
 
@@ -64,21 +78,8 @@ impl <T: Component + Copy> ModifiedQuery for CopiedQ<T> {
     }
 }
 
-impl <T: ReadOnlyWorldQuery> ModifiedQuery for OrDefaultQ<T> 
-    where for <'a> <T as WorldQuery>::Item<'a>: Default {
-    type FromQuery = Option<T>;
-    type ModItem<'s> = T::Item<'s>;
-
-    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
-        t.unwrap_or_default()
-    }
-
-    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
-        <T as WorldQuery>::shrink(item)
-    }
-}
-
-impl <T: Component + Deref> ModifiedQuery for AsDerefQ<T> {
+pub type AsDeref<T> = ModQ<AsDerefQ<T>>;
+impl <T: Component + Deref> ModQuery for AsDerefQ<T> {
     type FromQuery = &'static T;
     type ModItem<'a> = &'a <T as Deref>::Target;
 
@@ -91,7 +92,10 @@ impl <T: Component + Deref> ModifiedQuery for AsDerefQ<T> {
     }
 }
 
-impl <T: Component + DerefMut> ModifiedQueryMut for AsDerefMutQ<T> {
+// ModQueryMut
+
+pub type AsDerefMut<T> = ModQMut<AsDerefMutQ<T>>;
+impl <T: Component + DerefMut> ModQueryMut for AsDerefMutQ<T> {
     type FromQuery = &'static mut T;
     type ModItem<'a> = &'a mut <T as Deref>::Target;
     type ReadOnly = AsDeref<T>;
@@ -106,14 +110,17 @@ impl <T: Component + DerefMut> ModifiedQueryMut for AsDerefMutQ<T> {
 } 
 
 
+/// ModQuery: Component-level composed
 
-impl <T: ReadOnlyWorldQuery, const V: bool> ModifiedQuery for OrBool<V, T> 
-    where for<'a> <T as WorldQuery>::Item<'a>: Borrow<bool> {
-    type FromQuery = Option<T>;
-    type ModItem<'s> = bool;
+pub type AsDerefCopied<T> = Copied<AsDeref<T>>;
+impl <T: Component + Deref> ModQuery for CopiedQ<AsDeref<T>> 
+    where <T as Deref>::Target: Copy
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = <T as Deref>::Target;
 
     fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
-        t.map(|b|*b.borrow()).unwrap_or(V)
+        *t.deref()
     }
 
     fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
@@ -121,13 +128,15 @@ impl <T: ReadOnlyWorldQuery, const V: bool> ModifiedQuery for OrBool<V, T>
     }
 }
 
-impl <T: ReadOnlyWorldQuery, const V: usize> ModifiedQuery for OrUsize<V, T> 
-    where for<'a> <T as WorldQuery>::Item<'a>: Borrow<usize> {
-    type FromQuery = Option<T>;
-    type ModItem<'s> = usize;
+pub type AsDerefCloned<T> = Cloned<AsDeref<T>>;
+impl <T: Component + Deref> ModQuery for ClonedQ<AsDeref<T>> 
+    where <T as Deref>::Target: Clone
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = <T as Deref>::Target;
 
     fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
-        t.map(|b|*b.borrow()).unwrap_or(V)
+        t.deref().clone()
     }
 
     fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
@@ -135,23 +144,173 @@ impl <T: ReadOnlyWorldQuery, const V: usize> ModifiedQuery for OrUsize<V, T>
     }
 }
 
-impl <T: ReadOnlyWorldQuery, const V: u32> ModifiedQuery for OrU32<V, T> 
-    where for<'a> <T as WorldQuery>::Item<'a>: Borrow<u32> {
-    type FromQuery = Option<T>;
-    type ModItem<'s> = u32;
+pub type CopiedAsDeref<T> = AsDeref<Copied<T>>;
+impl <T: Component + Copy + Deref> ModQuery for AsDerefQ<Copied<T>> 
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = &'a <T as Deref>::Target;
 
     fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
-        t.map(|b|*b.borrow()).unwrap_or(V)
+        (*t).deref()
     }
 
     fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
         item
     }
 }
+
+pub type AsDerefCopiedOfCopied<T> = Copied<AsDeref<Copied<T>>>;
+impl <T: Component + Copy + Deref> ModQuery for CopiedQ<AsDeref<Copied<T>>> 
+    where <T as Deref>::Target: Copy
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        *(*t).deref()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+pub type AsDerefCopiedOfCloned<T> = Copied<AsDeref<Cloned<T>>>;
+impl <T: Component + Clone + Deref> ModQuery for CopiedQ<AsDeref<Cloned<T>>> 
+    where <T as Deref>::Target: Copy
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        *t.clone().deref()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+pub type AsDerefClonedOfCloned<T> = Cloned<AsDeref<Cloned<T>>>;
+impl <T: Component + Clone + Deref> ModQuery for ClonedQ<AsDeref<Cloned<T>>> 
+    where <T as Deref>::Target: Clone
+{
+    type FromQuery = &'static T;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        t.clone().deref().clone()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+pub type AsDerefCopiedOfCopiedOrDefault<T> = Copied<AsDeref<OrDefault<Copied<T>>>>;
+impl <T: Component + Copy + Deref + Default> ModQuery for CopiedQ<AsDeref<OrDefault<Copied<T>>>> 
+    where <T as Deref>::Target: Copy
+{
+    type FromQuery = Option<&'static T>;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        *t.copied().unwrap_or_default().deref()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+
+pub type AsDerefCopiedOfClonedOrDefault<T> = Copied<AsDeref<OrDefault<Cloned<T>>>>;
+impl <T: Component + Clone + Deref + Default> ModQuery for CopiedQ<AsDeref<OrDefault<Cloned<T>>>> 
+    where <T as Deref>::Target: Copy
+{
+    type FromQuery = Option<&'static T>;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        *t.cloned().unwrap_or_default().deref()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+pub type AsDerefClonedOfClonedOrDefault<T> = Cloned<AsDeref<OrDefault<Cloned<T>>>>;
+impl <T: Component + Clone + Deref + Default> ModQuery for ClonedQ<AsDeref<OrDefault<Cloned<T>>>> 
+    where <T as Deref>::Target: Clone
+{
+    type FromQuery = Option<&'static T>;
+    type ModItem<'a> = <T as Deref>::Target;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        t.cloned().unwrap_or_default().deref().clone()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        item
+    }
+}
+
+// ModQuery: OrX, works on any readonly query
+
+pub type OrDefault<T> = ModQ<OrDefaultQ<T>>;
+pub type CopiedOrDefault<T> = OrDefault<Copied<T>>; 
+pub type ClonedOrDefault<T> = OrDefault<Cloned<T>>;
+
+impl <T: ReadOnlyWorldQuery> ModQuery for OrDefaultQ<T> 
+    where for <'a> <T as WorldQuery>::Item<'a>: Default {
+    type FromQuery = Option<T>;
+    type ModItem<'s> = T::Item<'s>;
+
+    fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+        t.unwrap_or_default()
+    }
+
+    fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+        <T as WorldQuery>::shrink(item)
+    }
+}
+
+macro_rules! or_const {
+    ($OrConst:ident, $OrConstQ:ident, $const_type:ty) => {
+        pub struct $OrConstQ<const V: $const_type, T>(PhantomData<T>);
+
+        pub type $OrConst<const V: $const_type, T> = ModQ<$OrConstQ<V, T>>;
+
+        impl <T: ReadOnlyWorldQuery, const V: $const_type> ModQuery for $OrConstQ<V, T> 
+            where for<'a> <T as WorldQuery>::Item<'a>: Borrow<$const_type> {
+            type FromQuery = Option<T>;
+            type ModItem<'s> = $const_type;
+
+            fn modify_reference<'s>(t: <Self::FromQuery as WorldQuery>::Item<'s>) -> Self::ModItem<'s> {
+                t.map(|b|*b.borrow()).unwrap_or(V)
+            }
+
+            fn shrink<'wlong: 'wshort, 'wshort>(item: Self::ModItem<'wlong>) -> Self::ModItem<'wshort> {
+                item
+            }
+        }
+    }
+}
+
+or_const!(OrBool, OrBoolQ, bool);
+or_const!(OrIsize, OrIsizeQ, isize);
+or_const!(OrUsize, OrUsizeQ, usize);
+or_const!(OrI32, OrI32Q, i32);
+or_const!(OrU32, OrU32Q, u32);
+or_const!(OrI16, OrI16Q, i16);
+or_const!(OrU16, OrU16Q, u16);
+or_const!(OrI8, OrI8Q, i8);
+or_const!(OrU8, OrU8Q, u8);
 
 // Implementing WorldQuery/ReadOnlyWorldQuery
 
-unsafe impl <T: ModifiedQuery> WorldQuery for ModifiedQ<T> {
+unsafe impl <T: ModQuery> WorldQuery for ModQ<T> {
     type Fetch<'w> = <T::FromQuery as WorldQuery>::Fetch<'w>;
     type Item<'w> = T::ModItem<'w>;
     type ReadOnly = Self;
@@ -226,9 +385,9 @@ unsafe impl <T: ModifiedQuery> WorldQuery for ModifiedQ<T> {
 }
 
 // SAFETY: ModifiedQuery comes from a read only place
-unsafe impl <T: ModifiedQuery> ReadOnlyWorldQuery for ModifiedQ<T> {}
+unsafe impl <T: ModQuery> ReadOnlyWorldQuery for ModQ<T> {}
 
-unsafe impl <T: ModifiedQueryMut> WorldQuery for ModifiedQMut<T> {
+unsafe impl <T: ModQueryMut> WorldQuery for ModQMut<T> {
     type Fetch<'w> = <T::FromQuery as WorldQuery>::Fetch<'w>;
     type Item<'w> = T::ModItem<'w>;
     type ReadOnly = T::ReadOnly;
@@ -301,4 +460,3 @@ unsafe impl <T: ModifiedQueryMut> WorldQuery for ModifiedQMut<T> {
     }
 
 }
-//*/

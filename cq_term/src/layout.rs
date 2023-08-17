@@ -82,7 +82,9 @@ pub struct GlobalTranslationTty(UVec2);
 pub struct CalculatedSizeTty(UVec2);
 
 #[derive(Clone, Component, Copy, Debug, Deref)]
-pub struct VisibilityTty(bool);
+pub struct VisibilityTty(pub bool);
+
+type IsVisible = OrBool<true, AsDeref<VisibilityTty>>;
 
 impl NodeTty {
     fn new(taffy: &mut Taffy, style: Style) -> Self {
@@ -124,6 +126,17 @@ impl VisibilityTty {
 impl StyleTty {
     fn taffy_style(&self, vis: Option<&VisibilityTty>) -> Style {
         if *vis.copied().unwrap_or_default() {
+            self.0
+        } else {
+            Style {
+                display: Display::None,
+                ..self.0
+            }
+        }
+    }
+
+    fn taffy_style_(&self, visible: bool) -> Style {
+        if visible {
             self.0
         } else {
             Style {
@@ -239,17 +252,18 @@ fn generate_layout_events(
     }
 }
 
+
 fn taffy_new_style_components(
     mut commands: Commands,
     mut taffy: ResMut<Taffy>,
     new_styles: Query<
-        (Entity, &StyleTty, Option<&VisibilityTty>),
+        (Entity, &StyleTty, IsVisible),
         (Added<StyleTty>, Without<NodeTty>),
     >,
 ) {
     for (id, style, vis) in new_styles.iter() {
         commands.get_entity(id).unwrap().insert((
-            NodeTty::new(&mut taffy, style.taffy_style(vis)),
+            NodeTty::new(&mut taffy, style.taffy_style_(vis)),
             CalculatedSizeTty::default(),
             GlobalTranslationTty::default(),
         ));
