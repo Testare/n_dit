@@ -9,7 +9,7 @@ use crate::layout::{
     LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
     VisibilityTty,
 };
-use crate::node_ui::button_ui::ReadyButton;
+use crate::node_ui::button_ui::{ReadyButton, EndTurnButton};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -110,11 +110,12 @@ pub fn create_node_ui(
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         LayoutMouseTargetDisabled,
+                                        VisibilityTty(true),
                                     ));
 
                                     title_bar_right.spawn((
                                         ForPlayer(*player),
-                                        ReadyButton,
+                                        EndTurnButton,
                                         ButtonUiBundle::new("End Turn", ContentStyle::new().blue()),
                                         VisibilityTty::invisible(),
                                     ));

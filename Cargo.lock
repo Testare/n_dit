@@ -647,6 +647,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c74fcf37593a0053f539c3b088f34f268cbefed031d8eb8ff0fb10d175160242"
 
 [[package]]
+name = "bevy_query_ext"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bc12d965248dd060a89aa59f29ccd155d1c7f3ed8da2a36e45435e1e459b04f"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_reflect"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1239,6 +1248,7 @@ name = "cq_term"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_query_ext",
  "charmi",
  "crossterm",
  "game_core",

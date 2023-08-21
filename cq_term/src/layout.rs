@@ -81,10 +81,10 @@ pub struct GlobalTranslationTty(UVec2);
 #[derive(Clone, Component, Copy, Debug, Default, Deref)]
 pub struct CalculatedSizeTty(UVec2);
 
-#[derive(Clone, Component, Copy, Debug, Deref)]
+#[derive(Clone, Component, Copy, Debug, Deref, DerefMut)]
 pub struct VisibilityTty(pub bool);
 
-type IsVisible = OrBool<true, AsDeref<VisibilityTty>>;
+type IsVisibleTty = AsDerefOrBool<VisibilityTty, true>;
 
 impl NodeTty {
     fn new(taffy: &mut Taffy, style: Style) -> Self {
@@ -257,7 +257,7 @@ fn taffy_new_style_components(
     mut commands: Commands,
     mut taffy: ResMut<Taffy>,
     new_styles: Query<
-        (Entity, &StyleTty, IsVisible),
+        (Entity, &StyleTty, IsVisibleTty),
         (Added<StyleTty>, Without<NodeTty>),
     >,
 ) {

@@ -17,6 +17,7 @@ pub mod prelude {
     pub use game_core::prelude::*;
 
     pub use super::input_event::{CrosstermEvent, KeyEvent, MouseEvent};
+    pub use bevy_query_ext::prelude::*;
 }
 
 use std::io::stdout;

@@ -1,5 +1,4 @@
 pub mod metadata;
-mod world_query;
 
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -10,7 +9,6 @@ use bevy::ecs::storage::Table;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
 pub use metadata::Metadata;
-pub use world_query::*;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum Compass {

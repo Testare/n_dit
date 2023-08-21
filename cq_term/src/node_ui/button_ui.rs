@@ -6,7 +6,7 @@ use game_core::node::{
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 
-use crate::layout::{LayoutEvent, LayoutMouseTargetDisabled};
+use crate::layout::{LayoutEvent, LayoutMouseTargetDisabled, VisibilityTty};
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Component, Reflect)]
@@ -36,10 +36,15 @@ pub fn mouse_ready_button(
 pub fn sys_ready_button_disable(
     mut commands: Commands,
     mut ev_node_op_result: EventReader<OpResult<NodeOp>>,
-    ready_buttons: IndexedQuery<
+    mut ready_buttons: IndexedQuery<
         ForPlayer,
-        (Entity, Has<LayoutMouseTargetDisabled>),
-        With<ReadyButton>,
+        (Entity, Has<LayoutMouseTargetDisabled>, AsDerefMut<VisibilityTty>),
+        (With<ReadyButton>, Without<EndTurnButton>)
+    >,
+    mut end_turn_buttons: IndexedQuery<
+        ForPlayer,
+        (Entity, Has<LayoutMouseTargetDisabled>, AsDerefMut<VisibilityTty>),
+        (With<EndTurnButton>, Without<ReadyButton>)
     >,
     nodes: Query<(&AccessPointLoadingRule, &EntityGrid, &Teams), With<Node>>,
     players: Query<(Option<&IsReadyToGo>,), With<Player>>,
@@ -53,17 +58,27 @@ pub fn sys_ready_button_disable(
             source: Op { player, op },
         } = node_op_result
         {
-            let should_be_enabled = match op {
-                NodeOp::LoadAccessPoint { .. } => true,
-                NodeOp::ReadyToGo => false,
+            let (show_end_turn_button, should_be_enabled) = match op {
+                NodeOp::LoadAccessPoint { .. } => (false, true),
+                NodeOp::ReadyToGo => (true, true),
                 NodeOp::UnloadAccessPoint { .. } => {
                     // TODO check if other accesss points are still loaded
                     // TODO actually emit this nodeopresult
-                    false
+                    (false, false)
                 },
+                // NodeOp::EndTurn
                 _ => continue,
             };
-            if let Ok((id, button_is_disabled)) = ready_buttons.get_for(*player) {
+            if let Ok((id, button_is_disabled, mut visibility)) = ready_buttons.get_for_mut(*player) {
+                visibility.set_if_neq(!show_end_turn_button);
+                if button_is_disabled && should_be_enabled {
+                    commands.entity(id).remove::<LayoutMouseTargetDisabled>();
+                } else if !button_is_disabled && !should_be_enabled {
+                    commands.entity(id).insert(LayoutMouseTargetDisabled);
+                }
+            }
+            if let Ok((id, button_is_disabled, mut visibility)) = end_turn_buttons.get_for_mut(*player) {
+                visibility.set_if_neq(show_end_turn_button);
                 if button_is_disabled && should_be_enabled {
                     commands.entity(id).remove::<LayoutMouseTargetDisabled>();
                 } else if !button_is_disabled && !should_be_enabled {
