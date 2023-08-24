@@ -9,7 +9,7 @@ use crate::layout::{
     LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
     VisibilityTty,
 };
-use crate::node_ui::button_ui::{ReadyButton, EndTurnButton};
+use crate::node_ui::button_ui::{EndTurnButton, ReadyButton};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,

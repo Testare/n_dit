@@ -14,10 +14,10 @@ use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
 
 pub mod prelude {
+    pub use bevy_query_ext::prelude::*;
     pub use game_core::prelude::*;
 
     pub use super::input_event::{CrosstermEvent, KeyEvent, MouseEvent};
-    pub use bevy_query_ext::prelude::*;
 }
 
 use std::io::stdout;
@@ -28,7 +28,7 @@ use std::time::Duration;
 
 use charmi::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
-use input_event::CrosstermEvent;
+use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty};
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
@@ -218,6 +218,8 @@ impl Plugin for CharmiePlugin {
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
             .add_event::<MouseEvent>()
+            .add_event::<MouseEventTty>()
+            .add_systems(PreUpdate, sys_mouse_tty)
             .add_systems(Startup, fx::sys_init_fx)
             .add_systems(First, term_event_listener.in_set(NDitCoreSet::RawInputs))
             .add_systems(Update, terminal_size_adjustment)

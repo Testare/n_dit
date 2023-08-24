@@ -8,6 +8,7 @@ use taffy::prelude::Size;
 use taffy::style::Dimension;
 use unicode_width::UnicodeWidthStr;
 
+use crate::input_event::{MouseEventTty, MouseEventTtyKind};
 use crate::layout::{CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -19,10 +20,16 @@ impl Plugin for BaseUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             RENDER_TTY_SCHEDULE,
-            (sys_render_flexible_text.in_set(RenderTtySet::RenderLayouts),),
+            (
+                sys_apply_hover,
+                sys_render_flexible_text.in_set(RenderTtySet::RenderLayouts),
+            ),
         );
     }
 }
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct IsUnderHover(bool);
 
 #[derive(Bundle)]
 pub struct ButtonUiBundle {
@@ -31,6 +38,7 @@ pub struct ButtonUiBundle {
     pub borders: TextUiBorder,
     pub mouse_target: LayoutMouseTarget,
     pub disabled_effect: DisabledTextEffect,
+    pub hover: IsUnderHover,
     pub rendering: TerminalRendering,
     pub style_tty: StyleTty,
 }
@@ -47,7 +55,7 @@ impl ButtonUiBundle {
             mouse_target: LayoutMouseTarget,
             disabled_effect: DisabledTextEffect(ContentStyle::default().dark_grey()),
             rendering: TerminalRendering::default(),
-
+            hover: IsUnderHover::default(),
             style_tty: StyleTty(taffy::prelude::Style {
                 size: Size {
                     width: Dimension::Points(text.borrow().len() as f32 + 2.0),
@@ -129,12 +137,20 @@ pub fn sys_render_flexible_text(
         &CalculatedSizeTty,
         &mut TerminalRendering,
         Has<LayoutMouseTargetDisabled>,
+        AsDerefOrBool<IsUnderHover, false>,
         Option<&TextUiBorder>,
         Option<&DisabledTextEffect>,
     )>,
 ) {
-    for (text_ui, size, mut rendering, disabled, text_ui_border, disabled_text_effect) in
-        buttons.iter_mut()
+    for (
+        text_ui,
+        size,
+        mut rendering,
+        disabled,
+        is_under_hover,
+        text_ui_border,
+        disabled_text_effect,
+    ) in buttons.iter_mut()
     {
         let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
         // TODO This is not unicode safe
@@ -149,8 +165,31 @@ pub fn sys_render_flexible_text(
             CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
         if let (true, Some(effect)) = (disabled, disabled_text_effect) {
             next_rendering.apply_effect(&**effect);
+        } else if is_under_hover {
+            next_rendering.apply_effect(&ContentStyle::new().reverse());
         }
         rendering.update_charmie(next_rendering)
     }
     // TODO allow configuring short buttons to be always on
+}
+
+pub fn sys_apply_hover(
+    mut evr_mouse_tty: EventReader<MouseEventTty>,
+    mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
+) {
+    for event in evr_mouse_tty.iter() {
+        match event.event_kind() {
+            MouseEventTtyKind::Moved => {
+                if let Ok((mut is_under_hover,)) = buttons.get_mut(event.entity()) {
+                    is_under_hover.set_if_neq(true);
+                }
+            },
+            MouseEventTtyKind::Exit => {
+                if let Ok((mut is_under_hover,)) = buttons.get_mut(event.entity()) {
+                    is_under_hover.set_if_neq(false);
+                }
+            },
+            _ => {},
+        }
+    }
 }

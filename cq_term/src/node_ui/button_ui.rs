@@ -38,13 +38,21 @@ pub fn sys_ready_button_disable(
     mut ev_node_op_result: EventReader<OpResult<NodeOp>>,
     mut ready_buttons: IndexedQuery<
         ForPlayer,
-        (Entity, Has<LayoutMouseTargetDisabled>, AsDerefMut<VisibilityTty>),
-        (With<ReadyButton>, Without<EndTurnButton>)
+        (
+            Entity,
+            Has<LayoutMouseTargetDisabled>,
+            AsDerefMut<VisibilityTty>,
+        ),
+        (With<ReadyButton>, Without<EndTurnButton>),
     >,
     mut end_turn_buttons: IndexedQuery<
         ForPlayer,
-        (Entity, Has<LayoutMouseTargetDisabled>, AsDerefMut<VisibilityTty>),
-        (With<EndTurnButton>, Without<ReadyButton>)
+        (
+            Entity,
+            Has<LayoutMouseTargetDisabled>,
+            AsDerefMut<VisibilityTty>,
+        ),
+        (With<EndTurnButton>, Without<ReadyButton>),
     >,
     nodes: Query<(&AccessPointLoadingRule, &EntityGrid, &Teams), With<Node>>,
     players: Query<(Option<&IsReadyToGo>,), With<Player>>,
@@ -69,7 +77,8 @@ pub fn sys_ready_button_disable(
                 // NodeOp::EndTurn
                 _ => continue,
             };
-            if let Ok((id, button_is_disabled, mut visibility)) = ready_buttons.get_for_mut(*player) {
+            if let Ok((id, button_is_disabled, mut visibility)) = ready_buttons.get_for_mut(*player)
+            {
                 visibility.set_if_neq(!show_end_turn_button);
                 if button_is_disabled && should_be_enabled {
                     commands.entity(id).remove::<LayoutMouseTargetDisabled>();
@@ -77,7 +86,9 @@ pub fn sys_ready_button_disable(
                     commands.entity(id).insert(LayoutMouseTargetDisabled);
                 }
             }
-            if let Ok((id, button_is_disabled, mut visibility)) = end_turn_buttons.get_for_mut(*player) {
+            if let Ok((id, button_is_disabled, mut visibility)) =
+                end_turn_buttons.get_for_mut(*player)
+            {
                 visibility.set_if_neq(show_end_turn_button);
                 if button_is_disabled && should_be_enabled {
                     commands.entity(id).remove::<LayoutMouseTargetDisabled>();

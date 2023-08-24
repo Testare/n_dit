@@ -7,6 +7,7 @@ use taffy::prelude::{Display, Style};
 use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
+use crate::input_event::MouseEventTty;
 use crate::prelude::*;
 
 #[derive(Default)]
@@ -24,6 +25,7 @@ struct NodeTty(taffy::node::Node);
 pub struct LayoutRoot;
 
 #[derive(Component, CopyGetters, Debug, Event, Getters)]
+#[deprecated]
 pub struct LayoutEvent {
     #[getset(get_copy = "pub")]
     entity: Entity,
@@ -196,6 +198,7 @@ fn remove_ui_focus_if_not_displayed(
 }
 
 /// TODO rename from layout events to MouseTtyEvent, don't require layout components for click
+#[deprecated]
 fn generate_layout_events(
     mut crossterm_events: EventReader<MouseEvent>,
     mut layout_event_writer: EventWriter<LayoutEvent>,
@@ -217,7 +220,6 @@ fn generate_layout_events(
     }) in crossterm_events.iter()
     {
         let (event_x, event_y) = (*column as u32, *row as u32);
-
         let double_click = last_click
             .map(|(last_event_time, last_event)| {
                 last_event_time.elapsed().as_millis() <= 500
@@ -252,14 +254,10 @@ fn generate_layout_events(
     }
 }
 
-
 fn taffy_new_style_components(
     mut commands: Commands,
     mut taffy: ResMut<Taffy>,
-    new_styles: Query<
-        (Entity, &StyleTty, IsVisibleTty),
-        (Added<StyleTty>, Without<NodeTty>),
-    >,
+    new_styles: Query<(Entity, &StyleTty, IsVisibleTty), (Added<StyleTty>, Without<NodeTty>)>,
 ) {
     for (id, style, vis) in new_styles.iter() {
         commands.get_entity(id).unwrap().insert((
@@ -360,7 +358,11 @@ fn calculate_layouts(
 /// First you'll need to make a "VisibilityTty" thing that equates to taffy's Stlye Display:None
 pub fn render_layouts(
     mut render_layouts: Query<
-        (&CalculatedSizeTty, AsDeref<Children>, &mut TerminalRendering),
+        (
+            &CalculatedSizeTty,
+            AsDeref<Children>,
+            &mut TerminalRendering,
+        ),
         With<LayoutRoot>,
     >,
     visibility: Query<AsDeref<VisibilityTty>>,
