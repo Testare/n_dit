@@ -67,7 +67,7 @@ impl Plugin for NodeUiPlugin {
                 (
                     inputs::kb_ready,
                     inputs::kb_skirm_focus,
-                    button_ui::mouse_ready_button,
+                    button_ui::mouse_button_menu,
                 )
                     .in_set(NDitCoreSet::ProcessInputs),
             )

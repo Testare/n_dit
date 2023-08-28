@@ -1,3 +1,4 @@
+use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::node::{
@@ -10,15 +11,26 @@ use crate::layout::{LayoutEvent, LayoutMouseTargetDisabled, VisibilityTty};
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Component, Reflect)]
+pub struct PauseButton;
+
+#[derive(Clone, Copy, Component, Reflect)]
 pub struct ReadyButton;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct EndTurnButton;
 
-pub fn mouse_ready_button(
+#[derive(Clone, Copy, Component, Reflect)]
+pub struct HelpButton;
+
+#[derive(Clone, Copy, Component, Reflect)]
+pub struct QuitButton;
+
+pub fn mouse_button_menu(
     mut evr_mouse: EventReader<LayoutEvent>,
-    ready_button: Query<&ForPlayer, With<ReadyButton>>,
+    ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
+    quit_buttons: Query<(), With<QuitButton>>,
     mut evw_node_op: EventWriter<Op<NodeOp>>,
+    mut evw_app_exit: EventWriter<AppExit>,
 ) {
     for mouse_event in evr_mouse.iter() {
         if !matches!(
@@ -27,8 +39,10 @@ pub fn mouse_ready_button(
         ) {
             continue;
         }
-        if let Ok(for_player) = ready_button.get(mouse_event.entity()) {
+        if let Ok(for_player) = ready_buttons.get(mouse_event.entity()) {
             NodeOp::ReadyToGo.for_p(**for_player).send(&mut evw_node_op);
+        } else if quit_buttons.contains(mouse_event.entity()) {
+            evw_app_exit.send(AppExit);
         }
     }
 }

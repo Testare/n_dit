@@ -9,7 +9,7 @@ use crate::layout::{
     LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
     VisibilityTty,
 };
-use crate::node_ui::button_ui::{EndTurnButton, ReadyButton};
+use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
@@ -89,10 +89,10 @@ pub fn create_node_ui(
                                     Name::new("Title Bar Right"),
                                 ))
                                 .with_children(|title_bar_right| {
-                                    title_bar_right.spawn((ButtonUiBundle::new(
-                                        "Pause",
-                                        ContentStyle::new().green(),
-                                    ),));
+                                    title_bar_right.spawn((
+                                        ButtonUiBundle::new("Pause", ContentStyle::new().green()),
+                                        PauseButton,
+                                    ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
@@ -130,10 +130,10 @@ pub fn create_node_ui(
                                         ..default()
                                     }),));
 
-                                    title_bar_right.spawn((ButtonUiBundle::new(
-                                        "Help",
-                                        ContentStyle::new().yellow(),
-                                    ),));
+                                    title_bar_right.spawn((
+                                        ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
+                                        HelpButton,
+                                    ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
@@ -145,10 +145,10 @@ pub fn create_node_ui(
                                         ..default()
                                     }),));
 
-                                    title_bar_right.spawn((ButtonUiBundle::new(
-                                        "Quit",
-                                        ContentStyle::new().red(),
-                                    ),));
+                                    title_bar_right.spawn((
+                                        ButtonUiBundle::new("Quit", ContentStyle::new().red()),
+                                        QuitButton,
+                                    ));
                                 });
                         });
                     root.spawn((

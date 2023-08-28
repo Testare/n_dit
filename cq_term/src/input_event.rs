@@ -54,7 +54,13 @@ pub enum MouseEventTtyKind {
     Down(MouseButtonTty),
     Up(MouseButtonTty),
     DoubleClick, // Only applies to left mosue button
-    Drag(MouseButtonTty, UVec2),
+    Drag {
+        button: MouseButtonTty,
+        from: UVec2,
+        origin: UVec2,
+        dragged_entity: Option<Entity>,
+        // Should there be an event for releasing item?
+    },
     Exit,
     Moved,
     ScrollUp,

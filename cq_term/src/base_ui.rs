@@ -153,7 +153,6 @@ pub fn sys_render_flexible_text(
     ) in buttons.iter_mut()
     {
         let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
-        // TODO This is not unicode safe
         let text_len = size.width().saturating_sub(borders_len).max(1);
         let render_text = text_ui.text.with_exact_width(text_len);
         let render_text = match text_ui_border {
