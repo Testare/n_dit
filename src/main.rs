@@ -8,10 +8,10 @@ fn main() {
     setup_logging();
 
     App::new()
-        // .add_plugins(MinimalPlugins)
         .add_plugins((
             AssetPlugin::default(),
             HierarchyPlugin,
+            bevy::audio::AudioPlugin::default(),
             bevy::core::TaskPoolPlugin::default(),
             TypeRegistrationPlugin,
             bevy::time::TimePlugin,

@@ -32,4 +32,5 @@ features = [
     "filesystem_watcher",
     "bevy_scene",
     "bevy_audio",
+    "wav",
 ]

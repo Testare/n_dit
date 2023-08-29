@@ -4,10 +4,10 @@ use game_core::player::ForPlayer;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::base_ui::ButtonUiBundle;
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, TooltipBar};
 use crate::layout::{
-    LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
-    VisibilityTty,
+    CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle,
+    UiFocusCycleOrder, VisibilityTty,
 };
 use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
 use crate::node_ui::grid_ui::GridUi;
@@ -151,6 +151,7 @@ pub fn create_node_ui(
                                     ));
                                 });
                         });
+
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
                             size: Size {
@@ -191,6 +192,26 @@ pub fn create_node_ui(
                             .spawn(GridUi::bundle(*player, &node_q))
                             .insert(UiFocusCycleOrder(0));
                     });
+                    root.spawn((
+                        ForPlayer(*player),
+                        Name::new("Tooltip bar"),
+                        TooltipBar,
+                        FlexibleTextUi {
+                            style: ContentStyle::new().cyan(),
+                            text: "<Tooltip bar>".to_string(),
+                        },
+                        TerminalRendering::default(),
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Points(1.0),
+                            },
+                            flex_grow: 0.0,
+                            ..default()
+                        }),
+                        LayoutMouseTarget,
+                        VisibilityTty(true),
+                    ));
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
                 .id();

@@ -1,3 +1,6 @@
+use bevy::audio::VolumeLevel;
+use bevy::prelude::{AudioBundle, PlaybackSettings};
+use bevy::transform::commands;
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use crossterm::style::Stylize;
 use game_core::node::{InNode, NodeOp, NodePiece};
@@ -25,6 +28,7 @@ pub struct GridUiAnimation;
 
 // This is an incredibly rough draft of how this logic should work.
 pub fn sys_grid_animations(
+    mut commands: Commands,
     fx: Res<Fx>,
     mut ev_node_op: EventReader<OpResult<NodeOp>>,
     players: Query<(Entity, &InNode), With<Player>>,
@@ -63,7 +67,7 @@ pub fn sys_grid_animations(
                     };
                     let head = fatal.then(|| damages.last().copied()).flatten();
                     let base_animation = assets_actor
-                        .get(&fx.0)
+                        .get(&fx.charmia)
                         .map(|actor| {
                             actor
                                 .animation(ATTACK_BASE_ANIM)
@@ -94,7 +98,7 @@ pub fn sys_grid_animations(
                         .with_row(|row| row.with_styled_text(format.apply(pickup_display)));
 
                     let base_animation = assets_actor
-                        .get(&fx.0)
+                        .get(&fx.charmia)
                         .map(|actor| {
                             actor
                                 .animation(PICKUP_BASE_ANIM)
@@ -106,6 +110,14 @@ pub fn sys_grid_animations(
                         target_pt,
                         pickup_display,
                     ));
+                    commands.spawn(AudioBundle {
+                        source: fx.pickup_sound.clone(),
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: bevy::audio::Volume::Relative(VolumeLevel::new(13.0)),
+                            ..default()
+                        },
+                    });
 
                     Some((node_id, animation_handle))
                 })

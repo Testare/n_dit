@@ -11,6 +11,7 @@ use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
 
+use crate::fx::Fx;
 use crate::input_event::KeyCode;
 use crate::layout::LayoutEvent;
 use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
@@ -43,6 +44,8 @@ fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
 }
 
 fn debug_key(
+    asset_server: Res<AssetServer>,
+    fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
     mut layout_events: EventReader<LayoutEvent>,
@@ -53,6 +56,14 @@ fn debug_key(
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
             log::debug!("Debug event occured");
+            log::debug!(
+                "Pickup sound load state: {:?}",
+                asset_server.get_load_state(fx.pickup_sound.clone())
+            );
+            log::debug!(
+                "Animation load state: {:?}",
+                asset_server.get_load_state(fx.charmia.clone())
+            );
 
             for (_, entity_grid, cursor) in nodes.iter() {
                 log::debug!("# Node ({:?})", cursor);

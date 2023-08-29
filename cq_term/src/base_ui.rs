@@ -31,6 +31,12 @@ impl Plugin for BaseUiPlugin {
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct IsUnderHover(bool);
 
+#[derive(Component, Debug, Default)]
+pub struct TooltipBar;
+
+#[derive(Clone, Component, Debug)]
+pub struct Tooltip(Cow<'static, str>);
+
 #[derive(Bundle)]
 pub struct ButtonUiBundle {
     pub name: Name,
@@ -116,8 +122,8 @@ impl ButtonUiBundle {
 
 #[derive(Component)]
 pub struct FlexibleTextUi {
-    style: ContentStyle,
-    text: String,
+    pub style: ContentStyle,
+    pub text: String,
 }
 
 #[derive(Component, Reflect)]

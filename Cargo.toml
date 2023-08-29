@@ -16,7 +16,7 @@ edition = "2021"
 [dependencies]
 game_core = { path = "game_core" }
 cq_term = { path = "cq_term" }
-
+tracing = { version = "*", features = ["log"] }
 simplelog = "^0.10.0"
 
 [dependencies.bevy]
