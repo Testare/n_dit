@@ -9,7 +9,9 @@ use taffy::style::Dimension;
 use unicode_width::UnicodeWidthStr;
 
 use crate::input_event::{MouseEventTty, MouseEventTtyKind};
-use crate::layout::{CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty};
+use crate::layout::{
+    CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, VisibilityTty,
+};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -23,6 +25,7 @@ impl Plugin for BaseUiPlugin {
             (
                 sys_apply_hover,
                 sys_render_flexible_text.in_set(RenderTtySet::RenderLayouts),
+                sys_tooltip_on_hover,
             ),
         );
     }
@@ -34,7 +37,7 @@ pub struct IsUnderHover(bool);
 #[derive(Component, Debug, Default)]
 pub struct TooltipBar;
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, Deref, DerefMut)]
 pub struct Tooltip(Cow<'static, str>);
 
 #[derive(Bundle)]
@@ -137,6 +140,12 @@ pub struct DisabledTextEffect(ContentStyle);
 
 // TODO HoverTextEffect when mouse events supports it
 
+impl Tooltip {
+    pub fn new<S: Into<Cow<'static, str>>>(tooltip: S) -> Self {
+        Tooltip(tooltip.into())
+    }
+}
+
 pub fn sys_render_flexible_text(
     mut buttons: Query<(
         &FlexibleTextUi,
@@ -178,8 +187,30 @@ pub fn sys_render_flexible_text(
     // TODO allow configuring short buttons to be always on
 }
 
+pub fn sys_tooltip_on_hover(
+    tooltips: Query<(AsDeref<Tooltip>, AsDerefOrBool<IsUnderHover, false>)>,
+    mut tooltip_bars: Query<&mut FlexibleTextUi, With<TooltipBar>>,
+) {
+    let tooltip = tooltips
+        .iter()
+        .find_map(|(tooltip, is_under_hover)| is_under_hover.then(|| tooltip.clone().into_owned()));
+    for tooltip_bar_text_ui in tooltip_bars.iter_mut() {
+        tooltip_bar_text_ui
+            .map_unchanged(|ui| &mut ui.text)
+            .set_if_neq(tooltip.clone().unwrap_or_default());
+    }
+}
+
 pub fn sys_apply_hover(
     mut evr_mouse_tty: EventReader<MouseEventTty>,
+    changed_visibility: Query<
+        (Entity, AsDerefCopied<VisibilityTty>),
+        (
+            Changed<VisibilityTty>,
+            With<IsUnderHover>,
+            With<FlexibleTextUi>,
+        ),
+    >,
     mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
 ) {
     for event in evr_mouse_tty.iter() {
@@ -195,6 +226,13 @@ pub fn sys_apply_hover(
                 }
             },
             _ => {},
+        }
+    }
+    for (id, is_visible) in changed_visibility.iter() {
+        if !is_visible {
+            if let Ok((mut is_under_hover,)) = buttons.get_mut(id) {
+                is_under_hover.set_if_neq(false);
+            }
         }
     }
 }

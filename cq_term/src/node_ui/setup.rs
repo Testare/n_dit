@@ -4,7 +4,7 @@ use game_core::player::ForPlayer;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, TooltipBar};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, Tooltip, TooltipBar};
 use crate::layout::{
     CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle,
     UiFocusCycleOrder, VisibilityTty,
@@ -111,6 +111,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         LayoutMouseTargetDisabled,
                                         VisibilityTty(true),
+                                        Tooltip::new("When you've placed all your units, click here to begin")
                                     ));
 
                                     title_bar_right.spawn((
@@ -148,6 +149,7 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Quit", ContentStyle::new().red()),
                                         QuitButton,
+                                        Tooltip::new("Click to exit")
                                     ));
                                 });
                         });
