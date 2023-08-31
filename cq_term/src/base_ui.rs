@@ -6,7 +6,6 @@ use crossterm::style::{ContentStyle, Stylize};
 use pad::PadStr;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
-use unicode_width::UnicodeWidthStr;
 
 use crate::input_event::{MouseEventTty, MouseEventTtyKind};
 use crate::layout::{

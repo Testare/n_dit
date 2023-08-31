@@ -22,6 +22,7 @@ pub mod key {
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
+    pub const CARD: Key<Entity> = typed_key!("card");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
 }
 pub struct NodePlugin;
@@ -99,7 +100,7 @@ pub struct IsTapped(pub bool);
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct ActivatedPiece(Option<Entity>);
 
-#[derive(Component, Deref, DerefMut, Eq, PartialEq)]
+#[derive(Clone, Component, Copy, Deref, DerefMut, Eq, PartialEq)]
 pub struct OnTeam(pub Entity);
 
 #[derive(Component, Deref, DerefMut)]

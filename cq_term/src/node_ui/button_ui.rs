@@ -2,7 +2,8 @@ use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, IsReadyToGo, Node, NodeOp, NodePiece, OnTeam, Teams,
+    AccessPoint, AccessPointLoadingRule, CurrentTurn, InNode, IsReadyToGo, Node, NodeOp, NodePiece,
+    OnTeam, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
@@ -68,9 +69,9 @@ pub fn sys_ready_button_disable(
         ),
         (With<EndTurnButton>, Without<ReadyButton>),
     >,
-    nodes: Query<(&AccessPointLoadingRule, &EntityGrid, &Teams), With<Node>>,
-    players: Query<(Option<&IsReadyToGo>,), With<Player>>,
-    access_points: Query<(&ForPlayer, Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
+    nodes: Query<(&EntityGrid,), With<Node>>,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    access_points: Query<(Entity, AsDerefCopied<OnTeam>, &AccessPoint), With<NodePiece>>,
 ) {
     // TODO make this a run condition?
     // for OpResult { .. }
@@ -84,9 +85,19 @@ pub fn sys_ready_button_disable(
                 NodeOp::LoadAccessPoint { .. } => (false, true),
                 NodeOp::ReadyToGo => (true, true),
                 NodeOp::UnloadAccessPoint { .. } => {
+                    get_assert!(*player, players, |(player_team, in_node)| {
+                        let (grid,) = get_assert!(in_node, nodes)?;
+                        let still_can_go =
+                            access_points.iter().any(|(id, ap_team, access_point)| {
+                                grid.contains_key(id)
+                                    && ap_team == player_team
+                                    && access_point.card().is_some()
+                            });
+                        Some((false, still_can_go))
+                    })
+                    .unwrap_or((false, false))
+                    // TODO Filter access points in other nodes
                     // TODO check if other accesss points are still loaded
-                    // TODO actually emit this nodeopresult
-                    (false, false)
                 },
                 // NodeOp::EndTurn
                 _ => continue,

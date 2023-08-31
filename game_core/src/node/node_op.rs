@@ -68,6 +68,8 @@ pub enum NodeOpError {
     NoAccessPoint,
     #[error("You can't play that card")]
     UnplayableCard,
+    #[error("Nothing was accomplished")]
+    NothingToDo,
 }
 
 impl OpSubtype for NodeOp {
@@ -438,28 +440,36 @@ pub fn access_point_ops(
                     ev_op_result.send(OpResult::new(node_op, op_result));
                 },
                 NodeOp::UnloadAccessPoint { access_point_id } => {
-                    if let Ok((mut access_point, mut node_piece)) =
-                        access_points.get_mut(*access_point_id)
-                    {
-                        if let Some(card_count) = access_point
-                            .card
-                            .and_then(|card_id| played_cards.get_mut(&card_id))
-                        {
-                            *card_count = card_count.saturating_sub(1);
-                            let mut access_point_commands = commands.entity(*access_point_id);
-                            node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
+                    let op_result = access_points
+                        .get_mut(*access_point_id)
+                        .map_err(|_| NodeOpError::NoAccessPoint)
+                        .and_then(|(mut access_point, mut node_piece)| {
+                            if let Some((card_count, card_id)) =
+                                access_point.card.and_then(|card_id| {
+                                    played_cards.get_mut(&card_id).zip(Some(card_id))
+                                })
+                            {
+                                let mut metadata = Metadata::new();
+                                metadata.put(key::CARD, card_id);
+                                *card_count = card_count.saturating_sub(1);
+                                let mut access_point_commands = commands.entity(*access_point_id);
+                                node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
 
-                            if access_point.card.is_some() {
-                                access_point_commands.remove::<(
-                                    Description,
-                                    MovementSpeed,
-                                    MaximumSize,
-                                    Actions,
-                                )>();
+                                if access_point.card.is_some() {
+                                    access_point_commands.remove::<(
+                                        Description,
+                                        MovementSpeed,
+                                        MaximumSize,
+                                        Actions,
+                                    )>();
+                                }
+                                access_point.card = None;
+                                Ok(metadata)
+                            } else {
+                                Err(NodeOpError::NothingToDo)
                             }
-                            access_point.card = None;
-                        }
-                    }
+                        });
+                    ev_op_result.send(OpResult::new(node_op, op_result));
                 },
                 _ => {},
             }
