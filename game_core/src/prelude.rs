@@ -9,6 +9,7 @@ pub use bevy::prelude::{
     SystemSet, UVec2, Update, Vec2, With, Without, World,
 };
 pub use bevy::utils::{HashMap, HashSet};
+pub use bevy_query_ext::prelude::*;
 
 pub use crate::common::*;
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};

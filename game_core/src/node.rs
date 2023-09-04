@@ -10,6 +10,8 @@ pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
 
+use self::node_op::end_turn_op;
+
 pub mod key {
     use typed_key::{typed_key, Key};
 
@@ -21,6 +23,7 @@ pub mod key {
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
+    pub const TAPPED_PIECES: Key<Vec<Entity>> = typed_key!("tapped_pieces");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
     pub const CARD: Key<Entity> = typed_key!("card");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
@@ -184,7 +187,8 @@ impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NoOpAction>().add_systems(
             Update,
-            (access_point_ops, ready_to_go_ops, curio_ops).in_set(NDitCoreSet::ProcessCommands),
+            (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
+                .in_set(NDitCoreSet::ProcessCommands),
         );
     }
 }

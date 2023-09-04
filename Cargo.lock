@@ -1528,6 +1528,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "bevy",
+ "bevy_query_ext",
  "bitvec",
  "getset",
  "lazy_static",

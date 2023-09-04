@@ -30,6 +30,7 @@ pub fn mouse_button_menu(
     mut evr_mouse: EventReader<LayoutEvent>,
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,
+    end_turn_button: Query<AsDerefCopied<ForPlayer>, With<EndTurnButton>>,
     mut evw_node_op: EventWriter<Op<NodeOp>>,
     mut evw_app_exit: EventWriter<AppExit>,
 ) {
@@ -44,6 +45,8 @@ pub fn mouse_button_menu(
             NodeOp::ReadyToGo.for_p(**for_player).send(&mut evw_node_op);
         } else if quit_buttons.contains(mouse_event.entity()) {
             evw_app_exit.send(AppExit);
+        } else if let Ok(for_player) = end_turn_button.get(mouse_event.entity()) {
+            NodeOp::EndTurn.for_p(for_player).send(&mut evw_node_op);
         }
     }
 }

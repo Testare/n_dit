@@ -71,6 +71,9 @@ fn debug_key(
                     log::debug!("Entity: {:?}", entry);
                 }
             }
+        } else if *code == KeyCode::Char('p') {
+            log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
+            std::process::Command::new("aseprite").spawn().unwrap();
         }
     }
 }

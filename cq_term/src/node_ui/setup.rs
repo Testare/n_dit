@@ -153,7 +153,26 @@ pub fn create_node_ui(
                                     ));
                                 });
                         });
-
+                    root.spawn((
+                        ForPlayer(*player),
+                        Name::new("Tooltip bar"),
+                        TooltipBar,
+                        FlexibleTextUi {
+                            style: ContentStyle::new().cyan(),
+                            text: "<Tooltip bar>".to_string(),
+                        },
+                        TerminalRendering::default(),
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Auto,
+                                height: Dimension::Points(2.0),
+                            },
+                            flex_grow: 0.0,
+                            ..default()
+                        }),
+                        LayoutMouseTarget,
+                        VisibilityTty(true),
+                    ));
                     root.spawn((
                         StyleTty(taffy::prelude::Style {
                             size: Size {
@@ -194,26 +213,6 @@ pub fn create_node_ui(
                             .spawn(GridUi::bundle(*player, &node_q))
                             .insert(UiFocusCycleOrder(0));
                     });
-                    root.spawn((
-                        ForPlayer(*player),
-                        Name::new("Tooltip bar"),
-                        TooltipBar,
-                        FlexibleTextUi {
-                            style: ContentStyle::new().cyan(),
-                            text: "<Tooltip bar>".to_string(),
-                        },
-                        TerminalRendering::default(),
-                        StyleTty(taffy::prelude::Style {
-                            size: Size {
-                                width: Dimension::Auto,
-                                height: Dimension::Points(1.0),
-                            },
-                            flex_grow: 0.0,
-                            ..default()
-                        }),
-                        LayoutMouseTarget,
-                        VisibilityTty(true),
-                    ));
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })
                 .id();

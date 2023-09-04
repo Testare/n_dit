@@ -39,6 +39,7 @@ pub enum NodeOp {
         access_point_id: Entity,
     },
     ReadyToGo,
+    EndTurn,
 }
 
 #[derive(Clone, Debug, Error)]
@@ -70,6 +71,8 @@ pub enum NodeOpError {
     UnplayableCard,
     #[error("Nothing was accomplished")]
     NothingToDo,
+    #[error("Not your turn")]
+    NotYourTurn,
 }
 
 impl OpSubtype for NodeOp {
@@ -379,6 +382,49 @@ pub fn ready_to_go_ops(
                     ev_op_result.send(OpResult::new(op, result));
                 }
             }
+        }
+    }
+}
+
+pub fn end_turn_op(
+    mut evr_node_ops: EventReader<Op<NodeOp>>,
+    mut nodes: Query<(AsDerefMut<CurrentTurn>, AsDeref<Teams>), With<Node>>,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    mut pieces: Query<(Entity, AsDerefCopied<OnTeam>, AsDerefMut<IsTapped>), With<NodePiece>>,
+    mut evw_op_results: EventWriter<OpResult<NodeOp>>,
+) {
+    for ev in evr_node_ops.iter() {
+        if matches!(ev.op(), NodeOp::EndTurn) {
+            let result = get_assert!(ev.player(), players)
+                .ok_or(NodeOpError::InternalError)
+                .and_then(|(player_team, node)| {
+                    let (mut current_turn, teams) =
+                        get_assert_mut!(node, nodes).ok_or(NodeOpError::InternalError)?;
+                    if *current_turn.as_ref() != player_team {
+                        return Err(NodeOpError::NotYourTurn);
+                    }
+                    let current_pos = teams
+                        .iter()
+                        .position(|team_id| *team_id == player_team)
+                        .ok_or(NodeOpError::InternalError)?;
+                    *current_turn = teams[current_pos + 1 % teams.len()];
+                    // Gotta untap all player things
+                    let tapped_pieces: Vec<Entity> = pieces
+                        .iter_mut()
+                        .filter_map(|(id, team, mut is_tapped)| {
+                            if team == player_team && *is_tapped.as_ref() {
+                                *is_tapped = false;
+                                Some(id)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    let mut metadata = Metadata::new();
+                    metadata.put(key::TAPPED_PIECES, tapped_pieces);
+                    Ok(metadata)
+                });
+            evw_op_results.send(OpResult::new(ev, result));
         }
     }
 }
