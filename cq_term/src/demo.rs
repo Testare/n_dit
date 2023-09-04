@@ -4,8 +4,8 @@ use game_core::card::{
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
-    IsTapped, Mon, MovesTaken, Node, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, Team,
-    TeamColor, TeamPhase, Teams,
+    IsTapped, Mon, MovesTaken, Node, NodeBattleIntelligence, NodeOp, NodePiece, OnTeam, Pickup,
+    PlayedCards, Team, TeamColor, TeamPhase, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
@@ -309,6 +309,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 OnTeam(enemy_team),
                 MovementSpeed(2),
                 IsTapped(true),
+                MovesTaken(0),
                 Actions(vec![act_ping]),
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
@@ -316,6 +317,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
                 NodePiece::new("curio:death"),
                 OnTeam(enemy_team),
                 MovementSpeed(2),
+                MovesTaken(0),
                 IsTapped(false),
                 Actions(vec![act_ping]),
             ))
@@ -338,6 +340,8 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         IsReadyToGo(true),
         InNode(node),
         OnTeam(enemy_team),
+        NodeBattleIntelligence::Lazy,
+        Name::new("Jackson"),
     ));
     let player = commands
         .spawn((

@@ -388,40 +388,62 @@ pub fn ready_to_go_ops(
 
 pub fn end_turn_op(
     mut evr_node_ops: EventReader<Op<NodeOp>>,
-    mut nodes: Query<(AsDerefMut<CurrentTurn>, AsDeref<Teams>), With<Node>>,
-    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
-    mut pieces: Query<(Entity, AsDerefCopied<OnTeam>, AsDerefMut<IsTapped>), With<NodePiece>>,
+    mut nodes: Query<
+        (
+            AsDerefMut<CurrentTurn>,
+            AsDerefMut<ActiveCurio>,
+            AsDeref<Teams>,
+        ),
+        With<Node>,
+    >,
+    mut players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    mut pieces: Query<
+        (
+            Entity,
+            AsDerefCopied<OnTeam>,
+            AsDerefMut<IsTapped>,
+            AsDerefMut<MovesTaken>,
+        ),
+        With<NodePiece>,
+    >,
     mut evw_op_results: EventWriter<OpResult<NodeOp>>,
 ) {
     for ev in evr_node_ops.iter() {
         if matches!(ev.op(), NodeOp::EndTurn) {
+            // Potential future improvement: Check if there is an active curio that does not have the no_op action and prevent end_turn.
             let result = get_assert!(ev.player(), players)
                 .ok_or(NodeOpError::InternalError)
                 .and_then(|(player_team, node)| {
-                    let (mut current_turn, teams) =
+                    let (mut current_turn, mut active_curio, teams) =
                         get_assert_mut!(node, nodes).ok_or(NodeOpError::InternalError)?;
                     if *current_turn.as_ref() != player_team {
                         return Err(NodeOpError::NotYourTurn);
                     }
+                    let mut metadata = Metadata::new();
+                    if let Some(id) = *active_curio {
+                        metadata.put(key::CURIO, id);
+                    }
+                    active_curio.set_if_neq(None);
                     let current_pos = teams
                         .iter()
                         .position(|team_id| *team_id == player_team)
                         .ok_or(NodeOpError::InternalError)?;
-                    *current_turn = teams[current_pos + 1 % teams.len()];
+                    *current_turn = teams[(current_pos + 1) % teams.len()];
                     // Gotta untap all player things
-                    let tapped_pieces: Vec<Entity> = pieces
+                    let moved_pieces: HashMap<Entity, u32> = pieces
                         .iter_mut()
-                        .filter_map(|(id, team, mut is_tapped)| {
-                            if team == player_team && *is_tapped.as_ref() {
+                        .filter_map(|(id, team, mut is_tapped, mut moves_taken)| {
+                            if team == player_team && (*is_tapped || *moves_taken > 0) {
+                                let old_moves_taken = *moves_taken;
+                                *moves_taken = 0;
                                 *is_tapped = false;
-                                Some(id)
+                                Some((id, old_moves_taken))
                             } else {
                                 None
                             }
                         })
                         .collect();
-                    let mut metadata = Metadata::new();
-                    metadata.put(key::TAPPED_PIECES, tapped_pieces);
+                    metadata.put(key::MOVED_PIECES, moved_pieces);
                     Ok(metadata)
                 });
             evw_op_results.send(OpResult::new(ev, result));

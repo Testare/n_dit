@@ -2,9 +2,11 @@ use crate::card::{Action, Deck, Description};
 use crate::prelude::*;
 use crate::NDitCoreSet;
 
+mod ai;
 mod node_op;
 mod rule;
 
+pub use ai::NodeBattleIntelligence;
 use getset::CopyGetters;
 pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;
@@ -23,7 +25,7 @@ pub mod key {
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
-    pub const TAPPED_PIECES: Key<Vec<Entity>> = typed_key!("tapped_pieces");
+    pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
     pub const CARD: Key<Entity> = typed_key!("card");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
@@ -98,10 +100,6 @@ pub struct MovesTaken(pub u32);
 
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct IsTapped(pub bool);
-
-// Should it be "IsActivated" or should a node have an "ActivatedPiece"
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-pub struct ActivatedPiece(Option<Entity>);
 
 #[derive(Clone, Component, Copy, Deref, DerefMut, Eq, PartialEq)]
 pub struct OnTeam(pub Entity);
@@ -185,10 +183,12 @@ impl FromWorld for NoOpAction {
 
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<NoOpAction>().add_systems(
-            Update,
-            (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
-                .in_set(NDitCoreSet::ProcessCommands),
-        );
+        app.init_resource::<NoOpAction>()
+            .add_systems(
+                Update,
+                (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
+                    .in_set(NDitCoreSet::ProcessCommands),
+            )
+            .add_plugins(ai::NodeAiPlugin);
     }
 }
