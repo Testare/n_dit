@@ -1,4 +1,5 @@
 pub mod metadata;
+pub mod sord;
 
 use std::marker::PhantomData;
 use std::ops::Deref;

@@ -23,5 +23,6 @@ features = [
     "bevy_asset",
     "filesystem_watcher",
     "bevy_scene",
-    "animation"
+    "bevy_audio",
+    "animation",
 ]
