@@ -26,7 +26,7 @@ pub struct Action {
     pub name: String,
 }
 
-#[derive(Clone, Component, Debug, Reflect)]
+#[derive(Copy, Clone, Component, Debug, Reflect)]
 pub struct ActionRange {
     shape: RangeShape,
     max_range: u32,
@@ -56,7 +56,7 @@ impl RangeShape {
     }
 }
 
-#[derive(Clone, Component, Debug, Reflect)]
+#[derive(Clone, Component, Copy, Debug, Reflect)]
 pub enum ActionEffect {
     Damage(usize),
     Heal(usize),
@@ -127,6 +127,16 @@ impl ActionRange {
         from_pts
             .into_iter()
             .any(|pt| self.in_range_of_pt(*pt.borrow(), target))
+    }
+    pub fn pt_in_range<P: Borrow<UVec2>, I: IntoIterator<Item = P>>(
+        &self,
+        from_pts: I,
+        target: UVec2,
+    ) -> Option<UVec2> {
+        from_pts.into_iter().find_map(|pt| {
+            self.in_range_of_pt(*pt.borrow(), target)
+                .then(|| *pt.borrow())
+        })
     }
 }
 

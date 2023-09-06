@@ -15,7 +15,7 @@ use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
 use crate::node_ui::{
-    AvailableActionTargets, AvailableMoves, NodeUi, SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, HasNodeUi, NodeUi, SelectedAction, SelectedEntity,
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -224,6 +224,7 @@ pub fn create_node_ui(
                 AvailableActionTargets::default(),
                 UiFocusBundle::default(),
                 AvailableMoves::default(),
+                HasNodeUi,
             ));
             terminal_window.set_render_target(Some(render_root));
         }

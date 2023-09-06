@@ -3,9 +3,9 @@ use game_core::card::{
     MovementSpeed, Prereqs, Prerequisite, RangeShape,
 };
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
-    IsTapped, Mon, MovesTaken, Node, NodeBattleIntelligence, NodeOp, NodePiece, OnTeam, Pickup,
-    PlayedCards, Team, TeamColor, TeamPhase, Teams,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
+    IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
+    NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamColor, TeamPhase, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
@@ -78,7 +78,11 @@ fn debug_key(
     }
 }
 
-fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNode>) {
+fn demo_startup(
+    mut no_op: Res<NoOpAction>,
+    mut commands: Commands,
+    mut load_node_writer: EventWriter<ShowNode>,
+) {
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
@@ -305,21 +309,25 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
             .add_to_grid(node_id, vec![(11, 10)]);
 
             node.spawn((
+                Actions(vec![act_ping, **no_op]),
+                Curio::new("Shinigami"),
+                IsTapped(false),
+                MaximumSize(7),
+                MovementSpeed(2),
+                MovesTaken(0),
                 NodePiece::new("curio:death"),
                 OnTeam(enemy_team),
-                MovementSpeed(2),
-                IsTapped(true),
-                MovesTaken(0),
-                Actions(vec![act_ping]),
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
             node.spawn((
-                NodePiece::new("curio:death"),
-                OnTeam(enemy_team),
+                Actions(vec![act_ping, **no_op]),
+                Curio::new("Shinigami"),
+                IsTapped(false),
+                MaximumSize(7),
                 MovementSpeed(2),
                 MovesTaken(0),
-                IsTapped(false),
-                Actions(vec![act_ping]),
+                NodePiece::new("curio:death"),
+                OnTeam(enemy_team),
             ))
             .add_to_grid(
                 node_id,
@@ -342,6 +350,7 @@ fn demo_startup(mut commands: Commands, mut load_node_writer: EventWriter<ShowNo
         OnTeam(enemy_team),
         NodeBattleIntelligence::Lazy,
         Name::new("Jackson"),
+        AiThread::default(),
     ));
     let player = commands
         .spawn((

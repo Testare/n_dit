@@ -18,7 +18,7 @@ pub use scroll::Scroll2D;
 
 use super::node_ui_op::FocusTarget;
 use super::{
-    AvailableActionTargets, AvailableMoves, NodeCursor, NodeUi, NodeUiOp, NodeUiQItem,
+    AvailableActionTargets, AvailableMoves, HasNodeUi, NodeCursor, NodeUi, NodeUiOp, NodeUiQItem,
     SelectedAction, SelectedEntity,
 };
 use crate::layout::{LayoutMouseTarget, StyleTty, UiFocusOnClick};
@@ -123,10 +123,13 @@ impl NodeUi for GridUi {
 fn sys_react_to_node_op(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
     nodes: Query<(&EntityGrid,), With<Node>>,
-    players: Query<(&InNode,), With<Player>>,
+    players: Query<(&InNode,), (With<Player>, With<HasNodeUi>)>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for op_result in ev_op_result.iter() {
+        if !players.contains(op_result.source().player()) {
+            continue;
+        }
         if let Ok(metadata) = op_result.result() {
             match op_result.source().op() {
                 NodeOp::PerformCurioAction { .. } => {

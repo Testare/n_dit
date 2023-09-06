@@ -314,6 +314,10 @@ impl EntityGrid {
         }
     }
 
+    pub fn points(&self, key: Entity) -> Vec<UVec2> {
+        self.square_iter(key).map(|sqr| sqr.location()).collect()
+    }
+
     // Might be used in an optimization of the UI later, but for now we're using point_map
     // Takes a function that takes a usize that indicates a square's position in the entity's
     // queue, and then the related entity.

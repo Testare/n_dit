@@ -35,6 +35,10 @@ pub struct ShowNode {
     pub player: Entity,
     pub node: Entity,
 }
+
+#[derive(Component, Debug)]
+pub struct HasNodeUi;
+
 /// Plugin for NodeUI
 #[derive(Default)]
 pub struct NodeUiPlugin;
