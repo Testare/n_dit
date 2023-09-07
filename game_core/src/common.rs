@@ -81,6 +81,8 @@ pub trait GridPoints {
     fn manhattan_distance(&self, rhs: &Self) -> u32;
 
     fn dirs_to(&self, rhs: &Self) -> [Option<Compass>; 2];
+
+    fn dist_to_pt_along_compass(&self, rhs: &Self, dir: Compass) -> i32;
 }
 
 impl GridPoints for UVec2 {
@@ -103,6 +105,15 @@ impl GridPoints for UVec2 {
             dirs.push(Compass::West);
         }
         [dirs.get(0).copied(), dirs.get(1).copied()]
+    }
+
+    fn dist_to_pt_along_compass(&self, rhs: &Self, dir: Compass) -> i32 {
+        match dir {
+            Compass::North => self.y as i32 - rhs.y as i32,
+            Compass::East => rhs.x as i32 - self.x as i32,
+            Compass::South => rhs.y as i32 - self.y as i32,
+            Compass::West => self.x as i32 - rhs.x as i32,
+        }
     }
 }
 

@@ -348,7 +348,7 @@ fn demo_startup(
         IsReadyToGo(true),
         InNode(node),
         OnTeam(enemy_team),
-        NodeBattleIntelligence::Lazy,
+        NodeBattleIntelligence::Simple,
         Name::new("Jackson"),
         AiThread::default(),
     ));
