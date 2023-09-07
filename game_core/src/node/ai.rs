@@ -22,6 +22,9 @@ impl Plugin for NodeAiPlugin {
     }
 }
 
+#[derive(Component, Deref)]
+pub struct SimpleAiCurioOrder(pub usize);
+
 #[derive(Clone, Component, Copy, Debug)]
 pub enum NodeBattleIntelligence {
     DoNothing,
@@ -86,6 +89,7 @@ struct PieceQ {
     id: Entity,
     actions: AsDerefCloned<Actions>,
     movement: Option<&'static MovementSpeed>,
+    ai_order: OrUsize<AsDerefCopied<SimpleAiCurioOrder>, 30>,
 }
 
 #[derive(WorldQuery)]
@@ -159,16 +163,18 @@ fn sys_ai(
                 NodeBattleIntelligence::Simple => {
                     let (sx, rx) = std::sync::mpsc::channel();
                     let actions: HashMap<Entity, _> = actions.iter().collect();
-                    let my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>)> = pieces
-                        .iter()
-                        .filter_map(|(team, piece)| {
-                            (team == current_turn).then_some((
-                                piece.id,
-                                piece.actions,
-                                piece.movement.cloned(),
-                            ))
-                        })
-                        .collect();
+                    let my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>, usize)> =
+                        pieces
+                            .iter()
+                            .filter_map(|(team, piece)| {
+                                (team == current_turn).then_some((
+                                    piece.id,
+                                    piece.actions,
+                                    piece.movement.cloned(),
+                                    piece.ai_order,
+                                ))
+                            })
+                            .collect();
                     let enemy_pieces: Vec<(Entity, Vec<Entity>)> = pieces
                         .iter()
                         .filter_map(|(team, piece)| {
@@ -210,11 +216,12 @@ fn simple_ai_script(
     no_op_action: Entity,
     sx: Sender<(Op<NodeOp>, Duration)>,
     mut grid: EntityGrid,
-    my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>)>,
+    mut my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>, usize)>,
     actions: HashMap<Entity, (ActionRange, ActionEffect)>,
     enemy_pieces: Vec<(Entity, Vec<Entity>)>,
 ) {
     std::thread::sleep(Duration::from_millis(350));
+    my_pieces.sort_by_key(|piece| piece.3);
     for piece in my_pieces {
         sx.send((
             NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
@@ -228,7 +235,7 @@ fn simple_ai_script(
         {
             log::trace!(
                 "Closest enemy point for piece[{:?}] is {:?}",
-                piece.0,
+                piece.1,
                 closest_enemy_pt
             );
             let movement_speed = piece.2.as_ref().map(|ms| **ms).unwrap_or(0);

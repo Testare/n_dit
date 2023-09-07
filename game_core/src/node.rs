@@ -6,7 +6,7 @@ mod ai;
 mod node_op;
 mod rule;
 
-pub use ai::{AiThread, NodeBattleIntelligence};
+pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
 use getset::CopyGetters;
 pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
 pub use rule::AccessPointLoadingRule;

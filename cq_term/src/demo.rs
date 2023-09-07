@@ -5,7 +5,7 @@ use game_core::card::{
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
     IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
-    NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamColor, TeamPhase, Teams,
+    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
@@ -316,6 +316,7 @@ fn demo_startup(
                 MovementSpeed(2),
                 MovesTaken(0),
                 NodePiece::new("curio:death"),
+                SimpleAiCurioOrder(1),
                 OnTeam(enemy_team),
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
@@ -327,6 +328,7 @@ fn demo_startup(
                 MovementSpeed(2),
                 MovesTaken(0),
                 NodePiece::new("curio:death"),
+                SimpleAiCurioOrder(0),
                 OnTeam(enemy_team),
             ))
             .add_to_grid(
