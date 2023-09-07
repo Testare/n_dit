@@ -5,7 +5,8 @@ use game_core::card::{
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
     IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
-    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase, Teams,
+    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase,
+    TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
@@ -47,7 +48,16 @@ fn debug_key(
     asset_server: Res<AssetServer>,
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
-    nodes: Query<(Entity, &EntityGrid, Option<&NodeCursor>), With<Node>>,
+    nodes: Query<
+        (
+            Entity,
+            &EntityGrid,
+            Option<&NodeCursor>,
+            &Teams,
+            &TeamStatus,
+        ),
+        With<Node>,
+    >,
     mut layout_events: EventReader<LayoutEvent>,
 ) {
     for layout_event in layout_events.iter() {
@@ -65,8 +75,13 @@ fn debug_key(
                 asset_server.get_load_state(fx.charmia.clone())
             );
 
-            for (_, entity_grid, cursor) in nodes.iter() {
-                log::debug!("# Node ({:?})", cursor);
+            for (_, entity_grid, cursor, teams, team_status) in nodes.iter() {
+                log::debug!(
+                    "# Node ({:?}) - Teams ({:?}) - Team Status ({:?})",
+                    cursor,
+                    teams,
+                    team_status
+                );
                 for entry in entity_grid.entities() {
                     log::debug!("Entity: {:?}", entry);
                 }
@@ -164,8 +179,8 @@ fn demo_startup(
                 name: "Calamari".to_owned(),
             },
             ActionRange::new(1).headless(true),
-            ActionEffect::Damage(2),
-            Description::new("Range(1*) Deletes 2 sectors from target"),
+            ActionEffect::Damage(20),
+            Description::new("Range(1*) Deletes 20 sectors from target"),
         ),))
         .id();
     let act_circle = commands
@@ -255,6 +270,14 @@ fn demo_startup(
             Teams(vec![player_team, enemy_team]),
             CurrentTurn(player_team),
             AccessPointLoadingRule::Staggered,
+            TeamStatus(
+                [
+                    (player_team, VictoryStatus::Undecided),
+                    (enemy_team, VictoryStatus::Undecided),
+                ]
+                .into_iter()
+                .collect(),
+            ),
             ActiveCurio::default(),
             EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap(),
             Name::new("Demo Node"),

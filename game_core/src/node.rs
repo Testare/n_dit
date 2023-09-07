@@ -110,8 +110,25 @@ pub struct CurrentTurn(pub Entity);
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct ActiveCurio(pub Option<Entity>);
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component, Debug, Deref, DerefMut)]
 pub struct Teams(pub Vec<Entity>);
+
+#[derive(Component, Debug, Deref, DerefMut, Reflect)]
+pub struct TeamStatus(pub HashMap<Entity, VictoryStatus>);
+
+#[derive(Debug, Reflect)]
+pub enum VictoryStatus {
+    Undecided,
+    Loss,
+    Victory,
+    PerfectVictory,
+}
+
+impl VictoryStatus {
+    pub fn is_undecided(&self) -> bool {
+        matches!(self, VictoryStatus::Undecided)
+    }
+}
 
 #[derive(Component, Debug, PartialEq)]
 pub enum TeamPhase {

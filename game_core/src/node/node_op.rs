@@ -4,14 +4,14 @@ use thiserror::Error;
 use super::{
     key, AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped,
     MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, PreventNoOp, Team,
-    TeamPhase, Teams,
+    TeamPhase, TeamStatus, Teams,
 };
 use crate::card::{
     Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
     MovementSpeed, Prereqs,
 };
 use crate::common::metadata::MetadataErr;
-use crate::node::{AccessPoint, Curio};
+use crate::node::{AccessPoint, Curio, VictoryStatus};
 use crate::op::{OpResult, OpSubtype};
 use crate::player::Player;
 use crate::prelude::*;
@@ -91,6 +91,8 @@ pub struct CardInfo {
 #[derive(WorldQuery)]
 #[world_query(mutable)]
 pub struct CurioQ {
+    id: Entity,
+    in_node: AsDerefCopied<Parent>,
     team: &'static OnTeam,
     tapped: &'static mut IsTapped,
     moves_taken: &'static mut MovesTaken,
@@ -102,7 +104,16 @@ pub struct CurioQ {
 pub fn curio_ops(
     no_op_action: Res<NoOpAction>,
     mut ops: EventReader<Op<NodeOp>>,
-    mut nodes: Query<(&mut EntityGrid, &CurrentTurn, &mut ActiveCurio), With<Node>>,
+    mut nodes: Query<
+        (
+            &mut EntityGrid,
+            &CurrentTurn,
+            &mut ActiveCurio,
+            &Teams,
+            AsDerefMut<TeamStatus>,
+        ),
+        With<Node>,
+    >,
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
@@ -119,7 +130,8 @@ pub fn curio_ops(
 ) {
     for fullop @ Op { op, player } in ops.into_iter() {
         players.get(*player).ok().and_then(|(player_team, node)| {
-            let (mut grid, current_turn, mut active_curio) = nodes.get_mut(**node).ok()?;
+            let (mut grid, current_turn, mut active_curio, teams, mut team_status) =
+                nodes.get_mut(**node).ok()?;
             if **player_team != **current_turn {
                 return None;
             }
@@ -261,6 +273,37 @@ pub fn curio_ops(
                             action_metadata.put(key::NODE_ID, **node)?;
                             **curio_q.tapped = true;
                             **active_curio = None;
+                            // WIP Test victory conditions
+                            for team in teams.iter() {
+                                if team_status[team].is_undecided() {
+                                    let still_in_this = curios.iter().any(|curio_q| {
+                                        **curio_q.team == *team && grid.contains_key(curio_q.id)
+                                    });
+                                    if !still_in_this {
+                                        team_status.insert(*team, VictoryStatus::Loss);
+                                    }
+                                }
+                            }
+                            let remaining_teams: Vec<Entity> = teams
+                                .iter()
+                                .filter(|team| team_status[*team].is_undecided())
+                                .copied()
+                                .collect();
+                            if remaining_teams.len() == 1 {
+                                let team = remaining_teams[0];
+                                let is_victory_flawed = curios.iter().any(|curio_q| {
+                                    curio_q.in_node == **node
+                                        && **curio_q.team == team
+                                        && !grid.contains_key(curio_q.id)
+                                });
+                                let victory_status = if is_victory_flawed {
+                                    VictoryStatus::Victory
+                                } else {
+                                    VictoryStatus::PerfectVictory
+                                };
+                                team_status.insert(team, victory_status);
+                            }
+
                             Ok(action_metadata)
                         });
                     ev_results.send(OpResult::new(fullop, node_op_result));

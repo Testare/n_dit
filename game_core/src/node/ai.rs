@@ -223,11 +223,14 @@ fn simple_ai_script(
     std::thread::sleep(Duration::from_millis(350));
     my_pieces.sort_by_key(|piece| piece.3);
     for piece in my_pieces {
+        let mut grid_head = match grid.head(piece.0) {
+            Some(grid_head) => grid_head,
+            None => continue,
+        };
         sx.send((
             NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
             Duration::from_millis(500),
         ));
-        let mut grid_head = grid.head(piece.0).expect("piece should be in grid");
         if let Some(closest_enemy_pt) = enemy_pieces
             .iter()
             .flat_map(|(id, _)| grid.points(*id))
