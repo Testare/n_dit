@@ -114,7 +114,7 @@ impl NodeUi for MessageBarUi {
 
 impl Default for MessageBarUi {
     fn default() -> Self {
-        super::MessageBarUi(vec!["Have you ever heard the story of Darth Plegius the wise? I thought not, it's not a story the jedi would tell you. He was powerful, some say he even could even stop people from dying. Of course, he was betrayed, and at this point Logan's memory starts to fail, and he isn't really able to quote the whole thing exactly. But of course I remember the gist.".to_owned()])
+        super::MessageBarUi(vec![])
     }
 }
 

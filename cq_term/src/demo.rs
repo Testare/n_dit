@@ -1,5 +1,5 @@
 use game_core::card::{
-    Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
+    Action, ActionEffect, ActionRange, ActionTarget, Actions, Card, Deck, Description, MaximumSize,
     MovementSpeed, Prereqs, Prerequisite, RangeShape,
 };
 use game_core::node::{
@@ -109,6 +109,7 @@ fn demo_startup(
             },
             ActionRange::new(1),
             ActionEffect::Damage(2),
+            ActionTarget::Curios,
             Description::new("Deletes 2 sectors from target"),
         ))
         .id();
@@ -141,6 +142,28 @@ fn demo_startup(
             ActionEffect::Damage(3),
             Description::new("(Req Size: 3) Deletes 3 sectors from target"),
             Prereqs(vec![Prerequisite::MinSize(3)]),
+        ))
+        .id();
+    let act_zero = commands
+        .spawn((
+            Action {
+                name: "Zero".to_owned(),
+            },
+            ActionRange::new(1),
+            ActionEffect::Close,
+            Description::new("Deletes one grid space"),
+            ActionTarget::FreeSquare,
+        ))
+        .id();
+    let act_one = commands
+        .spawn((
+            Action {
+                name: "One".to_owned(),
+            },
+            ActionRange::new(1),
+            ActionEffect::Open,
+            Description::new("Repairs one grid space"),
+            ActionTarget::ClosedSquare,
         ))
         .id();
     let act_thrice = commands
@@ -225,6 +248,9 @@ fn demo_startup(
     let card_1 = commands
         .spawn((
             Card::new("Bit Man", "curio:bit_man", None),
+            MaximumSize(3),
+            MovementSpeed(3),
+            Actions(vec![act_zero, act_one]),
             Description::new("Makes sectors of the grid appear or disappear"),
         ))
         .id();
@@ -284,22 +310,6 @@ fn demo_startup(
         ))
         .with_children(|node| {
             let node_id = node.parent_entity();
-
-            /*
-            node.spawn((
-                NodePiece::new("curio:hack"),
-                OnTeam(player_team),
-                Curio::new("Hack"),
-                Actions(vec![act_slice, act_dice, act_thrice]),
-                Description::new("Basic attack program"),
-                MaximumSize(4),
-                MovementSpeed(5),
-                MovesTaken(1),
-                IsTapped(false),
-            ))
-            .add_to_grid(node_id, vec![(5, 4), (5, 3)]);
-            */
-
             node.spawn((
                 NodePiece::new("env:access_point"),
                 AccessPoint::default(),

@@ -7,7 +7,7 @@ use super::{
     TeamPhase, TeamStatus, Teams,
 };
 use crate::card::{
-    Action, ActionEffect, ActionRange, Actions, Card, Deck, Description, MaximumSize,
+    Action, ActionEffect, ActionRange, ActionTarget, Actions, Card, Deck, Description, MaximumSize,
     MovementSpeed, Prereqs,
 };
 use crate::common::metadata::MetadataErr;
@@ -117,12 +117,14 @@ pub fn curio_ops(
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
+    curio_teams: Query<AsDerefCopied<OnTeam>, With<Curio>>,
     pickups: Query<&Pickup>,
     actions: Query<
         (
             Option<&ActionEffect>,
             Option<&ActionRange>,
             Option<&Prereqs>,
+            CopiedOrDefault<ActionTarget>,
         ),
         With<Action>,
     >,
@@ -250,8 +252,9 @@ pub fn curio_ops(
                                 return Err(NodeOpError::NoSuchAction);
                             }
 
-                            let (effect, range, prereqs) = get_assert!(*action_id, actions)
-                                .ok_or(NodeOpError::InternalError)?;
+                            let (effect, range, prereqs, action_target) =
+                                get_assert!(*action_id, actions)
+                                    .ok_or(NodeOpError::InternalError)?;
                             if let Some(range) = range {
                                 if !range.in_range_of(grid.as_ref(), curio_id, *target) {
                                     return Err(NodeOpError::OutOfRange);
@@ -263,6 +266,11 @@ pub fn curio_ops(
                                         return Err(NodeOpError::PrereqsNotSatisfied);
                                     }
                                 }
+                            }
+                            if !action_target
+                                .valid_target(&grid, curio_id, *target, |e| curio_teams.get(e).ok())
+                            {
+                                return Err(NodeOpError::InvalidTarget);
                             }
                             // TODO action metadata should be lower
                             let mut action_metadata = if let Some(effect) = effect {

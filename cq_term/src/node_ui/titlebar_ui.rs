@@ -10,7 +10,7 @@ pub struct TitleBarUi;
 pub fn render_title_bar_system(
     mut render_title_bar: Query<&mut TerminalRendering, With<TitleBarUi>>,
 ) {
-    let rendered_text = vec!["n_dit".to_owned()];
+    let rendered_text = vec!["Common Quest".to_owned()];
     for mut tr in render_title_bar.iter_mut() {
         tr.update(rendered_text.clone());
     }

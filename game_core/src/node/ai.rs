@@ -255,7 +255,7 @@ fn simple_ai_script(
                             (dir2, dir1)
                         };
                         if grid.square_is_free(grid_head + dir1)
-                            || grid.item_at(grid_head + dir1) == Some(id)
+                            || grid.item_at(grid_head + dir1) == Some(piece.0)
                         {
                             log::trace!("{:?} Went {:?} from {:?}", piece.0, dir1, grid_head);
                             grid_head = grid_head + dir1;
@@ -264,7 +264,7 @@ fn simple_ai_script(
                                 Duration::from_millis(400),
                             ));
                         } else if grid.square_is_free(grid_head + dir2)
-                            || grid.item_at(grid_head + dir2) == Some(id)
+                            || grid.item_at(grid_head + dir2) == Some(piece.0)
                         {
                             log::trace!("{:?} Went {:?} from {:?}", piece.0, dir2, grid_head);
                             grid_head = grid_head + dir2;
@@ -320,6 +320,7 @@ fn simple_ai_script(
                     None
                 },
                 ActionEffect::Heal(_) => None,
+                _ => None,
             }
         }) {
             sx.send((
@@ -375,7 +376,7 @@ fn lazy_ai_script(
                     }
                     None
                 },
-                ActionEffect::Heal(_) => None,
+                _ => None,
             }
         }) {
             sx.send((

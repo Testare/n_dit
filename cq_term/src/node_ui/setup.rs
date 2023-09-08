@@ -92,6 +92,7 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Pause", ContentStyle::new().green()),
                                         PauseButton,
+                                        Tooltip::new("[Escape] TODO Puase the agme and open pause menu")
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
@@ -111,7 +112,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         LayoutMouseTargetDisabled,
                                         VisibilityTty(true),
-                                        Tooltip::new("When you've placed all your units, click here to begin")
+                                        Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));
 
                                     title_bar_right.spawn((
@@ -119,6 +120,7 @@ pub fn create_node_ui(
                                         EndTurnButton,
                                         ButtonUiBundle::new("End Turn", ContentStyle::new().blue()),
                                         VisibilityTty::invisible(),
+                                        Tooltip::new("[-] End your turn and let the next player go")
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
@@ -134,6 +136,7 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
                                         HelpButton,
+                                        Tooltip::new("[?] TODO Open guide to the game")
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
@@ -149,7 +152,7 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Quit", ContentStyle::new().red()),
                                         QuitButton,
-                                        Tooltip::new("Click to exit")
+                                        Tooltip::new("[q] Click to exit")
                                     ));
                                 });
                         });

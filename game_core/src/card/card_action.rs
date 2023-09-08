@@ -3,6 +3,8 @@ use std::borrow::Borrow;
 use bitvec::macros::internal::funty::Floating;
 
 use crate::common::metadata::MetadataErr;
+// TODO figure out how to handle these Node imports to decrease coupling
+use crate::node::Team;
 use crate::prelude::*;
 
 // Is this really the best place for this module?
@@ -13,6 +15,7 @@ pub mod key {
 
     use super::*;
 
+    pub const TARGET_POINT: Key<UVec2> = typed_key!("target");
     pub const DAMAGES: Key<Vec<UVec2>> = typed_key!("damages");
     pub const FATAL: Key<bool> = typed_key!("fatal");
     pub const TARGET_ENTITY: Key<Entity> = typed_key!("target_entity");
@@ -42,6 +45,46 @@ pub enum RangeShape {
     Circle,
 }
 
+#[derive(Clone, Copy, Component, Debug, Default, Reflect)]
+pub enum ActionTarget {
+    Allies,
+    ClosedSquare,
+    Curios,
+    #[default]
+    Enemies,
+    FreeSquare,
+    None,
+}
+
+impl ActionTarget {
+    pub fn valid_target<F: Fn(Entity) -> Option<Entity>>(
+        &self,
+        grid: &EntityGrid,
+        source: Entity,
+        target: UVec2,
+        team_check: F,
+    ) -> bool {
+        match self {
+            Self::None => true,
+            Self::Curios => grid.item_at(target).and_then(team_check).is_some(),
+            Self::Enemies => grid
+                .item_at(target)
+                .and_then(|target_entity| team_check(target_entity))
+                .and_then(|target_team| Some(target_team != team_check(source)?))
+                .unwrap_or(false),
+            Self::Allies => {
+                if let Some(target_entity) = grid.item_at(target) {
+                    team_check(target_entity) == team_check(source)
+                } else {
+                    false
+                }
+            },
+            Self::FreeSquare => grid.square_is_free(target),
+            Self::ClosedSquare => grid.square_is_closed(target),
+        }
+    }
+}
+
 impl RangeShape {
     fn dist(&self, from_pt: UVec2, target: UVec2) -> u32 {
         let dist = UVec2 {
@@ -57,9 +100,12 @@ impl RangeShape {
 }
 
 #[derive(Clone, Component, Copy, Debug, Reflect)]
+#[non_exhaustive]
 pub enum ActionEffect {
     Damage(usize),
     Heal(usize),
+    Open,
+    Close,
 }
 
 #[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
@@ -156,6 +202,8 @@ impl ActionEffect {
         target: UVec2,
     ) -> Result<Metadata, MetadataErr> {
         let mut action_metadata = Metadata::default();
+
+        action_metadata.put(key::TARGET_POINT, target)?;
         Ok(match self {
             ActionEffect::Damage(dmg) => {
                 if let Some(key) = grid.item_at(target) {
@@ -164,6 +212,18 @@ impl ActionEffect {
                     action_metadata.put(key::DAMAGES, damages)?;
                     action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg)?;
                     grid.pop_back_n(key, *dmg);
+                }
+                action_metadata
+            },
+            ActionEffect::Open => {
+                if grid.square_is_closed(target) {
+                    grid.open_square(target);
+                }
+                action_metadata
+            },
+            ActionEffect::Close => {
+                if grid.square_is_free(target) {
+                    grid.close_square(target);
                 }
                 action_metadata
             },

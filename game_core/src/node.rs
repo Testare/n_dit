@@ -1,4 +1,4 @@
-use crate::card::{Action, Deck, Description};
+use crate::card::{Action, ActionTarget, Deck, Description};
 use crate::prelude::*;
 use crate::NDitCoreSet;
 
@@ -191,6 +191,7 @@ impl FromWorld for NoOpAction {
                     Action {
                         name: "No Action".to_owned(),
                     },
+                    ActionTarget::None,
                     Description::new("End movement and do nothing"),
                 ))
                 .id(),

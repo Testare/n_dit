@@ -104,7 +104,7 @@ impl TerminalWindow {
             stdout(),
             crossterm::cursor::Hide,
             crossterm::terminal::EnterAlternateScreen,
-            crossterm::terminal::SetTitle("n_dit"),
+            crossterm::terminal::SetTitle("Common Quest"),
             crossterm::event::EnableMouseCapture
         )?;
         crossterm::terminal::enable_raw_mode()?;

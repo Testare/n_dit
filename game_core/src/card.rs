@@ -5,7 +5,8 @@ use crate::prelude::*;
 mod card_action;
 
 pub use card_action::{
-    key, Action, ActionEffect, ActionRange, Actions, Prereqs, Prerequisite, RangeShape,
+    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
+    RangeShape,
 };
 
 #[derive(Component, Debug, Default, Reflect)]
