@@ -72,56 +72,78 @@ pub fn sys_ready_button_disable(
         ),
         (With<EndTurnButton>, Without<ReadyButton>),
     >,
-    nodes: Query<(&EntityGrid,), With<Node>>,
-    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    nodes: Query<(&EntityGrid, AsDerefCopied<CurrentTurn>), With<Node>>,
+    players: Query<(Entity, AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     access_points: Query<(Entity, AsDerefCopied<OnTeam>, &AccessPoint), With<NodePiece>>,
 ) {
     // TODO make this a run condition?
-    // for OpResult { .. }
     for node_op_result in ev_node_op_result.iter() {
         if let OpResult {
             result: Ok(_),
             source: Op { player, op },
         } = node_op_result
         {
-            let (show_end_turn_button, should_be_enabled) = match op {
-                NodeOp::LoadAccessPoint { .. } => (false, true),
-                NodeOp::ReadyToGo => (true, true),
+            let updates = match op {
+                NodeOp::EndTurn { .. } => {
+                    log::debug!("NOCOMMIT A");
+                    get_assert!(*player, players, |(_, _, node)| {
+                        let (_, current_turn) = get_assert!(node, nodes)?;
+                        Some(
+                            players
+                                .iter()
+                                .filter_map(|(player_id, player_team, player_node)| {
+                                    (player_node == node).then_some((
+                                        player_id,
+                                        None,
+                                        current_turn == player_team,
+                                    ))
+                                })
+                                .collect(),
+                        )
+                    })
+                    .unwrap_or_default()
+                },
+                NodeOp::LoadAccessPoint { .. } => vec![(*player, Some(false), true)],
+                NodeOp::ReadyToGo => vec![(*player, Some(true), true)],
                 NodeOp::UnloadAccessPoint { .. } => {
-                    get_assert!(*player, players, |(player_team, in_node)| {
-                        let (grid,) = get_assert!(in_node, nodes)?;
+                    vec![get_assert!(*player, players, |(_, player_team, in_node)| {
+                        let (grid, _) = get_assert!(in_node, nodes)?;
                         let still_can_go =
                             access_points.iter().any(|(id, ap_team, access_point)| {
                                 grid.contains_key(id)
                                     && ap_team == player_team
                                     && access_point.card().is_some()
                             });
-                        Some((false, still_can_go))
+                        Some((*player, Some(false), still_can_go))
                     })
-                    .unwrap_or((false, false))
-                    // TODO Filter access points in other nodes
-                    // TODO check if other accesss points are still loaded
+                    .unwrap_or((*player, None, false))]
                 },
-                // NodeOp::EndTurn
                 _ => continue,
             };
-            if let Ok((id, button_is_disabled, mut visibility)) = ready_buttons.get_for_mut(*player)
-            {
-                visibility.set_if_neq(!show_end_turn_button);
-                if button_is_disabled && should_be_enabled {
-                    commands.entity(id).remove::<LayoutMouseTargetDisabled>();
-                } else if !button_is_disabled && !should_be_enabled {
-                    commands.entity(id).insert(LayoutMouseTargetDisabled);
+            for (player_id, show_end_turn_button, should_be_enabled) in updates.into_iter() {
+                if let Ok((id, button_is_disabled, mut visibility)) =
+                    ready_buttons.get_for_mut(player_id)
+                {
+                    if let Some(show_end_turn_button) = show_end_turn_button {
+                        visibility.set_if_neq(!show_end_turn_button);
+                    }
+                    if button_is_disabled && should_be_enabled {
+                        commands.entity(id).remove::<LayoutMouseTargetDisabled>();
+                    } else if !button_is_disabled && !should_be_enabled {
+                        commands.entity(id).insert(LayoutMouseTargetDisabled);
+                    }
                 }
-            }
-            if let Ok((id, button_is_disabled, mut visibility)) =
-                end_turn_buttons.get_for_mut(*player)
-            {
-                visibility.set_if_neq(show_end_turn_button);
-                if button_is_disabled && should_be_enabled {
-                    commands.entity(id).remove::<LayoutMouseTargetDisabled>();
-                } else if !button_is_disabled && !should_be_enabled {
-                    commands.entity(id).insert(LayoutMouseTargetDisabled);
+                if let Ok((id, button_is_disabled, mut visibility)) =
+                    end_turn_buttons.get_for_mut(player_id)
+                {
+                    if let Some(show_end_turn_button) = show_end_turn_button {
+                        visibility.set_if_neq(show_end_turn_button);
+                    }
+                    if button_is_disabled && should_be_enabled {
+                        commands.entity(id).remove::<LayoutMouseTargetDisabled>();
+                    } else if !button_is_disabled && !should_be_enabled {
+                        commands.entity(id).insert(LayoutMouseTargetDisabled);
+                    }
                 }
             }
         }
