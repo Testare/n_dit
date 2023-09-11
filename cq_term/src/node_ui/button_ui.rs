@@ -76,7 +76,6 @@ pub fn sys_ready_button_disable(
     players: Query<(Entity, AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     access_points: Query<(Entity, AsDerefCopied<OnTeam>, &AccessPoint), With<NodePiece>>,
 ) {
-    // TODO make this a run condition?
     for node_op_result in ev_node_op_result.iter() {
         if let OpResult {
             result: Ok(_),
@@ -84,25 +83,22 @@ pub fn sys_ready_button_disable(
         } = node_op_result
         {
             let updates = match op {
-                NodeOp::EndTurn { .. } => {
-                    log::debug!("NOCOMMIT A");
-                    get_assert!(*player, players, |(_, _, node)| {
-                        let (_, current_turn) = get_assert!(node, nodes)?;
-                        Some(
-                            players
-                                .iter()
-                                .filter_map(|(player_id, player_team, player_node)| {
-                                    (player_node == node).then_some((
-                                        player_id,
-                                        None,
-                                        current_turn == player_team,
-                                    ))
-                                })
-                                .collect(),
-                        )
-                    })
-                    .unwrap_or_default()
-                },
+                NodeOp::EndTurn { .. } => get_assert!(*player, players, |(_, _, node)| {
+                    let (_, current_turn) = get_assert!(node, nodes)?;
+                    Some(
+                        players
+                            .iter()
+                            .filter_map(|(player_id, player_team, player_node)| {
+                                (player_node == node).then_some((
+                                    player_id,
+                                    None,
+                                    current_turn == player_team,
+                                ))
+                            })
+                            .collect(),
+                    )
+                })
+                .unwrap_or_default(),
                 NodeOp::LoadAccessPoint { .. } => vec![(*player, Some(false), true)],
                 NodeOp::ReadyToGo => vec![(*player, Some(true), true)],
                 NodeOp::UnloadAccessPoint { .. } => {

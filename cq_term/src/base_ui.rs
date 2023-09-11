@@ -210,6 +210,7 @@ pub fn sys_apply_hover(
             With<FlexibleTextUi>,
         ),
     >,
+    new_disabled: Query<Entity, (With<IsUnderHover>, Added<LayoutMouseTargetDisabled>)>,
     mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
 ) {
     for event in evr_mouse_tty.iter() {
@@ -232,6 +233,11 @@ pub fn sys_apply_hover(
             if let Ok((mut is_under_hover,)) = buttons.get_mut(id) {
                 is_under_hover.set_if_neq(false);
             }
+        }
+    }
+    for id in new_disabled.iter() {
+        if let Ok((mut is_under_hover,)) = buttons.get_mut(id) {
+            is_under_hover.set_if_neq(false);
         }
     }
 }
