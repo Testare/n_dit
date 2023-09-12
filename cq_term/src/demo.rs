@@ -1,6 +1,7 @@
 use game_core::card::{
-    Action, ActionEffect, ActionRange, ActionTarget, Actions, Card, Deck, Description, MaximumSize,
-    MovementSpeed, Prereqs, Prerequisite, RangeShape,
+    Action, ActionDefinition, ActionEffect, ActionRange, ActionTarget, Actions, Card,
+    CardDefinition, Deck, Description, MaximumSize, MovementSpeed, Prereqs, Prerequisite,
+    RangeShape,
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
@@ -21,6 +22,14 @@ use crate::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
+
+#[derive(Component)]
+pub struct DebugEntityMarker;
+
+#[derive(Component)]
+pub struct CardAssetPointer {
+    handle: Handle<CardDefinition>,
+}
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
@@ -46,6 +55,8 @@ fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
 
 fn debug_key(
     asset_server: Res<AssetServer>,
+    card_assets: Res<Assets<CardDefinition>>,
+    action_assets: Res<Assets<ActionDefinition>>,
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<
@@ -58,6 +69,7 @@ fn debug_key(
         ),
         With<Node>,
     >,
+    debug_asset: Query<&CardAssetPointer>,
     mut layout_events: EventReader<LayoutEvent>,
 ) {
     for layout_event in layout_events.iter() {
@@ -65,6 +77,19 @@ fn debug_key(
     }
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
+            for CardAssetPointer { handle } in debug_asset.iter() {
+                log::debug!(
+                    "ASSET LOAD STATE: {:?} ",
+                    asset_server.get_load_state(handle)
+                );
+                let card_asset = card_assets.get(handle);
+                log::debug!("CARD ASSET: {:?}", card_asset);
+                if let Some(card_asset) = card_asset {
+                    for action_handle in card_asset.actions().iter() {
+                        log::debug!("CARD ACTION: {:?}", action_assets.get(action_handle))
+                    }
+                }
+            }
             log::debug!("Debug event occured");
             log::debug!(
                 "Pickup sound load state: {:?}",
@@ -94,10 +119,17 @@ fn debug_key(
 }
 
 fn demo_startup(
+    mut asset_server: Res<AssetServer>,
     mut no_op: Res<NoOpAction>,
     mut commands: Commands,
     mut load_node_writer: EventWriter<ShowNode>,
 ) {
+    let _card_asset = commands.spawn((
+        DebugEntityMarker,
+        CardAssetPointer {
+            handle: asset_server.load("nightfall/lvl1.cards.json#Hack"),
+        },
+    ));
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
