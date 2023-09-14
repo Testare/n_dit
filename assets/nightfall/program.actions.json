@@ -1,311 +1,387 @@
 {
     "Boost": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": 1
+            }
+        ],
         "range": 1,
-        "effect": {
-            "IncreaseSpeed": { "amount": 1 }
-        },
-		"cost": 1,
-        "targets": [ "Ally" ]
+        "self_effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "target": "Allies"
     },
     "Chug": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": -2
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DecreaseSpeed": { "amount": 2 }
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Dataslam": {
-        "genre": "Attack",
-        "range": 1,
-        "effect": {
-            "DealDamage": 8
-        },
-        "conditions": [
-            { "Size": { "start": 6, "end": 1000 } }
+        "effects": [
+            {
+                "Damage": 8
+            }
         ],
-        "targets": [ "Enemy" ]
+        "prereqs": [
+            {
+                "MinSize": 6
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
     },
     "Dice": {
-        "genre": "Attack",
-        "range": 1,
-        "effect": {
-            "DealDamage": 3
-        },
-        "conditions": [
-            { "Size": { "start": 3, "end": 1000 } }
+        "effects": [
+            {
+                "Damage": 3
+            }
         ],
-        "targets": [ "Enemy" ]
+        "prereqs": [
+            {
+                "MinSize": 3
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
     },
     "Fire": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 4
+            }
+        ],
         "range": 2,
-        "effect": {
-            "DealDamage": 4
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Fling": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 4,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Fractal Glitch": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 4
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DealDamage": 4
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Glitch": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Grow": {
-        "genre": "Support",
+        "effects": [
+            {
+                "Heal": 2
+            }
+        ],
         "range": 1,
-        "effect": {
-            "Recover": { "amount": 2 }
-        },
-        "targets": [ "Ally" ]
+        "target": "Allies"
     },
     "Hang": {
-        "genre": "Support",
-        "range": 3,
-        "effect": {
-            "DecreaseSpeed": { "amount": 1000 }
-        },
-        "conditions": [
-            { "Size": { "start": 4, "end": 1000 } }
+        "effects": [
+            {
+                "ModifyMovement": -1000
+            }
         ],
-        "targets": [ "Enemy" ]
+        "prereqs": [
+            {
+                "MinSize": 4
+            }
+        ],
+        "range": 3,
+        "target": "Enemies"
     },
     "Hypo": {
-        "genre": "Support",
+        "effects": [
+            {
+                "Heal": 2
+            }
+        ],
         "range": 3,
-        "effect": {
-            "Recover": { "amount": 2 }
-        },
-        "targets": [ "Ally" ]
+        "target": "Allies"
     },
     "Ice": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": -3
+            }
+        ],
         "range": 2,
-        "effect": {
-            "DecreaseSpeed": { "amount": 3 }
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Kamikaze": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 5
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DealDamage": 5
-        },
-		"cost":1000,
-        "targets": [ "Enemy" ]
+        "self_effects": [
+            {
+                "Damage": 1000
+            }
+        ],
+        "target": "Enemies"
     },
     "Lag": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": -1
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DecreaseSpeed": { "amount": 1 }
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Megaboost": {
-        "genre": "Support",
-        "range": 2,
-        "effect": {
-            "IncreaseSpeed": { "amount": 2 }
-        },
-        "conditions": [
-            { "Size": { "start": 3, "end": 1000 } }
+        "effects": [
+            {
+                "ModifyMovement": 2
+            }
         ],
-		"cost": 2,
-        "targets": [ "Ally" ]
+        "prereqs": [
+            {
+                "MinSize": 3
+            }
+        ],
+        "range": 2,
+        "self_effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "target": "Allies"
     },
     "Megagrow": {
-        "genre": "Support",
+        "effects": [
+            {
+                "Heal": 4
+            }
+        ],
         "range": 1,
-        "effect": {
-            "Recover": { "amount": 4 }
-        },
-        "targets": [ "Ally" ]
+        "target": "Allies"
     },
     "Megascramble": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 4
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DealDamage": 4
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Mutilate": {
-        "genre": "Attack",
-        "range": 1,
-        "effect": {
-            "DealDamage": 4
-        },
-        "conditions": [
-            { "Size": { "start": 4, "end": 1000 } }
+        "effects": [
+            {
+                "Damage": 4
+            }
         ],
-        "targets": [ "Enemy" ]
+        "prereqs": [
+            {
+                "MinSize": 4
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
     },
     "One": {
-        "genre": "Special",
+        "effects": [
+            "Open"
+        ],
         "range": 1,
-        "effect": "OpenSquare",
-        "targets": [ "ClosedSquare" ]
+        "target": "ClosedSquare"
     },
     "Paralyze": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": -3
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DecreaseSpeed": { "amount": 3 }
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Peek": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 2,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Poke": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Quantum Glitch": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 6
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DealDamage": 6
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Scorch": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Scramble": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 4
+            }
+        ],
         "range": 2,
-        "effect": {
-            "DealDamage": 4
-        },
-        "targets": [ "Enemy" ]
-    },
-    "Selfdestruct": {
-        "genre": "Attack",
-        "range": 1,
-        "effect": {
-            "DealDamage": 10
-        },
-		"cost":1000,
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
     },
     "Seek and Destroy": {
-        "genre": "Attack",
-        "range": 2,
-        "effect": {
-            "DealDamage": 5
-        },
-        "conditions": [
-            { "Size": { "start": 5, "end": 1000 } }
+        "effects": [
+            {
+                "Damage": 5
+            }
         ],
-		"cost": 2,
-        "targets": [ "Enemy" ]
+        "prereqs": [
+            {
+                "MinSize": 5
+            }
+        ],
+        "range": 2,
+        "self_effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "target": "Enemies"
+    },
+    "Selfdestruct": {
+        "effects": [
+            {
+                "Damage": 10
+            }
+        ],
+        "range": 1,
+        "self_effects": [
+            {
+                "Damage": 1000
+            }
+        ],
+        "target": "Enemies"
     },
     "Slice": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
         "range": 1,
-        "effect": {
-            "DealDamage": 2
-        },
-        "targets": [ "Enemy" ]
-    },
-    "Sting": {
-        "genre": "Attack",
-        "range": 1,
-        "effect": {
-            "DealDamage": 1
-        },
-        "targets": [ "Enemy" ]
-    },
-    "Stone": {
-        "genre": "Attack",
-        "range": 3,
-        "effect": {
-            "DealDamage": 1
-        },
-        "targets": [ "Enemy" ]
-    },
-    "Stretch": {
-        "genre": "Support",
-        "range": 1,
-        "effect": {
-            "IncreaseMaxSize": { "amount": 1 }
-        },
-        "targets": [ "Ally" ]
-    },
-    "Surgery": {
-        "genre": "Support",
-        "range": 1,
-        "effect": {
-            "IncreaseMaxSize": { "amount": 1 }
-        },
-        "targets": [ "Ally" ]
+        "target": "Enemies"
     },
     "Spot": {
-        "genre": "Attack",
+        "effects": [
+            {
+                "Damage": 3
+            }
+        ],
         "range": 3,
-        "effect": {
-            "DealDamage": 3
-        },
-        "targets": [ "Enemy" ]
+        "target": "Enemies"
+    },
+    "Sting": {
+        "effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
+    "Stone": {
+        "effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "range": 3,
+        "target": "Enemies"
+    },
+    "Stretch": {
+        "effects": [
+            {
+                "ModifyCapacity": 1
+            }
+        ],
+        "range": 1,
+        "target": "Allies"
+    },
+    "Surgery": {
+        "effects": [
+            {
+                "ModifyCapacity": 1
+            }
+        ],
+        "range": 1,
+        "target": "Allies"
     },
     "Tweak": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyMovement": 1
+            }
+        ],
         "range": 1,
-        "effect": {
-            "IncreaseSpeed": { "amount": 1 }
-        },
-		"cost": 1,
-        "targets": [ "Ally" ]
+        "self_effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "target": "Allies"
     },
     "Twiddle": {
-        "genre": "Support",
+        "effects": [
+            {
+                "ModifyCapacity": 1
+            }
+        ],
         "range": 1,
-        "effect": {
-            "IncreaseMaxSize": { "amount": 1 }
-        },
-		"cost": 1,
-        "targets": [ "Ally" ]
+        "self_effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "target": "Allies"
     },
     "Zero": {
-        "genre": "Special",
+        "effects": [
+            "Close"
+        ],
         "range": 1,
-        "effect": "CloseSquare",
-        "targets": [ "EmptySquare" ]
+        "target": "FreeSquare"
     }
 }

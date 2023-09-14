@@ -1,6 +1,6 @@
 {
     "Dog": {
-        "actions": [ "Bite" ],
+        "actions": [ "testing/test.actions.json#Bite" ],
         "description": "Is a doggy",
         "display": "犬",
         "max_size": 2,
@@ -14,7 +14,7 @@
         "speed": 3
     },
     "Andy": {
-        "actions": [ "Bite" ],
+        "actions": [ "testing/test.actions.json#Bite" ],
         "description": "A friendly guy?",
         "display": "ND",
         "max_size": 1,

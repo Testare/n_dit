@@ -1,10 +1,9 @@
 use std::borrow::Borrow;
 
-use bitvec::macros::internal::funty::Floating;
+use serde::{Deserialize, Serialize};
 
 use crate::common::metadata::MetadataErr;
 // TODO figure out how to handle these Node imports to decrease coupling
-use crate::node::Team;
 use crate::prelude::*;
 
 // Is this really the best place for this module?
@@ -37,7 +36,7 @@ pub struct ActionRange {
     headless: bool,
 }
 
-#[derive(Clone, Copy, Debug, Default, Reflect)]
+#[derive(Clone, Copy, Debug, Deserialize, Default, Reflect, Serialize)]
 pub enum RangeShape {
     #[default]
     Diamond,
@@ -45,7 +44,7 @@ pub enum RangeShape {
     Circle,
 }
 
-#[derive(Clone, Copy, Component, Debug, Default, Reflect)]
+#[derive(Clone, Copy, Component, Debug, Default, Deserialize, Reflect, Serialize)]
 pub enum ActionTarget {
     Allies,
     ClosedSquare,
@@ -54,66 +53,67 @@ pub enum ActionTarget {
     Enemies,
     FreeSquare,
     None,
+    Point,
 }
 
-impl ActionTarget {
-    pub fn valid_target<F: Fn(Entity) -> Option<Entity>>(
-        &self,
-        grid: &EntityGrid,
-        source: Entity,
-        target: UVec2,
-        team_check: F,
-    ) -> bool {
-        match self {
-            Self::None => true,
-            Self::Curios => grid.item_at(target).and_then(team_check).is_some(),
-            Self::Enemies => grid
-                .item_at(target)
-                .and_then(|target_entity| team_check(target_entity))
-                .and_then(|target_team| Some(target_team != team_check(source)?))
-                .unwrap_or(false),
-            Self::Allies => {
-                if let Some(target_entity) = grid.item_at(target) {
-                    team_check(target_entity) == team_check(source)
-                } else {
-                    false
-                }
-            },
-            Self::FreeSquare => grid.square_is_free(target),
-            Self::ClosedSquare => grid.square_is_closed(target),
-        }
-    }
-}
-
-impl RangeShape {
-    fn dist(&self, from_pt: UVec2, target: UVec2) -> u32 {
-        let dist = UVec2 {
-            x: from_pt.x.abs_diff(target.x),
-            y: from_pt.y.abs_diff(target.y),
-        };
-        match self {
-            Self::Diamond => dist.x + dist.y,
-            Self::Circle => dist.x * dist.x + dist.y * dist.y,
-            Self::Square => dist.x.max(dist.y),
-        }
-    }
-}
-
-#[derive(Clone, Component, Copy, Debug, Reflect)]
+#[derive(Clone, Component, Debug, Deserialize, Reflect, Serialize)]
 #[non_exhaustive]
 pub enum ActionEffect {
     Damage(usize),
     Heal(usize),
     Open,
     Close,
+    ModifyMovement(isize),
+    ModifyCapacity(isize),
+    AddTag(String),
 }
 
 #[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 pub struct Prereqs(pub Vec<Prerequisite>);
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Clone, Debug, Deserialize, Reflect, Serialize)]
 pub enum Prerequisite {
     MinSize(u32),
+    // TargetMaxSize (Limit how much you can expand a curio)
+}
+
+impl ActionEffect {
+    pub fn apply_effect(
+        &self,
+        grid: &mut Mut<EntityGrid>,
+        _source: Entity,
+        target: UVec2,
+    ) -> Result<Metadata, MetadataErr> {
+        let mut action_metadata = Metadata::default();
+
+        action_metadata.put(key::TARGET_POINT, target)?;
+        Ok(match self {
+            ActionEffect::Damage(dmg) => {
+                if let Some(key) = grid.item_at(target) {
+                    let damages = grid.list_back_n(key, *dmg);
+                    action_metadata.put(key::TARGET_ENTITY, key)?;
+                    action_metadata.put(key::DAMAGES, damages)?;
+                    action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg)?;
+                    grid.pop_back_n(key, *dmg);
+                }
+                action_metadata
+            },
+            ActionEffect::Open => {
+                if grid.square_is_closed(target) {
+                    grid.open_square(target);
+                }
+                action_metadata
+            },
+            ActionEffect::Close => {
+                if grid.square_is_free(target) {
+                    grid.close_square(target);
+                }
+                action_metadata
+            },
+            ActionEffect::Heal(_healing) => todo!("Healing not implemented yet"),
+            _ => todo!("Not implemented yet"),
+        })
+    }
 }
 
 impl ActionRange {
@@ -136,6 +136,23 @@ impl ActionRange {
         self
     }
 
+    pub fn is_headless(&self) -> bool {
+        self.headless
+    }
+
+    pub fn max_range(&self) -> u32 {
+        self.max_range
+    }
+
+    pub fn minimum_range(&self) -> u32 {
+        self.min_range
+    }
+
+    pub fn shape(&self) -> RangeShape {
+        self.shape
+    }
+
+    // TODO rename: with_min_range
     pub fn min_range(mut self, min_range: u32) -> Self {
         if min_range <= self.max_range {
             self.min_range = min_range;
@@ -186,6 +203,36 @@ impl ActionRange {
     }
 }
 
+impl ActionTarget {
+    pub fn valid_target<F: Fn(Entity) -> Option<Entity>>(
+        &self,
+        grid: &EntityGrid,
+        source: Entity,
+        target: UVec2,
+        team_check: F,
+    ) -> bool {
+        match self {
+            Self::None => true,
+            Self::Curios => grid.item_at(target).and_then(team_check).is_some(),
+            Self::Enemies => grid
+                .item_at(target)
+                .and_then(|target_entity| team_check(target_entity))
+                .and_then(|target_team| Some(target_team != team_check(source)?))
+                .unwrap_or(false),
+            Self::Allies => {
+                if let Some(target_entity) = grid.item_at(target) {
+                    team_check(target_entity) == team_check(source)
+                } else {
+                    false
+                }
+            },
+            Self::FreeSquare => grid.square_is_free(target),
+            Self::ClosedSquare => grid.square_is_closed(target),
+            Self::Point => true,
+        }
+    }
+}
+
 impl Prerequisite {
     pub fn satisfied(&self, grid: &Mut<EntityGrid>, source: Entity, _target: UVec2) -> bool {
         match self {
@@ -194,40 +241,16 @@ impl Prerequisite {
     }
 }
 
-impl ActionEffect {
-    pub fn apply_effect(
-        &self,
-        grid: &mut Mut<EntityGrid>,
-        _source: Entity,
-        target: UVec2,
-    ) -> Result<Metadata, MetadataErr> {
-        let mut action_metadata = Metadata::default();
-
-        action_metadata.put(key::TARGET_POINT, target)?;
-        Ok(match self {
-            ActionEffect::Damage(dmg) => {
-                if let Some(key) = grid.item_at(target) {
-                    let damages = grid.list_back_n(key, *dmg);
-                    action_metadata.put(key::TARGET_ENTITY, key)?;
-                    action_metadata.put(key::DAMAGES, damages)?;
-                    action_metadata.put(key::FATAL, grid.len_of(key) <= *dmg)?;
-                    grid.pop_back_n(key, *dmg);
-                }
-                action_metadata
-            },
-            ActionEffect::Open => {
-                if grid.square_is_closed(target) {
-                    grid.open_square(target);
-                }
-                action_metadata
-            },
-            ActionEffect::Close => {
-                if grid.square_is_free(target) {
-                    grid.close_square(target);
-                }
-                action_metadata
-            },
-            ActionEffect::Heal(_healing) => todo!("Healing not implemented yet"),
-        })
+impl RangeShape {
+    fn dist(&self, from_pt: UVec2, target: UVec2) -> u32 {
+        let dist = UVec2 {
+            x: from_pt.x.abs_diff(target.x),
+            y: from_pt.y.abs_diff(target.y),
+        };
+        match self {
+            Self::Diamond => dist.x + dist.y,
+            Self::Circle => dist.x * dist.x + dist.y * dist.y,
+            Self::Square => dist.x.max(dist.y),
+        }
     }
 }

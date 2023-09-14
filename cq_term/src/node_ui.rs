@@ -11,7 +11,6 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
-use game_core::node::NodeOp;
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
 

@@ -95,7 +95,7 @@ struct PieceQ {
 #[derive(WorldQuery)]
 struct ActionQ {
     range: Copied<ActionRange>,
-    effect: Copied<ActionEffect>,
+    effect: Cloned<ActionEffect>,
 }
 
 fn sys_ai(
@@ -109,7 +109,7 @@ fn sys_ai(
         (AsDerefCopied<CurrentTurn>, &EntityGrid),
         (Changed<CurrentTurn>, With<Node>),
     >,
-    actions: Query<(Entity, (Copied<ActionRange>, Copied<ActionEffect>)), With<Action>>,
+    actions: Query<(Entity, (Copied<ActionRange>, Cloned<ActionEffect>)), With<Action>>,
     pieces: Query<(AsDerefCopied<OnTeam>, PieceQ), (With<NodePiece>, With<Curio>)>,
 ) {
     for (current_turn, grid) in changed_turn_nodes.iter() {

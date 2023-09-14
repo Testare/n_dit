@@ -10,6 +10,7 @@ pub use card_action::{
     RangeShape,
 };
 pub use card_as_asset::{ActionDefinition, CardDefinition};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default)]
 pub struct CardPlugin;
@@ -51,8 +52,8 @@ struct Tags {
     tags: Vec<Tag>,
 }
 
-#[derive(Reflect)]
-enum Tag {
+#[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
+pub enum Tag {
     Damage,
     Healing,
     Fire,

@@ -1,41 +1,54 @@
 {
     "Bit Man": {
-        "actions": ["Zero", "One"],
+        "actions": [
+            "nightfall/program.actions.json#Zero",
+            "nightfall/program.actions.json#One"
+        ],
         "description": "Makes sectors of the grid appear or disappear",
         "display": "01",
         "max_size": 3,
         "speed": 3
     },
     "Bug": {
-        "actions": [ "Glitch" ],
+        "actions": [
+            "nightfall/program.actions.json#Glitch"
+        ],
         "description": "Fast, cheap, and out of control",
         "display": "b ",
         "max_size": 1,
         "speed": 5
     },
     "Clog": {
-        "actions": [ "Lag" ],
+        "actions": [
+            "nightfall/program.actions.json#Lag"
+        ],
         "description": "Slows down hostile programs",
         "display": "c1",
         "max_size": 4,
         "speed": 2
     },
     "Data Doctor": {
-        "actions": [ "Grow" ],
+        "actions": [
+            "nightfall/program.actions.json#Grow"
+        ],
         "description": "Helps your programs grow",
         "display": "dd",
         "max_size": 5,
         "speed": 4
     },
     "Hack": {
-        "actions": [ "Slice" ],
+        "actions": [
+            "nightfall/program.actions.json#Slice"
+        ],
         "description": "Basic attack program",
         "display": "hk",
         "max_size": 4,
         "speed": 2
     },
     "Slingshot": {
-        "actions": [ "Stone" ],
+        "actions": [
+            "nightfall/program.actions.json#Stone"
+        ],
         "description": "Basic ranged-attack program",
         "display": "ss",
         "max_size": 2,
