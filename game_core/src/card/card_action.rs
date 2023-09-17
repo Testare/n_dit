@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 
 use serde::{Deserialize, Serialize};
 
+use super::ActionDefinition;
 use crate::common::metadata::MetadataErr;
 // TODO figure out how to handle these Node imports to decrease coupling
 use crate::prelude::*;
@@ -21,12 +22,7 @@ pub mod key {
 }
 
 #[derive(Clone, Component, Debug, Deref, Reflect)]
-pub struct Actions(pub Vec<Entity>);
-
-#[derive(Clone, Component, Debug, Reflect)]
-pub struct Action {
-    pub name: String,
-}
+pub struct Actions(pub Vec<Handle<ActionDefinition>>);
 
 #[derive(Copy, Clone, Component, Debug, Reflect)]
 pub struct ActionRange {

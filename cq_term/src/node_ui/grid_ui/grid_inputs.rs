@@ -1,8 +1,8 @@
 use crossterm::event::KeyModifiers;
-use game_core::card::{Action, ActionRange, Actions};
+use game_core::card::{ActionDefinition, Actions, NO_OP_ACTION_ID};
 use game_core::node::{
-    ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, NoOpAction, Node, NodeOp, NodePiece, OnTeam,
-    Pickup, Team, TeamPhase,
+    ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam, Pickup,
+    Team, TeamPhase,
 };
 use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
@@ -17,6 +17,7 @@ use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
+    ast_actions: Res<Assets<ActionDefinition>>,
     mut ev_mouse: EventReader<LayoutEvent>,
     ui: Query<(&ForPlayer, &Scroll2D), With<GridUi>>,
     players: Query<
@@ -33,7 +34,6 @@ pub fn handle_layout_events(
     teams: Query<&TeamPhase, With<Team>>,
     pickups: Query<(), With<Pickup>>,
     curios: Query<(&OnTeam, &Actions, &IsTapped), With<Curio>>,
-    actions: Query<(&ActionRange,), With<Action>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
@@ -76,13 +76,12 @@ pub fn handle_layout_events(
                             if **tapped {
                                 return None;
                             }
-                            actions.get(selected_action).copied()
+                            ast_actions.get(actions.get(selected_action)?)
                         });
                         let pt_in_range = selected_action
                             .as_ref()
                             .and_then(|selected_action| {
-                                let (range,) = actions.get(*selected_action).ok()?;
-                                Some(range.in_range_of(
+                                Some(selected_action.range()?.in_range_of(
                                     grid,
                                     selected_entity.unwrap(),
                                     clicked_node_pos,
@@ -93,7 +92,7 @@ pub fn handle_layout_events(
                             ev_node_op.send(Op::new(
                                 *player,
                                 NodeOp::PerformCurioAction {
-                                    action,
+                                    action_id: action.id_cow(),
                                     curio: **selected_entity,
                                     target: clicked_node_pos,
                                 },
@@ -149,7 +148,7 @@ pub fn handle_layout_events(
 }
 
 pub fn kb_grid(
-    no_op_action: Res<NoOpAction>,
+    ast_actions: Res<Assets<ActionDefinition>>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     players: Query<
@@ -167,7 +166,6 @@ pub fn kb_grid(
     >,
     node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
     grid_uis: Query<(), With<GridUi>>,
-    rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
     teams: Query<&TeamPhase, With<Team>>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
@@ -215,11 +213,11 @@ pub fn kb_grid(
                                         if **is_tapped || *team_phase == TeamPhase::Setup {
                                             return None;
                                         }
-                                        let action = *actions?.get(selected_action_index)?;
+                                        let action = ast_actions.get(actions?.get(selected_action_index)?)?;
                                         ev_node_op.send(Op::new(
                                             player,
                                             NodeOp::PerformCurioAction {
-                                                action,
+                                                action_id: action.id_cow(),
                                                 curio: **selected_entity,
                                                 target: **cursor,
                                             },
@@ -238,25 +236,24 @@ pub fn kb_grid(
                                                 ev_node_op.send(Op::new(
                                                     player,
                                                     NodeOp::PerformCurioAction {
-                                                        action: **no_op_action,
+                                                        action_id: NO_OP_ACTION_ID,
                                                         curio: **selected_entity,
                                                         target: default(),
                                                     },
                                                 ));
                                             },
                                             Some((1, actions)) => {
-                                                let action = *actions.0.get(0).expect(
-                                                "if the len is 1, there should be an action at 0",
-                                            );
-                                                if rangeless_actions.contains(action) {
-                                                    ev_node_op.send(Op::new(
-                                                        player,
-                                                        NodeOp::PerformCurioAction {
-                                                            action,
-                                                            curio: **selected_entity,
-                                                            target: default(),
-                                                        },
-                                                    ));
+                                                if let Some(action) = ast_actions.get(actions.0.get(0).expect("if the len is 1, there should be an action at 0")) {
+                                                    if action.range().is_none() {
+                                                        ev_node_op.send(Op::new(
+                                                            player,
+                                                            NodeOp::PerformCurioAction {
+                                                                action_id: action.id_cow(),
+                                                                curio: **selected_entity,
+                                                                target: default(),
+                                                            },
+                                                        ));
+                                                    }
                                                 }
                                             },
                                             _ => {},

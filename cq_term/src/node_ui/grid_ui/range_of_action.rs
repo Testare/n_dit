@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use game_core::card::{Action, ActionRange, Actions};
+use game_core::card::{ActionDefinition, Actions};
 use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
@@ -9,6 +9,7 @@ use crate::node_ui::AvailableMoves;
 use crate::prelude::*;
 
 pub fn get_range_of_action(
+    ast_actions: Res<Assets<ActionDefinition>>,
     mut players: ParamSet<(
         Query<PlayerUiQ>,
         Query<(Entity, &mut AvailableActionTargets)>,
@@ -27,7 +28,6 @@ pub fn get_range_of_action(
     changed_access_point: Query<(), Changed<AccessPoint>>,
     node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
     node_grids: Query<&EntityGrid, With<Node>>,
-    actions: Query<(&ActionRange,), With<Action>>,
 ) {
     let players_to_update: HashSet<Entity> = players
         .p0()
@@ -55,7 +55,7 @@ pub fn get_range_of_action(
                 return None;
             }
             let action_id = &curio_actions[(**player_q.selected_action)?];
-            let (range,) = actions.get(*action_id).ok()?; // Not all actions have a range
+            let range = ast_actions.get(action_id)?.range()?; // Not all actions have a range
             let available_moves = player_q.available_moves.deref();
             let entity = (**player_q.selected_entity)?;
             let grid = node_grids.get(**player_q.in_node).ok()?;

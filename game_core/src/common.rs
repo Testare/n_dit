@@ -1,12 +1,9 @@
 pub mod metadata;
 pub mod sord;
 
-use std::marker::PhantomData;
 use std::ops::Deref;
 
-use bevy::ecs::archetype::Archetype;
 use bevy::ecs::query::{QueryEntityError, ReadOnlyWorldQuery, WorldQuery};
-use bevy::ecs::storage::Table;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
 pub use metadata::Metadata;

@@ -79,7 +79,7 @@ pub enum MouseButtonTty {
 pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
     layout_elements: Query<
-        (Entity, &CalculatedSizeTty, &GlobalTranslationTty, DebugName),
+        (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
         (With<LayoutMouseTarget>, Without<LayoutMouseTargetDisabled>),
     >,
     mut evw_mouse_tty: EventWriter<MouseEventTty>,
@@ -111,7 +111,7 @@ pub fn sys_mouse_tty(
             MouseEventTtyKind::Todo
         };
 
-        for (entity, size, translation, debug_name) in layout_elements.iter() {
+        for (entity, size, translation) in layout_elements.iter() {
             if translation.x <= event_x
                 && event_x < (translation.x + size.width32())
                 && translation.y <= event_y

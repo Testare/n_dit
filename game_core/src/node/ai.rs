@@ -6,8 +6,10 @@ use std::time::Duration;
 use bevy::ecs::query::WorldQuery;
 use bevy::time::Time;
 
-use super::{Curio, CurrentTurn, MovesTaken, NoOpAction, Node, NodeOp, NodePiece, OnTeam, Team};
-use crate::card::{Action, ActionEffect, ActionRange, Actions, MovementSpeed};
+use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
+use crate::card::{
+    ActionDefinition, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID,
+};
 use crate::player::Player;
 use crate::prelude::*;
 use crate::NDitCoreSet;
@@ -87,7 +89,7 @@ fn sys_ai_apply(
 #[derive(WorldQuery)]
 struct PieceQ {
     id: Entity,
-    actions: AsDerefCloned<Actions>,
+    actions: AsDerefClonedOrDefault<Actions>,
     movement: Option<&'static MovementSpeed>,
     ai_order: OrUsize<AsDerefCopied<SimpleAiCurioOrder>, 30>,
 }
@@ -99,7 +101,7 @@ struct ActionQ {
 }
 
 fn sys_ai(
-    no_op_action: Res<NoOpAction>,
+    ast_actions: Res<Assets<ActionDefinition>>,
     mut ai_players: IndexedQuery<
         OnTeam,
         (Entity, &NodeBattleIntelligence, AsDerefMut<AiThread>),
@@ -109,7 +111,6 @@ fn sys_ai(
         (AsDerefCopied<CurrentTurn>, &EntityGrid),
         (Changed<CurrentTurn>, With<Node>),
     >,
-    actions: Query<(Entity, (Copied<ActionRange>, Cloned<ActionEffect>)), With<Action>>,
     pieces: Query<(AsDerefCopied<OnTeam>, PieceQ), (With<NodePiece>, With<Curio>)>,
 ) {
     for (current_turn, grid) in changed_turn_nodes.iter() {
@@ -128,75 +129,95 @@ fn sys_ai(
                 },
                 NodeBattleIntelligence::Lazy => {
                     let (sx, rx) = std::sync::mpsc::channel();
-                    let actions: HashMap<Entity, _> = actions.iter().collect();
-                    let my_pieces: Vec<(Entity, Vec<Entity>)> = pieces
+                    let mut actions = HashMap::new();
+                    let my_pieces: Vec<(Entity, Vec<String>)> = pieces
                         .iter()
                         .filter_map(|(team, piece)| {
-                            (team == current_turn).then_some((piece.id, piece.actions))
+                            if team != current_turn {
+                                return None;
+                            }
+                            let piece_actions = piece
+                                .actions
+                                .clone()
+                                .into_iter()
+                                .filter_map(|action| {
+                                    let definition = actions
+                                        .entry(action)
+                                        .or_insert_with_key(|action| {
+                                            ast_actions.get(action).cloned()
+                                        })
+                                        .as_ref()?;
+                                    Some(definition.id().to_owned())
+                                })
+                                .collect();
+                            Some((piece.id, piece_actions))
                         })
                         .collect();
-                    let enemy_pieces: Vec<(Entity, Vec<Entity>)> = pieces
+                    let enemy_pieces: Vec<Entity> = pieces
                         .iter()
-                        .filter_map(|(team, piece)| {
-                            (team != current_turn).then_some((piece.id, piece.actions))
-                        })
+                        .filter_map(|(team, piece)| (team != current_turn).then_some(piece.id))
                         .collect();
                     let grid = grid.clone();
+                    let actions: HashMap<String, ActionDefinition> = actions
+                        .into_iter()
+                        .filter_map(|(_, v)| v.map(|v| (v.id().to_owned(), v)))
+                        .collect();
 
-                    let no_op_action = no_op_action.0;
                     *ai_thread = Some(AiThreadInternal {
                         pause_until: default(),
                         events: Mutex::new(rx),
                         handle: std::thread::spawn(move || {
-                            lazy_ai_script(
-                                id,
-                                no_op_action,
-                                sx,
-                                grid,
-                                my_pieces,
-                                actions,
-                                enemy_pieces,
-                            );
+                            lazy_ai_script(id, actions, sx, grid, my_pieces, enemy_pieces);
                         }),
                     });
                 },
                 NodeBattleIntelligence::Simple => {
                     let (sx, rx) = std::sync::mpsc::channel();
-                    let actions: HashMap<Entity, _> = actions.iter().collect();
-                    let my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>, usize)> =
+                    let mut actions = HashMap::new();
+                    let my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)> =
                         pieces
                             .iter()
                             .filter_map(|(team, piece)| {
-                                (team == current_turn).then_some((
+                                if team != current_turn {
+                                    return None;
+                                }
+                                let piece_actions = piece
+                                    .actions
+                                    .clone()
+                                    .into_iter()
+                                    .filter_map(|action| {
+                                        let definition = actions
+                                            .entry(action)
+                                            .or_insert_with_key(|action| {
+                                                ast_actions.get(action).cloned()
+                                            })
+                                            .as_ref()?;
+                                        Some(definition.id().to_owned())
+                                    })
+                                    .collect();
+                                Some((
                                     piece.id,
-                                    piece.actions,
+                                    piece_actions,
                                     piece.movement.cloned(),
                                     piece.ai_order,
                                 ))
                             })
                             .collect();
-                    let enemy_pieces: Vec<(Entity, Vec<Entity>)> = pieces
+                    let enemy_pieces: Vec<Entity> = pieces
                         .iter()
-                        .filter_map(|(team, piece)| {
-                            (team != current_turn).then_some((piece.id, piece.actions))
-                        })
+                        .filter_map(|(team, piece)| (team != current_turn).then_some(piece.id))
+                        .collect();
+                    let actions: HashMap<String, ActionDefinition> = actions
+                        .into_iter()
+                        .filter_map(|(_, v)| v.map(|v| (v.id().to_owned(), v)))
                         .collect();
                     let grid = grid.clone();
 
-                    let no_op_action = no_op_action.0;
                     *ai_thread = Some(AiThreadInternal {
                         pause_until: default(),
                         events: Mutex::new(rx),
                         handle: std::thread::spawn(move || {
-                            simple_ai_script(
-                                id,
-                                no_op_action,
-                                sx,
-                                grid,
-                                my_pieces,
-                                actions,
-                                enemy_pieces,
-                            );
+                            simple_ai_script(id, actions, sx, grid, my_pieces, enemy_pieces);
                         }),
                     });
                 },
@@ -213,12 +234,11 @@ fn sys_ai(
 // No pathfinding, simply moves in the direction of the nearest piece until it is within attack distance.
 fn simple_ai_script(
     id: Entity,
-    no_op_action: Entity,
+    actions: HashMap<String, ActionDefinition>,
     sx: Sender<(Op<NodeOp>, Duration)>,
     mut grid: EntityGrid,
-    mut my_pieces: Vec<(Entity, Vec<Entity>, Option<MovementSpeed>, usize)>,
-    actions: HashMap<Entity, (ActionRange, ActionEffect)>,
-    enemy_pieces: Vec<(Entity, Vec<Entity>)>,
+    mut my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)>,
+    enemy_pieces: Vec<Entity>,
 ) {
     std::thread::sleep(Duration::from_millis(350));
     my_pieces.sort_by_key(|piece| piece.3);
@@ -233,7 +253,7 @@ fn simple_ai_script(
         ));
         if let Some(closest_enemy_pt) = enemy_pieces
             .iter()
-            .flat_map(|(id, _)| grid.points(*id))
+            .flat_map(|id| grid.points(*id))
             .min_by_key(|pt| pt.manhattan_distance(&grid_head))
         {
             log::trace!(
@@ -307,36 +327,44 @@ fn simple_ai_script(
             }
         }
 
-        if let Some((action, target, target_id, dmg)) = piece.1.into_iter().find_map(|action| {
-            let (range, effect) = actions.get(&action)?;
-            match effect {
-                ActionEffect::Damage(dmg) => {
-                    for enemy_piece in enemy_pieces.iter() {
-                        let enemy_squares = grid.points(enemy_piece.0);
-                        if let Some(point_in_range) = range.pt_in_range(enemy_squares, grid_head) {
-                            return Some((action, point_in_range, enemy_piece.0, *dmg));
+        if let Some((action_id, target, target_id, dmg)) = piece.1.into_iter().find_map(|action| {
+            let action = actions.get(&action)?;
+            // TODO When ops improves, use op logic instead of recreating here
+            for effect in action.effects() {
+                match effect {
+                    // NOTE: This could be bugged behavior if action has other effect
+                    ActionEffect::Damage(dmg) => {
+                        for enemy_piece in enemy_pieces.iter() {
+                            let enemy_squares = grid.points(*enemy_piece);
+                            let range = action
+                                .range()
+                                .expect("damage effect should have range on action");
+                            if let Some(point_in_range) =
+                                range.pt_in_range(enemy_squares, grid_head)
+                            {
+                                return Some((action.id_cow(), point_in_range, enemy_piece, *dmg));
+                            }
                         }
-                    }
-                    None
-                },
-                ActionEffect::Heal(_) => None,
-                _ => None,
+                    },
+                    _ => {},
+                }
             }
+            None
         }) {
             sx.send((
                 NodeOp::PerformCurioAction {
-                    action,
+                    action_id,
                     curio: None,
                     target,
                 }
                 .for_p(id),
                 Duration::from_secs(2),
             ));
-            grid.pop_back_n(target_id, dmg);
+            grid.pop_back_n(*target_id, dmg);
         } else {
             sx.send((
                 NodeOp::PerformCurioAction {
-                    action: no_op_action,
+                    action_id: NO_OP_ACTION_ID,
                     curio: None,
                     target: UVec2::default(),
                 }
@@ -350,12 +378,11 @@ fn simple_ai_script(
 // Attacks whatever is nearby, no movement
 fn lazy_ai_script(
     id: Entity,
-    no_op_action: Entity,
+    actions: HashMap<String, ActionDefinition>,
     sx: Sender<(Op<NodeOp>, Duration)>,
-    grid: EntityGrid,
-    my_pieces: Vec<(Entity, Vec<Entity>)>,
-    actions: HashMap<Entity, (ActionRange, ActionEffect)>,
-    enemy_pieces: Vec<(Entity, Vec<Entity>)>,
+    mut grid: EntityGrid,
+    my_pieces: Vec<(Entity, Vec<String>)>,
+    enemy_pieces: Vec<Entity>,
 ) {
     std::thread::sleep(Duration::from_millis(350));
     for piece in my_pieces {
@@ -364,24 +391,41 @@ fn lazy_ai_script(
             Duration::from_millis(500),
         ));
         if let Some((action, target)) = piece.1.into_iter().find_map(|action| {
-            let (range, effect) = actions.get(&action)?;
-            match effect {
-                ActionEffect::Damage(_) => {
-                    let head = grid.head(piece.0).expect("ai piece should have a head");
-                    for enemy_piece in enemy_pieces.iter() {
-                        let enemy_squares = grid.points(enemy_piece.0);
-                        if let Some(point_in_range) = range.pt_in_range(enemy_squares, head) {
-                            return Some((action, point_in_range));
+            let action = actions.get(&action)?;
+            for effect in action.effects() {
+                match effect {
+                    ActionEffect::Damage(_) => {
+                        let head = grid.head(piece.0).expect("ai piece should have a head");
+                        for enemy_piece in enemy_pieces.iter() {
+                            let enemy_squares = grid.points(*enemy_piece);
+                            let range = action
+                                .range()
+                                .expect("damage effect should have range on action");
+                            if let Some(point_in_range) = range.pt_in_range(enemy_squares, head) {
+                                let dmg = action
+                                    .effects()
+                                    .iter()
+                                    .map(|effect| {
+                                        if let ActionEffect::Damage(dmg) = effect {
+                                            *dmg
+                                        } else {
+                                            0
+                                        }
+                                    })
+                                    .sum();
+                                grid.pop_back_n(*enemy_piece, dmg);
+                                return Some((action.id_cow(), point_in_range));
+                            }
                         }
-                    }
-                    None
-                },
-                _ => None,
+                    },
+                    _ => {},
+                }
             }
+            None
         }) {
             sx.send((
                 NodeOp::PerformCurioAction {
-                    action,
+                    action_id: action,
                     curio: None,
                     target,
                 }
@@ -391,7 +435,7 @@ fn lazy_ai_script(
         } else {
             sx.send((
                 NodeOp::PerformCurioAction {
-                    action: no_op_action,
+                    action_id: NO_OP_ACTION_ID,
                     curio: None,
                     target: UVec2::default(),
                 }

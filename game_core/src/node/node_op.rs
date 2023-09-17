@@ -1,14 +1,15 @@
-use bevy::ecs::query::{Has, WorldQuery};
+use std::borrow::Cow;
+
+use bevy::ecs::query::WorldQuery;
 use thiserror::Error;
 
 use super::{
     key, AccessPointLoadingRule, ActiveCurio, CurrentTurn, InNode, IsReadyToGo, IsTapped,
-    MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, PreventNoOp, Team,
-    TeamPhase, TeamStatus, Teams,
+    MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase,
+    TeamStatus, Teams,
 };
 use crate::card::{
-    Action, ActionEffect, ActionRange, ActionTarget, Actions, Card, Deck, Description, MaximumSize,
-    MovementSpeed, Prereqs,
+    ActionDefinition, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
 use crate::common::metadata::MetadataErr;
 use crate::node::{AccessPoint, Curio, VictoryStatus};
@@ -18,10 +19,10 @@ use crate::prelude::*;
 
 const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum NodeOp {
     PerformCurioAction {
-        action: Entity,
+        action_id: Cow<'static, str>,
         curio: Option<Entity>,
         target: UVec2,
     },
@@ -103,6 +104,7 @@ pub struct CurioQ {
 
 pub fn curio_ops(
     no_op_action: Res<NoOpAction>,
+    action_defs: Res<Assets<ActionDefinition>>,
     mut ops: EventReader<Op<NodeOp>>,
     mut nodes: Query<
         (
@@ -119,15 +121,6 @@ pub fn curio_ops(
     mut curios: Query<CurioQ, With<Curio>>,
     curio_teams: Query<AsDerefCopied<OnTeam>, With<Curio>>,
     pickups: Query<&Pickup>,
-    actions: Query<
-        (
-            Option<&ActionEffect>,
-            Option<&ActionRange>,
-            Option<&Prereqs>,
-            CopiedOrDefault<ActionTarget>,
-        ),
-        With<Action>,
-    >,
     mut ev_results: EventWriter<OpResult<NodeOp>>,
 ) {
     for fullop @ Op { op, player } in ops.into_iter() {
@@ -230,7 +223,7 @@ pub fn curio_ops(
                     ev_results.send(OpResult::new(fullop, result));
                 },
                 NodeOp::PerformCurioAction {
-                    action: action_id,
+                    action_id,
                     curio,
                     target,
                 } => {
@@ -244,44 +237,46 @@ pub fn curio_ops(
                             let mut curio_q = get_assert_mut!(curio_id, curios)
                                 .ok_or(NodeOpError::InternalError)?;
                             debug_assert!(!**curio_q.tapped, "Active curio should not be tapped");
-                            if !curio_q
+                            let action_def = curio_q
                                 .actions
                                 .ok_or(NodeOpError::NoSuchAction)?
-                                .contains(action_id)
-                            {
-                                return Err(NodeOpError::NoSuchAction);
-                            }
+                                .iter()
+                                .find_map(|action_handle| {
+                                    let action_def = action_defs.get(action_handle)?;
+                                    (action_def.id() == action_id).then_some(action_def)
+                                })
+                                .ok_or(NodeOpError::NoSuchAction)?;
 
-                            let (effect, range, prereqs, action_target) =
-                                get_assert!(*action_id, actions)
-                                    .ok_or(NodeOpError::InternalError)?;
-                            if let Some(range) = range {
+                            if let Some(range) = action_def.range() {
                                 if !range.in_range_of(grid.as_ref(), curio_id, *target) {
                                     return Err(NodeOpError::OutOfRange);
                                 }
                             }
-                            if let Some(Prereqs(prereqs)) = prereqs {
-                                for prereq in prereqs {
-                                    if !prereq.satisfied(&grid, curio_id, *target) {
-                                        return Err(NodeOpError::PrereqsNotSatisfied);
-                                    }
+                            for prereq in action_def.prereqs() {
+                                if !prereq.satisfied(&grid, curio_id, *target) {
+                                    return Err(NodeOpError::PrereqsNotSatisfied);
                                 }
                             }
-                            if !action_target
+                            if !action_def
+                                .target()
                                 .valid_target(&grid, curio_id, *target, |e| curio_teams.get(e).ok())
                             {
                                 return Err(NodeOpError::InvalidTarget);
                             }
                             // TODO action metadata should be lower
-                            let mut action_metadata = if let Some(effect) = effect {
-                                effect.apply_effect(&mut grid, curio_id, *target)?
-                            } else {
-                                Default::default()
-                            };
+                            // TODO support multiple effects and self effects
+                            let mut action_effects = action_def
+                                .effects()
+                                .iter()
+                                .map(|effect| effect.apply_effect(&mut grid, curio_id, *target))
+                                .collect::<Result<Vec<_>, _>>()?;
+                            let mut action_metadata = action_effects.pop().unwrap_or_default();
                             action_metadata.put(key::NODE_ID, **node)?;
                             **curio_q.tapped = true;
                             **active_curio = None;
+
                             // WIP Test victory conditions
+                            // Need to rework for different victory conditions, such as obtaining key items, or time limits
                             for team in teams.iter() {
                                 if team_status[team].is_undecided() {
                                     let still_in_this = curios.iter().any(|curio_q| {
@@ -327,9 +322,10 @@ pub fn curio_ops(
 // TODO Ready to go when it isn't your turn
 pub fn ready_to_go_ops(
     no_op_action: Res<NoOpAction>,
+    ast_cards: Res<Assets<CardDefinition>>,
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
-    cards: Query<(&Card, Option<&Actions>, Has<PreventNoOp>)>,
+    cards: Query<&Card>,
     mut players: Query<(Entity, &OnTeam, &InNode, &mut IsReadyToGo), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
@@ -385,8 +381,8 @@ pub fn ready_to_go_ops(
                             for (node_piece, card_id) in relevant_access_points.into_iter() {
                                 card_id
                                     .and_then(|card_id| {
-                                        let (card, card_actions, prevent_no_op) =
-                                            get_assert!(card_id, cards)?;
+                                        let card = get_assert!(card_id, cards)?;
+                                        let card_base = ast_cards.get(card.definition())?;
                                         // Can be tapped
 
                                         let mut ap_commands = commands.entity(node_piece);
@@ -399,14 +395,13 @@ pub fn ready_to_go_ops(
                                             ))
                                             .remove::<AccessPoint>();
 
-                                        if !prevent_no_op {
+                                        if !card_base.prevent_no_op() {
                                             // Add No Op action
-                                            let mut new_actions = card_actions
-                                                .cloned()
-                                                .unwrap_or_else(|| Actions(vec![]));
-                                            new_actions.0.push(**no_op_action);
+                                            let mut new_actions = card_base.actions().clone();
+                                            new_actions.push(no_op_action.0.clone());
+                                            // NO COMMIT thos needs fixin
 
-                                            ap_commands.insert(new_actions);
+                                            ap_commands.insert(Actions(new_actions));
                                         }
                                         Some(())
                                     })
@@ -447,7 +442,7 @@ pub fn end_turn_op(
         ),
         With<Node>,
     >,
-    mut players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     mut pieces: Query<
         (
             Entity,
@@ -503,6 +498,7 @@ pub fn end_turn_op(
 }
 
 pub fn access_point_ops(
+    ast_cards: Res<Assets<CardDefinition>>,
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
     cards: Query<CardInfo>,
@@ -542,17 +538,14 @@ pub fn access_point_ops(
                             }
                             access_point.card = Some(*card_id);
                             node_piece.set_display_id(card_info.card.display_id().clone());
-                            if let Some(description) = card_info.description {
-                                access_point_commands.insert(description.clone());
-                            }
-                            if let Some(speed) = card_info.speed {
-                                access_point_commands.insert(speed.clone());
-                            }
-                            if let Some(size) = card_info.size {
-                                access_point_commands.insert(size.clone());
-                            }
-                            if let Some(actions) = card_info.actions {
-                                access_point_commands.insert(actions.clone());
+                            let card_def = ast_cards.get(card_info.card.definition());
+                            if let Some(card_def) = card_def {
+                                access_point_commands
+                                    .insert(Description::new(card_def.description().to_owned()));
+                                access_point_commands
+                                    .insert(MovementSpeed(card_def.movement_speed()));
+                                access_point_commands.insert(MaximumSize(card_def.max_size()));
+                                access_point_commands.insert(Actions(card_def.actions().clone()));
                             }
                             Ok(Default::default())
                         });

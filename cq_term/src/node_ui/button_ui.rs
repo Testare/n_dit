@@ -1,10 +1,7 @@
 use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use crossterm::event::{MouseButton, MouseEventKind};
-use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, CurrentTurn, InNode, IsReadyToGo, Node, NodeOp, NodePiece,
-    OnTeam, Teams,
-};
+use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 

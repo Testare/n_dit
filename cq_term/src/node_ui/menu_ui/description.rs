@@ -1,4 +1,4 @@
-use game_core::card::{Action, Actions, Description};
+use game_core::card::{ActionDefinition, Actions, Description};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
@@ -14,11 +14,11 @@ pub struct MenuUiDescription;
 
 impl MenuUiDescription {
     fn style_update_system(
+        ast_actions: Res<Assets<ActionDefinition>>,
         node_pieces: Query<(Option<&Description>, Option<&Actions>), With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
         mut last_nonzero_width: Local<usize>,
-        action_descs: Query<&Description, With<Action>>,
     ) {
         for (mut style, size, ForPlayer(player)) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
@@ -31,7 +31,7 @@ impl MenuUiDescription {
                         let desc_str = selected_action
                             .and_then(|selected_action| {
                                 let action_id = actions?.get(selected_action)?;
-                                Some(action_descs.get(*action_id).ok()?.as_str())
+                                Some(ast_actions.get(action_id)?.description())
                             })
                             .or_else(|| Some(piece_desc?.as_str()))?;
                         Some(textwrap::wrap(desc_str, *last_nonzero_width).len() as f32 + 1.0)
@@ -53,13 +53,13 @@ impl MenuUiDescription {
     }
 
     fn render_system(
+        ast_actions: Res<Assets<ActionDefinition>>,
         node_pieces: Query<NodePieceQ>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<
             (&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering),
             With<MenuUiDescription>,
         >,
-        action_descs: Query<&Description, With<Action>>,
     ) {
         for (size, ForPlayer(player), mut tr) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
@@ -69,7 +69,7 @@ impl MenuUiDescription {
                         let desc_str = selected_action
                             .and_then(|selected_action| {
                                 let action_id = selected.actions?.get(selected_action)?;
-                                Some(action_descs.get(*action_id).ok()?.as_str())
+                                Some(ast_actions.get(action_id)?.description())
                             })
                             .or_else(|| Some(selected.description?.as_str()))?;
                         let wrapped_desc = textwrap::wrap(desc_str, size.width());

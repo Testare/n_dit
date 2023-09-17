@@ -1,7 +1,7 @@
 use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
-use game_core::card::{Action, ActionRange, Actions};
+use game_core::card::{ActionDefinition, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
 use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
@@ -24,11 +24,11 @@ pub struct MenuUiActions;
 
 impl MenuUiActions {
     pub fn kb_action_menu(
+        ast_actions: Res<Assets<ActionDefinition>>,
         mut ev_keys: EventReader<KeyEvent>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
-        rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
@@ -74,14 +74,15 @@ impl MenuUiActions {
                                         NodeUiOp::SetSelectedAction(None)
                                             .for_p(player_id)
                                             .send(&mut ev_node_ui_op);
-                                    } else if let Some(action) =
-                                        actions.get(selected_action.unwrap_or_default())
+                                    } else if let Some(action) = actions
+                                        .get(selected_action.unwrap_or_default())
+                                        .and_then(|handle| ast_actions.get(handle))
                                     {
-                                        if rangeless_actions.contains(*action) {
+                                        if action.range().is_none() {
                                             ev_node_op.send(Op::new(
                                                 player_id,
                                                 NodeOp::PerformCurioAction {
-                                                    action: *action,
+                                                    action_id: action.id_cow(),
                                                     curio: **selected_entity,
                                                     target: default(),
                                                 },
@@ -99,11 +100,11 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
+        ast_actions: Res<Assets<ActionDefinition>>,
         mut ev_mouse: EventReader<LayoutEvent>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         players: Query<&SelectedEntity, With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
-        rangeless_actions: Query<(), (Without<ActionRange>, With<Action>)>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
@@ -134,14 +135,14 @@ impl MenuUiActions {
                                         .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
                                         .is_empty()
                                 {
-                                    let action_id = actions[clicked_action];
+                                    let action = ast_actions.get(&actions[clicked_action])?;
                                     if matches!(is_tapped, Some(IsTapped(false)))
-                                        && rangeless_actions.contains(action_id)
+                                        && action.range().is_none()
                                     {
                                         ev_node_op.send(Op::new(
                                             *player_id,
                                             NodeOp::PerformCurioAction {
-                                                action: action_id,
+                                                action_id: action.id_cow(),
                                                 curio: **selected_entity,
                                                 target: default(),
                                             },
@@ -185,6 +186,7 @@ impl MenuUiActions {
     }
 
     fn sys_render_action_menu(
+        ast_actions: Res<Assets<ActionDefinition>>,
         node_pieces: Query<&Actions, With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction, &UiFocus), With<Player>>,
         mut ui: Query<
@@ -196,7 +198,6 @@ impl MenuUiActions {
             ),
             With<MenuUiActions>,
         >,
-        actions: Query<&Action>,
     ) {
         // let render_param = render_param.into_inner();
         for (id, size, ForPlayer(player), mut tr) in ui.iter_mut() {
@@ -216,11 +217,11 @@ impl MenuUiActions {
                         menu.push_row(CharmieRow::of_text(menu_title, &title_style));
 
                         for (idx, action) in piece_actions.iter().enumerate() {
-                            if let Some(action) = get_assert!(*action, actions) {
+                            if let Some(action) = ast_actions.get(action) {
                                 if Some(idx) == **selected_action {
-                                    menu.push_row(format!("▶{}", action.name).into());
+                                    menu.push_row(format!("▶{}", action.id()).into());
                                 } else {
-                                    menu.push_row(action.name.as_str().into());
+                                    menu.push_row(action.id().into());
                                 }
                             }
                         }

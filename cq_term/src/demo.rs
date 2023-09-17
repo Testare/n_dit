@@ -1,7 +1,5 @@
 use game_core::card::{
-    Action, ActionDefinition, ActionEffect, ActionRange, ActionTarget, Actions, Card,
-    CardDefinition, Deck, Description, MaximumSize, MovementSpeed, Prereqs, Prerequisite,
-    RangeShape,
+    ActionDefinition, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
@@ -119,8 +117,8 @@ fn debug_key(
 }
 
 fn demo_startup(
-    mut asset_server: Res<AssetServer>,
-    mut no_op: Res<NoOpAction>,
+    asset_server: Res<AssetServer>,
+    no_op: Res<NoOpAction>,
     mut commands: Commands,
     mut load_node_writer: EventWriter<ShowNode>,
 ) {
@@ -134,193 +132,65 @@ fn demo_startup(
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
-    let act_slice = commands
-        .spawn((
-            Action {
-                name: "Slice".to_owned(),
-            },
-            ActionRange::new(1),
-            ActionEffect::Damage(2),
-            ActionTarget::Curios,
-            Description::new("Deletes 2 sectors from target"),
-        ))
-        .id();
-    let act_stone = commands
-        .spawn((
-            Action {
-                name: "Stone".to_owned(),
-            },
-            ActionRange::new(2),
-            ActionEffect::Damage(1),
-            Description::new("(Range 2) Deletes 1 sectors from target"),
-        ))
-        .id();
-    let act_glitch = commands
-        .spawn((
-            Action {
-                name: "Glitch".to_owned(),
-            },
-            ActionRange::new(1),
-            ActionEffect::Damage(2),
-            Description::new("Deletes 2 sectors from target"),
-        ))
-        .id();
-    let act_dice = commands
-        .spawn((
-            Action {
-                name: "Dice".to_owned(),
-            },
-            ActionRange::new(2),
-            ActionEffect::Damage(3),
-            Description::new("(Req Size: 3) Deletes 3 sectors from target"),
-            Prereqs(vec![Prerequisite::MinSize(3)]),
-        ))
-        .id();
-    let act_zero = commands
-        .spawn((
-            Action {
-                name: "Zero".to_owned(),
-            },
-            ActionRange::new(1),
-            ActionEffect::Close,
-            Description::new("Deletes one grid space"),
-            ActionTarget::FreeSquare,
-        ))
-        .id();
-    let act_one = commands
-        .spawn((
-            Action {
-                name: "One".to_owned(),
-            },
-            ActionRange::new(1),
-            ActionEffect::Open,
-            Description::new("Repairs one grid space"),
-            ActionTarget::ClosedSquare,
-        ))
-        .id();
-    let act_thrice = commands
-        .spawn((
-            Action {
-                name: "Thrice".to_owned(),
-            },
-            ActionRange::new(4),
-            ActionEffect::Damage(3),
-            Description::new("Testare says HELLO"),
-        ))
-        .id();
-    let act_ping = commands
-        .spawn(((
-            Action {
-                name: "Ping".to_owned(),
-            },
-            ActionRange::new(2),
-            ActionEffect::Damage(2),
-            Description::new("Range(2) Deletes 2 sectors from target"),
-        ),))
-        .id();
-    let act_square = commands
-        .spawn(((
-            Action {
-                name: "Square".to_owned(),
-            },
-            ActionRange::new(2).shaped(RangeShape::Square),
-            ActionEffect::Damage(2),
-            Description::new("Range(2[]) Deletes 2 sectors from target"),
-        ),))
-        .id();
-    let act_calamari = commands
-        .spawn(((
-            Action {
-                name: "Calamari".to_owned(),
-            },
-            ActionRange::new(1).headless(true),
-            ActionEffect::Damage(20),
-            Description::new("Range(1*) Deletes 20 sectors from target"),
-        ),))
-        .id();
-    let act_circle = commands
-        .spawn(((
-            Action {
-                name: "Circle".to_owned(),
-            },
-            ActionRange::new(5).shaped(RangeShape::Circle),
-            ActionEffect::Damage(2),
-            Description::new("Range(2o) Deletes 2 sectors from target"),
-        ),))
-        .id();
-    let act_ff_bow = commands
-        .spawn(((
-            Action {
-                name: "FF Bow".to_owned(),
-            },
-            ActionRange::new(4).min_range(3),
-            ActionEffect::Damage(2),
-            Description::new("Range(2-3) Deletes 2 sectors from target"),
-        ),))
-        .id();
-
+    let act_phaser = asset_server.load("nightfall/enemies.actions.json#Phaser");
     let hack = commands
-        .spawn((
-            Card::new("Hack", "curio:hack", None),
-            MaximumSize(4),
-            MovementSpeed(3),
-            Actions(vec![act_slice, act_dice]),
-            Description::new("Basic attack program"),
-        ))
+        .spawn((Card::new(
+            "Hack",
+            "curio:hack",
+            None,
+            asset_server.load("/nightfall/lvl1.cards.json#Hack"),
+        ),))
         .id();
     let card_0 = commands
-        .spawn((
-            Card::new("Sling", "curio:sling", None),
-            Description::new("Basic attack program"),
-            MaximumSize(3),
-            MovementSpeed(2),
-            Actions(vec![act_stone]),
-        ))
+        .spawn((Card::new(
+            "Sling",
+            "curio:sling",
+            None,
+            asset_server.load("nightfall/lvl1.cards.json#Slingshot"),
+        ),))
         .id();
     let card_1 = commands
-        .spawn((
-            Card::new("Bit Man", "curio:bit_man", None),
-            MaximumSize(3),
-            MovementSpeed(3),
-            Actions(vec![act_zero, act_one]),
-            Description::new("Makes sectors of the grid appear or disappear"),
-        ))
+        .spawn((Card::new(
+            "Bit Man",
+            "curio:bit_man",
+            None,
+            asset_server.load("nightfall/lvl1.cards.json#Bit Man"),
+        ),))
         .id();
     let card_2 = commands
-        .spawn((
-            Card::new("Bug", "curio:bug", None),
-            Description::new("Fast, cheap, and out of control"),
-            MaximumSize(1),
-            MovementSpeed(5),
-            Actions(vec![act_glitch]),
-        ))
+        .spawn((Card::new(
+            "Bug",
+            "curio:bug",
+            None,
+            asset_server.load("nightfall/lvl1.cards.json#Bug"),
+        ),))
         .id();
     let card_3 = commands
-        .spawn((
-            Card::new("Super Bug", "curio:death", None),
-            Description::new("Testing utility"),
-            MaximumSize(4),
-            MovementSpeed(6),
-            Actions(vec![act_square, act_calamari, act_circle, act_ff_bow]),
-        ))
+        .spawn((Card::new(
+            "Super Bug",
+            "curio:death",
+            None,
+            asset_server.load("nightfall/lvl3.cards.json#Mandelbug"),
+        ),))
         .id();
     let card_4 = commands
         .spawn((
-            Card::new("Card4", "curio:hack", None),
+            Card::new(
+                "Card4",
+                "curio:hack",
+                None,
+                asset_server.load("nightfall/lvl1.cards.json#Hack"),
+            ),
             Description::new("Basic attack program4"),
         ))
         .id();
     let card_5 = commands
-        .spawn((
-            Card::new(
-                "Data Doctor Pro",
-                "curio:data_doctor_pro",
-                Some("DataDocPro"),
-            ),
-            Description::new("He's gonna get you"),
-            MovementSpeed(5),
-            MaximumSize(8),
-        ))
+        .spawn((Card::new(
+            "Data Doctor Pro",
+            "curio:data_doctor_pro",
+            Some("DataDocPro"),
+            asset_server.load("nightfall/lvl3.cards.json#Data Doctor Pro"),
+        ),))
         .id();
     let node = commands
         .spawn((
@@ -374,7 +244,7 @@ fn demo_startup(
             .add_to_grid(node_id, vec![(11, 10)]);
 
             node.spawn((
-                Actions(vec![act_ping, **no_op]),
+                Actions(vec![act_phaser.clone(), (**no_op).clone()]),
                 Curio::new("Shinigami"),
                 IsTapped(false),
                 MaximumSize(7),
@@ -386,7 +256,7 @@ fn demo_startup(
             ))
             .add_to_grid(node_id, vec![(2, 5)]);
             node.spawn((
-                Actions(vec![act_ping, **no_op]),
+                Actions(vec![act_phaser.clone(), (**no_op).clone()]),
                 Curio::new("Shinigami"),
                 IsTapped(false),
                 MaximumSize(7),

@@ -6,8 +6,8 @@ use unicode_width::UnicodeWidthStr;
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, Tooltip, TooltipBar};
 use crate::layout::{
-    CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle,
-    UiFocusCycleOrder, VisibilityTty,
+    LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
+    VisibilityTty,
 };
 use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
 use crate::node_ui::grid_ui::GridUi;

@@ -6,10 +6,9 @@ mod card_action;
 mod card_as_asset;
 
 pub use card_action::{
-    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
-    RangeShape,
+    key, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite, RangeShape,
 };
-pub use card_as_asset::{ActionDefinition, CardDefinition};
+pub use card_as_asset::{ActionDefinition, CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default)]
@@ -36,6 +35,8 @@ pub struct Card {
     display_id: String,
     short_name: Option<String>,
     nickname: Option<String>,
+    #[getset(get = "pub")]
+    definition: Handle<CardDefinition>,
 }
 
 #[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
@@ -151,12 +152,18 @@ impl Deck {
 }
 
 impl Card {
-    pub fn new<S: Into<String>>(card_name: S, display_id: S, short_name: Option<S>) -> Self {
+    pub fn new<S: Into<String>>(
+        card_name: S,
+        display_id: S,
+        short_name: Option<S>,
+        definition: Handle<CardDefinition>,
+    ) -> Self {
         Card {
             card_name: card_name.into(),
             display_id: display_id.into(),
             short_name: short_name.map(Into::into),
             nickname: None,
+            definition,
         }
     }
 
