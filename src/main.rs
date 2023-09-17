@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::time::Duration;
 
+use bevy::asset::ChangeWatcher;
 use bevy::prelude::*;
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -9,7 +10,10 @@ fn main() {
 
     App::new()
         .add_plugins((
-            AssetPlugin::default(),
+            AssetPlugin {
+                watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(500)),
+                ..default()
+            },
             HierarchyPlugin,
             bevy::audio::AudioPlugin::default(),
             bevy::core::TaskPoolPlugin::default(),
