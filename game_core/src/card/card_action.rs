@@ -2,8 +2,9 @@ use std::borrow::Borrow;
 
 use serde::{Deserialize, Serialize};
 
-use super::ActionDefinition;
+use super::{ActionDefinition, MaximumSize, MovementSpeed};
 use crate::common::metadata::MetadataErr;
+use crate::node::Curio;
 // TODO figure out how to handle these Node imports to decrease coupling
 use crate::prelude::*;
 
@@ -59,8 +60,8 @@ pub enum ActionEffect {
     Heal(usize),
     Open,
     Close,
-    ModifyMovement(isize),
-    ModifyCapacity(isize),
+    ModifyMovement(i32),
+    ModifyCapacity(i32),
     AddTag(String),
 }
 
@@ -79,6 +80,7 @@ impl ActionEffect {
         grid: &mut Mut<EntityGrid>,
         _source: Entity,
         target: UVec2,
+        entity_props: &mut Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
     ) -> Result<Metadata, MetadataErr> {
         let mut action_metadata = Metadata::default();
 
@@ -103,6 +105,32 @@ impl ActionEffect {
             ActionEffect::Close => {
                 if grid.square_is_free(target) {
                     grid.close_square(target);
+                }
+                action_metadata
+            },
+            ActionEffect::ModifyCapacity(capacity_change) => {
+                if let Some(target_id) = grid.item_at(target) {
+                    if let Ok((mut capacity, _)) = entity_props.get_mut(target_id) {
+                        if *capacity_change > 0 {
+                            *capacity = capacity.saturating_add(*capacity_change as u32);
+                        } else {
+                            *capacity = capacity.saturating_sub((-capacity_change) as u32);
+                        }
+                    }
+                }
+                action_metadata
+            },
+            ActionEffect::ModifyMovement(movement_change) => {
+                if let Some(target_id) = grid.item_at(target) {
+                    if let Ok((_, mut movement_speed)) = entity_props.get_mut(target_id) {
+                        if *movement_change > 0 {
+                            *movement_speed =
+                                movement_speed.saturating_add(*movement_change as u32);
+                        } else {
+                            *movement_speed =
+                                movement_speed.saturating_sub((-movement_change) as u32);
+                        }
+                    }
                 }
                 action_metadata
             },

@@ -118,7 +118,10 @@ pub fn curio_ops(
     >,
     players: Query<(&OnTeam, &InNode), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
-    mut curios: Query<CurioQ, With<Curio>>,
+    mut curios: ParamSet<(
+        Query<CurioQ, With<Curio>>,
+        Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
+    )>,
     curio_teams: Query<AsDerefCopied<OnTeam>, With<Curio>>,
     pickups: Query<&Pickup>,
     mut ev_results: EventWriter<OpResult<NodeOp>>,
@@ -135,6 +138,7 @@ pub fn curio_ops(
             }
             match op {
                 NodeOp::ActivateCurio { curio_id } => {
+                    let mut curios = curios.p0();
                     let target_curio = curios.get(*curio_id).ok()?;
                     if **target_curio.team != **player_team || **target_curio.tapped {
                         return None;
@@ -156,6 +160,7 @@ pub fn curio_ops(
                             let mut metadata = Metadata::default();
                             metadata.put(key::NODE_ID, **node)?;
                             metadata.put(key::CURIO, active_curio_id)?;
+                            let mut curios = curios.p0();
                             let mut curio_q = curios
                                 .get_mut(active_curio_id)
                                 .map_err(|_| NodeOpError::InternalError)?;
@@ -234,7 +239,8 @@ pub fn curio_ops(
                         .or(*curio)
                         .ok_or(NodeOpError::NoActiveCurio)
                         .and_then(|curio_id| {
-                            let mut curio_q = get_assert_mut!(curio_id, curios)
+                            let curios_p0 = curios.p0();
+                            let curio_q = get_assert!(curio_id, curios_p0)
                                 .ok_or(NodeOpError::InternalError)?;
                             debug_assert!(!**curio_q.tapped, "Active curio should not be tapped");
                             let action_def = curio_q
@@ -268,7 +274,14 @@ pub fn curio_ops(
                             let mut action_effects = action_def
                                 .effects()
                                 .iter()
-                                .map(|effect| effect.apply_effect(&mut grid, curio_id, *target))
+                                .map(|effect| {
+                                    effect.apply_effect(
+                                        &mut grid,
+                                        curio_id,
+                                        *target,
+                                        &mut curios.p1(),
+                                    )
+                                })
                                 .collect::<Result<Vec<_>, _>>()?;
                             let mut action_metadata = action_effects.pop().unwrap_or_default();
                             let self_effects = action_def
@@ -276,10 +289,20 @@ pub fn curio_ops(
                                 .iter()
                                 .filter_map(|effect| {
                                     let head = grid.head(curio_id)?;
-                                    Some(effect.apply_effect(&mut grid, curio_id, head))
+                                    Some(effect.apply_effect(
+                                        &mut grid,
+                                        curio_id,
+                                        head,
+                                        &mut curios.p1(),
+                                    ))
                                 })
                                 .collect::<Result<Vec<_>, _>>()?;
                             action_metadata.put(key::NODE_ID, **node)?;
+
+                            // Have to drop curios_p0 temporarily to apply actions, then we need to bring them back to tap the piece
+                            let mut curios_p0 = curios.p0();
+                            let mut curio_q = get_assert_mut!(curio_id, curios_p0)
+                                .ok_or(NodeOpError::InternalError)?;
                             **curio_q.tapped = true;
                             **active_curio = None;
 
@@ -287,7 +310,7 @@ pub fn curio_ops(
                             // Need to rework for different victory conditions, such as obtaining key items, or time limits
                             for team in teams.iter() {
                                 if team_status[team].is_undecided() {
-                                    let still_in_this = curios.iter().any(|curio_q| {
+                                    let still_in_this = curios.p0().iter().any(|curio_q| {
                                         **curio_q.team == *team && grid.contains_key(curio_q.id)
                                     });
                                     if !still_in_this {
@@ -302,7 +325,7 @@ pub fn curio_ops(
                                 .collect();
                             if remaining_teams.len() == 1 {
                                 let team = remaining_teams[0];
-                                let is_victory_flawed = curios.iter().any(|curio_q| {
+                                let is_victory_flawed = curios.p0().iter().any(|curio_q| {
                                     curio_q.in_node == **node
                                         && **curio_q.team == team
                                         && !grid.contains_key(curio_q.id)

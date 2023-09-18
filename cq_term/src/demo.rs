@@ -200,6 +200,14 @@ fn demo_startup(
             asset_server.load("nightfall/lvl3.cards.json#Buzzbomb"),
         ),))
         .id();
+    let card_fiddle = commands
+        .spawn((Card::new(
+            "Fiddle",
+            "curio:fiddle",
+            None,
+            asset_server.load("nightfall/lvl3.cards.json#Fiddle"),
+        ),))
+        .id();
     let node = commands
         .spawn((
             Node,
@@ -326,6 +334,7 @@ fn demo_startup(
                 .with_card(card_3)
                 .with_card(card_4)
                 .with_card(card_5)
+                .with_card(card_fiddle)
                 .with_card(card_bb),
         ))
         .id();
