@@ -20,7 +20,7 @@
     },
     "Buzzbomb": {
         "actions": [
-            "nightfall/program.actions.json#String",
+            "nightfall/program.actions.json#Sting",
             "nightfall/program.actions.json#Kamikaze"
         ],
         "description": "Fast and annoying",

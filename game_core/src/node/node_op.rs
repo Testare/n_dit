@@ -271,6 +271,14 @@ pub fn curio_ops(
                                 .map(|effect| effect.apply_effect(&mut grid, curio_id, *target))
                                 .collect::<Result<Vec<_>, _>>()?;
                             let mut action_metadata = action_effects.pop().unwrap_or_default();
+                            let self_effects = action_def
+                                .self_effects()
+                                .iter()
+                                .filter_map(|effect| {
+                                    let head = grid.head(curio_id)?;
+                                    Some(effect.apply_effect(&mut grid, curio_id, head))
+                                })
+                                .collect::<Result<Vec<_>, _>>()?;
                             action_metadata.put(key::NODE_ID, **node)?;
                             **curio_q.tapped = true;
                             **active_curio = None;
