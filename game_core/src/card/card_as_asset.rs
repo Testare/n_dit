@@ -18,8 +18,6 @@ pub struct CardAssetDef {
     actions: Vec<String>,
     short_name: Option<String>,
     description: String,
-    display: String,
-    display_id: Option<String>,
     max_size: u32,
     #[serde(default)]
     prevent_no_op: bool,
@@ -87,8 +85,6 @@ pub struct CardDefinition {
     movement_speed: u32,
     #[get_copy = "pub"]
     prevent_no_op: bool,
-    #[getset(get = "pub")]
-    display_id: String,
     #[getset(get = "pub")]
     tags: Vec<String>,
 }
@@ -161,7 +157,6 @@ impl AssetLoader for CardAssetLoader {
                     max_size: def.max_size,
                     movement_speed: def.speed,
                     prevent_no_op: def.prevent_no_op,
-                    display_id: def.display_id.unwrap_or(def.display),
                     tags: def.tags,
                 };
 

@@ -4,7 +4,6 @@
             "nightfall/program.actions.json#Fling"
         ],
         "description": "Extreme-range attack program",
-        "display": "bl",
         "max_size": 2,
         "speed": 1
     },
@@ -14,7 +13,6 @@
             "nightfall/program.actions.json#Paralyze"
         ],
         "description": "Speedier and creepier",
-        "display": "bw",
         "max_size": 3,
         "speed": 4
     },
@@ -24,7 +22,6 @@
             "nightfall/program.actions.json#Kamikaze"
         ],
         "description": "Fast and annoying",
-        "display": "BB",
         "max_size": 2,
         "speed": 8
     },
@@ -33,7 +30,6 @@
             "nightfall/program.actions.json#Chug"
         ],
         "description": "Twice as effective as version.01",
-        "display": "c2",
         "max_size": 4,
         "speed": 2
     },
@@ -43,7 +39,6 @@
             "nightfall/program.actions.json#Surgery"
         ],
         "description": "Twice the expansion power of Data Doctor",
-        "display": "DD",
         "max_size": 8,
         "speed": 5
     },
@@ -53,7 +48,6 @@
             "nightfall/program.actions.json#Twiddle"
         ],
         "description": "Grows your programs from a distance",
-        "display": "fd",
         "max_size": 3,
         "speed": 3
     },
@@ -62,7 +56,6 @@
             "nightfall/program.actions.json#Bash"
         ],
         "description": "Clay is stronger than mud",
-        "display": "gc",
         "max_size": 6,
         "speed": 2
     },
@@ -72,7 +65,6 @@
             "nightfall/program.actions.json#Mutilate"
         ],
         "description": "The top of the Hack series",
-        "display": "h3",
         "max_size": 4,
         "speed": 4
     },
@@ -81,13 +73,11 @@
             "nightfall/program.actions.json#Fractal Glitch"
         ],
         "description": "It's not a bug, it's a feature",
-        "display": "mb",
         "max_size": 1,
         "speed": 5
     },
     "Memory Hog": {
         "description": "Massive memory-filling bloatware",
-        "display": "MH",
         "max_size": 30,
         "speed": 5
     },
@@ -96,7 +86,6 @@
             "nightfall/program.actions.json#Spot"
         ],
         "description": "Slow-moving long-range program",
-        "display": "MT",
         "max_size": 1,
         "speed": 1
     },
@@ -105,7 +94,6 @@
             "nightfall/program.actions.json#Scramble"
         ],
         "description": "Short-range hard-hitting program",
-        "display": "s ",
         "max_size": 1,
         "speed": 1
     },
@@ -114,7 +102,6 @@
             "nightfall/program.actions.json#Poke"
         ],
         "description": "Bigger and better than Seeker",
-        "display": "s2",
         "max_size": 4,
         "speed": 3
     },
@@ -123,7 +110,6 @@
             "nightfall/program.actions.json#Megaboost"
         ],
         "description": "Slow and steady is for losers",
-        "display": "TB",
         "max_size": 4,
         "speed": 4
     }
