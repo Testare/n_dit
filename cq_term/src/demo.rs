@@ -15,7 +15,7 @@ use game_core::registry::Reg;
 use crate::fx::Fx;
 use crate::input_event::KeyCode;
 use crate::layout::LayoutEvent;
-use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode, NodeGlyph};
+use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::KeyMap;
 

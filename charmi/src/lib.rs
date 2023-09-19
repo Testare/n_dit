@@ -8,7 +8,9 @@ use std::ops::AddAssign;
 
 use bevy::reflect::{TypePath, TypeUuid};
 pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
-pub use charmie_def::{CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef, ColorDef};
+pub use charmie_def::{
+    CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef, ColorDef,
+};
 use crossterm::style::{ContentStyle, StyledContent};
 use itertools::Itertools;
 pub use loader::{CharmiLoader, CharmiaLoader};

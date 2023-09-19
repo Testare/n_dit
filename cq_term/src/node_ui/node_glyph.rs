@@ -1,6 +1,6 @@
 use bevy::utils::HashMap;
 use charmi::ColorDef;
-use crossterm::style::{Color, ContentStyle, Stylize, StyledContent};
+use crossterm::style::{Color, ContentStyle, StyledContent, Stylize};
 use game_core::prelude::*;
 use game_core::registry::Registry;
 use serde::{Deserialize, Serialize};
@@ -33,8 +33,9 @@ impl NodeGlyph {
     pub fn style(&self) -> ContentStyle {
         match self {
             NodeGlyph::PlainGlyph(_) => ContentStyle::new(),
-            NodeGlyph::ColoredGlyph(_, fg) => ContentStyle::new()
-                .with(fg.try_into().unwrap_or(Color::White)),
+            NodeGlyph::ColoredGlyph(_, fg) => {
+                ContentStyle::new().with(fg.try_into().unwrap_or(Color::White))
+            },
             NodeGlyph::NameAndBothColors(_, fg, bg) => ContentStyle::new()
                 .with(fg.try_into().unwrap_or(Color::White))
                 .on(bg.try_into().unwrap_or(Color::Black)),
@@ -44,9 +45,11 @@ impl NodeGlyph {
     pub fn styled_glyph(&self) -> StyledContent<String> {
         match self {
             NodeGlyph::PlainGlyph(glyph) => glyph.clone().stylize(),
-            NodeGlyph::ColoredGlyph(glyph, fg) => glyph.clone()
-                .with(fg.try_into().unwrap_or(Color::White)),
-            NodeGlyph::NameAndBothColors(glyph, fg, bg) => glyph.clone()
+            NodeGlyph::ColoredGlyph(glyph, fg) => {
+                glyph.clone().with(fg.try_into().unwrap_or(Color::White))
+            },
+            NodeGlyph::NameAndBothColors(glyph, fg, bg) => glyph
+                .clone()
                 .with(fg.try_into().unwrap_or(Color::White))
                 .on(bg.try_into().unwrap_or(Color::Black)),
         }

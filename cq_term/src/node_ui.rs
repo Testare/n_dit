@@ -3,8 +3,8 @@ mod grid_ui;
 mod inputs;
 mod menu_ui;
 mod messagebar_ui;
-mod node_ui_op;
 mod node_glyph;
+mod node_ui_op;
 mod setup;
 mod titlebar_ui;
 
@@ -12,16 +12,16 @@ use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
 use game_core::player::ForPlayer;
-use game_core::NDitCoreSet;
 use game_core::registry::Reg;
+use game_core::NDitCoreSet;
 
 use self::grid_ui::GridUi;
 use self::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
 pub use self::messagebar_ui::MessageBarUi;
-pub use self::node_ui_op::NodeUiOp;
 pub use self::node_glyph::NodeGlyph;
+pub use self::node_ui_op::NodeUiOp;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;

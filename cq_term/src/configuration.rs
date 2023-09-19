@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bevy::prelude::Resource;
-use crossterm::style::{Attribute, Color, StyledContent, Stylize, ContentStyle};
+use crossterm::style::{Attribute, Color, ContentStyle, StyledContent, Stylize};
 use getset::{CopyGetters, Getters};
 
 #[derive(Clone, Debug, CopyGetters, Getters, Resource)]

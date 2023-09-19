@@ -11,7 +11,7 @@ use game_core::{card, node};
 use crate::animation::AnimationPlayer;
 use crate::configuration::UiFormat;
 use crate::fx::Fx;
-use crate::node_ui::{ShowNode, NodeGlyph};
+use crate::node_ui::{NodeGlyph, ShowNode};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -54,7 +54,7 @@ pub fn sys_grid_animations(
                             .flatten()
                             .and_then(|target_id| {
                                 let display_id = get_assert!(target_id, node_pieces)?.display_id();
-                                let head_str= reg_glyph
+                                let head_str = reg_glyph
                                     .get(display_id)
                                     .cloned()
                                     .unwrap_or_default()

@@ -238,12 +238,8 @@ fn render_grid(
                     }
                 } else if render_full_space {
                     if include_border {
-                        let border_style = border_style_for(
-                            &player_q,
-                            &draw_config,
-                            &(x..=x),
-                            &border_y_range,
-                        );
+                        let border_style =
+                            border_style_for(&player_q, &draw_config, &(x..=x), &border_y_range);
                         border_line.add_styled_text(
                             border_style.apply(
                                 BorderType::of(right1, right2).horizontal_border(&draw_config),

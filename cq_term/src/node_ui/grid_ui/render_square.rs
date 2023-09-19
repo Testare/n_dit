@@ -27,18 +27,27 @@ pub fn render_square(
     let glyph_style = node_glyph.style();
 
     let chosen_format = if node_piece.access_point.is_some() {
-        configuration.color_scheme().access_point().to_content_style()
+        configuration
+            .color_scheme()
+            .access_point()
+            .to_content_style()
     } else if node_piece
         .is_tapped
         .map(|is_tapped| **is_tapped)
         .unwrap_or_default()
     {
-        configuration.color_scheme().player_team_tapped().to_content_style()
+        configuration
+            .color_scheme()
+            .player_team_tapped()
+            .to_content_style()
     } else if active_curio
         .map(|curio_id| curio_id == entity && position == 0)
         .unwrap_or_default()
     {
-        configuration.color_scheme().player_team_active().to_content_style()
+        configuration
+            .color_scheme()
+            .player_team_active()
+            .to_content_style()
     } else {
         glyph_style
     };

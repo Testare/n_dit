@@ -1,14 +1,13 @@
 use std::path::PathBuf;
 
-use bevy::asset::{FileAssetIo, AssetLoader, LoadedAsset};
-use bevy::prelude::{HandleUntyped, AssetEvent};
-use bevy::reflect::{TypeUuid, TypePath};
+use bevy::asset::{AssetLoader, FileAssetIo, LoadedAsset};
+use bevy::prelude::{AssetEvent, HandleUntyped};
+use bevy::reflect::{TypePath, TypeUuid};
+use glob::glob;
 use serde::de::DeserializeOwned;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-
-use glob::glob;
 
 pub trait Registry: Sync + Send + 'static {
     const REGISTRY_NAME: &'static str;
@@ -20,9 +19,9 @@ pub struct Reg<R: Registry> {
     values: HashMap<String, (i32, R::Value)>,
 }
 
-impl <R: Registry> Reg<R> {
+impl<R: Registry> Reg<R> {
     pub fn get(&self, key: &str) -> Option<&R::Value> {
-        self.values.get(key).map(|(_,v)|v)
+        self.values.get(key).map(|(_, v)| v)
     }
 
     fn add(&mut self, key: String, priority: i32, value: R::Value) {
@@ -38,15 +37,15 @@ impl <R: Registry> Reg<R> {
     }
 }
 
-impl <R: Registry> Default for Reg<R> {
+impl<R: Registry> Default for Reg<R> {
     fn default() -> Self {
         Self {
-            values: HashMap::new()
+            values: HashMap::new(),
         }
     }
 }
 
-impl <R: Registry> Plugin for Reg<R> {
+impl<R: Registry> Plugin for Reg<R> {
     fn build(&self, app: &mut App) {
         app.insert_resource(Self::default())
             .add_systems(PreUpdate, sys_consume_registry_file::<R>);
@@ -93,23 +92,25 @@ struct Registries(Vec<HandleUntyped>);
 
 impl FromWorld for Registries {
     fn from_world(world: &mut World) -> Self {
-        let handles = world.get_resource::<AssetServer>()
-        .and_then(|asset_server| {
-            let asset_io = asset_server.asset_io().downcast_ref::<FileAssetIo>()?;
-            let path = asset_io.root_path().to_string_lossy().into_owned();
-            // let mut json_path = path.clone();
-            let mut toml_path = path;
-            toml_path.push_str("/**/*.reg.toml");
-            let paths = glob(toml_path.as_str())
-                .ok()?
-                .filter_map(
-                    |path| {
+        let handles = world
+            .get_resource::<AssetServer>()
+            .and_then(|asset_server| {
+                let asset_io = asset_server.asset_io().downcast_ref::<FileAssetIo>()?;
+                let path = asset_io.root_path().to_string_lossy().into_owned();
+                // let mut json_path = path.clone();
+                let mut toml_path = path;
+                toml_path.push_str("/**/*.reg.toml");
+                let paths = glob(toml_path.as_str())
+                    .ok()?
+                    .filter_map(|path| {
                         let path = path.ok()?;
                         log::info!("Found registry file {}", path.to_string_lossy());
                         Some(asset_server.load_untyped(path.to_str()?))
-                }).collect();
-            Some(paths)
-        }).expect("should be able to load registry files");
+                    })
+                    .collect();
+                Some(paths)
+            })
+            .expect("should be able to load registry files");
         Registries(handles)
     }
 }
@@ -118,10 +119,10 @@ struct RegistryTomlAssetLoader;
 
 impl AssetLoader for RegistryTomlAssetLoader {
     fn load<'a>(
-            &'a self,
-            bytes: &'a [u8],
-            load_context: &'a mut bevy::asset::LoadContext,
-        ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut bevy::asset::LoadContext,
+    ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
             let value_str = std::str::from_utf8(bytes)?;
             let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str)?;
@@ -145,7 +146,7 @@ fn sys_consume_registry_file<R: Registry>(
         match event {
             AssetEvent::Created { handle } | AssetEvent::Modified { handle } => {
                 let reg_file = ast_reg_files.get(handle).unwrap();
-                if reg_file.registry() != R::REGISTRY_NAME  || reg_file.values().is_empty() {
+                if reg_file.registry() != R::REGISTRY_NAME || reg_file.values().is_empty() {
                     continue;
                 }
                 let reg_file = ast_reg_files.get_mut(handle).unwrap();
@@ -153,12 +154,16 @@ fn sys_consume_registry_file<R: Registry>(
                 for (key, value) in reg_file.values_mut().drain() {
                     match value.try_into::<R::Value>() {
                         Ok(value) => reg.add(key.clone(), priority, value),
-                        Err(e) => log::warn!("Error reading registry[{}] value[{}]: {:?}", R::REGISTRY_NAME, key, e)
+                        Err(e) => log::warn!(
+                            "Error reading registry[{}] value[{}]: {:?}",
+                            R::REGISTRY_NAME,
+                            key,
+                            e
+                        ),
                     }
                 }
             },
-            _ => {}
+            _ => {},
         }
     }
-
 }

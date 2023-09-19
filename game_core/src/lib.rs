@@ -65,11 +65,7 @@ impl Plugin for NDitCorePlugin {
                     (card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands),
                 ),
             )
-            .add_plugins((
-                card::CardPlugin, 
-                node::NodePlugin, 
-                registry::RegistryPlugin,
-            ));
+            .add_plugins((card::CardPlugin, node::NodePlugin, registry::RegistryPlugin));
     }
 }
 
