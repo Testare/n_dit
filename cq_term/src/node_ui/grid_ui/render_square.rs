@@ -1,10 +1,11 @@
+use crossterm::style::ContentStyle;
 use game_core::node::ActiveCurio;
 use game_core::prelude::*;
+use game_core::registry::Reg;
 
-use super::super::registry::GlyphRegistry;
-use crate::configuration::{DrawConfiguration, UiFormat};
+use crate::configuration::DrawConfiguration;
+use crate::node_ui::NodeGlyph;
 
-const UNKNOWN_NODE_PIECE: &'static str = "??";
 const FILL_GLYPH: &'static str = "[]";
 
 pub fn render_square(
@@ -12,31 +13,34 @@ pub fn render_square(
     entity: Entity,
     active_curio: &ActiveCurio,
     node_pieces: &Query<super::NodePieceQ>,
-    node_piece_render_registry: &GlyphRegistry,
+    reg_glyph: &Reg<NodeGlyph>,
     configuration: &DrawConfiguration,
-) -> (UiFormat, String) {
+) -> (ContentStyle, String) {
     let node_piece = node_pieces
         .get(entity)
         .expect("entities in Node EntityGrid should implement NodePiece");
-    let (head_glyph, glyph_format) = node_piece_render_registry
-        .get(node_piece.piece.display_id())
+    let node_glyph = reg_glyph
+        .get(node_piece.piece.display_id().as_str())
         .cloned()
-        .unwrap_or_else(|| (UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+        .unwrap_or_default();
+    let head_glyph = node_glyph.glyph();
+    let glyph_style = node_glyph.style();
+
     let chosen_format = if node_piece.access_point.is_some() {
-        configuration.color_scheme().access_point()
+        configuration.color_scheme().access_point().to_content_style()
     } else if node_piece
         .is_tapped
         .map(|is_tapped| **is_tapped)
         .unwrap_or_default()
     {
-        configuration.color_scheme().player_team_tapped()
+        configuration.color_scheme().player_team_tapped().to_content_style()
     } else if active_curio
         .map(|curio_id| curio_id == entity && position == 0)
         .unwrap_or_default()
     {
-        configuration.color_scheme().player_team_active()
+        configuration.color_scheme().player_team_active().to_content_style()
     } else {
-        glyph_format
+        glyph_style
     };
     let glyph = if position == 0 {
         head_glyph
@@ -45,29 +49,3 @@ pub fn render_square(
     };
     (chosen_format, glyph)
 }
-
-// Might want to change this to just accept a mutable Write reference to make more effecient.
-/*fn style(
-    sprite: &Sprite,
-    node: &Node,
-    key: usize,
-    position: usize,
-    draw_config: &DrawConfiguration,
-) -> UiFormat {
-    match sprite {
-        Sprite::Pickup(_) => draw_config.color_scheme().mon(),
-        Sprite::AccessPoint(_) => draw_config.color_scheme().access_point(),
-        Sprite::Curio(curio) => match curio.team() {
-            Team::PlayerTeam => {
-                if node.active_curio_key() == Some(key) {
-                    draw_config.color_scheme().player_team_active()
-                } else if curio.tapped() && position == 0 {
-                    draw_config.color_scheme().player_team_tapped()
-                } else {
-                    draw_config.color_scheme().player_team()
-                }
-            }
-            Team::EnemyTeam => draw_config.color_scheme().enemy_team(),
-        },
-    }
-}*/

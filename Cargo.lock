@@ -595,7 +595,7 @@ dependencies = [
  "quote",
  "rustc-hash",
  "syn 2.0.25",
- "toml_edit",
+ "toml_edit 0.19.12",
 ]
 
 [[package]]
@@ -1050,7 +1050,7 @@ dependencies = [
  "log",
  "serde",
  "test-log",
- "toml",
+ "toml 0.7.6",
  "unicode-width",
 ]
 
@@ -1531,11 +1531,13 @@ dependencies = [
  "bevy_query_ext",
  "bitvec",
  "getset",
+ "glob",
  "lazy_static",
  "log",
  "serde",
  "serde_json",
  "thiserror",
+ "toml 0.8.0",
  "typed_key",
 ]
 
@@ -2562,7 +2564,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
 dependencies = [
  "once_cell",
- "toml_edit",
+ "toml_edit 0.19.12",
 ]
 
 [[package]]
@@ -3060,7 +3062,19 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit",
+ "toml_edit 0.19.12",
+]
+
+[[package]]
+name = "toml"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c226a7bba6d859b63c92c4b4fe69c5b6b72d0cb897dbc8e6012298e6154cb56e"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.20.0",
 ]
 
 [[package]]
@@ -3082,7 +3096,20 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow",
+ "winnow 0.4.9",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ff63e60a958cefbb518ae1fd6566af80d9d4be430a33f3723dfc47d1d411d95"
+dependencies = [
+ "indexmap 2.0.0",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "winnow 0.5.15",
 ]
 
 [[package]]
@@ -3682,6 +3709,15 @@ name = "winnow"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81a2094c43cc94775293eaa0e499fbc30048a6d824ac82c0351a8c0bf9112529"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "winnow"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c2e3184b9c4e92ad5167ca73039d0c42476302ab603e2fec4487511f38ccefc"
 dependencies = [
  "memchr",
 ]

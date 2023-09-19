@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bevy::prelude::Resource;
-use crossterm::style::{Attribute, Color, StyledContent, Stylize};
+use crossterm::style::{Attribute, Color, StyledContent, Stylize, ContentStyle};
 use getset::{CopyGetters, Getters};
 
 #[derive(Clone, Debug, CopyGetters, Getters, Resource)]
@@ -161,6 +161,20 @@ impl UiFormat {
             styled = styled.attribute(attr);
         }
         styled
+    }
+
+    pub fn to_content_style(&self) -> ContentStyle {
+        let mut content_style = ContentStyle::new();
+        if let Some(fg) = self.0 {
+            content_style = content_style.with(fg);
+        }
+        if let Some(bg) = self.1 {
+            content_style = content_style.on(bg);
+        }
+        if let Some(attr) = self.2 {
+            content_style = content_style.attribute(attr);
+        }
+        content_style
     }
 }
 

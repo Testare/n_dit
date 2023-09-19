@@ -1,9 +1,10 @@
 use game_core::node::{Curio, Pickup};
 use game_core::prelude::*;
+use game_core::registry::Reg;
 
-use super::super::registry::GlyphRegistry;
 use super::{NodePieceQItem, SimpleSubmenu};
 use crate::layout::CalculatedSizeTty;
+use crate::node_ui::NodeGlyph;
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiLabel;
@@ -11,7 +12,7 @@ pub struct MenuUiLabel;
 impl SimpleSubmenu for MenuUiLabel {
     const NAME: &'static str = "Menu Label";
     type UiBundleExtras = ();
-    type RenderSystemParam = Res<'static, GlyphRegistry>;
+    type RenderSystemParam = Res<'static, Reg<NodeGlyph>>;
 
     fn height(_: &NodePieceQItem<'_>) -> Option<usize> {
         Some(2)
@@ -21,13 +22,13 @@ impl SimpleSubmenu for MenuUiLabel {
         _player: Entity,
         selected: &NodePieceQItem,
         _size: &CalculatedSizeTty,
-        glyph_registry: &Res<GlyphRegistry>,
+        glyph_registry: &Res<Reg<NodeGlyph>>,
     ) -> Option<Vec<String>> {
         let display_id = selected.piece.display_id();
         let glyph = (**glyph_registry)
             .get(display_id)
-            .map(|s| s.0.as_str())
-            .unwrap_or("??");
+            .map(|s| s.glyph())
+            .unwrap_or("??".to_owned());
 
         let is_tapped = selected
             .is_tapped

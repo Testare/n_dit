@@ -13,6 +13,7 @@ use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
+use game_core::registry::Reg;
 
 use self::grid_ui::GridUi;
 use self::menu_ui::{
@@ -20,7 +21,7 @@ use self::menu_ui::{
 };
 pub use self::messagebar_ui::MessageBarUi;
 pub use self::node_ui_op::NodeUiOp;
-use self::registry::GlyphRegistry;
+pub use self::registry::NodeGlyph;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
@@ -61,7 +62,7 @@ pub struct NodeCursor(pub UVec2);
 
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<GlyphRegistry>()
+        app.add_plugins(Reg::<NodeGlyph>::default())
             .add_event::<ShowNode>()
             .add_event::<Op<NodeUiOp>>()
             .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)

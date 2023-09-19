@@ -5,13 +5,13 @@ use crossterm::style::Stylize;
 use game_core::node::{InNode, NodeOp, NodePiece};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
+use game_core::registry::Reg;
 use game_core::{card, node};
 
-use super::super::registry::GlyphRegistry;
 use crate::animation::AnimationPlayer;
 use crate::configuration::UiFormat;
 use crate::fx::Fx;
-use crate::node_ui::ShowNode;
+use crate::node_ui::{ShowNode, NodeGlyph};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -34,7 +34,7 @@ pub fn sys_grid_animations(
     mut assets_animation: ResMut<Assets<CharmieAnimation>>,
     mut grid_animation_player: Query<(&mut AnimationPlayer, &ForPlayer), With<GridUiAnimation>>,
     assets_actor: Res<Assets<CharmieActor>>,
-    glyph_registry: Res<GlyphRegistry>,
+    reg_glyph: Res<Reg<NodeGlyph>>,
     node_pieces: Query<&NodePiece>,
 ) {
     for node_op_result in ev_node_op.iter() {
@@ -54,12 +54,12 @@ pub fn sys_grid_animations(
                             .flatten()
                             .and_then(|target_id| {
                                 let display_id = get_assert!(target_id, node_pieces)?.display_id();
-                                let (head_str, _) = glyph_registry
+                                let head_str= reg_glyph
                                     .get(display_id)
                                     .cloned()
-                                    .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+                                    .unwrap_or_default()
+                                    .glyph();
                                 Some(head_str)
-                                // Some(())
                             })
                     } else {
                         None
@@ -89,12 +89,12 @@ pub fn sys_grid_animations(
                     let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
                     let target_pt = metadata.get_required(node::key::TARGET_POINT).ok()?;
 
-                    let (pickup_display, format) = glyph_registry
+                    let glyph = reg_glyph
                         .get(pickup.default_diplay_id())
                         .cloned()
-                        .unwrap_or((UNKNOWN_NODE_PIECE.to_owned(), UiFormat::NONE));
+                        .unwrap_or_default();
                     let pickup_display = CharacterMapImage::new()
-                        .with_row(|row| row.with_styled_text(format.apply(pickup_display)));
+                        .with_row(|row| row.with_styled_text(glyph.styled_glyph()));
 
                     let base_animation = assets_actor
                         .get(&fx.charmia)

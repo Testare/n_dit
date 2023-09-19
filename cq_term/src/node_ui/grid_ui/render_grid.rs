@@ -1,11 +1,12 @@
 use std::cmp;
 
 use charmi::{CharacterMapImage, CharmieRow};
+use crossterm::style::ContentStyle;
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
+use game_core::registry::Reg;
 use itertools::Itertools;
 
-use super::super::registry::GlyphRegistry;
 use super::super::NodeCursor;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
@@ -14,6 +15,7 @@ use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
 use crate::animation::AnimationPlayer;
 use crate::configuration::{DrawConfiguration, UiFormat};
 use crate::layout::CalculatedSizeTty;
+use crate::node_ui::registry::NodeGlyph;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -24,7 +26,7 @@ pub fn render_grid_system(
     node_data: Query<(&EntityGrid, &ActiveCurio), With<Node>>,
     node_pieces: Query<NodePieceQ>,
     players: Query<PlayerUiQ, With<Player>>,
-    glyph_registry: Res<GlyphRegistry>,
+    reg_glyph: Res<Reg<NodeGlyph>>,
     draw_config: Res<DrawConfiguration>,
     mut render_grid_q: Query<
         (
@@ -58,7 +60,7 @@ pub fn render_grid_system(
                     grid,
                     active_curio,
                     &node_pieces,
-                    &glyph_registry,
+                    &reg_glyph,
                     &draw_config,
                     grid_animation.unwrap(),
                 );
@@ -76,13 +78,14 @@ fn render_grid(
     grid: &EntityGrid,
     active_curio: &ActiveCurio,
     node_pieces: &Query<NodePieceQ>,
-    glyph_registry: &GlyphRegistry,
+    reg_glyph: &Reg<NodeGlyph>,
     draw_config: &DrawConfiguration,
     grid_animation: (&AnimationPlayer, &TerminalRendering, &ForPlayer),
 ) -> CharacterMapImage {
     // TODO Break DrawConfiguration down into parts and resources
 
     let node_cursor = player_q.node_cursor;
+    let default_style = ContentStyle::new();
 
     let width = grid.width() as usize;
     let height = grid.height() as usize;
@@ -94,7 +97,7 @@ fn render_grid(
             sprite,
             active_curio,
             node_pieces,
-            glyph_registry,
+            reg_glyph,
             &draw_config,
         )
     });
@@ -212,9 +215,9 @@ fn render_grid(
                             .map(|(style, square)| (style, square.as_ref()))
                             .unwrap_or_else(|| {
                                 if grid.square_is_closed(pt) {
-                                    (&UiFormat::NONE, CLOSED_SQUARE)
+                                    (&default_style, CLOSED_SQUARE)
                                 } else {
-                                    (&UiFormat::NONE, OPEN_SQUARE)
+                                    (&default_style, OPEN_SQUARE)
                                 }
                             });
                         if square.chars().count() == 1 {
@@ -237,11 +240,7 @@ fn render_grid(
                     if include_border {
                         let border_style = border_style_for(
                             &player_q,
-                            &draw_config, /*
-                                                                  &available_moves,
-                                                                  action_type,
-                                                                  state,
-                                          */
+                            &draw_config,
                             &(x..=x),
                             &border_y_range,
                         );
@@ -258,9 +257,9 @@ fn render_grid(
                             .map(|(style, square)| (style, square.as_str()))
                             .unwrap_or_else(|| {
                                 if grid.square_is_closed(pt) {
-                                    (&UiFormat::NONE, CLOSED_SQUARE)
+                                    (&default_style, CLOSED_SQUARE)
                                 } else {
-                                    (&UiFormat::NONE, OPEN_SQUARE)
+                                    (&default_style, OPEN_SQUARE)
                                 }
                             });
                         // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))

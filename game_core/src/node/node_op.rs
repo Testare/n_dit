@@ -568,7 +568,7 @@ pub fn access_point_ops(
                                 )>();
                             }
                             access_point.card = Some(*card_id);
-                            node_piece.set_display_id(card_info.card.display_id().clone());
+                            node_piece.set_display_id(card_info.card.card_name().to_owned());
                             let card_def = ast_cards.get(card_info.card.definition());
                             if let Some(card_def) = card_def {
                                 access_point_commands

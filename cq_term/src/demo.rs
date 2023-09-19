@@ -10,11 +10,12 @@ use game_core::node::{
 use game_core::op::OpResult;
 use game_core::player::PlayerBundle;
 use game_core::prelude::*;
+use game_core::registry::Reg;
 
 use crate::fx::Fx;
 use crate::input_event::KeyCode;
 use crate::layout::LayoutEvent;
-use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
+use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode, NodeGlyph};
 use crate::prelude::KeyEvent;
 use crate::KeyMap;
 
@@ -52,6 +53,7 @@ fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
 }
 
 fn debug_key(
+    reg_curio_display: Res<Reg<NodeGlyph>>,
     asset_server: Res<AssetServer>,
     card_assets: Res<Assets<CardDefinition>>,
     action_assets: Res<Assets<ActionDefinition>>,
@@ -75,6 +77,7 @@ fn debug_key(
     }
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
+            log::debug!("Node Glyph Reg: {:?}", reg_curio_display);
             for CardAssetPointer { handle } in debug_asset.iter() {
                 log::debug!(
                     "ASSET LOAD STATE: {:?} ",
@@ -143,7 +146,7 @@ fn demo_startup(
         .id();
     let card_0 = commands
         .spawn((Card::new(
-            "Sling",
+            "Slingshot",
             "curio:sling",
             None,
             asset_server.load("nightfall/lvl1.cards.json#Slingshot"),
@@ -167,7 +170,7 @@ fn demo_startup(
         .id();
     let card_3 = commands
         .spawn((Card::new(
-            "Super Bug",
+            "Mandelbug",
             "curio:death",
             None,
             asset_server.load("nightfall/lvl3.cards.json#Mandelbug"),
@@ -266,7 +269,7 @@ fn demo_startup(
                 MaximumSize(7),
                 MovementSpeed(2),
                 MovesTaken(0),
-                NodePiece::new("curio:death"),
+                NodePiece::new("Attack Dog"),
                 SimpleAiCurioOrder(1),
                 OnTeam(enemy_team),
             ))
@@ -278,7 +281,7 @@ fn demo_startup(
                 MaximumSize(7),
                 MovementSpeed(2),
                 MovesTaken(0),
-                NodePiece::new("curio:death"),
+                NodePiece::new("Attack Dog"),
                 SimpleAiCurioOrder(0),
                 OnTeam(enemy_team),
             ))

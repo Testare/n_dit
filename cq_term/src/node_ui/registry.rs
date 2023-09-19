@@ -1,43 +1,59 @@
 use bevy::utils::HashMap;
-use crossterm::style::Color;
+use charmi::ColorDef;
+use crossterm::style::{Color, ContentStyle, Stylize, StyledContent};
 use game_core::prelude::*;
+use game_core::registry::Registry;
+use serde::{Deserialize, Serialize};
 
 use crate::configuration::UiFormat;
 
-#[derive(Deref, DerefMut, Resource)]
-pub struct GlyphRegistry {
-    registry: HashMap<String, (String, UiFormat)>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NodeGlyph {
+    PlainGlyph(String),
+    ColoredGlyph(String, ColorDef),
+    NameAndBothColors(String, ColorDef, ColorDef),
 }
 
-impl Default for GlyphRegistry {
+impl Default for NodeGlyph {
     fn default() -> Self {
-        GlyphRegistry {
-            registry: [
-                // Alternatives to consider: <>, @@, {}
-                (
-                    "env:access_point",
-                    (
-                        "@@",
-                        UiFormat::new(Some(Color::Black), Some(Color::Green), None),
-                    ),
-                ),
-                ("curio:bug", ("b ", UiFormat::fgv(132, 252, 0))),
-                ("curio:hack", ("hk", UiFormat::fgv(0, 199, 252))),
-                ("curio:sling", (">-", UiFormat::fgv(0, 217, 165))),
-                (
-                    "curio:data_doctor_pro",
-                    ("+ ", UiFormat::fgbgv(255, 0, 0, 0, 0, 200)),
-                ),
-                ("curio:death", ("死", UiFormat::fg(Color::Red))),
-                ("curio:bit_man", ("01", UiFormat::fgv(182, 252, 0))),
-                // Considered alternatives "🃁 ", "♠♥", "==", "++", "&]", "□]"
-                // Looks good in this font, but not as good in other fonts
-                ("pickup:card", ("🂠 ", UiFormat::fg(Color::Yellow))),
-                ("pickup:mon", ("$$", UiFormat::fg(Color::Yellow))),
-            ]
-            .into_iter()
-            .map(|(name, (glyph, format))| (name.to_owned(), (glyph.to_owned(), format)))
-            .collect(),
+        NodeGlyph::PlainGlyph("??".to_string())
+    }
+}
+
+impl NodeGlyph {
+    pub fn glyph(&self) -> String {
+        match self {
+            NodeGlyph::PlainGlyph(glyph) => glyph.clone(),
+            NodeGlyph::ColoredGlyph(glyph, _) => glyph.clone(),
+            NodeGlyph::NameAndBothColors(glyph, _, _) => glyph.clone(),
         }
     }
+
+    pub fn style(&self) -> ContentStyle {
+        match self {
+            NodeGlyph::PlainGlyph(_) => ContentStyle::new(),
+            NodeGlyph::ColoredGlyph(_, fg) => ContentStyle::new()
+                .with(fg.try_into().unwrap_or(Color::White)),
+            NodeGlyph::NameAndBothColors(_, fg, bg) => ContentStyle::new()
+                .with(fg.try_into().unwrap_or(Color::White))
+                .on(bg.try_into().unwrap_or(Color::Black)),
+        }
+    }
+
+    pub fn styled_glyph(&self) -> StyledContent<String> {
+        match self {
+            NodeGlyph::PlainGlyph(glyph) => glyph.clone().stylize(),
+            NodeGlyph::ColoredGlyph(glyph, fg) => glyph.clone()
+                .with(fg.try_into().unwrap_or(Color::White)),
+            NodeGlyph::NameAndBothColors(glyph, fg, bg) => glyph.clone()
+                .with(fg.try_into().unwrap_or(Color::White))
+                .on(bg.try_into().unwrap_or(Color::Black)),
+        }
+    }
+}
+
+impl Registry for NodeGlyph {
+    const REGISTRY_NAME: &'static str = "term:node_glyphs";
+    type Value = NodeGlyph;
 }
