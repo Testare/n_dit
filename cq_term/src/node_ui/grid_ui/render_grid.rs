@@ -15,7 +15,7 @@ use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
 use crate::animation::AnimationPlayer;
 use crate::configuration::{DrawConfiguration, UiFormat};
 use crate::layout::CalculatedSizeTty;
-use crate::node_ui::registry::NodeGlyph;
+use crate::node_ui::node_glyph::NodeGlyph;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 

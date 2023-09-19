@@ -4,7 +4,7 @@ mod inputs;
 mod menu_ui;
 mod messagebar_ui;
 mod node_ui_op;
-mod registry;
+mod node_glyph;
 mod setup;
 mod titlebar_ui;
 
@@ -21,7 +21,7 @@ use self::menu_ui::{
 };
 pub use self::messagebar_ui::MessageBarUi;
 pub use self::node_ui_op::NodeUiOp;
-pub use self::registry::NodeGlyph;
+pub use self::node_glyph::NodeGlyph;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
