@@ -28,6 +28,8 @@ pub mod key {
     pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
     pub const CARD: Key<Entity> = typed_key!("card");
+    pub const EFFECTS: Key<Metadata> = typed_key!("effects");
+    pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
 }
 pub struct NodePlugin;

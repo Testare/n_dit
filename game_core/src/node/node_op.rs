@@ -269,9 +269,8 @@ pub fn curio_ops(
                             {
                                 return Err(NodeOpError::InvalidTarget);
                             }
-                            // TODO action metadata should be lower
-                            // TODO support multiple effects and self effects
-                            let mut action_effects = action_def
+                            let mut action_metadata = Metadata::new();
+                            let effect_metadata = action_def
                                 .effects()
                                 .iter()
                                 .map(|effect| {
@@ -283,7 +282,9 @@ pub fn curio_ops(
                                     )
                                 })
                                 .collect::<Result<Vec<_>, _>>()?;
-                            let mut action_metadata = action_effects.pop().unwrap_or_default();
+
+                            action_metadata.put_optional(key::EFFECTS, Metadata::aggregate(effect_metadata))?;
+
                             let self_effects = action_def
                                 .self_effects()
                                 .iter()
@@ -297,6 +298,7 @@ pub fn curio_ops(
                                     ))
                                 })
                                 .collect::<Result<Vec<_>, _>>()?;
+                            action_metadata.put_optional(key::SELF_EFFECTS, Metadata::aggregate(self_effects))?;
                             action_metadata.put(key::NODE_ID, **node)?;
 
                             // Have to drop curios_p0 temporarily to apply actions, then we need to bring them back to tap the piece

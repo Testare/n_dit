@@ -9,23 +9,18 @@ use game_core::registry::Reg;
 use game_core::{card, node};
 
 use crate::animation::AnimationPlayer;
-use crate::configuration::UiFormat;
 use crate::fx::Fx;
 use crate::node_ui::{NodeGlyph, ShowNode};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
-// TODO Refactor this module into two separate modules: One for animation players, and
-// then one under grid_ui for the grid animation specific logic
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &'static str = "attack";
 const PICKUP_BASE_ANIM: &'static str = "pickup";
-const UNKNOWN_NODE_PIECE: &'static str = "??"; // TODO this is duplicate of render_square
 
 #[derive(Component)]
 pub struct GridUiAnimation;
 
-// This is an incredibly rough draft of how this logic should work.
 pub fn sys_grid_animations(
     mut commands: Commands,
     fx: Res<Fx>,
@@ -41,14 +36,15 @@ pub fn sys_grid_animations(
         if let Some((node_id, animation_handle)) = match node_op_result.source().op() {
             NodeOp::PerformCurioAction { target, .. } => {
                 node_op_result.result().as_ref().ok().and_then(|metadata| {
-                    let damages = metadata.get_or_default(card::key::DAMAGES).ok()?;
+                    let effects_metadata = metadata.get_or_default(node::key::EFFECTS).ok()?;
+                    let damages = effects_metadata.get_or_default(card::key::DAMAGES).ok()?;
                     if damages.is_empty() {
                         return None;
                     }
-                    let fatal = metadata.get_or_default(card::key::FATAL).ok()?;
+                    let fatal = effects_metadata.get_or_default(card::key::FATAL).ok()?;
                     let node_id = metadata.get_required(node::key::NODE_ID).ok()?;
                     let target_head = if fatal {
-                        metadata
+                        effects_metadata
                             .get_optional(card::key::TARGET_ENTITY)
                             .ok()
                             .flatten()

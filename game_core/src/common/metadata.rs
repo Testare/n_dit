@@ -129,6 +129,27 @@ impl Metadata {
             self.put(key, data.borrow())
         }
     }
+
+    pub fn aggregate<M: IntoIterator<Item=Metadata>>(metadata: M) -> Option<Self> {
+        metadata.into_iter().reduce(|mut acm, effects| {
+            acm.extend(effects);
+            acm
+        })
+    }
+}
+
+impl IntoIterator for Metadata {
+    type IntoIter = std::collections::hash_map::IntoIter<String, String>;
+    type Item = (String, String);
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl Extend<(String, String)> for Metadata {
+    fn extend<T: IntoIterator<Item = (String, String)>>(&mut self, iter: T) {
+        self.0.extend(iter)
+    }
 }
 
 impl From<HashMap<String, Value>> for Metadata {
