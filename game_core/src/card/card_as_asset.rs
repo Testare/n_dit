@@ -119,7 +119,14 @@ impl AssetLoader for ActionAssetLoader {
                     prereqs,
                     description: description.unwrap_or("Description not found".into()),
                 };
-                load_context.set_labeled_asset(id.as_str(), LoadedAsset::new(def));
+                match validations::validate_action_effects_match_target(&def) {
+                    Ok(()) => {
+                        load_context.set_labeled_asset(id.as_str(), LoadedAsset::new(def));
+                    },
+                    Err(err_msg) => {
+                        log::error!("{}", err_msg);
+                    },
+                }
             }
             Ok(())
         })
@@ -129,6 +136,7 @@ impl AssetLoader for ActionAssetLoader {
         &["actions.json"]
     }
 }
+
 #[derive(Default)]
 pub struct CardAssetLoader;
 
@@ -246,5 +254,33 @@ impl CardDefinition {
 
     pub fn description(&self) -> &str {
         &self.description.as_str()
+    }
+}
+
+mod validations {
+    use super::ActionDefinition;
+    use crate::card::ActionTarget;
+
+    pub fn validate_action_effects_match_target(action: &ActionDefinition) -> Result<(), String> {
+        let target = &action.target;
+        for (i, effect) in action.effects().iter().enumerate() {
+            if !effect.valid_target(target) {
+                return Err(format!(
+                    "Invalid action {} - Effect [{}] does not match target",
+                    action.id(),
+                    i
+                ));
+            }
+        }
+        for (i, effect) in action.self_effects().iter().enumerate() {
+            if !effect.valid_target(&ActionTarget::Curios) {
+                return Err(format!(
+                    "Invalid action {} - Self-effect [{}] does not match target",
+                    action.id(),
+                    i
+                ));
+            }
+        }
+        Ok(())
     }
 }

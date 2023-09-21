@@ -130,7 +130,7 @@ impl Metadata {
         }
     }
 
-    pub fn aggregate<M: IntoIterator<Item=Metadata>>(metadata: M) -> Option<Self> {
+    pub fn aggregate<M: IntoIterator<Item = Metadata>>(metadata: M) -> Option<Self> {
         metadata.into_iter().reduce(|mut acm, effects| {
             acm.extend(effects);
             acm

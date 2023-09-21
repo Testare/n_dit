@@ -283,7 +283,8 @@ pub fn curio_ops(
                                 })
                                 .collect::<Result<Vec<_>, _>>()?;
 
-                            action_metadata.put_optional(key::EFFECTS, Metadata::aggregate(effect_metadata))?;
+                            action_metadata
+                                .put_optional(key::EFFECTS, Metadata::aggregate(effect_metadata))?;
 
                             let self_effects = action_def
                                 .self_effects()
@@ -298,7 +299,10 @@ pub fn curio_ops(
                                     ))
                                 })
                                 .collect::<Result<Vec<_>, _>>()?;
-                            action_metadata.put_optional(key::SELF_EFFECTS, Metadata::aggregate(self_effects))?;
+                            action_metadata.put_optional(
+                                key::SELF_EFFECTS,
+                                Metadata::aggregate(self_effects),
+                            )?;
                             action_metadata.put(key::NODE_ID, **node)?;
 
                             // Have to drop curios_p0 temporarily to apply actions, then we need to bring them back to tap the piece

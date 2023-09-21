@@ -41,7 +41,9 @@ pub enum RangeShape {
     Circle,
 }
 
-#[derive(Clone, Copy, Component, Debug, Default, Deserialize, Reflect, Serialize)]
+#[derive(
+    Clone, Copy, Component, Debug, Default, Deserialize, PartialEq, Eq, Reflect, Serialize,
+)]
 pub enum ActionTarget {
     Allies,
     ClosedSquare,
@@ -75,6 +77,17 @@ pub enum Prerequisite {
 }
 
 impl ActionEffect {
+    pub fn valid_target(&self, target: &ActionTarget) -> bool {
+        match self {
+            Self::Open => ActionTarget::ClosedSquare == *target,
+            Self::Close => ActionTarget::FreeSquare == *target,
+            _ => matches!(
+                target,
+                ActionTarget::Allies | ActionTarget::Curios | ActionTarget::Enemies
+            ),
+        }
+    }
+
     pub fn apply_effect(
         &self,
         grid: &mut Mut<EntityGrid>,
