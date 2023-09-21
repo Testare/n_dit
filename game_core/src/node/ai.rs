@@ -8,7 +8,7 @@ use bevy::time::Time;
 
 use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
 use crate::card::{
-    ActionDefinition, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID,
+    Action, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID,
 };
 use crate::player::Player;
 use crate::prelude::*;
@@ -101,7 +101,7 @@ struct ActionQ {
 }
 
 fn sys_ai(
-    ast_actions: Res<Assets<ActionDefinition>>,
+    ast_actions: Res<Assets<Action>>,
     mut ai_players: IndexedQuery<
         OnTeam,
         (Entity, &NodeBattleIntelligence, AsDerefMut<AiThread>),
@@ -158,7 +158,7 @@ fn sys_ai(
                         .filter_map(|(team, piece)| (team != current_turn).then_some(piece.id))
                         .collect();
                     let grid = grid.clone();
-                    let actions: HashMap<String, ActionDefinition> = actions
+                    let actions: HashMap<String, Action> = actions
                         .into_iter()
                         .filter_map(|(_, v)| v.map(|v| (v.id().to_owned(), v)))
                         .collect();
@@ -207,7 +207,7 @@ fn sys_ai(
                         .iter()
                         .filter_map(|(team, piece)| (team != current_turn).then_some(piece.id))
                         .collect();
-                    let actions: HashMap<String, ActionDefinition> = actions
+                    let actions: HashMap<String, Action> = actions
                         .into_iter()
                         .filter_map(|(_, v)| v.map(|v| (v.id().to_owned(), v)))
                         .collect();
@@ -234,7 +234,7 @@ fn sys_ai(
 // No pathfinding, simply moves in the direction of the nearest piece until it is within attack distance.
 fn simple_ai_script(
     id: Entity,
-    actions: HashMap<String, ActionDefinition>,
+    actions: HashMap<String, Action>,
     sx: Sender<(Op<NodeOp>, Duration)>,
     mut grid: EntityGrid,
     mut my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)>,
@@ -378,7 +378,7 @@ fn simple_ai_script(
 // Attacks whatever is nearby, no movement
 fn lazy_ai_script(
     id: Entity,
-    actions: HashMap<String, ActionDefinition>,
+    actions: HashMap<String, Action>,
     sx: Sender<(Op<NodeOp>, Duration)>,
     mut grid: EntityGrid,
     my_pieces: Vec<(Entity, Vec<String>)>,

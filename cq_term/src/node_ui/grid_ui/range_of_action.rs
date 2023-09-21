@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use game_core::card::{ActionDefinition, Actions};
+use game_core::card::{Action, Actions};
 use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
@@ -9,7 +9,7 @@ use crate::node_ui::AvailableMoves;
 use crate::prelude::*;
 
 pub fn get_range_of_action(
-    ast_actions: Res<Assets<ActionDefinition>>,
+    ast_actions: Res<Assets<Action>>,
     mut players: ParamSet<(
         Query<PlayerUiQ>,
         Query<(Entity, &mut AvailableActionTargets)>,

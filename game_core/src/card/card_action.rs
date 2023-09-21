@@ -1,8 +1,10 @@
 use std::borrow::Borrow;
 
+use bevy::reflect::TypeUuid;
+use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-use super::{ActionDefinition, MaximumSize, MovementSpeed};
+use super::{MaximumSize, MovementSpeed};
 use crate::common::metadata::MetadataErr;
 use crate::node::Curio;
 // TODO figure out how to handle these Node imports to decrease coupling
@@ -22,8 +24,27 @@ pub mod key {
     pub const TARGET_ENTITY: Key<Entity> = typed_key!("target_entity");
 }
 
+
+#[derive(Clone, Debug, Getters, Reflect, TypeUuid)]
+#[uuid = "fc3bb5f8-59f7-4e1e-8ea1-25d736483b6f"]
+pub struct Action {
+    pub(crate) range: Option<ActionRange>,
+    pub(crate) id: String,
+    #[getset(get = "pub")]
+    pub(crate) effects: Vec<ActionEffect>,
+    #[getset(get = "pub")]
+    pub(crate) self_effects: Vec<ActionEffect>,
+    #[getset(get = "pub")]
+    pub(crate) target: ActionTarget,
+    #[getset(get = "pub")]
+    pub(crate) tags: Vec<String>,
+    #[getset(get = "pub")]
+    pub(crate) prereqs: Vec<Prerequisite>,
+    pub(crate) description: String,
+}
+
 #[derive(Clone, Component, Debug, Deref, Reflect)]
-pub struct Actions(pub Vec<Handle<ActionDefinition>>);
+pub struct Actions(pub Vec<Handle<Action>>);
 
 #[derive(Copy, Clone, Component, Debug, Reflect)]
 pub struct ActionRange {

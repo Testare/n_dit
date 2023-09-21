@@ -4,6 +4,7 @@ use bevy::asset::{AssetLoader, AssetPath, LoadedAsset};
 use bevy::reflect::TypeUuid;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
+use super::Action;
 
 use super::{ActionEffect, ActionRange, ActionTarget, Prerequisite, RangeShape};
 use crate::prelude::*;
@@ -52,24 +53,6 @@ pub enum ActionRangeRepr {
     },
 }
 
-#[derive(Clone, Debug, Getters, Reflect, TypeUuid)]
-#[uuid = "fc3bb5f8-59f7-4e1e-8ea1-25d736483b6f"]
-pub struct ActionDefinition {
-    pub(crate) range: Option<ActionRange>,
-    pub(crate) id: String,
-    #[getset(get = "pub")]
-    pub(crate) effects: Vec<ActionEffect>,
-    #[getset(get = "pub")]
-    pub(crate) self_effects: Vec<ActionEffect>,
-    #[getset(get = "pub")]
-    pub(crate) target: ActionTarget,
-    #[getset(get = "pub")]
-    pub(crate) tags: Vec<String>,
-    #[getset(get = "pub")]
-    pub(crate) prereqs: Vec<Prerequisite>,
-    pub(crate) description: String,
-}
-
 #[derive(CopyGetters, Clone, Debug, Getters, Hash, PartialEq, Reflect, TypeUuid)]
 #[uuid = "e8d74f73-96cf-4916-84c5-9041fa10c4ed"]
 pub struct CardDefinition {
@@ -77,7 +60,7 @@ pub struct CardDefinition {
     #[getset(get = "pub")]
     short_name: String,
     #[getset(get = "pub")]
-    actions: Vec<Handle<ActionDefinition>>,
+    actions: Vec<Handle<Action>>,
     description: String,
     #[get_copy = "pub"]
     max_size: u32,
@@ -109,7 +92,7 @@ impl AssetLoader for ActionAssetLoader {
                     target,
                     description,
                 } = def;
-                let def = ActionDefinition {
+                let def = Action {
                     id: id.clone(),
                     range: Some(range.into()),
                     tags,
@@ -211,9 +194,9 @@ impl From<ActionRange> for ActionRangeRepr {
     }
 }
 
-impl Default for ActionDefinition {
+impl Default for Action {
     fn default() -> Self {
-        ActionDefinition {
+        Action {
             id: NO_OP_ACTION_ID.into_owned(),
             range: None,
             effects: Vec::new(),
@@ -225,7 +208,7 @@ impl Default for ActionDefinition {
         }
     }
 }
-impl ActionDefinition {
+impl Action {
     pub fn id(&self) -> &str {
         self.id.as_str()
     }
@@ -258,10 +241,10 @@ impl CardDefinition {
 }
 
 mod validations {
-    use super::ActionDefinition;
+    use super::Action;
     use crate::card::ActionTarget;
 
-    pub fn validate_action_effects_match_target(action: &ActionDefinition) -> Result<(), String> {
+    pub fn validate_action_effects_match_target(action: &Action) -> Result<(), String> {
         let target = &action.target;
         for (i, effect) in action.effects().iter().enumerate() {
             if !effect.valid_target(target) {

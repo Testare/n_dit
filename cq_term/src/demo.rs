@@ -1,5 +1,5 @@
 use game_core::card::{
-    ActionDefinition, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
+    Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
@@ -56,7 +56,7 @@ fn debug_key(
     reg_curio_display: Res<Reg<NodeGlyph>>,
     asset_server: Res<AssetServer>,
     card_assets: Res<Assets<CardDefinition>>,
-    action_assets: Res<Assets<ActionDefinition>>,
+    action_assets: Res<Assets<Action>>,
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<

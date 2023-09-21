@@ -1,4 +1,4 @@
-use game_core::card::{ActionDefinition, Actions, Description};
+use game_core::card::{Action, Actions, Description};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
@@ -14,7 +14,7 @@ pub struct MenuUiDescription;
 
 impl MenuUiDescription {
     fn style_update_system(
-        ast_actions: Res<Assets<ActionDefinition>>,
+        ast_actions: Res<Assets<Action>>,
         node_pieces: Query<(Option<&Description>, Option<&Actions>), With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
@@ -53,7 +53,7 @@ impl MenuUiDescription {
     }
 
     fn render_system(
-        ast_actions: Res<Assets<ActionDefinition>>,
+        ast_actions: Res<Assets<Action>>,
         node_pieces: Query<NodePieceQ>,
         players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
         mut ui: Query<

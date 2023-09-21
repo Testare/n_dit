@@ -9,7 +9,7 @@ use super::{
     TeamStatus, Teams,
 };
 use crate::card::{
-    ActionDefinition, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
+    Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
 use crate::common::metadata::MetadataErr;
 use crate::node::{AccessPoint, Curio, VictoryStatus};
@@ -104,7 +104,7 @@ pub struct CurioQ {
 
 pub fn curio_ops(
     no_op_action: Res<NoOpAction>,
-    action_defs: Res<Assets<ActionDefinition>>,
+    action_defs: Res<Assets<Action>>,
     mut ops: EventReader<Op<NodeOp>>,
     mut nodes: Query<
         (

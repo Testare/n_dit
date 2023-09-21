@@ -1,4 +1,4 @@
-use crate::card::{ActionDefinition, Deck};
+use crate::card::{Action, Deck};
 use crate::prelude::*;
 use crate::NDitCoreSet;
 
@@ -179,7 +179,7 @@ impl Curio {
 }
 
 #[derive(Clone, Debug, Deref, Resource)]
-pub struct NoOpAction(Handle<ActionDefinition>);
+pub struct NoOpAction(Handle<Action>);
 
 // Might be moved to some combination of Rules and Tags
 #[derive(Copy, Clone, Component)]
@@ -188,9 +188,9 @@ pub struct PreventNoOp;
 impl FromWorld for NoOpAction {
     fn from_world(world: &mut World) -> Self {
         let mut assets = world
-            .get_resource_mut::<Assets<ActionDefinition>>()
+            .get_resource_mut::<Assets<Action>>()
             .expect("unable to load no op action");
-        NoOpAction(assets.add(ActionDefinition::default()))
+        NoOpAction(assets.add(Action::default()))
     }
 }
 

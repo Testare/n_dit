@@ -1,7 +1,7 @@
 use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
-use game_core::card::{ActionDefinition, Actions};
+use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
 use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
@@ -24,7 +24,7 @@ pub struct MenuUiActions;
 
 impl MenuUiActions {
     pub fn kb_action_menu(
-        ast_actions: Res<Assets<ActionDefinition>>,
+        ast_actions: Res<Assets<Action>>,
         mut ev_keys: EventReader<KeyEvent>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
@@ -100,7 +100,7 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
-        ast_actions: Res<Assets<ActionDefinition>>,
+        ast_actions: Res<Assets<Action>>,
         mut ev_mouse: EventReader<LayoutEvent>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         players: Query<&SelectedEntity, With<Player>>,
@@ -186,7 +186,7 @@ impl MenuUiActions {
     }
 
     fn sys_render_action_menu(
-        ast_actions: Res<Assets<ActionDefinition>>,
+        ast_actions: Res<Assets<Action>>,
         node_pieces: Query<&Actions, With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction, &UiFocus), With<Player>>,
         mut ui: Query<

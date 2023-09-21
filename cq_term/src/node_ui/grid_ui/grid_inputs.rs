@@ -1,5 +1,5 @@
 use crossterm::event::KeyModifiers;
-use game_core::card::{ActionDefinition, Actions, NO_OP_ACTION_ID};
+use game_core::card::{Action, Actions, NO_OP_ACTION_ID};
 use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam, Pickup,
     Team, TeamPhase,
@@ -17,7 +17,7 @@ use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
-    ast_actions: Res<Assets<ActionDefinition>>,
+    ast_actions: Res<Assets<Action>>,
     mut ev_mouse: EventReader<LayoutEvent>,
     ui: Query<(&ForPlayer, &Scroll2D), With<GridUi>>,
     players: Query<
@@ -148,7 +148,7 @@ pub fn handle_layout_events(
 }
 
 pub fn kb_grid(
-    ast_actions: Res<Assets<ActionDefinition>>,
+    ast_actions: Res<Assets<Action>>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     players: Query<

@@ -6,9 +6,9 @@ mod card_action;
 mod card_as_asset;
 
 pub use card_action::{
-    key, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite, RangeShape,
+    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite, RangeShape,
 };
-pub use card_as_asset::{ActionDefinition, CardDefinition, NO_OP_ACTION_ID};
+pub use card_as_asset::{CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default)]
@@ -17,7 +17,7 @@ pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<CardDefinition>()
-            .add_asset::<ActionDefinition>()
+            .add_asset::<Action>()
             .add_asset_loader(card_as_asset::CardAssetLoader)
             .add_asset_loader(card_as_asset::ActionAssetLoader);
     }
