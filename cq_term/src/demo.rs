@@ -135,7 +135,7 @@ fn demo_startup(
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
-    let act_phaser = asset_server.load("nightfall/enemies.actions.json#Phaser");
+    let act_phaser = asset_server.load("nightfall/program.actions.json#Phaser");
     let hack = commands
         .spawn((Card::new(
             "Hack",

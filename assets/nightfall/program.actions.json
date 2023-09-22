@@ -1,5 +1,26 @@
 {
+    "Bash": {
+        "description": "Deletes 5 sectors from target",
+        "effects": [
+            {
+                "Damage": 5
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
+    "Blip": {
+        "description": "Range:5 Deletes 1 sectors from target",
+        "effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "range": 5,
+        "target": "Enemies"
+    },
     "Boost": {
+        "description": "Increases move rate of target by 1 and deletes 1 sector from Turbo",
         "effects": [
             {
                 "ModifyMovement": 1
@@ -13,7 +34,28 @@
         ],
         "target": "Allies"
     },
+    "Burn": {
+        "description": "Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
+    "Byte": {
+        "description": "Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
     "Chug": {
+        "description": "Range:3 Decreases move rate of target by 2",
         "effects": [
             {
                 "ModifyMovement": -2
@@ -22,7 +64,28 @@
         "range": 3,
         "target": "Enemies"
     },
+    "Crash": {
+        "description": "Deletes 7 sectors from target",
+        "effects": [
+            {
+                "Damage": 7
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
+    "Cut": {
+        "description": "Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
     "Dataslam": {
+        "description": "Size Req:6 Deletes 8 sectors from target",
         "effects": [
             {
                 "Damage": 8
@@ -37,6 +100,7 @@
         "target": "Enemies"
     },
     "Dice": {
+        "description": "Size Req:3 Deletes 3 sectors from target",
         "effects": [
             {
                 "Damage": 3
@@ -51,6 +115,7 @@
         "target": "Enemies"
     },
     "Fire": {
+        "description": "Range:2 Deletes 4 sectors from target",
         "effects": [
             {
                 "Damage": 4
@@ -60,6 +125,7 @@
         "target": "Enemies"
     },
     "Fling": {
+        "description": "Range:4 Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -69,6 +135,7 @@
         "target": "Enemies"
     },
     "Fractal Glitch": {
+        "description": "Deletes 4 sectors from target",
         "effects": [
             {
                 "Damage": 4
@@ -78,6 +145,7 @@
         "target": "Enemies"
     },
     "Glitch": {
+        "description": "Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -87,6 +155,7 @@
         "target": "Enemies"
     },
     "Grow": {
+        "description": "Adds 2 sectors to target",
         "effects": [
             {
                 "Heal": 2
@@ -96,6 +165,7 @@
         "target": "Allies"
     },
     "Hang": {
+        "description": "Size Req:4 Range:3 Decreases move rate of target to 0",
         "effects": [
             {
                 "ModifyMovement": -1000
@@ -110,6 +180,7 @@
         "target": "Enemies"
     },
     "Hypo": {
+        "description": "Range:3 Adds 2 sectors to target",
         "effects": [
             {
                 "Heal": 2
@@ -119,6 +190,7 @@
         "target": "Allies"
     },
     "Ice": {
+        "description": "Range:2 Decreases move rate of target by 3",
         "effects": [
             {
                 "ModifyMovement": -3
@@ -128,6 +200,7 @@
         "target": "Enemies"
     },
     "Kamikaze": {
+        "description": "Deletes 5 sectors from target and erases Buzzbumb",
         "effects": [
             {
                 "Damage": 5
@@ -142,6 +215,7 @@
         "target": "Enemies"
     },
     "Lag": {
+        "description": "Range:3 Decreases move rate of target by 1",
         "effects": [
             {
                 "ModifyMovement": -1
@@ -151,6 +225,7 @@
         "target": "Enemies"
     },
     "Megaboost": {
+        "description": "Size Req:3 Range:2 Adds 2 to move rate of target and deletes 2 sectors from Turbo Deluxe",
         "effects": [
             {
                 "ModifyMovement": 2
@@ -169,7 +244,18 @@
         ],
         "target": "Allies"
     },
+    "Megabyte": {
+        "description": "Deletes 3 sectors from target",
+        "effects": [
+            {
+                "Damage": 3
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
     "Megagrow": {
+        "description": "Adds up to 4 sectors to target",
         "effects": [
             {
                 "Heal": 4
@@ -179,6 +265,7 @@
         "target": "Allies"
     },
     "Megascramble": {
+        "description": "Range:3 Deletes 4 sectors from target",
         "effects": [
             {
                 "Damage": 4
@@ -188,6 +275,7 @@
         "target": "Enemies"
     },
     "Mutilate": {
+        "description": "Size Req:4 Deletes 4 sectors from target",
         "effects": [
             {
                 "Damage": 4
@@ -202,6 +290,7 @@
         "target": "Enemies"
     },
     "One": {
+        "description": "Repairs one grid space",
         "effects": [
             "Open"
         ],
@@ -209,6 +298,7 @@
         "target": "ClosedSquare"
     },
     "Paralyze": {
+        "description": "Decreases move rate of target program by 3",
         "effects": [
             {
                 "ModifyMovement": -3
@@ -218,6 +308,7 @@
         "target": "Enemies"
     },
     "Peek": {
+        "description": "Range:2 Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -226,7 +317,18 @@
         "range": 2,
         "target": "Enemies"
     },
-    "Poke": {
+    "Phaser": {
+        "description": "Range:2 Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "range": 2,
+        "target": "Enemies"
+    },
+    "Photon": {
+        "description": "Range:3 Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -235,7 +337,38 @@
         "range": 3,
         "target": "Enemies"
     },
+    "Ping": {
+        "description": "Range:8 Deletes 1 sectors from target",
+        "effects": [
+            {
+                "Damage": 1
+            }
+        ],
+        "range": 8,
+        "target": "Enemies"
+    },
+    "Poke": {
+        "description": "Range:3 Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "range": 3,
+        "target": "Enemies"
+    },
+    "Pong": {
+        "description": "Range:5 Deletes 2 sectors from target",
+        "effects": [
+            {
+                "Damage": 2
+            }
+        ],
+        "range": 5,
+        "target": "Enemies"
+    },
     "Quantum Glitch": {
+        "description": "Deletes 6 sectors from target",
         "effects": [
             {
                 "Damage": 6
@@ -245,6 +378,7 @@
         "target": "Enemies"
     },
     "Scorch": {
+        "description": "Range:3 Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -254,6 +388,7 @@
         "target": "Enemies"
     },
     "Scramble": {
+        "description": "Range:2 Deletes 4 sectors from target",
         "effects": [
             {
                 "Damage": 4
@@ -263,6 +398,7 @@
         "target": "Enemies"
     },
     "Seek and Destroy": {
+        "description": "Size Req:5 Range:2 Deletes 5 sectors from target and 2 from Seeker",
         "effects": [
             {
                 "Damage": 5
@@ -282,6 +418,7 @@
         "target": "Enemies"
     },
     "Selfdestruct": {
+        "description": "Deletes 10 sectors from target and erases Logicbomb",
         "effects": [
             {
                 "Damage": 10
@@ -295,7 +432,18 @@
         ],
         "target": "Enemies"
     },
+    "Shutdown": {
+        "description": "Range:5 Deletes 5 sectors from target",
+        "effects": [
+            {
+                "Damage": 5
+            }
+        ],
+        "range": 5,
+        "target": "Enemies"
+    },
     "Slice": {
+        "description": "Deletes 2 sectors from target",
         "effects": [
             {
                 "Damage": 2
@@ -305,6 +453,7 @@
         "target": "Enemies"
     },
     "Spot": {
+        "description": "Range:3 Deletes 3 sectors from target",
         "effects": [
             {
                 "Damage": 3
@@ -314,6 +463,7 @@
         "target": "Enemies"
     },
     "Sting": {
+        "description": "Deletes 1 sectors from target",
         "effects": [
             {
                 "Damage": 1
@@ -323,6 +473,7 @@
         "target": "Enemies"
     },
     "Stone": {
+        "description": "Range:3 Deletes 1 sector from target",
         "effects": [
             {
                 "Damage": 1
@@ -332,6 +483,7 @@
         "target": "Enemies"
     },
     "Stretch": {
+        "description": "Increases max size of target by 1",
         "effects": [
             {
                 "ModifyCapacity": 1
@@ -341,6 +493,7 @@
         "target": "Allies"
     },
     "Surgery": {
+        "description": "Increases maximum size of target program by 1",
         "effects": [
             {
                 "ModifyCapacity": 1
@@ -349,7 +502,28 @@
         "range": 1,
         "target": "Allies"
     },
+    "Taser": {
+        "description": "Deletes 4 sectors from target",
+        "effects": [
+            {
+                "Damage": 4
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
+    "Thump": {
+        "description": "Deletes 3 sectors from target",
+        "effects": [
+            {
+                "Damage": 3
+            }
+        ],
+        "range": 1,
+        "target": "Enemies"
+    },
     "Tweak": {
+        "description": "Increases move rate of target by 1 and deletes 1 sector from Fiddle",
         "effects": [
             {
                 "ModifyMovement": 1
@@ -364,6 +538,7 @@
         "target": "Allies"
     },
     "Twiddle": {
+        "description": "Increases maximum size of target by 1 and deletes 1 sector from Fiddle",
         "effects": [
             {
                 "ModifyCapacity": 1
@@ -378,6 +553,7 @@
         "target": "Allies"
     },
     "Zero": {
+        "description": "Deletes one grid square",
         "effects": [
             "Close"
         ],

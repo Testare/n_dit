@@ -1,7 +1,7 @@
 {
     "Attack Dog": {
         "actions": [
-            "/nightfall/enemies.actions.json#Megabyte"
+            "/nightfall/program.actions.json#Megabyte"
         ],
         "description": "Ravenous and bloodthirsty corporate canine",
         "max_size": 7,
@@ -9,7 +9,7 @@
     },
     "Boss": {
         "actions": [
-            "/nightfall/enemies.actions.json#Shutdown"
+            "/nightfall/program.actions.json#Shutdown"
         ],
         "description": "Prepare to be Owned",
         "max_size": 25,
@@ -17,7 +17,7 @@
     },
     "Fire Wall": {
         "actions": [
-            "/nightfall/enemies.actions.json#Burn"
+            "/nightfall/program.actions.json#Burn"
         ],
         "description": "Keep unwanted programs out of corporate sectors",
         "max_size": 20,
@@ -25,7 +25,7 @@
     },
     "Guard Dog": {
         "actions": [
-            "/nightfall/enemies.actions.json#Byte"
+            "/nightfall/program.actions.json#Byte"
         ],
         "description": "Who let this dog out?",
         "max_size": 3,
@@ -33,7 +33,7 @@
     },
     "Guard Pup": {
         "actions": [
-            "/nightfall/enemies.actions.json#Byte"
+            "/nightfall/program.actions.json#Byte"
         ],
         "description": "A speedy little corporate cur",
         "max_size": 2,
@@ -41,7 +41,7 @@
     },
     "Radar": {
         "actions": [
-            "/nightfall/enemies.actions.json#Pong"
+            "/nightfall/program.actions.json#Pong"
         ],
         "description": "Deadly program eradicator",
         "max_size": 1,
@@ -49,7 +49,7 @@
     },
     "Sensor": {
         "actions": [
-            "/nightfall/enemies.actions.json#Blip"
+            "/nightfall/program.actions.json#Blip"
         ],
         "description": "Immobile program eradicator",
         "max_size": 1,
@@ -57,7 +57,7 @@
     },
     "Sentinel": {
         "actions": [
-            "/nightfall/enemies.actions.json#Cut"
+            "/nightfall/program.actions.json#Cut"
         ],
         "description": "Corporate data defender",
         "max_size": 3,
@@ -65,7 +65,7 @@
     },
     "Sentinel 2.0": {
         "actions": [
-            "/nightfall/enemies.actions.json#Cut"
+            "/nightfall/program.actions.json#Cut"
         ],
         "description": "Improved corporate data defender",
         "max_size": 4,
@@ -73,7 +73,7 @@
     },
     "Sentinel 3.0": {
         "actions": [
-            "/nightfall/enemies.actions.json#Taser"
+            "/nightfall/program.actions.json#Taser"
         ],
         "description": "Sentinel that attacks several programs at once",
         "max_size": 4,
@@ -81,7 +81,7 @@
     },
     "Sonar": {
         "actions": [
-            "/nightfall/enemies.actions.json#Ping"
+            "/nightfall/program.actions.json#Ping"
         ],
         "description": "Long-range program eradicator",
         "max_size": 1,
@@ -89,7 +89,7 @@
     },
     "Warden": {
         "actions": [
-            "/nightfall/enemies.actions.json#Thump"
+            "/nightfall/program.actions.json#Thump"
         ],
         "description": "Slow and steady corporate attack program",
         "max_size": 5,
@@ -97,7 +97,7 @@
     },
     "Warden+": {
         "actions": [
-            "/nightfall/enemies.actions.json#Bash"
+            "/nightfall/program.actions.json#Bash"
         ],
         "description": "Get out of its way",
         "max_size": 6,
@@ -105,7 +105,7 @@
     },
     "Warden++": {
         "actions": [
-            "/nightfall/enemies.actions.json#Crash"
+            "/nightfall/program.actions.json#Crash"
         ],
         "description": "The last word in corporate security",
         "max_size": 7,
@@ -113,7 +113,7 @@
     },
     "Watchman": {
         "actions": [
-            "/nightfall/enemies.actions.json#Phaser"
+            "/nightfall/program.actions.json#Phaser"
         ],
         "description": "Corporate ranged attack program",
         "max_size": 2,
@@ -121,7 +121,7 @@
     },
     "Watchman X": {
         "actions": [
-            "/nightfall/enemies.actions.json#Phaser"
+            "/nightfall/program.actions.json#Phaser"
         ],
         "description": "Improved version of Watchman",
         "max_size": 4,
@@ -129,7 +129,7 @@
     },
     "Watchman SP": {
         "actions": [
-            "/nightfall/enemies.actions.json#Photon"
+            "/nightfall/program.actions.json#Photon"
         ],
         "description": "Watching from an even greater distance",
         "max_size": 4,
