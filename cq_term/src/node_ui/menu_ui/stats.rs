@@ -1,4 +1,5 @@
 use bevy::ecs::system::SystemParam;
+use charmi::CharacterMapImage;
 use game_core::node::{InNode, Node};
 use game_core::player::Player;
 use game_core::prelude::*;
@@ -35,7 +36,7 @@ impl SimpleSubmenu for MenuUiStats {
         selected: &NodePieceQItem,
         size: &CalculatedSizeTty,
         node_ui_data: &MenuUiStatsDataParam,
-    ) -> Option<Vec<String>> {
+    ) -> Option<CharacterMapImage> {
         if selected.max_size.is_some() || selected.speed.is_some() {
             let mut stats = vec![format!("{0:─<1$}", "─Stats", size.width())];
             if let Some(max_size) = selected.max_size {
@@ -51,7 +52,7 @@ impl SimpleSubmenu for MenuUiStats {
                     .unwrap_or(0);
                 stats.push(format!("Moves: {}/{}", moves_taken, **speed));
             }
-            Some(stats)
+            Some(stats.into_iter().collect())
         } else {
             None
         }

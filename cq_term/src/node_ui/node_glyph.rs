@@ -1,3 +1,6 @@
+use std::cell::OnceCell;
+use std::sync::OnceLock;
+
 use bevy::utils::HashMap;
 use charmi::ColorDef;
 use crossterm::style::{Color, ContentStyle, StyledContent, Stylize};
@@ -6,6 +9,8 @@ use game_core::registry::Registry;
 use serde::{Deserialize, Serialize};
 
 use crate::configuration::UiFormat;
+
+static DEFAULT_GLYPH: OnceLock<NodeGlyph> = OnceLock::new();
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -18,6 +23,12 @@ pub enum NodeGlyph {
 impl Default for NodeGlyph {
     fn default() -> Self {
         NodeGlyph::PlainGlyph("??".to_string())
+    }
+}
+
+impl Default for &NodeGlyph {
+    fn default() -> Self {
+        DEFAULT_GLYPH.get_or_init(|| NodeGlyph::default())
     }
 }
 

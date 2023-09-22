@@ -1,3 +1,4 @@
+use charmi::CharacterMapImage;
 use game_core::node::{Curio, Pickup};
 use game_core::prelude::*;
 use game_core::registry::Reg;
@@ -23,39 +24,47 @@ impl SimpleSubmenu for MenuUiLabel {
         selected: &NodePieceQItem,
         _size: &CalculatedSizeTty,
         glyph_registry: &Res<Reg<NodeGlyph>>,
-    ) -> Option<Vec<String>> {
+    ) -> Option<CharacterMapImage> {
         let display_id = selected.piece.display_id();
-        let glyph = (**glyph_registry)
-            .get(display_id)
-            .map(|s| s.glyph())
-            .unwrap_or("??".to_owned());
+        let glyph = (**glyph_registry).get(display_id).unwrap_or_default();
 
         let is_tapped = selected
             .is_tapped
             .map(|is_tapped| **is_tapped)
             .unwrap_or(false);
-
-        let mut label = vec![format!(
-            "[{}]{}",
-            glyph,
-            if is_tapped { " (tapped)" } else { "" }
-        )];
-        if selected.access_point.is_some() {
-            label.push("Access Point".to_owned());
-        } else if let Some(name) = selected
-            .curio
-            .map(Curio::name)
-            .or_else(|| {
-                selected.pickup.map(|pickup| match pickup {
-                    Pickup::Mon(_) => "Mon",
-                    Pickup::Card(_) => "Card: ??",
-                    Pickup::Item(_) => "Item: ??",
-                })
+        let mut label = CharacterMapImage::new()
+            .with_row(|row| {
+                let row = row
+                    .with_plain_text("[")
+                    .with_styled_text(glyph.styled_glyph())
+                    .with_plain_text("]");
+                if is_tapped {
+                    row.with_plain_text(" (tapped)")
+                } else {
+                    row
+                }
             })
-            .map(str::to_owned)
-        {
-            label.push(name);
-        }
+            .with_row(|row| {
+                if selected.access_point.is_some() {
+                    row.with_plain_text("Access Point")
+                } else if let Some(name) = selected
+                    .curio
+                    .map(Curio::name)
+                    .or_else(|| {
+                        selected.pickup.map(|pickup| match pickup {
+                            Pickup::Mon(_) => "Mon",
+                            Pickup::Card(_) => "Card: ??",
+                            Pickup::Item(_) => "Item: ??",
+                        })
+                    })
+                    .map(str::to_owned)
+                {
+                    row.with_text(name, &glyph.style())
+                } else {
+                    row
+                }
+            });
+
         Some(label)
     }
 

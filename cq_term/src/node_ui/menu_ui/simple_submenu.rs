@@ -5,7 +5,7 @@ use game_core::player::{ForPlayer, Player};
 use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedEntity, SimpleSubmenu};
-use crate::layout::{CalculatedSizeTty, FitToSize, StyleTty};
+use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::node_ui::NodeUiQItem;
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -86,11 +86,12 @@ fn render_simple_submenu<'w, 's, T: SimpleSubmenu + Component>(
     let render_param = render_param.into_inner();
     for (size, ForPlayer(player), mut tr) in uis.iter_mut() {
         if let Ok(selected_entity) = players.get(*player) {
-            let rendering = selected_entity
+            let mut rendering = selected_entity
                 .of(&node_pieces)
                 .and_then(|selected| T::render(*player, &selected, &size, &render_param))
                 .unwrap_or_default();
-            tr.update(rendering.fit_to_size(size));
+            rendering.fit_to_size(size.x, size.y);
+            tr.update_charmie(rendering);
         }
     }
 }
