@@ -7,9 +7,7 @@ use bevy::ecs::query::WorldQuery;
 use bevy::time::Time;
 
 use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
-use crate::card::{
-    Action, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID,
-};
+use crate::card::{Action, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID};
 use crate::player::Player;
 use crate::prelude::*;
 use crate::NDitCoreSet;

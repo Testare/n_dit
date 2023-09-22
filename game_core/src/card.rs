@@ -6,7 +6,8 @@ mod card_action;
 mod card_as_asset;
 
 pub use card_action::{
-    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite, RangeShape,
+    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
+    RangeShape,
 };
 pub use card_as_asset::{CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};

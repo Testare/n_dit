@@ -4,9 +4,8 @@ use bevy::asset::{AssetLoader, AssetPath, LoadedAsset};
 use bevy::reflect::TypeUuid;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
-use super::Action;
 
-use super::{ActionEffect, ActionRange, ActionTarget, Prerequisite, RangeShape};
+use super::{Action, ActionEffect, ActionRange, ActionTarget, Prerequisite, RangeShape};
 use crate::prelude::*;
 
 pub const NO_OP_ACTION_ID: Cow<'static, str> = Cow::Borrowed("No action");
