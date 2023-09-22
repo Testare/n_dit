@@ -37,7 +37,7 @@ pub struct ActionAssetDef {
     #[serde(default)]
     tags: Vec<String>,
     target: ActionTarget,
-    description: Option<String>, // TODO NOT OPTIONAL
+    description: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -99,7 +99,7 @@ impl AssetLoader for ActionAssetLoader {
                     target,
                     self_effects,
                     prereqs,
-                    description: description.unwrap_or("Description not found".into()),
+                    description: description,
                 };
                 match validations::validate_action_effects_match_target(&def) {
                     Ok(()) => {
