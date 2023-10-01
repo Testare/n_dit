@@ -15,7 +15,8 @@ use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
 use crate::node_ui::{
-    AvailableActionTargets, AvailableMoves, HasNodeUi, NodeUi, SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, SelectedAction,
+    SelectedEntity,
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -222,6 +223,7 @@ pub fn create_node_ui(
 
             commands.entity(*player).insert((
                 NodeCursor::default(),
+                CursorIsHidden::default(),
                 SelectedEntity(node_q.grid.item_at(default())),
                 SelectedAction(None),
                 AvailableActionTargets::default(),

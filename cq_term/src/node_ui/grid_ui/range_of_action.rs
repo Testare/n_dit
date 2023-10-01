@@ -88,14 +88,6 @@ pub fn get_range_of_action(
                             return Some(pt);
                         }
 
-                        /*
-                        for UVec2 { x, y } in available_moves.iter() {
-                            // For some of the weird curio ideas I have, we'll need to make changes
-                            // to this logic
-                            if x.abs_diff(pt.x) + y.abs_diff(pt.y) <= **range {
-                                return Some(pt);
-                            }
-                        }*/
                         None
                     })
                 })

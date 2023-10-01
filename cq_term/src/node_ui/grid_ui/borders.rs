@@ -76,12 +76,12 @@ pub fn border_style_for(
     let points_in_range = points_in_range(x_range, y_range);
 
     // TODO optimized logic so we don't create a full set of points for every square
-    if x_range.contains(&(*cursor_x as usize)) && y_range.contains(&(*cursor_y as usize)) {
+    if !player_q.cursor_is_hidden
+        && x_range.contains(&(*cursor_x as usize))
+        && y_range.contains(&(*cursor_y as usize))
+    {
         color_scheme.selected_square_border()
-    }
-    // else if check attacks are selected and range
-    // color_scheme.attack_action(),
-    else if !player_q.available_moves.is_empty()
+    } else if !player_q.available_moves.is_empty()
         && !points_in_range.is_disjoint(player_q.available_moves)
     {
         color_scheme.possible_movement()

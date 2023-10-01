@@ -60,6 +60,9 @@ pub struct AvailableActionTargets(HashSet<UVec2>);
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct NodeCursor(pub UVec2);
 
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+pub struct CursorIsHidden(pub bool);
+
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(Reg::<NodeGlyph>::default())
@@ -79,10 +82,14 @@ impl Plugin for NodeUiPlugin {
                 Update,
                 (
                     (
-                        node_ui_op::sys_node_ui_op_change_focus,
-                        node_ui_op::sys_node_ui_op_set_selected_action,
-                        node_ui_op::sys_node_ui_op_move_cursor,
+                        (
+                            node_ui_op::sys_node_ui_op_change_focus,
+                            node_ui_op::sys_node_ui_op_set_selected_action,
+                            node_ui_op::sys_node_ui_op_move_cursor,
+                        ),
+                        node_ui_op::sys_node_ui_op_hide_cursor,
                     )
+                        .chain()
                         .in_set(NDitCoreSet::ProcessUiOps),
                     (
                         node_ui_op::sys_adjust_selected_action,

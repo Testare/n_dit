@@ -30,6 +30,7 @@ pub enum NodeBattleIntelligence {
     DoNothing,
     Lazy,
     Simple,
+    Nightfall,
 }
 
 #[derive(Component, Debug, Default, DerefMut, Deref)]
@@ -169,7 +170,7 @@ fn sys_ai(
                         }),
                     });
                 },
-                NodeBattleIntelligence::Simple => {
+                NodeBattleIntelligence::Nightfall | NodeBattleIntelligence::Simple => {
                     let (sx, rx) = std::sync::mpsc::channel();
                     let mut actions = HashMap::new();
                     let my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)> =

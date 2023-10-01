@@ -9,7 +9,9 @@ mod scroll;
 
 use bevy::ecs::query::WorldQuery;
 use game_core::card::MovementSpeed;
-use game_core::node::{self, AccessPoint, InNode, IsTapped, Node, NodeOp, NodePiece};
+use game_core::node::{
+    self, AccessPoint, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam,
+};
 use game_core::op::{OpResult, OpSubtype};
 use game_core::player::Player;
 use game_core::NDitCoreSet;
@@ -18,8 +20,8 @@ pub use scroll::Scroll2D;
 
 use super::node_ui_op::FocusTarget;
 use super::{
-    AvailableActionTargets, AvailableMoves, HasNodeUi, NodeCursor, NodeUi, NodeUiOp, NodeUiQItem,
-    SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
+    NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity,
 };
 use crate::layout::{LayoutMouseTarget, StyleTty, UiFocusOnClick};
 use crate::prelude::*;
@@ -43,6 +45,7 @@ pub struct PlayerUiQ {
     selected_entity: &'static SelectedEntity,
     selected_action: &'static SelectedAction,
     node_cursor: &'static NodeCursor,
+    cursor_is_hidden: AsDerefCopied<CursorIsHidden>,
     available_moves: &'static AvailableMoves,
     available_action_targets: &'static AvailableActionTargets,
     in_node: &'static InNode,
@@ -122,14 +125,33 @@ impl NodeUi for GridUi {
 // TODO move to node_ui
 fn sys_react_to_node_op(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
-    nodes: Query<(&EntityGrid,), With<Node>>,
-    players: Query<(&InNode,), (With<Player>, With<HasNodeUi>)>,
+    nodes: Query<(&EntityGrid, AsDerefCopied<CurrentTurn>), With<Node>>,
+    players_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
+    player_nodes: Query<AsDerefCopied<InNode>, With<Player>>,
+    player_teams: Query<(Entity, AsDerefCopied<OnTeam>), (With<Player>, With<HasNodeUi>)>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for op_result in ev_op_result.iter() {
-        if !players.contains(op_result.source().player()) {
+        // Reactions to ops from other players in node
+        if let (Ok(_), NodeOp::EndTurn) = (op_result.result(), op_result.source().op()) {
+            get_assert!(op_result.source().player(), player_nodes, |node| {
+                let (_, current_turn) = get_assert!(node, nodes)?;
+                for (id, team) in player_teams.iter() {
+                    if team == current_turn {
+                        NodeUiOp::SetCursorHidden(false)
+                            .for_p(id)
+                            .send(&mut ev_node_ui_op);
+                    }
+                }
+                Some(())
+            });
+        }
+
+        if !players_with_node_ui.contains(op_result.source().player()) {
             continue;
         }
+
+        // Reactions to own actions
         if let Ok(metadata) = op_result.result() {
             match op_result.source().op() {
                 NodeOp::PerformCurioAction { .. } => {
@@ -144,8 +166,8 @@ fn sys_react_to_node_op(
                 NodeOp::MoveActiveCurio { .. } => {
                     let player = op_result.source().player();
                     // NOTE this will probably fail when an AI takes an action
-                    get_assert!(player, players, |(node,)| {
-                        let (grid,) = get_assert!(**node, nodes)?;
+                    get_assert!(player, player_nodes, |node| {
+                        let (grid, _) = get_assert!(node, nodes)?;
                         let curio = metadata.get_required(node::key::CURIO).ok()?;
                         let remaining_moves =
                             metadata.get_required(node::key::REMAINING_MOVES).ok()?;
@@ -163,6 +185,14 @@ fn sys_react_to_node_op(
                 },
                 NodeOp::ReadyToGo => {
                     NodeUiOp::ChangeFocus(FocusTarget::Grid)
+                        .for_p(op_result.source().player())
+                        .send(&mut ev_node_ui_op);
+                },
+                NodeOp::EndTurn => {
+                    NodeUiOp::ChangeFocus(FocusTarget::Grid)
+                        .for_p(op_result.source().player())
+                        .send(&mut ev_node_ui_op);
+                    NodeUiOp::SetCursorHidden(true)
                         .for_p(op_result.source().player())
                         .send(&mut ev_node_ui_op);
                 },

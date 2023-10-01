@@ -84,7 +84,6 @@ fn render_grid(
 ) -> CharacterMapImage {
     // TODO Break DrawConfiguration down into parts and resources
 
-    let node_cursor = player_q.node_cursor;
     let default_style = ContentStyle::new();
 
     let width = grid.width() as usize;
@@ -209,7 +208,7 @@ fn render_grid(
                         );
                     }
                     if include_space {
-                        let space_style = space_style_for(x, y, node_cursor, &draw_config);
+                        let space_style = space_style_for(x, y, player_q, &draw_config);
                         let (square_style, square) = sprite_map
                             .get(&pt)
                             .map(|(style, square)| (style, square.as_ref()))
@@ -247,7 +246,7 @@ fn render_grid(
                         );
                     }
                     if include_space {
-                        let space_style = space_style_for(x, y, node_cursor, &draw_config);
+                        let space_style = space_style_for(x, y, player_q, &draw_config);
                         let (square_style, square) = sprite_map
                             .get(&pt)
                             .map(|(style, square)| (style, square.as_str()))
@@ -290,10 +289,13 @@ fn render_grid(
 fn space_style_for(
     x: usize,
     y: usize,
-    node_cursor: &NodeCursor,
+    player_q: &PlayerUiQItem,
     draw_config: &DrawConfiguration,
 ) -> UiFormat {
-    if x as u32 == node_cursor.x && y as u32 == node_cursor.y {
+    if !player_q.cursor_is_hidden
+        && x as u32 == player_q.node_cursor.x
+        && y as u32 == player_q.node_cursor.y
+    {
         draw_config.color_scheme().selected_square()
     } else {
         UiFormat::NONE
