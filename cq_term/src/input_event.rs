@@ -116,7 +116,7 @@ pub fn sys_mouse_tty(
                 MEK::Up(mb) => MouseEventTtyKind::Up(mb.into()),
                 MEK::ScrollDown => MouseEventTtyKind::ScrollDown,
                 MEK::ScrollUp => MouseEventTtyKind::ScrollUp,
-                MEK::Drag(mb) => MouseEventTtyKind::Todo,
+                MEK::Drag(_mb) => MouseEventTtyKind::Todo, // TODO drag events
             }
         };
 

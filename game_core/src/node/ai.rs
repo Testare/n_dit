@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, SendError, Sender, TryRecvError};
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -239,138 +239,155 @@ fn simple_ai_script(
     mut my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)>,
     enemy_pieces: Vec<Entity>,
 ) {
-    std::thread::sleep(Duration::from_millis(350));
-    my_pieces.sort_by_key(|piece| piece.3);
-    for piece in my_pieces {
-        let mut grid_head = match grid.head(piece.0) {
-            Some(grid_head) => grid_head,
-            None => continue,
-        };
-        sx.send((
-            NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
-            Duration::from_millis(500),
-        ));
-        if let Some(closest_enemy_pt) = enemy_pieces
-            .iter()
-            .flat_map(|id| grid.points(*id))
-            .min_by_key(|pt| pt.manhattan_distance(&grid_head))
-        {
-            log::trace!(
-                "Closest enemy point for piece[{:?}] is {:?}",
-                piece.1,
-                closest_enemy_pt
-            );
-            let movement_speed = piece.2.as_ref().map(|ms| **ms).unwrap_or(0);
-            for _ in 0..movement_speed {
-                match grid_head.dirs_to(&closest_enemy_pt) {
-                    [Some(dir1), Some(dir2)] => {
-                        // Choose which to prioritize, then try one, and if it fails, the other.
-                        let (dir1, dir2) = if grid_head
-                            .dist_to_pt_along_compass(&closest_enemy_pt, dir1)
-                            > grid_head.dist_to_pt_along_compass(&closest_enemy_pt, dir2)
-                        {
-                            (dir1, dir2)
-                        } else {
-                            (dir2, dir1)
-                        };
-                        if grid.square_is_free(grid_head + dir1)
-                            || grid.item_at(grid_head + dir1) == Some(piece.0)
-                        {
-                            log::trace!("{:?} Went {:?} from {:?}", piece.0, dir1, grid_head);
-                            grid_head = grid_head + dir1;
-                            sx.send((
-                                NodeOp::MoveActiveCurio { dir: dir1 }.for_p(id),
-                                Duration::from_millis(400),
-                            ));
-                        } else if grid.square_is_free(grid_head + dir2)
-                            || grid.item_at(grid_head + dir2) == Some(piece.0)
-                        {
-                            log::trace!("{:?} Went {:?} from {:?}", piece.0, dir2, grid_head);
-                            grid_head = grid_head + dir2;
-                            sx.send((
-                                NodeOp::MoveActiveCurio { dir: dir2 }.for_p(id),
-                                Duration::from_millis(400),
-                            ));
-                        } else {
-                            log::trace!(
-                                "{:?} can't go {:?} OR {:?} from {:?}",
-                                piece.0,
-                                dir1,
-                                dir2,
-                                grid_head
-                            );
-                            break;
-                        }
-                    },
-                    [Some(dir), None] => {
-                        // if dir is not blocked ,go that way
-                        if grid.square_is_free(grid_head + dir)
-                            || grid.item_at(grid_head + dir) == Some(id)
-                        {
-                            log::trace!("{:?} Went {:?} from {:?}", piece.0, dir, grid_head);
-                            grid_head = grid_head + dir;
-                            sx.send((
-                                NodeOp::MoveActiveCurio { dir }.for_p(id),
-                                Duration::from_millis(400),
-                            ));
-                        } else {
-                            log::trace!("{:?} can't go {:?} from {:?}", piece.0, dir, grid_head);
-                            break;
-                        }
-                    },
-                    [None, None] => {
-                        panic!("Somehow the grid points became super imposed on each other")
-                    },
-                    [None, Some(_)] => unreachable!(),
-                }
-            }
-        }
-
-        if let Some((action_id, target, target_id, dmg)) = piece.1.into_iter().find_map(|action| {
-            let action = actions.get(&action)?;
-            // TODO When ops improves, use op logic instead of recreating here
-            for effect in action.effects() {
-                match effect {
-                    // NOTE: This could be bugged behavior if action has other effect
-                    ActionEffect::Damage(dmg) => {
-                        for enemy_piece in enemy_pieces.iter() {
-                            let enemy_squares = grid.points(*enemy_piece);
-                            let range = action
-                                .range()
-                                .expect("damage effect should have range on action");
-                            if let Some(point_in_range) =
-                                range.pt_in_range(enemy_squares, grid_head)
-                            {
-                                return Some((action.id_cow(), point_in_range, enemy_piece, *dmg));
-                            }
-                        }
-                    },
-                    _ => {},
-                }
-            }
-            None
-        }) {
+    if let Err(SendError(_)) = (move || {
+        std::thread::sleep(Duration::from_millis(350));
+        my_pieces.sort_by_key(|piece| piece.3);
+        for piece in my_pieces {
+            let mut grid_head = match grid.head(piece.0) {
+                Some(grid_head) => grid_head,
+                None => continue,
+            };
             sx.send((
-                NodeOp::PerformCurioAction {
-                    action_id,
-                    curio: None,
-                    target,
-                }
-                .for_p(id),
-                Duration::from_secs(2),
-            ));
-            grid.pop_back_n(*target_id, dmg);
-        } else {
-            sx.send((
-                NodeOp::PerformCurioAction {
-                    action_id: NO_OP_ACTION_ID,
-                    curio: None,
-                    target: UVec2::default(),
-                }
-                .for_p(id),
+                NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
                 Duration::from_millis(500),
-            ));
+            ))?;
+            if let Some(closest_enemy_pt) = enemy_pieces
+                .iter()
+                .flat_map(|id| grid.points(*id))
+                .min_by_key(|pt| pt.manhattan_distance(&grid_head))
+            {
+                log::trace!(
+                    "Closest enemy point for piece[{:?}] is {:?}",
+                    piece.1,
+                    closest_enemy_pt
+                );
+                let movement_speed = piece.2.as_ref().map(|ms| **ms).unwrap_or(0);
+                for _ in 0..movement_speed {
+                    match grid_head.dirs_to(&closest_enemy_pt) {
+                        [Some(dir1), Some(dir2)] => {
+                            // Choose which to prioritize, then try one, and if it fails, the other.
+                            let (dir1, dir2) = if grid_head
+                                .dist_to_pt_along_compass(&closest_enemy_pt, dir1)
+                                > grid_head.dist_to_pt_along_compass(&closest_enemy_pt, dir2)
+                            {
+                                (dir1, dir2)
+                            } else {
+                                (dir2, dir1)
+                            };
+                            if grid.square_is_free(grid_head + dir1)
+                                || grid.item_at(grid_head + dir1) == Some(piece.0)
+                            {
+                                log::trace!("{:?} Went {:?} from {:?}", piece.0, dir1, grid_head);
+                                grid_head = grid_head + dir1;
+                                sx.send((
+                                    NodeOp::MoveActiveCurio { dir: dir1 }.for_p(id),
+                                    Duration::from_millis(400),
+                                ))?;
+                            } else if grid.square_is_free(grid_head + dir2)
+                                || grid.item_at(grid_head + dir2) == Some(piece.0)
+                            {
+                                log::trace!("{:?} Went {:?} from {:?}", piece.0, dir2, grid_head);
+                                grid_head = grid_head + dir2;
+                                sx.send((
+                                    NodeOp::MoveActiveCurio { dir: dir2 }.for_p(id),
+                                    Duration::from_millis(400),
+                                ))?;
+                            } else {
+                                log::trace!(
+                                    "{:?} can't go {:?} OR {:?} from {:?}",
+                                    piece.0,
+                                    dir1,
+                                    dir2,
+                                    grid_head
+                                );
+                                break;
+                            }
+                        },
+                        [Some(dir), None] => {
+                            // if dir is not blocked ,go that way
+                            if grid.square_is_free(grid_head + dir)
+                                || grid.item_at(grid_head + dir) == Some(id)
+                            {
+                                log::trace!("{:?} Went {:?} from {:?}", piece.0, dir, grid_head);
+                                grid_head = grid_head + dir;
+                                sx.send((
+                                    NodeOp::MoveActiveCurio { dir }.for_p(id),
+                                    Duration::from_millis(400),
+                                ))?;
+                            } else {
+                                log::trace!(
+                                    "{:?} can't go {:?} from {:?}",
+                                    piece.0,
+                                    dir,
+                                    grid_head
+                                );
+                                break;
+                            }
+                        },
+                        [None, None] => {
+                            panic!("Somehow the grid points became super imposed on each other")
+                        },
+                        [None, Some(_)] => unreachable!(),
+                    }
+                }
+            }
+
+            if let Some((action_id, target, target_id, dmg)) =
+                piece.1.into_iter().find_map(|action| {
+                    let action = actions.get(&action)?;
+                    // TODO When ops improves, use op logic instead of recreating here
+                    for effect in action.effects() {
+                        match effect {
+                            // NOTE: This could be bugged behavior if action has other effect
+                            ActionEffect::Damage(dmg) => {
+                                for enemy_piece in enemy_pieces.iter() {
+                                    let enemy_squares = grid.points(*enemy_piece);
+                                    let range = action
+                                        .range()
+                                        .expect("damage effect should have range on action");
+                                    if let Some(point_in_range) =
+                                        range.pt_in_range(enemy_squares, grid_head)
+                                    {
+                                        return Some((
+                                            action.id_cow(),
+                                            point_in_range,
+                                            enemy_piece,
+                                            *dmg,
+                                        ));
+                                    }
+                                }
+                            },
+                            _ => {},
+                        }
+                    }
+                    None
+                })
+            {
+                sx.send((
+                    NodeOp::PerformCurioAction {
+                        action_id,
+                        curio: None,
+                        target,
+                    }
+                    .for_p(id),
+                    Duration::from_secs(2),
+                ))?;
+                grid.pop_back_n(*target_id, dmg);
+            } else {
+                sx.send((
+                    NodeOp::PerformCurioAction {
+                        action_id: NO_OP_ACTION_ID,
+                        curio: None,
+                        target: UVec2::default(),
+                    }
+                    .for_p(id),
+                    Duration::from_millis(500),
+                ))?;
+            }
         }
+        Ok(())
+    })() {
+        log::error!("AI thread unexpected closed!")
     }
 }
 
@@ -383,64 +400,70 @@ fn lazy_ai_script(
     my_pieces: Vec<(Entity, Vec<String>)>,
     enemy_pieces: Vec<Entity>,
 ) {
-    std::thread::sleep(Duration::from_millis(350));
-    for piece in my_pieces {
-        sx.send((
-            NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
-            Duration::from_millis(500),
-        ));
-        if let Some((action, target)) = piece.1.into_iter().find_map(|action| {
-            let action = actions.get(&action)?;
-            for effect in action.effects() {
-                match effect {
-                    ActionEffect::Damage(_) => {
-                        let head = grid.head(piece.0).expect("ai piece should have a head");
-                        for enemy_piece in enemy_pieces.iter() {
-                            let enemy_squares = grid.points(*enemy_piece);
-                            let range = action
-                                .range()
-                                .expect("damage effect should have range on action");
-                            if let Some(point_in_range) = range.pt_in_range(enemy_squares, head) {
-                                let dmg = action
-                                    .effects()
-                                    .iter()
-                                    .map(|effect| {
-                                        if let ActionEffect::Damage(dmg) = effect {
-                                            *dmg
-                                        } else {
-                                            0
-                                        }
-                                    })
-                                    .sum();
-                                grid.pop_back_n(*enemy_piece, dmg);
-                                return Some((action.id_cow(), point_in_range));
-                            }
-                        }
-                    },
-                    _ => {},
-                }
-            }
-            None
-        }) {
+    if let Err(SendError(_)) = (move || {
+        std::thread::sleep(Duration::from_millis(350));
+        for piece in my_pieces {
             sx.send((
-                NodeOp::PerformCurioAction {
-                    action_id: action,
-                    curio: None,
-                    target,
-                }
-                .for_p(id),
-                Duration::from_secs(2),
-            ));
-        } else {
-            sx.send((
-                NodeOp::PerformCurioAction {
-                    action_id: NO_OP_ACTION_ID,
-                    curio: None,
-                    target: UVec2::default(),
-                }
-                .for_p(id),
+                NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
                 Duration::from_millis(500),
-            ));
+            ))?;
+            if let Some((action, target)) = piece.1.into_iter().find_map(|action| {
+                let action = actions.get(&action)?;
+                for effect in action.effects() {
+                    match effect {
+                        ActionEffect::Damage(_) => {
+                            let head = grid.head(piece.0).expect("ai piece should have a head");
+                            for enemy_piece in enemy_pieces.iter() {
+                                let enemy_squares = grid.points(*enemy_piece);
+                                let range = action
+                                    .range()
+                                    .expect("damage effect should have range on action");
+                                if let Some(point_in_range) = range.pt_in_range(enemy_squares, head)
+                                {
+                                    let dmg = action
+                                        .effects()
+                                        .iter()
+                                        .map(|effect| {
+                                            if let ActionEffect::Damage(dmg) = effect {
+                                                *dmg
+                                            } else {
+                                                0
+                                            }
+                                        })
+                                        .sum();
+                                    grid.pop_back_n(*enemy_piece, dmg);
+                                    return Some((action.id_cow(), point_in_range));
+                                }
+                            }
+                        },
+                        _ => {},
+                    }
+                }
+                None
+            }) {
+                sx.send((
+                    NodeOp::PerformCurioAction {
+                        action_id: action,
+                        curio: None,
+                        target,
+                    }
+                    .for_p(id),
+                    Duration::from_secs(2),
+                ))?;
+            } else {
+                sx.send((
+                    NodeOp::PerformCurioAction {
+                        action_id: NO_OP_ACTION_ID,
+                        curio: None,
+                        target: UVec2::default(),
+                    }
+                    .for_p(id),
+                    Duration::from_millis(500),
+                ))?;
+            }
         }
+        Ok(())
+    })() {
+        log::error!("AI thread unexpected closed!")
     }
 }

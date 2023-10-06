@@ -7,7 +7,6 @@ use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
 use itertools::Itertools;
 
-use super::super::NodeCursor;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;

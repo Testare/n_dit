@@ -32,7 +32,7 @@ impl SimpleSubmenu for MenuUiLabel {
             .is_tapped
             .map(|is_tapped| **is_tapped)
             .unwrap_or(false);
-        let mut label = CharacterMapImage::new()
+        let label = CharacterMapImage::new()
             .with_row(|row| {
                 let row = row
                     .with_plain_text("[")

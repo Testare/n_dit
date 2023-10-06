@@ -1,18 +1,16 @@
 use game_core::card::MovementSpeed;
-use game_core::node::{ActiveCurio, InNode, IsTapped, MovesTaken, Node, NodeOp, NodePiece, Pickup};
+use game_core::node::{ActiveCurio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
 use game_core::player::Player;
 
-use super::super::{AvailableMoves, NodeCursor, SelectedEntity};
+use super::super::{AvailableMoves, SelectedEntity};
 use super::GridUi;
 use crate::layout::UiFocus;
 use crate::node_ui::{CursorIsHidden, SelectedAction};
 use crate::prelude::*;
 
 pub fn sys_adjust_available_moves(
-    mut evr_node_op: EventReader<Op<NodeOp>>,
     mut players: Query<
         (
-            Entity,
             Ref<UiFocus>,
             &SelectedAction,
             AsDerefCopied<SelectedEntity>,
@@ -36,7 +34,6 @@ pub fn sys_adjust_available_moves(
     grid_uis: Query<(), With<GridUi>>,
 ) {
     for (
-        player,
         ui_focus,
         selected_action,
         selected_entity,

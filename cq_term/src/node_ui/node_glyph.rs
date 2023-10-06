@@ -1,14 +1,9 @@
-use std::cell::OnceCell;
 use std::sync::OnceLock;
 
-use bevy::utils::HashMap;
 use charmi::ColorDef;
 use crossterm::style::{Color, ContentStyle, StyledContent, Stylize};
-use game_core::prelude::*;
 use game_core::registry::Registry;
 use serde::{Deserialize, Serialize};
-
-use crate::configuration::UiFormat;
 
 static DEFAULT_GLYPH: OnceLock<NodeGlyph> = OnceLock::new();
 
