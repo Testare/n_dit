@@ -19,17 +19,21 @@ impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<CardDefinition>()
             .add_asset::<Action>()
+            .register_type::<Card>()
+            // .register_type::<Deck>() // Can't register because of NonZeroU32
             .add_asset_loader(card_as_asset::CardAssetLoader)
             .add_asset_loader(card_as_asset::ActionAssetLoader);
     }
 }
-#[derive(Component, Debug, Default, Reflect)]
+#[derive(Component, Debug, Deserialize, Default, Reflect, Serialize)]
+#[reflect(Component, Deserialize, Serialize)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
     ordering: Vec<Entity>,
 }
 
-#[derive(Component, Debug, Reflect, getset::Getters)]
+#[derive(Component, Debug, Default, Reflect, getset::Getters)]
+#[reflect(Component)]
 pub struct Card {
     card_name: String,
     #[getset(get = "pub")]

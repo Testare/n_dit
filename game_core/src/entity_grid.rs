@@ -43,7 +43,8 @@ pub struct Square {
 /// have at least one square of representation in the grid, possibly more. These squares are
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
-#[derive(Clone, Component, Debug, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[derive(Clone, Component, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Component)]
 pub struct EntityGrid {
     width: u32,
     height: u32,

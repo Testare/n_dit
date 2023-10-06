@@ -1,3 +1,9 @@
+use std::fs::File;
+use std::io::Write;
+
+use bevy::ecs::system::SystemState;
+use bevy::prelude::AppTypeRegistry;
+use bevy::scene::DynamicSceneBuilder;
 use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -8,7 +14,7 @@ use game_core::node::{
     TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
-use game_core::player::PlayerBundle;
+use game_core::player::{Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::registry::Reg;
 
@@ -33,7 +39,7 @@ pub struct CardAssetPointer {
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, demo_startup)
-            .add_systems(PostUpdate, (debug_key, log_ops, log_op_results));
+            .add_systems(PostUpdate, (debug_key, save_key, log_ops, log_op_results));
     }
 }
 
@@ -49,6 +55,51 @@ fn log_ops(mut ops_node: EventReader<Op<NodeOp>>, mut ops_node_ui: EventReader<O
 fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
     for op in node_ops.iter() {
         log::debug!("NODE_OP_RESULT {:?}", op)
+    }
+}
+
+fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent>>>) {
+    let mut evr_keys = state.get(world);
+    let save_button_pressed = evr_keys.iter().any(|event| {
+        matches!(
+            event,
+            KeyEvent {
+                code: KeyCode::Char('*'),
+                ..
+            }
+        )
+    });
+    if !save_button_pressed {
+        return;
+    }
+
+    let type_registry = world.resource::<AppTypeRegistry>().clone();
+    let entities: Vec<Entity> = world
+        .query_filtered::<Entity, Or<(
+            With<Node>,
+            With<NodePiece>,
+            With<Team>,
+            With<Card>,
+            With<Player>,
+        )>>()
+        .iter(&world)
+        .collect();
+    let mut scene = DynamicSceneBuilder::from_world(world);
+    scene.deny_all_resources();
+    scene.allow_all();
+    scene.allow::<Node>();
+    scene.extract_entities(entities.into_iter());
+    let scene = scene.build();
+    match scene.serialize_ron(&type_registry) {
+        Ok(scene_serialized) => {
+            log::info!("Serialization successful");
+            File::create("debug.scn.ron")
+                .and_then(|mut file| file.write(scene_serialized.as_bytes()))
+                .expect("Error occured writing file");
+        },
+        Err(err) => {
+            log::info!("Serialization NOT successful: {:?}", err);
+        },
     }
 }
 

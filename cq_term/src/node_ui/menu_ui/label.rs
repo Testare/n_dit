@@ -55,6 +55,7 @@ impl SimpleSubmenu for MenuUiLabel {
                             Pickup::Mon(_) => "Mon",
                             Pickup::Card(_) => "Card: ??",
                             Pickup::Item(_) => "Item: ??",
+                            Pickup::MacGuffin => "Intelligence", // TODO Need to configure these labels
                         })
                     })
                     .map(str::to_owned)
