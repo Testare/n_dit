@@ -2,3 +2,4 @@
 **/flamegraph.svg
 **/perf.data*
 **/debug*.log*
+**/debug.scn.ron

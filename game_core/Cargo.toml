@@ -6,11 +6,26 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+base64 = "0.13"
+bitvec = "1"
+getset = "0.1.1"
+lazy_static = "1.4.0"
+log = "0.4"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
+thiserror = "1.0.44"
 typed_key = "0.1"
-lazy_static = "1.4.0"
-getset = "0.1.1"
-log = "0.4"
-bitvec = "1"
-base64 = "0.13"
+bevy_query_ext = "0.1"
+glob = "0.3.1"
+toml = "0.8.0"
+
+[dependencies.bevy]
+version = "0.11"
+default-features = false
+features = [
+    "bevy_asset",
+    "filesystem_watcher",
+    "bevy_scene",
+    "bevy_audio",
+    "animation",
+]

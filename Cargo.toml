@@ -1,3 +1,10 @@
+[workspace]
+members = [
+    "charmi",
+    "game_core",
+    "cq_term"
+]
+
 [package]
 name = "n_dit"
 version = "0.1.0"
@@ -8,18 +15,33 @@ edition = "2021"
 
 [dependencies]
 game_core = { path = "game_core" }
-log = "0.4"
+cq_term = { path = "cq_term" }
+tracing = { version = "*", features = ["log"] }
 simplelog = "^0.10.0"
-serde_json = "1.0"
 
-aquamarine = "0.1.5"
-getset = "0.1.1"
-itertools = "0.10.1"
-# CLI Rendering
-pad = "0.1"
-unicode-width = "0.1.8"
-crossterm = "0.20.0"
+[dependencies.bevy]
+version = "0.11"
+default-features = false
+features = [
+    "bevy_asset",
+    "filesystem_watcher",
+    "bevy_scene",
+    "bevy_audio",
+    "animation"
+]
+
+[dev-dependencies]
+test-log = "0.2.12"
+env_logger = "*"
 
 # Use for "cargo flamegraph"
 # [profile.release]
 # debug = true
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3

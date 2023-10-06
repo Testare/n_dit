@@ -1,236 +1,179 @@
-mod grid_map;
+pub mod metadata;
+pub mod sord;
 
-pub use grid_map::GridMap;
+use std::ops::Deref;
 
-use serde::{Deserialize, Serialize};
-use std::cmp::min;
-use std::collections::HashSet;
-use std::ops::{Add, BitAnd, BitOr};
+use bevy::ecs::query::{QueryEntityError, ReadOnlyWorldQuery, WorldQuery};
+use bevy::ecs::system::SystemParam;
+use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
+pub use metadata::Metadata;
 
-pub type Point = (usize, usize);
-
-#[derive(Clone, Debug)]
-pub enum PointSet {
-    Range(Point, usize, Bounds),
-    Pts(HashSet<Point>),
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
+pub enum Compass {
+    North = 1,
+    East = 2,
+    South = 4,
+    West = 8,
 }
 
-impl PointSet {
-    pub fn range_of_pt(pt: Point, range: usize, bounds: Bounds) -> Self {
-        PointSet::Range(pt, range, bounds)
-    }
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
+pub enum CompassOrPoint {
+    Compass(Compass),
+    Point(UVec2),
+}
 
-    pub fn contains(&self, pt: Point) -> bool {
+impl CompassOrPoint {
+    pub fn point_from(&self, from: UVec2) -> UVec2 {
         match self {
-            PointSet::Pts(pts) => pts.contains(&pt),
-            PointSet::Range((x, y), range, bounds) => {
-                if !bounds.contains_pt(pt) {
-                    return false;
-                }
-                let x_diff = x.checked_sub(pt.0).unwrap_or_else(|| pt.0 - x);
-                let y_diff = y.checked_sub(pt.1).unwrap_or_else(|| pt.1 - y);
-                let manhattan_distance = x_diff + y_diff;
-                manhattan_distance <= *range
-            }
-        }
-    }
-
-    pub fn into_set(self) -> HashSet<Point> {
-        match self {
-            PointSet::Pts(pts) => pts,
-            PointSet::Range((center_x, center_y), range, bounds) => {
-                let mut set = HashSet::new();
-                let irange = range.try_into().unwrap_or(<isize>::MAX);
-                let ix: isize = center_x.try_into().unwrap();
-                let iy: isize = center_y.try_into().unwrap();
-
-                let min_y_diff = -min(iy, irange);
-                let max_y_diff = min(bounds.height() - center_y, range).try_into().unwrap();
-                for y_diff in min_y_diff..=max_y_diff {
-                    let range_remaining = irange - y_diff.abs();
-                    let min_x_diff = -min(ix, range_remaining);
-                    let max_x_diff = min(
-                        (bounds.width() - center_x).try_into().unwrap(),
-                        range_remaining,
-                    );
-                    for x_diff in min_x_diff..=max_x_diff {
-                        set.insert((
-                            (ix + x_diff).try_into().unwrap(),
-                            (iy + y_diff).try_into().unwrap(),
-                        ));
-                    }
-                }
-                set
-            }
-        }
-    }
-
-    pub fn merge(point_sets: Vec<PointSet>) -> PointSet {
-        PointSet::Pts(
-            point_sets
-                .into_iter()
-                .fold(HashSet::<Point>::new(), |acm, point_set| {
-                    &acm | &point_set.into_set()
-                }),
-        )
-    }
-}
-
-impl BitAnd<PointSet> for PointSet {
-    type Output = PointSet;
-    fn bitand(self, rhs: PointSet) -> PointSet {
-        PointSet::Pts(&self.into_set() & &rhs.into_set())
-    }
-}
-
-impl Default for PointSet {
-    fn default() -> Self {
-        PointSet::Pts(HashSet::default())
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Bounds(pub usize, pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Direction {
-    North = 0b1,
-    East = 0b10,
-    South = 0b100,
-    West = 0b1000,
-}
-
-impl BitOr for Direction {
-    type Output = u8;
-    fn bitor(self, rhs: Direction) -> Self::Output {
-        self as u8 | rhs as u8
-    }
-}
-
-impl BitOr<Direction> for u8 {
-    type Output = u8;
-    fn bitor(self, rhs: Direction) -> Self::Output {
-        self | (rhs as u8)
-    }
-}
-
-impl Direction {
-    pub const EVERY_DIRECTION: [Direction; 4] = [
-        Direction::North,
-        Direction::East,
-        Direction::South,
-        Direction::West,
-    ];
-
-    pub fn vertical(&self) -> bool {
-        matches!(self, Direction::North | Direction::South)
-    }
-
-    pub fn horizontal(&self) -> bool {
-        matches!(self, Direction::East | Direction::West)
-    }
-
-    pub fn clockwise(&self) -> Direction {
-        match self {
-            Direction::North => Direction::East,
-            Direction::East => Direction::South,
-            Direction::South => Direction::West,
-            Direction::West => Direction::South,
-        }
-    }
-
-    pub fn flip(&self) -> Direction {
-        match self {
-            Direction::North => Direction::South,
-            Direction::East => Direction::West,
-            Direction::South => Direction::North,
-            Direction::West => Direction::East,
-        }
-    }
-
-    pub fn matches(&self, directions: u8) -> bool {
-        ((*self as u8) & directions) != 0
-    }
-
-    pub fn add_to_point(&self, point: Point, speed: usize, bounds: Bounds) -> Point {
-        match self {
-            Self::North => {
-                if speed >= point.1 {
-                    (point.0, 0)
-                } else {
-                    (point.0, point.1 - speed)
-                }
-            }
-            Self::East => {
-                if point.0 + speed >= bounds.width() {
-                    (bounds.width() - 1, point.1)
-                } else {
-                    (point.0 + speed, point.1)
-                }
-            }
-            Self::South => {
-                if point.1 + speed >= bounds.height() {
-                    (point.0, bounds.height() - 1)
-                } else {
-                    (point.0, point.1 + speed)
-                }
-            }
-            Self::West => {
-                if speed >= point.0 {
-                    (0, point.1)
-                } else {
-                    (point.0 - speed, point.1)
-                }
-            }
+            Self::Compass(compass) => from + *compass,
+            Self::Point(point) => *point,
         }
     }
 }
 
-impl Add<Direction> for Point {
-    type Output = Option<Point>;
+impl From<UVec2> for CompassOrPoint {
+    fn from(value: UVec2) -> Self {
+        CompassOrPoint::Point(value)
+    }
+}
 
-    fn add(self: Point, rhs: Direction) -> Self::Output {
+impl From<Compass> for CompassOrPoint {
+    fn from(value: Compass) -> Self {
+        CompassOrPoint::Compass(value)
+    }
+}
+
+impl Compass {
+    pub const ALL_DIRECTIONS: [Compass; 4] =
+        [Compass::North, Compass::East, Compass::South, Compass::West];
+
+    pub fn is_vertical(&self) -> bool {
+        match self {
+            Compass::North | Compass::South => true,
+            Compass::East | Compass::West => false,
+        }
+    }
+}
+
+impl std::ops::Add<Compass> for UVec2 {
+    type Output = UVec2;
+    fn add(self, rhs: Compass) -> Self::Output {
+        let UVec2 { x, y } = self;
         match rhs {
-            Direction::North => self.1.checked_sub(1).map(|y| (self.0, y)),
-            Direction::East => Some((self.0 + 1, self.1)),
-            Direction::South => Some((self.0, self.1 + 1)),
-            Direction::West => self.0.checked_sub(1).map(|x| (x, self.1)),
+            Compass::North => UVec2 {
+                x,
+                y: y.saturating_sub(1),
+            },
+            Compass::East => UVec2 { x: x + 1, y },
+            Compass::South => UVec2 { x, y: y + 1 },
+            Compass::West => UVec2 {
+                x: x.saturating_sub(1),
+                y,
+            },
         }
     }
 }
 
-impl Bounds {
-    pub fn of(width: usize, height: usize) -> Self {
-        Bounds(width, height)
+pub trait GridPoints {
+    fn manhattan_distance(&self, rhs: &Self) -> u32;
+
+    fn dirs_to(&self, rhs: &Self) -> [Option<Compass>; 2];
+
+    fn dist_to_pt_along_compass(&self, rhs: &Self, dir: Compass) -> i32;
+}
+
+impl GridPoints for UVec2 {
+    fn manhattan_distance(&self, rhs: &UVec2) -> u32 {
+        self.x.abs_diff(rhs.x) + self.y.abs_diff(rhs.y)
     }
 
-    pub fn width(&self) -> usize {
-        self.0
+    fn dirs_to(&self, rhs: &Self) -> [Option<Compass>; 2] {
+        let mut dirs: Vec<Compass> = Vec::new();
+        if self.y > rhs.y {
+            dirs.push(Compass::North);
+        }
+        if self.x < rhs.x {
+            dirs.push(Compass::East);
+        }
+        if self.y < rhs.y {
+            dirs.push(Compass::South);
+        }
+        if self.x > rhs.x {
+            dirs.push(Compass::West);
+        }
+        [dirs.get(0).copied(), dirs.get(1).copied()]
     }
 
-    pub fn height(&self) -> usize {
+    fn dist_to_pt_along_compass(&self, rhs: &Self, dir: Compass) -> i32 {
+        match dir {
+            Compass::North => self.y as i32 - rhs.y as i32,
+            Compass::East => rhs.x as i32 - self.x as i32,
+            Compass::South => rhs.y as i32 - self.y as i32,
+            Compass::West => self.x as i32 - rhs.x as i32,
+        }
+    }
+}
+
+/// Future improvement: iter methods for when there are multiple results
+#[derive(SystemParam)]
+pub struct IndexedQuery<'w, 's, I, Q, F = ()>(
+    Query<'w, 's, (&'static I, Entity)>,
+    Query<'w, 's, Q, F>,
+)
+where
+    I: Deref<Target = Entity> + Component,
+    Q: WorldQuery + 'static,
+    F: ReadOnlyWorldQuery + 'static;
+
+impl<'w, 's, I, Q, F> IndexedQuery<'w, 's, I, Q, F>
+where
+    I: Deref<Target = Entity> + Component,
+    Q: WorldQuery + 'static,
+    F: ReadOnlyWorldQuery + 'static,
+{
+    pub fn unindexed(&self) -> &Query<'w, 's, Q, F> {
+        &self.1
+    }
+
+    pub fn unindex_mut(&mut self) -> &mut Query<'w, 's, Q, F> {
+        &mut self.1
+    }
+
+    pub fn into_unindexed(self) -> Query<'w, 's, Q, F> {
         self.1
     }
 
-    pub fn contains_pt(&self, pt: Point) -> bool {
-        pt.0 < self.0 && pt.1 < self.1
+    /// If there are multiple, returns the first one it finds
+    pub fn id_for(&self, index: Entity) -> Option<Entity> {
+        self.0.iter().find_map(|(i, id)| {
+            if **i == index && self.1.contains(id) {
+                Some(id)
+            } else {
+                None
+            }
+        })
     }
-}
 
-impl From<(u16, u16)> for Bounds {
-    fn from((width, height): (u16, u16)) -> Self {
-        Bounds(<usize>::from(width), <usize>::from(height))
+    // Repalce name with "one_to_one"
+    pub fn get_for(
+        &self,
+        index: Entity,
+    ) -> Result<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
+        if let Some(id) = self.id_for(index) {
+            self.1.get(id)
+        } else {
+            Err(QueryEntityError::NoSuchEntity(index))
+        }
     }
-}
 
-impl From<(usize, usize)> for Bounds {
-    fn from((width, height): (usize, usize)) -> Self {
-        Bounds(width, height)
-    }
-}
-
-impl From<Bounds> for (usize, usize) {
-    fn from(Bounds(width, height): Bounds) -> Self {
-        (width, height)
+    pub fn get_for_mut(
+        &mut self,
+        index: Entity,
+    ) -> Result<<Q as WorldQuery>::Item<'_>, QueryEntityError> {
+        if let Some(id) = self.id_for(index) {
+            self.1.get_mut(id)
+        } else {
+            Err(QueryEntityError::NoSuchEntity(index))
+        }
     }
 }
