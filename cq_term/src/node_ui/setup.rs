@@ -5,10 +5,8 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, Tooltip, TooltipBar};
-use crate::layout::{
-    LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, UiFocusBundle, UiFocusCycleOrder,
-    VisibilityTty,
-};
+use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
+use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
@@ -111,7 +109,7 @@ pub fn create_node_ui(
                                         ForPlayer(*player),
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
-                                        LayoutMouseTargetDisabled,
+                                        MouseEventTtyDisabled,
                                         VisibilityTty(true),
                                         Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));
@@ -174,7 +172,7 @@ pub fn create_node_ui(
                             flex_grow: 0.0,
                             ..default()
                         }),
-                        LayoutMouseTarget,
+                        MouseEventListener,
                         VisibilityTty(true),
                     ));
                     root.spawn((

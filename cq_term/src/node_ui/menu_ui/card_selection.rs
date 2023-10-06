@@ -7,11 +7,9 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
-use crate::input_event::{MouseButton, MouseEventKind};
+use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{
-    CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
-};
+use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
 use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -35,7 +33,7 @@ pub struct MenuUiCardSelectionPlugin;
 
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
-        mut layout_events: EventReader<LayoutEvent>,
+        mut evr_mouse: EventReader<MouseEventTty>,
         mut ui: Query<(
             &mut Self,
             &CalculatedSizeTty,
@@ -52,7 +50,7 @@ impl MenuUiCardSelection {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
-        for layout_event in layout_events.iter() {
+        for layout_event in evr_mouse.iter() {
             if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
                 ui.get_mut(layout_event.entity())
             {
@@ -61,13 +59,13 @@ impl MenuUiCardSelection {
                 {
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
-                        MouseEventKind::ScrollDown => {
+                        MouseEventTtyKind::ScrollDown => {
                             card_selection.scroll = (card_selection.scroll + 1).min(max_scroll);
                         },
-                        MouseEventKind::ScrollUp => {
+                        MouseEventTtyKind::ScrollUp => {
                             card_selection.scroll = card_selection.scroll.saturating_sub(1);
                         },
-                        MouseEventKind::Down(MouseButton::Left) => {
+                        MouseEventTtyKind::Down(MouseButton::Left) => {
                             NodeUiOp::ChangeFocus(FocusTarget::CardMenu)
                                 .for_p(*player)
                                 .send(&mut ev_node_ui_op);
@@ -428,7 +426,7 @@ impl Plugin for MenuUiCardSelectionPlugin {
 
 impl NodeUi for MenuUiCardSelection {
     const NAME: &'static str = "Menu Card Selection";
-    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick, SelectedItem, IsPadded);
+    type UiBundleExtras = (MouseEventListener, UiFocusOnClick, SelectedItem, IsPadded);
     type UiPlugin = MenuUiCardSelectionPlugin;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -447,7 +445,7 @@ impl NodeUi for MenuUiCardSelection {
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
         (
-            LayoutMouseTarget,
+            MouseEventListener,
             UiFocusOnClick,
             SelectedItem::default(),
             IsPadded::default(),

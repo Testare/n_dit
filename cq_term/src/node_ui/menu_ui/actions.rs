@@ -8,11 +8,9 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
-use crate::input_event::{MouseButton, MouseEventKind};
+use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{
-    CalculatedSizeTty, LayoutEvent, LayoutMouseTarget, StyleTty, UiFocus, UiFocusOnClick,
-};
+use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
 use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -101,7 +99,7 @@ impl MenuUiActions {
 
     pub fn mouse_action_menu(
         ast_actions: Res<Assets<Action>>,
-        mut ev_mouse: EventReader<LayoutEvent>,
+        mut ev_mouse: EventReader<MouseEventTty>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         players: Query<&SelectedEntity, With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
@@ -117,7 +115,7 @@ impl MenuUiActions {
                     let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
-                        MouseEventKind::Down(MouseButton::Left) => {
+                        MouseEventTtyKind::Down(MouseButton::Left) => {
                             NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)
                                 .for_p(*player_id)
                                 .send(&mut ev_node_ui_op);
@@ -255,7 +253,7 @@ impl Plugin for MenuUiActions {
 
 impl NodeUi for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = (LayoutMouseTarget, UiFocusOnClick);
+    type UiBundleExtras = (MouseEventListener, UiFocusOnClick);
     type UiPlugin = Self;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -272,6 +270,6 @@ impl NodeUi for MenuUiActions {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (LayoutMouseTarget, UiFocusOnClick)
+        (MouseEventListener, UiFocusOnClick)
     }
 }

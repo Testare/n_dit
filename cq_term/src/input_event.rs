@@ -1,10 +1,8 @@
-pub use crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEventKind};
+pub use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
 use game_core::prelude::*;
 use getset::{CopyGetters, Getters};
 
-use crate::layout::{
-    CalculatedSizeTty, GlobalTranslationTty, LayoutMouseTarget, LayoutMouseTargetDisabled,
-};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
 
 #[derive(Clone, Copy, Deref, DerefMut, Event)]
 pub struct CrosstermEvent(pub crossterm::event::Event);
@@ -35,6 +33,12 @@ impl From<crossterm::event::KeyEvent> for KeyEvent {
     }
 }
 
+#[derive(Component, Debug)]
+pub struct MouseEventListener;
+
+#[derive(Component, Debug)]
+pub struct MouseEventTtyDisabled;
+
 #[derive(Component, CopyGetters, Debug, Event, Getters)]
 pub struct MouseEventTty {
     #[getset(get_copy = "pub")]
@@ -51,36 +55,35 @@ pub struct MouseEventTty {
 
 #[derive(Clone, Copy, Debug)]
 pub enum MouseEventTtyKind {
-    Down(MouseButtonTty),
-    Up(MouseButtonTty),
+    Down(MouseButton),
+    Up(MouseButton),
     DoubleClick, // Only applies to left mosue button
     Drag {
-        button: MouseButtonTty,
+        // NOT IMPLEMENTED YET
+        button: MouseButton,
         from: UVec2,
         origin: UVec2,
         dragged_entity: Option<Entity>,
-        // Should there be an event for releasing item?
     },
     Exit,
     Moved,
     ScrollUp,
     ScrollDown,
-    Todo,
-    // Move,
+    Todo, // Placeholder
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum MouseButtonTty {
-    LeftButton,
-    RightButton,
-    MiddleButton,
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle,
 }
 
 pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
     layout_elements: Query<
         (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
-        (With<LayoutMouseTarget>, Without<LayoutMouseTargetDisabled>),
+        (With<MouseEventListener>, Without<MouseEventTtyDisabled>),
     >,
     mut evw_mouse_tty: EventWriter<MouseEventTty>,
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
@@ -105,10 +108,16 @@ pub fn sys_mouse_tty(
 
         let event_kind = if double_click {
             MouseEventTtyKind::DoubleClick
-        } else if matches!(kind, MouseEventKind::Moved) {
-            MouseEventTtyKind::Moved
         } else {
-            MouseEventTtyKind::Todo
+            use crossterm::event::MouseEventKind as MEK;
+            match kind {
+                MEK::Moved => MouseEventTtyKind::Moved,
+                MEK::Down(mb) => MouseEventTtyKind::Down(mb.into()),
+                MEK::Up(mb) => MouseEventTtyKind::Up(mb.into()),
+                MEK::ScrollDown => MouseEventTtyKind::ScrollDown,
+                MEK::ScrollUp => MouseEventTtyKind::ScrollUp,
+                MEK::Drag(mb) => MouseEventTtyKind::Todo,
+            }
         };
 
         for (entity, size, translation) in layout_elements.iter() {
@@ -153,7 +162,7 @@ pub fn sys_mouse_tty(
             }
         }
         match *kind {
-            MouseEventKind::Down(_) => {
+            MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
                 last_click.replace((std::time::Instant::now(), *event));
             },
             MouseEventKind::Moved | MouseEventKind::Drag(_) => {
@@ -163,6 +172,17 @@ pub fn sys_mouse_tty(
                 });
             },
             _ => {},
+        }
+    }
+}
+
+impl From<&crossterm::event::MouseButton> for MouseButton {
+    fn from(value: &crossterm::event::MouseButton) -> Self {
+        use crossterm::event::MouseButton as MB;
+        match value {
+            MB::Left => Self::Left,
+            MB::Right => Self::Right,
+            MB::Middle => Self::Middle,
         }
     }
 }

@@ -8,9 +8,9 @@ use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2D};
-use crate::input_event::{MouseButton, MouseEventKind};
+use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{LayoutEvent, UiFocus};
+use crate::layout::UiFocus;
 use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeCursor, NodeUiOp, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -18,7 +18,7 @@ use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
-    mut ev_mouse: EventReader<LayoutEvent>,
+    mut ev_mouse: EventReader<MouseEventTty>,
     ui: Query<(&ForPlayer, &Scroll2D), With<GridUi>>,
     players: Query<
         (
@@ -39,7 +39,7 @@ pub fn handle_layout_events(
 ) {
     for event in ev_mouse.iter() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
-            if let MouseEventKind::Down(button) = event.event_kind() {
+            if let MouseEventTtyKind::Down(button) = event.event_kind() {
                 log::trace!("Clicked on the grid");
                 NodeUiOp::ChangeFocus(FocusTarget::Grid)
                     .for_p(*player)

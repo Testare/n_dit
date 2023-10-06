@@ -23,7 +23,8 @@ use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
     NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity,
 };
-use crate::layout::{LayoutMouseTarget, StyleTty, UiFocusOnClick};
+use crate::input_event::MouseEventListener;
+use crate::layout::{StyleTty, UiFocusOnClick};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 use crate::TerminalFocusMode;
@@ -93,7 +94,7 @@ impl Plugin for GridUi {
 
 impl NodeUi for GridUi {
     const NAME: &'static str = "Grid UI";
-    type UiBundleExtras = (Scroll2D, LayoutMouseTarget, UiFocusOnClick);
+    type UiBundleExtras = (Scroll2D, MouseEventListener, UiFocusOnClick);
     type UiPlugin = Self;
 
     fn initial_style(node_q: &NodeUiQItem) -> StyleTty {
@@ -118,7 +119,7 @@ impl NodeUi for GridUi {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (Scroll2D::default(), LayoutMouseTarget, UiFocusOnClick)
+        (Scroll2D::default(), MouseEventListener, UiFocusOnClick)
     }
 }
 

@@ -1,11 +1,11 @@
 use bevy::app::AppExit;
 use bevy::ecs::query::Has;
-use crossterm::event::{MouseButton, MouseEventKind};
 use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 
-use crate::layout::{LayoutEvent, LayoutMouseTargetDisabled, VisibilityTty};
+use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
+use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Component, Reflect)]
@@ -24,7 +24,7 @@ pub struct HelpButton;
 pub struct QuitButton;
 
 pub fn mouse_button_menu(
-    mut evr_mouse: EventReader<LayoutEvent>,
+    mut evr_mouse: EventReader<MouseEventTty>,
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,
     end_turn_button: Query<AsDerefCopied<ForPlayer>, With<EndTurnButton>>,
@@ -34,7 +34,7 @@ pub fn mouse_button_menu(
     for mouse_event in evr_mouse.iter() {
         if !matches!(
             mouse_event.event_kind(),
-            MouseEventKind::Down(MouseButton::Left)
+            MouseEventTtyKind::Down(MouseButton::Left)
         ) {
             continue;
         }
@@ -55,7 +55,7 @@ pub fn sys_ready_button_disable(
         ForPlayer,
         (
             Entity,
-            Has<LayoutMouseTargetDisabled>,
+            Has<MouseEventTtyDisabled>,
             AsDerefMut<VisibilityTty>,
         ),
         (With<ReadyButton>, Without<EndTurnButton>),
@@ -64,7 +64,7 @@ pub fn sys_ready_button_disable(
         ForPlayer,
         (
             Entity,
-            Has<LayoutMouseTargetDisabled>,
+            Has<MouseEventTtyDisabled>,
             AsDerefMut<VisibilityTty>,
         ),
         (With<EndTurnButton>, Without<ReadyButton>),
@@ -121,9 +121,9 @@ pub fn sys_ready_button_disable(
                         visibility.set_if_neq(!show_end_turn_button);
                     }
                     if button_is_disabled && should_be_enabled {
-                        commands.entity(id).remove::<LayoutMouseTargetDisabled>();
+                        commands.entity(id).remove::<MouseEventTtyDisabled>();
                     } else if !button_is_disabled && !should_be_enabled {
-                        commands.entity(id).insert(LayoutMouseTargetDisabled);
+                        commands.entity(id).insert(MouseEventTtyDisabled);
                     }
                 }
                 if let Ok((id, button_is_disabled, mut visibility)) =
@@ -133,9 +133,9 @@ pub fn sys_ready_button_disable(
                         visibility.set_if_neq(show_end_turn_button);
                     }
                     if button_is_disabled && should_be_enabled {
-                        commands.entity(id).remove::<LayoutMouseTargetDisabled>();
+                        commands.entity(id).remove::<MouseEventTtyDisabled>();
                     } else if !button_is_disabled && !should_be_enabled {
-                        commands.entity(id).insert(LayoutMouseTargetDisabled);
+                        commands.entity(id).insert(MouseEventTtyDisabled);
                     }
                 }
             }

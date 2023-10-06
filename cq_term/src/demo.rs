@@ -19,8 +19,7 @@ use game_core::prelude::*;
 use game_core::registry::Reg;
 
 use crate::fx::Fx;
-use crate::input_event::KeyCode;
-use crate::layout::LayoutEvent;
+use crate::input_event::{KeyCode, MouseEventTty};
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::KeyMap;
@@ -104,6 +103,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 }
 
 fn debug_key(
+    mut evr_mouse: EventReader<MouseEventTty>,
     reg_curio_display: Res<Reg<NodeGlyph>>,
     asset_server: Res<AssetServer>,
     card_assets: Res<Assets<CardDefinition>>,
@@ -121,10 +121,9 @@ fn debug_key(
         With<Node>,
     >,
     debug_asset: Query<&CardAssetPointer>,
-    mut layout_events: EventReader<LayoutEvent>,
 ) {
-    for layout_event in layout_events.iter() {
-        log::trace!("LAYOUT EVENT: {:?}", layout_event);
+    for layout_event in evr_mouse.iter() {
+        log::trace!("MOUSE EVENT: {:?}", layout_event);
     }
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
@@ -230,10 +229,10 @@ fn demo_startup(
     let card_4 = commands
         .spawn((
             Card::new(
-                "Card4",
+                "Hack 3.0",
                 "curio:hack",
                 None,
-                asset_server.load("nightfall/lvl1.cards.json#Hack"),
+                asset_server.load("nightfall/lvl3.cards.json#Hack 3.0"),
             ),
             Description::new("Basic attack program4"),
         ))

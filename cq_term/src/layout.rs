@@ -1,13 +1,10 @@
 use charmi::CharacterMapImage;
 use game_core::player::ForPlayer;
-use getset::{CopyGetters, Getters};
 use pad::PadStr;
 use taffy::prelude::{Display, Style};
 
-use super::input_event::{KeyModifiers, MouseEventKind};
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
-use crate::input_event::MouseEventTty;
 use crate::prelude::*;
 
 #[derive(Default)]
@@ -23,27 +20,6 @@ struct NodeTty(taffy::node::Node);
 /// Root of a layout. Is fitted to terminal
 #[derive(Component)]
 pub struct LayoutRoot;
-
-#[derive(Component, CopyGetters, Debug, Event, Getters)]
-#[deprecated]
-pub struct LayoutEvent {
-    #[getset(get_copy = "pub")]
-    entity: Entity,
-    #[getset(get_copy = "pub")]
-    pos: UVec2,
-    #[getset(get = "pub")]
-    modifiers: KeyModifiers,
-    #[getset(get = "pub")]
-    event_kind: MouseEventKind,
-    #[getset(get_copy = "pub")]
-    double_click: bool,
-}
-
-#[derive(Component, Debug)]
-pub struct LayoutMouseTarget;
-
-#[derive(Component, Debug)]
-pub struct LayoutMouseTargetDisabled;
 
 /// Indicates a UI element that should be focused on
 /// when clicked on.
@@ -152,9 +128,7 @@ impl StyleTty {
 impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
-            .add_event::<LayoutEvent>()
             .add_systems(Last, remove_ui_focus_if_not_displayed)
-            .add_systems(PreUpdate, generate_layout_events)
             .add_systems(
                 RENDER_TTY_SCHEDULE,
                 (
@@ -193,63 +167,6 @@ fn remove_ui_focus_if_not_displayed(
             if not_focusable {
                 **next_focus = None;
             }
-        }
-    }
-}
-
-/// TODO rename from layout events to MouseTtyEvent, don't require layout components for click
-#[deprecated]
-fn generate_layout_events(
-    mut crossterm_events: EventReader<MouseEvent>,
-    mut layout_event_writer: EventWriter<LayoutEvent>,
-    layout_elements: Query<
-        (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
-        (
-            With<StyleTty>,
-            With<LayoutMouseTarget>,
-            Without<LayoutMouseTargetDisabled>,
-        ),
-    >,
-    mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
-) {
-    for event @ MouseEvent(crossterm::event::MouseEvent {
-        kind,
-        column,
-        row,
-        modifiers,
-    }) in crossterm_events.iter()
-    {
-        let (event_x, event_y) = (*column as u32, *row as u32);
-        let double_click = last_click
-            .map(|(last_event_time, last_event)| {
-                last_event_time.elapsed().as_millis() <= 500
-                    && last_event.kind == *kind
-                    && last_event.column == *column
-                    && last_event.row == *row
-            })
-            .unwrap_or_default();
-
-        for (entity, size, translation) in layout_elements.iter() {
-            if translation.x <= event_x
-                && event_x < (translation.x + size.width32())
-                && translation.y <= event_y
-                && event_y < (translation.y + size.height32())
-            {
-                let pos = UVec2 {
-                    x: event_x - translation.x,
-                    y: event_y - translation.y,
-                };
-                layout_event_writer.send(LayoutEvent {
-                    entity,
-                    pos,
-                    modifiers: modifiers.clone(),
-                    event_kind: kind.clone(),
-                    double_click,
-                })
-            }
-        }
-        if matches!(kind, MouseEventKind::Down(_)) {
-            last_click.replace((std::time::Instant::now(), *event));
         }
     }
 }

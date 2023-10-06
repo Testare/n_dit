@@ -7,10 +7,10 @@ use pad::PadStr;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 
-use crate::input_event::{MouseEventTty, MouseEventTtyKind};
-use crate::layout::{
-    CalculatedSizeTty, LayoutMouseTarget, LayoutMouseTargetDisabled, StyleTty, VisibilityTty,
+use crate::input_event::{
+    MouseEventListener, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind,
 };
+use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -44,7 +44,7 @@ pub struct ButtonUiBundle {
     pub name: Name,
     pub text_ui: FlexibleTextUi,
     pub borders: TextUiBorder,
-    pub mouse_target: LayoutMouseTarget,
+    pub mouse_target: MouseEventListener,
     pub disabled_effect: DisabledTextEffect,
     pub hover: IsUnderHover,
     pub rendering: TerminalRendering,
@@ -60,7 +60,7 @@ impl ButtonUiBundle {
                 text: text.borrow().to_string(),
             },
             borders: TextUiBorder::Brackets,
-            mouse_target: LayoutMouseTarget,
+            mouse_target: MouseEventListener,
             disabled_effect: DisabledTextEffect(ContentStyle::default().dark_grey()),
             rendering: TerminalRendering::default(),
             hover: IsUnderHover::default(),
@@ -150,7 +150,7 @@ pub fn sys_render_flexible_text(
         &FlexibleTextUi,
         &CalculatedSizeTty,
         &mut TerminalRendering,
-        Has<LayoutMouseTargetDisabled>,
+        Has<MouseEventTtyDisabled>,
         AsDerefOrBool<IsUnderHover, false>,
         Option<&TextUiBorder>,
         Option<&DisabledTextEffect>,
@@ -210,7 +210,7 @@ pub fn sys_apply_hover(
             With<FlexibleTextUi>,
         ),
     >,
-    new_disabled: Query<Entity, (With<IsUnderHover>, Added<LayoutMouseTargetDisabled>)>,
+    new_disabled: Query<Entity, (With<IsUnderHover>, Added<MouseEventTtyDisabled>)>,
     mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
 ) {
     for event in evr_mouse_tty.iter() {
