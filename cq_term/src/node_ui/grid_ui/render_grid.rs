@@ -12,7 +12,7 @@ use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
 use crate::animation::AnimationPlayer;
-use crate::configuration::{DrawConfiguration, UiFormat};
+use crate::configuration::DrawConfiguration;
 use crate::layout::CalculatedSizeTty;
 use crate::node_ui::node_glyph::NodeGlyph;
 use crate::prelude::*;
@@ -290,13 +290,13 @@ fn space_style_for(
     y: usize,
     player_q: &PlayerUiQItem,
     draw_config: &DrawConfiguration,
-) -> UiFormat {
+) -> ContentStyle {
     if !player_q.cursor_is_hidden
         && x as u32 == player_q.node_cursor.x
         && y as u32 == player_q.node_cursor.y
     {
         draw_config.color_scheme().selected_square()
     } else {
-        UiFormat::NONE
+        ContentStyle::default()
     }
 }

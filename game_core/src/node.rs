@@ -155,7 +155,7 @@ impl MapEntities for InNode {
 }
 
 /// Indicates a player has finished setting up
-#[derive(Component, Debug, Default, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct IsReadyToGo(pub bool);
 

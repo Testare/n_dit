@@ -1,7 +1,9 @@
 use std::ops::RangeInclusive;
 
+use crossterm::style::ContentStyle;
+
 use super::PlayerUiQItem;
-use crate::configuration::{DrawConfiguration, DrawType, UiFormat};
+use crate::configuration::{DrawConfiguration, DrawType};
 use crate::node_ui::NodeCursor;
 use crate::prelude::*;
 
@@ -65,7 +67,7 @@ pub fn border_style_for(
     draw_config: &DrawConfiguration,
     x_range: &RangeInclusive<usize>, // TODO usize -> u32?
     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
-) -> UiFormat {
+) -> ContentStyle {
     let color_scheme = draw_config.color_scheme();
 
     let NodeCursor(UVec2 {

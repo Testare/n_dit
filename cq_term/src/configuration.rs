@@ -1,7 +1,5 @@
-use std::fmt::Display;
-
 use bevy::prelude::Resource;
-use crossterm::style::{Attribute, Color, ContentStyle, StyledContent, Stylize};
+use crossterm::style::{Attribute, Attributes, Color, ContentStyle};
 use getset::{CopyGetters, Getters};
 
 #[derive(Clone, Debug, CopyGetters, Getters, Resource)]
@@ -14,35 +12,24 @@ pub struct DrawConfiguration {
     half_char: char,
 }
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct UiFormat(Option<Color>, Option<Color>, Option<Attribute>);
-
 #[derive(Clone, CopyGetters, Debug)]
 pub struct ColorScheme {
     #[get_copy = "pub"]
-    access_point: UiFormat,
+    access_point: ContentStyle,
     #[get_copy = "pub"]
-    attack_action: UiFormat,
+    attack_action: ContentStyle,
     #[get_copy = "pub"]
-    enemy_team: UiFormat,
+    grid_border_default: ContentStyle,
     #[get_copy = "pub"]
-    grid_border_default: UiFormat,
+    possible_movement: ContentStyle,
     #[get_copy = "pub"]
-    mon: UiFormat,
+    selected_square: ContentStyle,
     #[get_copy = "pub"]
-    player_team: UiFormat,
+    selected_square_border: ContentStyle,
     #[get_copy = "pub"]
-    possible_movement: UiFormat,
+    player_team_active: ContentStyle,
     #[get_copy = "pub"]
-    selected_menu_item: UiFormat,
-    #[get_copy = "pub"]
-    selected_square: UiFormat,
-    #[get_copy = "pub"]
-    selected_square_border: UiFormat,
-    #[get_copy = "pub"]
-    player_team_active: UiFormat,
-    #[get_copy = "pub"]
-    player_team_tapped: UiFormat,
+    player_team_tapped: ContentStyle,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -54,127 +41,37 @@ pub enum DrawType {
     DotLink,
 }
 
-impl ColorScheme {
-    pub const CLASSIC: Self = ColorScheme {
-        access_point: UiFormat::new(
-            Some(Color::Black),
-            Some(Color::Green),
-            Some(Attribute::Underlined),
-        ),
-        attack_action: UiFormat::new(Some(Color::White), Some(Color::Red), None),
-        mon: UiFormat::new(Some(Color::Yellow), None, Some(Attribute::Bold)),
-        selected_menu_item: UiFormat::new(None, None, Some(Attribute::Reverse)),
-        selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
-        selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
-        grid_border_default: UiFormat::new(Some(Color::Green), None, None),
-        possible_movement: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
-        player_team: UiFormat::new(Some(Color::Blue), None, None),
-        enemy_team: UiFormat::new(Some(Color::Red), None, None),
-        player_team_active: UiFormat::new(
-            Some(Color::Black),
-            Some(Color::White),
-            Some(Attribute::Bold),
-        ),
-        /*player_team_active: UiFormat::new(
-            Some(Color::White),
-            Some(Color::Blue),
-            Some(Attribute::Bold),
-        ),*/
-        player_team_tapped: UiFormat::new(Some(Color::Grey), None, None),
-    };
-
-    pub const MODERN: Self = ColorScheme {
-        access_point: UiFormat::new(
-            Some(Color::Black),
-            Some(Color::Green),
-            Some(Attribute::SlowBlink),
-        ),
-        mon: UiFormat::new(Some(Color::Yellow), None, None),
-        selected_menu_item: UiFormat::new(None, None, Some(Attribute::Reverse)),
-        selected_square: UiFormat::new(None, None, Some(Attribute::Reverse)),
-        selected_square_border: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
-        grid_border_default: UiFormat::new(Some(Color::Green), None, None),
-        possible_movement: UiFormat::new(Some(Color::White), Some(Color::DarkGrey), None),
-
-        // TODO Separate color schemes
-        enemy_team: UiFormat::new(Some(Color::Red), None, None),
-        player_team: UiFormat::new(Some(Color::AnsiValue(214)), None, None),
-        player_team_active: UiFormat::new(Some(Color::White), Some(Color::Blue), None),
-        player_team_tapped: UiFormat::new(Some(Color::DarkBlue), Some(Color::Blue), None),
-        ..Self::CLASSIC
-    };
-}
-
 impl Default for ColorScheme {
     fn default() -> Self {
-        Self::CLASSIC
+        ColorScheme {
+            access_point: style(
+                Some(Color::Black),
+                Some(Color::Green),
+                Some(Attribute::Underlined),
+            ),
+            attack_action: style(Some(Color::White), Some(Color::Red), None),
+            selected_square: style(None, None, Some(Attribute::Reverse)),
+            selected_square_border: style(Some(Color::White), Some(Color::DarkGrey), None),
+            grid_border_default: style(Some(Color::Green), None, None),
+            possible_movement: style(Some(Color::White), Some(Color::DarkGrey), None),
+            player_team_active: style(
+                Some(Color::Black),
+                Some(Color::White),
+                Some(Attribute::Bold),
+            ),
+            player_team_tapped: style(Some(Color::Grey), None, None),
+        }
     }
 }
 
-impl UiFormat {
-    pub const NONE: Self = UiFormat(None, None, None);
-
-    pub const fn fgbgv(fgr: u8, fgg: u8, fgb: u8, bgr: u8, bgg: u8, bgb: u8) -> Self {
-        UiFormat(
-            Some(Color::Rgb {
-                r: fgr,
-                g: fgg,
-                b: fgb,
-            }),
-            Some(Color::Rgb {
-                r: bgr,
-                g: bgg,
-                b: bgb,
-            }),
-            None,
-        )
-    }
-
-    pub const fn fgv(r: u8, g: u8, b: u8) -> Self {
-        UiFormat(Some(Color::Rgb { r, g, b }), None, None)
-    }
-
-    pub const fn fgbg(fg: Color, bg: Color) -> Self {
-        UiFormat(Some(fg), Some(bg), None)
-    }
-
-    pub const fn fg(fg: Color) -> Self {
-        UiFormat(Some(fg), None, None)
-    }
-
-    pub const fn new(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> Self {
-        UiFormat(fg, bg, attr)
-    }
-
-    pub fn apply<D: Display, S: Stylize<Styled = StyledContent<D>>>(
-        &self,
-        s: S,
-    ) -> StyledContent<D> {
-        let mut styled = s.stylize();
-        if let Some(fg) = self.0 {
-            styled = styled.with(fg);
-        }
-        if let Some(bg) = self.1 {
-            styled = styled.on(bg);
-        }
-        if let Some(attr) = self.2 {
-            styled = styled.attribute(attr);
-        }
-        styled
-    }
-
-    pub fn to_content_style(&self) -> ContentStyle {
-        let mut content_style = ContentStyle::new();
-        if let Some(fg) = self.0 {
-            content_style = content_style.with(fg);
-        }
-        if let Some(bg) = self.1 {
-            content_style = content_style.on(bg);
-        }
-        if let Some(attr) = self.2 {
-            content_style = content_style.attribute(attr);
-        }
-        content_style
+pub fn style(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> ContentStyle {
+    let attributes = attr
+        .map(|attr| Attributes::default() | attr)
+        .unwrap_or_default();
+    ContentStyle {
+        foreground_color: fg,
+        background_color: bg,
+        attributes,
     }
 }
 

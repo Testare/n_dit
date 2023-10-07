@@ -74,6 +74,10 @@ pub enum NodeOpError {
     NothingToDo,
     #[error("Not your turn")]
     NotYourTurn,
+    #[error("Already ready")]
+    AlreadyReady,
+    #[error("Cannot be ready")]
+    CannotBeReady,
 }
 
 impl OpSubtype for NodeOp {
@@ -363,7 +367,7 @@ pub fn ready_to_go_ops(
     mut commands: Commands,
     mut ops: EventReader<Op<NodeOp>>,
     cards: Query<&Card>,
-    mut players: Query<(Entity, &OnTeam, &InNode, &mut IsReadyToGo), With<Player>>,
+    mut players: Query<(Entity, &OnTeam, &InNode, AsDerefMut<IsReadyToGo>), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
     mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
@@ -375,96 +379,96 @@ pub fn ready_to_go_ops(
             op: NodeOp::ReadyToGo,
         } = op
         {
-            if let Ok((_, OnTeam(player_team), InNode(node_id), IsReadyToGo(false))) =
-                players.get(*player)
-            {
-                if let Ok((access_point_loading_rule, mut grid, teams)) = nodes.get_mut(*node_id) {
-                    let relevant_teams = match access_point_loading_rule {
-                        AccessPointLoadingRule::Staggered => vec![*player_team],
-                        AccessPointLoadingRule::Simultaneous => teams.0.clone(),
-                    };
-
-                    let valid_op = access_points
-                        .iter()
-                        .any(|(id, OnTeam(team), access_point)| {
-                            grid.contains_key(id)
-                                && team == player_team
-                                && access_point.card.is_some()
-                        });
-                    let result = if valid_op {
-                        let mut metadata: Metadata = default();
-                        let relevant_teams_are_ready = players.iter().all(
-                            |(iter_player, OnTeam(team), _, IsReadyToGo(ready_to_go))| {
-                                !relevant_teams.contains(team)
-                                    || *ready_to_go
-                                    || iter_player == *player
-                            },
-                        );
-                        metadata.put(key::ALL_TEAM_MEMBERS_READY, relevant_teams_are_ready);
-                        if relevant_teams_are_ready {
-                            let relevant_access_points: Vec<(Entity, Option<Entity>)> =
-                                access_points
-                                    .iter()
-                                    .filter_map(|(id, OnTeam(team), access_point)| {
-                                        (player_team == team && grid.contains_key(id))
-                                            .then(|| (id, access_point.card))
-                                    })
-                                    .collect();
-                            for (player_id, OnTeam(team), _, _) in players.iter() {
-                                if relevant_teams.contains(team) {
-                                    commands.entity(player_id).remove::<IsReadyToGo>();
-                                }
-                            }
-                            for (node_piece, card_id) in relevant_access_points.into_iter() {
-                                card_id
-                                    .and_then(|card_id| {
-                                        let card = get_assert!(card_id, cards)?;
-                                        let card_base = ast_cards.get(card.definition())?;
-                                        // Can be tapped
-
-                                        let mut ap_commands = commands.entity(node_piece);
-
-                                        ap_commands
-                                            .insert((
-                                                Curio::new_with_card(card.card_name(), card_id),
-                                                IsTapped::default(),
-                                                MovesTaken::default(),
-                                            ))
-                                            .remove::<AccessPoint>();
-
-                                        if !card_base.prevent_no_op() {
-                                            // Add No Op action
-                                            let mut new_actions = card_base.actions().clone();
-                                            new_actions.push(no_op_action.0.clone());
-                                            // NO COMMIT thos needs fixin
-
-                                            ap_commands.insert(Actions(new_actions));
-                                        }
-                                        Some(())
-                                    })
-                                    .unwrap_or_else(|| {
-                                        grid.remove_entity(node_piece);
-                                        // Leaving access points lying around seems bug prone, but so does despawning them?
-                                        // TODO Use play phase checks in ops, then remove the following line
-                                        commands.entity(node_piece).despawn()
-                                    });
-                            }
-                            for team in relevant_teams {
-                                *team_phases
-                                    .get_mut(team)
-                                    .expect("Team should have team phase component") =
-                                    TeamPhase::Play;
-                            }
-                        } else {
-                            players.get_mut(*player).unwrap().3 .0 = true;
-                        };
-                        Ok(metadata)
-                    } else {
-                        Err(NodeOpError::InternalError)
-                    };
-                    ev_op_result.send(OpResult::new(op, result));
+            let result = Ok(Metadata::new()).and_then(|mut metadata| {
+                let (_, OnTeam(player_team), InNode(node_id), is_ready_to_go) = players
+                    .get(*player)
+                    .map_err(|_| NodeOpError::InternalError)?;
+                if *is_ready_to_go {
+                    return Err(NodeOpError::AlreadyReady);
                 }
-            }
+                let (access_point_loading_rule, mut grid, teams) = nodes
+                    .get_mut(*node_id)
+                    .map_err(|_| NodeOpError::InternalError)?;
+                let relevant_teams = match access_point_loading_rule {
+                    AccessPointLoadingRule::Staggered => vec![*player_team],
+                    AccessPointLoadingRule::Simultaneous => teams.0.clone(),
+                };
+                let valid_op = access_points
+                    .iter()
+                    .any(|(id, OnTeam(team), access_point)| {
+                        grid.contains_key(id) && team == player_team && access_point.card.is_some()
+                    });
+                if !valid_op {
+                    return Err(NodeOpError::CannotBeReady);
+                }
+
+                let relevant_teams_are_ready =
+                    players
+                        .iter()
+                        .all(|(iter_player, OnTeam(team), _, ready_to_go)| {
+                            !relevant_teams.contains(team) || *ready_to_go || iter_player == *player
+                        });
+                metadata.put(key::ALL_TEAM_MEMBERS_READY, relevant_teams_are_ready)?;
+                if relevant_teams_are_ready {
+                    let relevant_access_points: Vec<(Entity, Option<Entity>)> = access_points
+                        .iter()
+                        .filter_map(|(id, OnTeam(team), access_point)| {
+                            (player_team == team && grid.contains_key(id))
+                                .then(|| (id, access_point.card))
+                        })
+                        .collect();
+                    for (player_id, OnTeam(team), _, _) in players.iter() {
+                        if relevant_teams.contains(team) {
+                            commands.entity(player_id).remove::<IsReadyToGo>();
+                        }
+                    }
+                    for (node_piece, card_id) in relevant_access_points.into_iter() {
+                        card_id
+                            .and_then(|card_id| {
+                                let card = get_assert!(card_id, cards)?;
+                                let card_base = ast_cards.get(card.definition())?;
+                                // Can be tapped
+
+                                let mut ap_commands = commands.entity(node_piece);
+
+                                ap_commands
+                                    .insert((
+                                        Curio::new_with_card(card.card_name(), card_id),
+                                        IsTapped::default(),
+                                        MovesTaken::default(),
+                                    ))
+                                    .remove::<AccessPoint>();
+
+                                if !card_base.prevent_no_op() {
+                                    // Add No Op action
+                                    let mut new_actions = card_base.actions().clone();
+                                    new_actions.push(no_op_action.0.clone());
+                                    // NO COMMIT thos needs fixin
+
+                                    ap_commands.insert(Actions(new_actions));
+                                }
+                                Some(())
+                            })
+                            .unwrap_or_else(|| {
+                                grid.remove_entity(node_piece);
+                                // Leaving access points lying around seems bug prone, but so does despawning them?
+                                // TODO Use play phase checks in ops, then remove the following line
+                                commands.entity(node_piece).despawn()
+                            });
+                    }
+                    for team in relevant_teams {
+                        *team_phases
+                            .get_mut(team)
+                            .expect("Team should have team phase component") = TeamPhase::Play;
+                    }
+                } else {
+                    *players.get_mut(*player).unwrap().3 = true;
+                };
+
+                Ok(metadata)
+            });
+
+            ev_op_result.send(OpResult::new(op, result));
         }
     }
 }
@@ -504,7 +508,7 @@ pub fn end_turn_op(
                     }
                     let mut metadata = Metadata::new();
                     if let Some(id) = *active_curio {
-                        metadata.put(key::CURIO, id);
+                        metadata.put(key::CURIO, id)?;
                     }
                     active_curio.set_if_neq(None);
                     let current_pos = teams
@@ -526,7 +530,7 @@ pub fn end_turn_op(
                             }
                         })
                         .collect();
-                    metadata.put(key::MOVED_PIECES, moved_pieces);
+                    metadata.put(key::MOVED_PIECES, moved_pieces)?;
                     Ok(metadata)
                 });
             evw_op_results.send(OpResult::new(ev, result));
@@ -599,7 +603,7 @@ pub fn access_point_ops(
                                 })
                             {
                                 let mut metadata = Metadata::new();
-                                metadata.put(key::CARD, card_id);
+                                metadata.put(key::CARD, card_id)?;
                                 *card_count = card_count.saturating_sub(1);
                                 let mut access_point_commands = commands.entity(*access_point_id);
                                 node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
