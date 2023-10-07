@@ -133,7 +133,7 @@ pub fn sys_mouse_tty(
                 evw_mouse_tty.send(MouseEventTty {
                     entity,
                     pos,
-                    modifiers: modifiers.clone(),
+                    modifiers: *modifiers,
                     event_kind,
                     double_click,
                 })
@@ -155,7 +155,7 @@ pub fn sys_mouse_tty(
                 evw_mouse_tty.send(MouseEventTty {
                     entity,
                     pos: default(), // In this case, we don't really have a helpful value for pos
-                    modifiers: modifiers.clone(),
+                    modifiers: *modifiers,
                     event_kind: MouseEventTtyKind::Exit,
                     double_click,
                 });

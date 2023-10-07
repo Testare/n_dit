@@ -114,16 +114,16 @@ impl Plugin for NodeUiPlugin {
 }
 
 impl SelectedEntity {
-    pub fn of<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+    pub fn of<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(
         &self,
-        query: &'a Query<'w, 's, Q, R>,
+        query: &'a Query<Q, R>,
     ) -> Option<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>> {
         query.get(self.0?).ok()
     }
 
-    pub fn of_mut<'a, 'w, 's, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+    pub fn of_mut<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(
         &self,
-        query: &'a mut Query<'w, 's, Q, R>,
+        query: &'a mut Query<Q, R>,
     ) -> Option<<Q as WorldQuery>::Item<'a>> {
         query.get_mut(self.0?).ok()
     }

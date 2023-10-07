@@ -248,7 +248,7 @@ fn calculate_layouts(
                 .unwrap();
         }
         if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
-            taffy.compute_layout(**root, space.clone()).unwrap();
+            taffy.compute_layout(**root, space).unwrap();
             log::debug!("Recalculated Layouts");
             update_layout_traversal(root_id, &children, UVec2::default(), &mut |id, offset| {
                 if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
@@ -334,10 +334,7 @@ pub fn ui_focus_cycle_next(
                 candidate_pos = *pos;
                 Some(candidate)
             } else if from_pos < *pos {
-                if candidate_pos <= from_pos {
-                    candidate_pos = *pos;
-                    Some(candidate)
-                } else if *pos < candidate_pos {
+                if candidate_pos <= from_pos || *pos < candidate_pos {
                     candidate_pos = *pos;
                     Some(candidate)
                 } else {
@@ -374,10 +371,7 @@ pub fn ui_focus_cycle_prev(
                 candidate_pos = *pos;
                 Some(candidate)
             } else if from_pos > *pos {
-                if candidate_pos >= from_pos {
-                    candidate_pos = *pos;
-                    Some(candidate)
-                } else if *pos > candidate_pos {
+                if candidate_pos >= from_pos || *pos > candidate_pos {
                     candidate_pos = *pos;
                     Some(candidate)
                 } else {

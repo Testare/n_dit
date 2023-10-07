@@ -23,7 +23,7 @@ pub enum RenderTtySet {
     RenderToTerminal,
 }
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, Default)]
 pub struct TerminalRendering {
     render_cache: Vec<String>,
     rendering: CharacterMapImage,
@@ -54,11 +54,11 @@ impl TerminalRendering {
 
     pub fn update_charmie(&mut self, new_rendering: CharacterMapImage) {
         self.render_cache = (&self.rendering).into();
-        self.rendering = new_rendering.clone();
+        self.rendering = new_rendering;
     }
 
     pub fn update(&mut self, new_rendering: Vec<String>) {
-        self.rendering = new_rendering.clone().into();
+        self.rendering = new_rendering.into();
         self.render_cache = (&self.rendering).into();
     }
 
@@ -219,15 +219,6 @@ fn render_with_cache(
 
     crossterm::queue!(stdout, crossterm::cursor::MoveTo(0, 0))?;
     stdout.flush()
-}
-
-impl Default for TerminalRendering {
-    fn default() -> Self {
-        TerminalRendering {
-            render_cache: Vec::new(),
-            rendering: CharacterMapImage::default(),
-        }
-    }
 }
 
 impl PartialEq<TerminalRendering> for TerminalRendering {

@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
 pub mod base_ui;
 pub mod configuration;
 mod fx;

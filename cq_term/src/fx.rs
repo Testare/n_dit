@@ -3,9 +3,9 @@ use bevy::ecs::system::Resource;
 use charmi::CharmieActor;
 use game_core::prelude::*;
 
-pub const FX_ACTOR: &'static str = "cq_term/fx.charmia";
-pub const PICKUP_SOUND: &'static str = "tmp/audio/mixkit-coins-sound-2003.wav";
-pub const CARD_SOUND: &'static str = "tmp/audio/mixkit-poker-card-flick-2002.wav";
+pub const FX_ACTOR: &str = "cq_term/fx.charmia";
+pub const PICKUP_SOUND: &str = "tmp/audio/mixkit-coins-sound-2003.wav";
+pub const CARD_SOUND: &str = "tmp/audio/mixkit-poker-card-flick-2002.wav";
 
 #[derive(Resource, Default)]
 pub struct Fx {

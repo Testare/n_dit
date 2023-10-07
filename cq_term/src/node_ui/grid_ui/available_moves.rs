@@ -69,7 +69,7 @@ pub fn sys_adjust_available_moves(
                     (**speed).saturating_sub(moves_taken.map(|mt| **mt).unwrap_or_default());
                 let mut points_set = HashSet::new();
 
-                possible_moves(head, &mut points_set, &pickups, moves, entity, &grid);
+                possible_moves(head, &mut points_set, &pickups, moves, entity, grid);
                 Some(points_set)
             })
             .unwrap_or_default();

@@ -67,7 +67,7 @@ pub fn sys_node_ui_op_set_selected_action(
     for Op { player, op } in ev_node_ui_op.iter() {
         if let NodeUiOp::SetSelectedAction(next_selected_action) = op {
             get_assert_mut!(*player, &mut players, |(mut selected_action,)| {
-                selected_action.set_if_neq(next_selected_action.clone());
+                selected_action.set_if_neq(*next_selected_action);
                 Some(())
             });
         }

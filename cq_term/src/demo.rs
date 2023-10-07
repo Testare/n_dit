@@ -81,7 +81,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
             With<Card>,
             With<Player>,
         )>>()
-        .iter(&world)
+        .iter(world)
         .collect();
     let mut scene = DynamicSceneBuilder::from_world(world);
     scene.deny_all_resources();

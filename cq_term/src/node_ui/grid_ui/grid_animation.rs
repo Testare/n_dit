@@ -15,8 +15,8 @@ use crate::prelude::*;
 use crate::render::TerminalRendering;
 
 const DAMAGE_TIMING: f32 = 150.0;
-const ATTACK_BASE_ANIM: &'static str = "attack";
-const PICKUP_BASE_ANIM: &'static str = "pickup";
+const ATTACK_BASE_ANIM: &str = "attack";
+const PICKUP_BASE_ANIM: &str = "pickup";
 
 #[derive(Component)]
 pub struct GridUiAnimation;
@@ -181,7 +181,7 @@ fn generate_animation_from_damages(
             let mut frame = CharacterMapImage::default();
             for (i, UVec2 { x, y }) in damages.iter().enumerate().skip(i) {
                 if let (Some(target_head), true) = (&target_head, i == damages.len() - 1) {
-                    frame = frame.draw(&target_head, x * 3 + 1, y * 2 + 1, None);
+                    frame = frame.draw(target_head, x * 3 + 1, y * 2 + 1, None);
                 } else {
                     frame = frame.draw(&damage_cell, x * 3 + 1, y * 2 + 1, None);
                 }

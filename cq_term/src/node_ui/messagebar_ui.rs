@@ -11,7 +11,7 @@ use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
 
-#[derive(Component, Debug, Deref, DerefMut, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct MessageBarUi(pub Vec<String>);
 
 #[derive(Default)]
@@ -27,21 +27,18 @@ pub fn kb_messages(
     } in ev_keys.iter()
     {
         for (player, key_map) in players.iter() {
-            key_map
-                .named_input_for_key(Submap::Node, *code, *modifiers)
-                .and_then(|named_input| {
-                    if matches!(named_input, NamedInput::NextMsg) {
-                        for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
-                            if *for_player == player {
-                                if msg_bar.len() > 0 {
-                                    msg_bar.0 = msg_bar.0[1..].into();
-                                }
-                                break;
-                            }
+            if let Some(NamedInput::NextMsg) =
+                key_map.named_input_for_key(Submap::Node, *code, *modifiers)
+            {
+                for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
+                    if *for_player == player {
+                        if msg_bar.len() > 0 {
+                            msg_bar.0 = msg_bar.0[1..].into();
                         }
+                        break;
                     }
-                    Some(())
-                });
+                }
+            }
         }
     }
 }
@@ -107,15 +104,7 @@ impl NodeUi for MessageBarUi {
         })
     }
 
-    fn ui_bundle_extras() -> Self::UiBundleExtras {
-        ()
-    }
-}
-
-impl Default for MessageBarUi {
-    fn default() -> Self {
-        super::MessageBarUi(vec![])
-    }
+    fn ui_bundle_extras() -> Self::UiBundleExtras {}
 }
 
 fn sys_tmp_display_victory_or_less_message(

@@ -51,7 +51,5 @@ impl NodeUi for TitleBarUi {
         })
     }
 
-    fn ui_bundle_extras() -> Self::UiBundleExtras {
-        ()
-    }
+    fn ui_bundle_extras() -> Self::UiBundleExtras {}
 }

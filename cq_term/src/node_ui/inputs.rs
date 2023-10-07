@@ -21,14 +21,12 @@ pub fn kb_ready(
 ) {
     for KeyEvent { code, modifiers } in ev_keys.iter() {
         for (player, key_map) in players.iter_mut() {
-            key_map
-                .named_input_for_key(Submap::Node, *code, *modifiers)
-                .and_then(|named_input| {
-                    if matches!(named_input, NamedInput::Ready) {
-                        ev_node_op.send(Op::new(player, NodeOp::ReadyToGo));
-                    }
-                    Some(())
-                });
+            if matches!(
+                key_map.named_input_for_key(Submap::Node, *code, *modifiers),
+                Some(NamedInput::Ready)
+            ) {
+                ev_node_op.send(Op::new(player, NodeOp::ReadyToGo));
+            }
         }
     }
 }

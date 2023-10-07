@@ -6,7 +6,7 @@ use game_core::registry::Reg;
 use crate::configuration::DrawConfiguration;
 use crate::node_ui::NodeGlyph;
 
-const FILL_GLYPH: &'static str = "[]";
+const FILL_GLYPH: &str = "[]";
 
 pub fn render_square(
     position: usize,

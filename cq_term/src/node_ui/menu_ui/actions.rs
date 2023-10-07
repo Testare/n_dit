@@ -39,60 +39,59 @@ impl MenuUiActions {
                     continue;
                 }
 
-                key_map
-                    .named_input_for_key(Submap::Node, *code, *modifiers)
-                    .and_then(|named_input| {
-                        if let Some((actions, is_tapped)) = selected_entity.of(&node_pieces) {
-                            match named_input {
-                                NamedInput::Direction(dir) => {
-                                    let actions_bound = actions.len();
-                                    let current_action = selected_action.unwrap_or(0);
-                                    let next_action = Some(
-                                        (current_action
-                                            + match dir {
-                                                Compass::North => actions_bound - 1,
-                                                Compass::South => 1,
-                                                _ => 0,
-                                            })
-                                            % actions_bound,
-                                    );
-                                    if **selected_action != next_action {
-                                        NodeUiOp::SetSelectedAction(next_action)
-                                            .for_p(player_id)
-                                            .send(&mut ev_node_ui_op);
-                                    }
-                                },
-                                NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
+                if let Some(named_input) =
+                    key_map.named_input_for_key(Submap::Node, *code, *modifiers)
+                {
+                    if let Some((actions, is_tapped)) = selected_entity.of(&node_pieces) {
+                        match named_input {
+                            NamedInput::Direction(dir) => {
+                                let actions_bound = actions.len();
+                                let current_action = selected_action.unwrap_or(0);
+                                let next_action = Some(
+                                    (current_action
+                                        + match dir {
+                                            Compass::North => actions_bound - 1,
+                                            Compass::South => 1,
+                                            _ => 0,
+                                        })
+                                        % actions_bound,
+                                );
+                                if **selected_action != next_action {
+                                    NodeUiOp::SetSelectedAction(next_action)
+                                        .for_p(player_id)
+                                        .send(&mut ev_node_ui_op);
+                                }
+                            },
+                            NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
+                                NodeUiOp::SetSelectedAction(None)
+                                    .for_p(player_id)
+                                    .send(&mut ev_node_ui_op);
+                            },
+                            NamedInput::Activate => {
+                                if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
                                     NodeUiOp::SetSelectedAction(None)
                                         .for_p(player_id)
                                         .send(&mut ev_node_ui_op);
-                                },
-                                NamedInput::Activate => {
-                                    if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
-                                        NodeUiOp::SetSelectedAction(None)
-                                            .for_p(player_id)
-                                            .send(&mut ev_node_ui_op);
-                                    } else if let Some(action) = actions
-                                        .get(selected_action.unwrap_or_default())
-                                        .and_then(|handle| ast_actions.get(handle))
-                                    {
-                                        if action.range().is_none() {
-                                            ev_node_op.send(Op::new(
-                                                player_id,
-                                                NodeOp::PerformCurioAction {
-                                                    action_id: action.id_cow(),
-                                                    curio: **selected_entity,
-                                                    target: default(),
-                                                },
-                                            ))
-                                        }
+                                } else if let Some(action) = actions
+                                    .get(selected_action.unwrap_or_default())
+                                    .and_then(|handle| ast_actions.get(handle))
+                                {
+                                    if action.range().is_none() {
+                                        ev_node_op.send(Op::new(
+                                            player_id,
+                                            NodeOp::PerformCurioAction {
+                                                action_id: action.id_cow(),
+                                                curio: **selected_entity,
+                                                target: default(),
+                                            },
+                                        ))
                                     }
-                                },
-                                _ => {},
-                            }
+                                }
+                            },
+                            _ => {},
                         }
-                        Some(())
-                    });
+                    }
+                }
             }
         }
     }
@@ -113,7 +112,9 @@ impl MenuUiActions {
                 .and_then(|ForPlayer(player_id)| {
                     let selected_entity = get_assert!(*player_id, players)?;
                     let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
+
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
+                    #[allow(clippy::single_match)]
                     match layout_event.event_kind() {
                         MouseEventTtyKind::Down(MouseButton::Left) => {
                             NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)
@@ -202,7 +203,7 @@ impl MenuUiActions {
             if let Ok((selected_entity, selected_action, focus)) = players.get(*player) {
                 let rendering = selected_entity
                     .of(&node_pieces)
-                    .and_then(|piece_actions| {
+                    .map(|piece_actions| {
                         let title_style = if Some(id) == **focus {
                             // TODO replace with configurable "MenuUiTitleFocused"
                             ContentStyle::new().reverse()
@@ -223,7 +224,7 @@ impl MenuUiActions {
                                 }
                             }
                         }
-                        Some(menu)
+                        menu
                     })
                     .unwrap_or_default();
                 tr.update_charmie(rendering);

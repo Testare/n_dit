@@ -201,7 +201,7 @@ impl MenuUiCardSelection {
                                             .0,
                                     )
                                 })
-                                .unwrap_or_else(|| card_selection_menu.scroll);
+                                .unwrap_or(card_selection_menu.scroll);
                             let next_pt = match dir {
                                 Compass::North => current_point.saturating_sub(1),
                                 Compass::South => {

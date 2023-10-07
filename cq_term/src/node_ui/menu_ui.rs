@@ -40,11 +40,11 @@ pub trait SimpleSubmenu {
 
     fn height(selected: &NodePieceQItem<'_>) -> Option<usize>;
 
-    fn render<'w, 's>(
+    fn render(
         player: Entity,
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
-        sys_param: &<Self::RenderSystemParam as SystemParam>::Item<'w, 's>,
+        sys_param: &<Self::RenderSystemParam as SystemParam>::Item<'_, '_>,
     ) -> Option<CharacterMapImage>;
 
     fn ui_bundle_extras() -> Self::UiBundleExtras;

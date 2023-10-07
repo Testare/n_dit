@@ -33,9 +33,9 @@ pub fn get_range_of_action(
         .p0()
         .iter()
         .filter_map(|player_q| {
-            if changed_player.contains(player_q.entity) {
-                Some(player_q.entity)
-            } else if player_q.selected_entity.of(&changed_access_point).is_some() {
+            if changed_player.contains(player_q.entity)
+                || player_q.selected_entity.of(&changed_access_point).is_some()
+            {
                 Some(player_q.entity)
             } else {
                 None
@@ -79,7 +79,7 @@ pub fn get_range_of_action(
                         if available_moves.contains(&pt) {
                             return None;
                         }
-                        if range.in_range_of(&grid, entity, pt) {
+                        if range.in_range_of(grid, entity, pt) {
                             return Some(pt);
                         }
 

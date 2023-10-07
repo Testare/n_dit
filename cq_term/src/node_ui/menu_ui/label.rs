@@ -69,7 +69,5 @@ impl SimpleSubmenu for MenuUiLabel {
         Some(label)
     }
 
-    fn ui_bundle_extras() -> Self::UiBundleExtras {
-        ()
-    }
+    fn ui_bundle_extras() -> Self::UiBundleExtras {}
 }

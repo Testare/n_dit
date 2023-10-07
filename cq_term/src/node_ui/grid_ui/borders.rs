@@ -88,7 +88,7 @@ pub fn border_style_for(
     {
         color_scheme.possible_movement()
     } else if !player_q.available_action_targets.is_empty()
-        && !points_in_range.is_disjoint(&player_q.available_action_targets)
+        && !points_in_range.is_disjoint(player_q.available_action_targets)
     {
         color_scheme.attack_action()
     } else {

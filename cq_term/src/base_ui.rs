@@ -177,7 +177,7 @@ pub fn sys_render_flexible_text(
         let mut next_rendering =
             CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
         if let (true, Some(effect)) = (disabled, disabled_text_effect) {
-            next_rendering.apply_effect(&**effect);
+            next_rendering.apply_effect(effect);
         } else if is_under_hover {
             next_rendering.apply_effect(&ContentStyle::new().reverse());
         }

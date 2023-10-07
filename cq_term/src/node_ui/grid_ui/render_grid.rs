@@ -46,8 +46,7 @@ pub fn render_grid_system(
             if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
                 let grid_animation = grid_animation
                     .iter()
-                    .filter(|(_, _, for_player)| *player == ***for_player)
-                    .next();
+                    .find(|(_, _, for_player)| *player == ***for_player);
                 if grid_animation.is_none() {
                     log::error!("Cannot find attack animation for player {:?}.", player);
                     continue;
@@ -90,14 +89,7 @@ fn render_grid(
     let grid_map = grid.number_map();
 
     let sprite_map = grid.point_map(|i, sprite| {
-        render_square(
-            i,
-            sprite,
-            active_curio,
-            node_pieces,
-            reg_glyph,
-            &draw_config,
-        )
+        render_square(i, sprite, active_curio, node_pieces, reg_glyph, draw_config)
     });
 
     let x_start = (scroll.x / 3) as usize;
@@ -152,54 +144,35 @@ fn render_grid(
                 if render_left_border {
                     if include_border {
                         let pivot_format = border_style_for(
-                            &player_q,
-                            &draw_config, // &available_moves,
-                            // action_type,
-                            // state,
+                            player_q,
+                            draw_config,
                             &border_x_range,
                             &border_y_range,
                         );
                         border_line.add_styled_text(pivot_format.apply(intersection_for_pivot(
                             &[left1, left2],
                             &[right1, right2],
-                            &draw_config,
+                            draw_config,
                         )));
                     }
                     if include_space {
                         // Add first vertical border
-                        let border_style = border_style_for(
-                            &player_q,
-                            &draw_config, /*
-                                                                  &available_moves,
-                                                                  action_type,
-                                                                  state,
-
-                                          */
-                            &border_x_range,
-                            &(y..=y),
+                        let border_style =
+                            border_style_for(player_q, draw_config, &border_x_range, &(y..=y));
+                        space_line.add_styled_text(
+                            border_style
+                                .apply(BorderType::of(left2, right2).vertical_border(draw_config)),
                         );
-                        space_line
-                            .add_styled_text(border_style.apply(
-                                BorderType::of(left2, right2).vertical_border(&draw_config),
-                            ));
                     }
                 }
                 if render_half_space {
                     if include_border {
-                        let border_style = border_style_for(
-                            &player_q,
-                            &draw_config, /*
-                                          &available_moves,
-                                          action_type,
-                                          state,
-                                          */
-                            &(x..=x),
-                            &border_y_range,
-                        );
+                        let border_style =
+                            border_style_for(player_q, draw_config, &(x..=x), &border_y_range);
                         border_line.add_styled_text(
                             border_style.apply(
                                 BorderType::of(right1, right2)
-                                    .horizontal_border(&draw_config)
+                                    .horizontal_border(draw_config)
                                     .chars()
                                     .next()
                                     .unwrap(),
@@ -207,7 +180,7 @@ fn render_grid(
                         );
                     }
                     if include_space {
-                        let space_style = space_style_for(x, y, player_q, &draw_config);
+                        let space_style = space_style_for(x, y, player_q, draw_config);
                         let (square_style, square) = sprite_map
                             .get(&pt)
                             .map(|(style, square)| (style, square.as_ref()))
@@ -237,15 +210,15 @@ fn render_grid(
                 } else if render_full_space {
                     if include_border {
                         let border_style =
-                            border_style_for(&player_q, &draw_config, &(x..=x), &border_y_range);
+                            border_style_for(player_q, draw_config, &(x..=x), &border_y_range);
                         border_line.add_styled_text(
                             border_style.apply(
-                                BorderType::of(right1, right2).horizontal_border(&draw_config),
+                                BorderType::of(right1, right2).horizontal_border(draw_config),
                             ),
                         );
                     }
                     if include_space {
-                        let space_style = space_style_for(x, y, player_q, &draw_config);
+                        let space_style = space_style_for(x, y, player_q, draw_config);
                         let (square_style, square) = sprite_map
                             .get(&pt)
                             .map(|(style, square)| (style, square.as_str()))

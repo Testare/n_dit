@@ -23,7 +23,7 @@ impl Default for NodeGlyph {
 
 impl Default for &NodeGlyph {
     fn default() -> Self {
-        DEFAULT_GLYPH.get_or_init(|| NodeGlyph::default())
+        DEFAULT_GLYPH.get_or_init(NodeGlyph::default)
     }
 }
 
