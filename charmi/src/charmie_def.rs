@@ -265,8 +265,7 @@ impl From<CharacterMapImage> for CharmieDef {
             }
         }
         let gap_char: char = gap_char_iter()
-            .filter(|ch| !used_chars.contains(ch))
-            .next()
+            .find(|ch| !used_chars.contains(ch))
             .expect("there should be enough valid characters");
         let color_chars: HashMap<Color, char> = colors.into_iter().zip(color_char_iter()).collect();
         let mut text = String::new();
@@ -489,7 +488,7 @@ impl From<CharmieAnimation> for CharmieAnimationDef {
         let mut last_timing = 0.0;
         let frames = frames
             .into_iter()
-            .zip(timings.into_iter())
+            .zip(timings)
             .map(|(frame, timing)| {
                 let CharmieAnimationFrame { charmi } = frame;
                 let frame = CharmieFrameDef {
@@ -572,7 +571,7 @@ fn style_iters(
                         style = Some(ContentStyle::new().with(fg_color));
                     }
                     if let Some(bg_color) = right {
-                        let unwrapped_style = style.unwrap_or_else(|| ContentStyle::new());
+                        let unwrapped_style = style.unwrap_or_else(ContentStyle::new);
                         style = Some(unwrapped_style.on(bg_color))
                     }
                     style
@@ -804,8 +803,8 @@ mod test {
         let expected: CharacterMapImage = utils::test_character_map_image();
         println!(
             "EXPECTED\n{}\n\nACTUAL\n{}",
-            expected.to_string(),
-            charmi.to_string()
+            expected.debug_string(),
+            charmi.debug_string()
         );
         assert_eq!(charmi, expected)
     }

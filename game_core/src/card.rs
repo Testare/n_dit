@@ -95,12 +95,12 @@ impl Deck {
         self.cards.len()
     }
 
-    pub fn cards_with_count<'a>(&'a self) -> impl Iterator<Item = (Entity, NonZeroU32)> + 'a {
+    pub fn cards_with_count(&self) -> impl Iterator<Item = (Entity, NonZeroU32)> + '_ {
         self.ordering.iter().map(|card| (*card, self.cards[card]))
     }
 
-    pub fn cards_iter<'a>(&'a self) -> impl Iterator<Item = Entity> + 'a {
-        self.ordering.iter().map(|e| *e)
+    pub fn cards_iter(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.ordering.iter().copied()
     }
 
     /// Adds a card to the inventory, including another copy if it is already in the deck

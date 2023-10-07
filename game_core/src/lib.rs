@@ -1,3 +1,9 @@
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::single_match
+)]
+
 pub mod card;
 pub mod common;
 mod entity_grid;

@@ -1,8 +1,15 @@
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::single_match
+)]
+
 mod charmie_actor;
 mod charmie_def;
 mod loader;
 
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::ops::AddAssign;
 
@@ -37,7 +44,7 @@ impl CharacterMapImage {
     }
 
     /// Mostly useful for debugging
-    pub fn to_string(&self) -> String {
+    pub fn debug_string(&self) -> String {
         self.rows.iter().map(|row| row.to_string()).join("\n")
     }
 
@@ -59,7 +66,7 @@ impl CharacterMapImage {
                 .resize(y + map.rows.len(), CharmieRow::default());
         }
         for (row_index, row) in map.rows.iter().enumerate() {
-            let row_index = row_index + y as usize;
+            let row_index = row_index + y;
             result.rows[row_index] = result.rows[row_index].draw(row, x, bcfb);
         }
         result
@@ -206,7 +213,7 @@ impl CharmieRow {
             {
                 self.segments.pop();
                 if half_char == last_half_char && !first_half {
-                    self.add_text(half_char.to_string(), &add_styles(&last_style, &style));
+                    self.add_text(half_char.to_string(), &add_styles(&last_style, style));
                     return self;
                 }
                 if let Some(last_replace_char) = last_replace_char {
@@ -217,7 +224,7 @@ impl CharmieRow {
             }
             if !first_half {
                 if let Some(replace_char) = replace_char {
-                    self.add_text(replace_char.to_string(), &style);
+                    self.add_text(replace_char.to_string(), style);
                 } else {
                     self.add_gap(1);
                 }
@@ -239,7 +246,7 @@ impl CharmieRow {
     }
 
     pub fn add_text<S: Borrow<str>>(&mut self, text: S, style: &ContentStyle) -> &mut Self {
-        if text.borrow().len() == 0 {
+        if text.borrow().is_empty() {
             return self;
         }
         self.fuse_tail_half_char();
@@ -359,21 +366,23 @@ impl CharmieRow {
     }
 
     pub fn len(&self) -> u32 {
-        self.segments
-            .iter()
-            .map(|segment| {
-                let len = segment.len();
-                len
-            })
-            .sum()
+        self.segments.iter().map(|segment| segment.len()).sum()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.segments.is_empty()
     }
 
     pub fn fit_to_len(&mut self, len: u32) -> &mut Self {
         let self_len = self.len();
-        if self_len > len {
-            *self = self.clip(0, len, None);
-        } else if self_len < len {
-            self.add_gap(len - self_len);
+        match self_len.cmp(&len) {
+            Ordering::Less => {
+                self.add_gap(len - self_len);
+            },
+            Ordering::Greater => {
+                *self = self.clip(0, len, None);
+            },
+            Ordering::Equal => {},
         }
         self
     }
@@ -498,7 +507,7 @@ impl CharmieRow {
                                             }
                                             Some(Some(ch))
                                         })
-                                        .filter_map(|c| c)
+                                        .flatten()
                                         .collect();
                                     row += CharmieSegment::Textual {
                                         text,
@@ -661,7 +670,7 @@ impl CharmieSegment {
         match self {
             Self::Textual { text, style } => Self::Textual {
                 text: text.to_string(),
-                style: add_styles(style, &effect_style),
+                style: add_styles(style, effect_style),
             },
             Self::Effect { len, style } => Self::Effect {
                 len: *len,

@@ -273,7 +273,7 @@ impl ActionTarget {
             Self::Curios => grid.item_at(target).and_then(team_check).is_some(),
             Self::Enemies => grid
                 .item_at(target)
-                .and_then(|target_entity| team_check(target_entity))
+                .and_then(&team_check)
                 .and_then(|target_team| Some(target_team != team_check(source)?))
                 .unwrap_or(false),
             Self::Allies => {

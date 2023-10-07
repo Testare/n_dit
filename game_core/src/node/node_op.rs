@@ -17,7 +17,7 @@ use crate::op::{OpResult, OpSubtype};
 use crate::player::Player;
 use crate::prelude::*;
 
-const ACCESS_POINT_DISPLAY_ID: &'static str = "env:access_point";
+const ACCESS_POINT_DISPLAY_ID: &str = "env:access_point";
 
 #[derive(Clone, Debug)]
 pub enum NodeOp {
@@ -207,23 +207,19 @@ pub fn curio_ops(
                             }
                             let remaining_moves = movement_speed - **curio_q.moves_taken;
 
-                            metadata.put(key::REMAINING_MOVES, &remaining_moves)?;
-                            if movement_speed == **curio_q.moves_taken {
-                                if curio_q
+                            metadata.put(key::REMAINING_MOVES, remaining_moves)?;
+                            if movement_speed == **curio_q.moves_taken
+                                && curio_q
                                     .actions
                                     .as_ref()
                                     .map(|curio_actions| {
-                                        curio_actions
-                                            .iter()
-                                            .find(|action| **action != **no_op_action)
-                                            .is_none()
+                                        curio_actions.iter().any(|action| *action != **no_op_action)
                                     })
                                     .unwrap_or(true)
-                                {
-                                    metadata.put(key::TAPPED, true)?;
-                                    **curio_q.tapped = true;
-                                    **active_curio = None;
-                                }
+                            {
+                                metadata.put(key::TAPPED, true)?;
+                                **curio_q.tapped = true;
+                                **active_curio = None;
                             }
                             Ok(metadata)
                         },
@@ -412,10 +408,10 @@ pub fn ready_to_go_ops(
                 if relevant_teams_are_ready {
                     let relevant_access_points: Vec<(Entity, Option<Entity>)> = access_points
                         .iter()
-                        .filter_map(|(id, OnTeam(team), access_point)| {
-                            (player_team == team && grid.contains_key(id))
-                                .then(|| (id, access_point.card))
+                        .filter(|(id, OnTeam(team), _)| {
+                            player_team == team && grid.contains_key(*id)
                         })
+                        .map(|(id, _, access_point)| (id, access_point.card))
                         .collect();
                     for (player_id, OnTeam(team), _, _) in players.iter() {
                         if relevant_teams.contains(team) {

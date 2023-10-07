@@ -239,11 +239,10 @@ fn render_grid(
         })
         .unzip();
     space_lines.truncate(height); // Still used for when the height isn't specified
-    let charmi: CharacterMapImage =
-        Itertools::interleave(border_lines.into_iter(), space_lines.into_iter())
-            .skip(skip_y)
-            .take(size.height())
-            .collect();
+    let charmi: CharacterMapImage = Itertools::interleave(border_lines.into_iter(), space_lines)
+        .skip(skip_y)
+        .take(size.height())
+        .collect();
     if grid_animation.0.is_playing() {
         let clipped_attack = grid_animation.1.charmie().clip(
             scroll.x,

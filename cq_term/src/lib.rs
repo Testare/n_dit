@@ -1,4 +1,8 @@
-#![allow(clippy::type_complexity, clippy::too_many_arguments)]
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::single_match
+)]
 pub mod base_ui;
 pub mod configuration;
 mod fx;
@@ -211,10 +215,10 @@ impl Plugin for CharmiePlugin {
             .add_asset_loader(CharmiaLoader)
             .add_asset_loader(CharmiLoader)
             .add_plugins((
-                base_ui::BaseUiPlugin::default(),
-                layout::TaffyTuiLayoutPlugin::default(),
-                node_ui::NodeUiPlugin::default(),
-                render::RenderTtyPlugin::default(),
+                base_ui::BaseUiPlugin,
+                layout::TaffyTuiLayoutPlugin,
+                node_ui::NodeUiPlugin,
+                render::RenderTtyPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()

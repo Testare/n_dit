@@ -114,7 +114,6 @@ impl MenuUiActions {
                     let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
 
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
-                    #[allow(clippy::single_match)]
                     match layout_event.event_kind() {
                         MouseEventTtyKind::Down(MouseButton::Left) => {
                             NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)

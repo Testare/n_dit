@@ -262,10 +262,7 @@ impl EntityGrid {
     /// and need to be opened manually with [`open_square`](Self::open_square). For this reason,
     /// it might be more convenient to create with [`EntityGrid::from<Vec<Vec<bool>>>()`].
     pub fn new(width: u32, height: u32) -> Self {
-        let grid = (0..width)
-            .into_iter()
-            .map(|_| vec![None; height as usize])
-            .collect();
+        let grid = (0..width).map(|_| vec![None; height as usize]).collect();
 
         EntityGrid {
             height,
@@ -569,7 +566,7 @@ impl EntityGrid {
     /// TODO what happens if you put the same entity twice?
     pub fn put_item(&mut self, pt: UVec2, item: Entity) -> Option<Entity> {
         if let Some(square) = self.square_mut(pt) {
-            if square.item == None {
+            if square.item.is_none() {
                 square.item = Some(item);
                 self.entries.insert(item, pt);
                 Some(item)

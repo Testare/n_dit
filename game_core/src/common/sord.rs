@@ -10,7 +10,7 @@ use serde::Serialize;
 
 pub trait SeDe {
     type Error;
-    fn deserialize<'a, T: DeserializeOwned>(input: &str) -> Result<T, Self::Error>;
+    fn deserialize<T: DeserializeOwned>(input: &str) -> Result<T, Self::Error>;
     fn serialize<T: Serialize>(input: &T) -> Result<String, Self::Error>;
 }
 
@@ -50,7 +50,7 @@ where
                     .expect("should not be possible for both se and de to be uninitialized")
                     .as_ref()
                     .expect("should not be possible to initialize se as an error");
-                S::deserialize(&se)
+                S::deserialize(se)
             })
             .as_ref()
     }
@@ -65,7 +65,7 @@ where
                     .expect("should not be possible for both de and se to be uninitialized")
                     .as_ref()
                     .expect("should not be possible to initialize de as an error");
-                S::serialize(de).map(|cow| cow.into())
+                S::serialize(de)
             })
             .as_ref()
             .map(|cow| cow.borrow());
@@ -115,7 +115,7 @@ where
                     .expect("should not be possible for both se and de to be uninitialized")
                     .as_ref()
                     .expect("should not be possible to initialize se as an error");
-                let deserialize: T = S::deserialize(se).map_err(|e| SordError::SeDeError(e))?;
+                let deserialize: T = S::deserialize(se).map_err(SordError::SeDeError)?;
                 Ok(Box::new(deserialize))
             })
             .as_ref()
@@ -133,9 +133,7 @@ where
                     .expect("should not be possible to initialize de as an error")
                     .downcast_ref::<T>()
                     .ok_or(SordError::<S::Error>::WrongTypeError)?;
-                S::serialize(de)
-                    .map(|cow| cow.into())
-                    .map_err(|e| SordError::SeDeError(e))
+                S::serialize(de).map_err(SordError::SeDeError)
             })
             .as_ref()
             .map(|cow| cow.borrow())

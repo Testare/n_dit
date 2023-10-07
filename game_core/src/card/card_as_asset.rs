@@ -99,7 +99,7 @@ impl AssetLoader for ActionAssetLoader {
                     target,
                     self_effects,
                     prereqs,
-                    description: description,
+                    description,
                 };
                 match validations::validate_action_effects_match_target(&def) {
                     Ok(()) => {
@@ -135,7 +135,7 @@ impl AssetLoader for CardAssetLoader {
                 let mut actions = Vec::new();
                 for action_path in def.actions.into_iter() {
                     actions.push(load_context.get_handle(action_path.as_str()));
-                    if Some('#') != action_path.chars().next() {
+                    if !action_path.starts_with('#') {
                         action_assets.push(AssetPath::from(action_path));
                     }
                 }
@@ -217,7 +217,7 @@ impl Action {
     }
 
     pub fn description(&self) -> &str {
-        &self.description.as_str()
+        self.description.as_str()
     }
 
     pub fn range(&self) -> Option<ActionRange> {
@@ -235,7 +235,7 @@ impl CardDefinition {
     }
 
     pub fn description(&self) -> &str {
-        &self.description.as_str()
+        self.description.as_str()
     }
 }
 

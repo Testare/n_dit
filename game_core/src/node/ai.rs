@@ -63,7 +63,7 @@ fn sys_ai_apply(
             if elapsed < *pause_until {
                 continue;
             }
-            if let Ok(rx) = events.lock() {
+            if let Ok(rx) = events.get_mut() {
                 match rx.try_recv() {
                     Ok((op, pause)) => {
                         evr_node_ops.send(op);

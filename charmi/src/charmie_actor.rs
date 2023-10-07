@@ -94,16 +94,22 @@ impl CharmieAnimation {
             })
             .zip(self.frames.iter())
     }
+}
 
-    pub fn into_iter(self) -> impl Iterator<Item = (f32, CharmieAnimationFrame)> {
-        self.timings
-            .into_iter()
-            .scan(0.0f32, |last_time, current_time| {
-                let timing = current_time - *last_time;
-                *last_time = current_time;
-                Some(timing)
-            })
-            .zip(self.frames.into_iter())
+impl IntoIterator for CharmieAnimation {
+    type IntoIter = Box<dyn Iterator<Item = (f32, CharmieAnimationFrame)>>;
+    type Item = (f32, CharmieAnimationFrame);
+    fn into_iter(self) -> Self::IntoIter {
+        Box::new(
+            self.timings
+                .into_iter()
+                .scan(0.0f32, |last_time, current_time| {
+                    let timing = current_time - *last_time;
+                    *last_time = current_time;
+                    Some(timing)
+                })
+                .zip(self.frames),
+        )
     }
 }
 

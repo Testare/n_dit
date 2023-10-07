@@ -111,7 +111,7 @@ impl Metadata {
         data: O,
     ) -> Result<()> {
         if let Some(data_unwrapped) = data.borrow().as_ref() {
-            self.put(key, data_unwrapped.borrow())
+            self.put(key, data_unwrapped)
         } else {
             Ok(())
         }
