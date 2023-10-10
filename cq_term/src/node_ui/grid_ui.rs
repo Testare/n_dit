@@ -16,13 +16,13 @@ use game_core::op::{OpResult, OpSubtype};
 use game_core::player::Player;
 use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
-pub use scroll::Scroll2D;
 
 use super::node_ui_op::FocusTarget;
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
     NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity,
 };
+use crate::base_ui::Scroll2d;
 use crate::input_event::MouseEventListener;
 use crate::layout::{StyleTty, UiFocusOnClick};
 use crate::prelude::*;
@@ -94,7 +94,7 @@ impl Plugin for GridUi {
 
 impl NodeUi for GridUi {
     const NAME: &'static str = "Grid UI";
-    type UiBundleExtras = (Scroll2D, MouseEventListener, UiFocusOnClick);
+    type UiBundleExtras = (Scroll2d, MouseEventListener, UiFocusOnClick);
     type UiPlugin = Self;
 
     fn initial_style(node_q: &NodeUiQItem) -> StyleTty {
@@ -119,7 +119,7 @@ impl NodeUi for GridUi {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (Scroll2D::default(), MouseEventListener, UiFocusOnClick)
+        (Scroll2d::default(), MouseEventListener, UiFocusOnClick)
     }
 }
 

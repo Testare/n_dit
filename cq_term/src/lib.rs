@@ -46,9 +46,9 @@ enum TerminalFocusMode {
 
 pub struct CharmiePlugin;
 
-#[derive(Debug, Resource, getset::Setters, getset::Getters)]
+#[derive(Debug, Resource, getset::Setters, getset::Getters, getset::CopyGetters)]
 pub struct TerminalWindow {
-    #[getset(get = "pub", set = "pub")]
+    #[getset(get_copy = "pub", set = "pub")]
     render_target: Option<Entity>,
     #[getset(get = "pub", set)]
     size: UVec2,

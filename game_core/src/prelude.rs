@@ -6,8 +6,8 @@ pub use bevy::prelude::{
     IntoSystemSetConfig, IntoSystemSetConfigs, Last, Local, Mut, Name, OnEnter, OnExit, Or,
     ParamSet, Parent, PlaybackSettings, Plugin, PostStartup, PostUpdate, PreStartup, PreUpdate,
     Query, Ref, Reflect, ReflectComponent, ReflectDeserialize, ReflectSerialize, Res, ResMut,
-    Resource, Startup, State, States, SystemParamFunction, SystemSet, UVec2, Update, Vec2, With,
-    Without, World,
+    Resource, Startup, State, States, SystemParamFunction, SystemSet, UVec2, UVec3, UVec4, Update,
+    Vec2, With, Without, World,
 };
 pub use bevy::utils::{HashMap, HashSet};
 pub use bevy_query_ext::prelude::*;

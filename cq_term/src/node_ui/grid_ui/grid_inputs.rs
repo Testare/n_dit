@@ -7,7 +7,7 @@ use game_core::node::{
 use game_core::op::OpSubtype;
 use game_core::player::{ForPlayer, Player};
 
-use super::{GridUi, Scroll2D};
+use super::{GridUi, Scroll2d};
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
@@ -19,7 +19,7 @@ use crate::{KeyMap, Submap};
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
     mut ev_mouse: EventReader<MouseEventTty>,
-    ui: Query<(&ForPlayer, &Scroll2D), With<GridUi>>,
+    ui: Query<(&ForPlayer, &Scroll2d), With<GridUi>>,
     players: Query<
         (
             &InNode,

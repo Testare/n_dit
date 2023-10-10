@@ -37,6 +37,12 @@ pub struct DemoPlugin;
 #[derive(Component)]
 pub struct DebugEntityMarker;
 
+#[derive(Default, Resource)]
+pub struct DemoState {
+    node_ui_id: Option<Entity>,
+    map_ui_id: Option<Entity>,
+}
+
 #[derive(Component)]
 pub struct CardAssetPointer {
     handle: Handle<CardDefinition>,
@@ -44,7 +50,8 @@ pub struct CardAssetPointer {
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, demo_startup)
+        app.init_resource::<DemoState>()
+            .add_systems(Startup, demo_startup)
             .add_systems(PostUpdate, (debug_key, save_key, log_ops, log_op_results));
     }
 }
@@ -112,6 +119,8 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
     reg_curio_display: Res<Reg<NodeGlyph>>,
+    mut res_terminal_window: ResMut<TerminalWindow>,
+    mut res_demo_state: ResMut<DemoState>,
     asset_server: Res<AssetServer>,
     card_assets: Res<Assets<CardDefinition>>,
     action_assets: Res<Assets<Action>>,
@@ -172,6 +181,17 @@ fn debug_key(
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
+        } else if *code == KeyCode::Char('m') {
+            let current_render_target = res_terminal_window.render_target();
+
+            if res_demo_state.node_ui_id.is_none() {
+                res_demo_state.node_ui_id = current_render_target;
+            }
+            if current_render_target == res_demo_state.node_ui_id {
+                res_terminal_window.set_render_target(res_demo_state.map_ui_id);
+            } else {
+                res_terminal_window.set_render_target(res_demo_state.node_ui_id);
+            }
         }
     }
 }
@@ -180,6 +200,7 @@ fn debug_key(
 fn demo_startup(
     asset_server: Res<AssetServer>,
     no_op: Res<NoOpAction>,
+    mut res_demo_state: ResMut<DemoState>,
     mut res_terminal_window: ResMut<TerminalWindow>,
     mut commands: Commands,
     mut load_node_writer: EventWriter<ShowNode>,
@@ -439,8 +460,9 @@ fn demo_startup(
         })
         .id();
 
-    res_terminal_window.set_render_target(Some(map));
+    res_demo_state.map_ui_id = Some(map);
+    // res_terminal_window.set_render_target(Some(map));
 
-    // load_node_writer.send(ShowNode { node, player });
+    load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
 }

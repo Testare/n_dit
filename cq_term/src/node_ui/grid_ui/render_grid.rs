@@ -10,7 +10,7 @@ use itertools::Itertools;
 use super::borders::{border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
-use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2D};
+use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
 use crate::animation::AnimationPlayer;
 use crate::configuration::DrawConfiguration;
 use crate::layout::CalculatedSizeTty;
@@ -30,7 +30,7 @@ pub fn render_grid_system(
     mut render_grid_q: Query<
         (
             &CalculatedSizeTty,
-            &Scroll2D,
+            &Scroll2d,
             &ForPlayer,
             &mut TerminalRendering,
         ),
@@ -71,7 +71,7 @@ pub fn render_grid_system(
 
 fn render_grid(
     size: &CalculatedSizeTty,
-    scroll: &Scroll2D,
+    scroll: &Scroll2d,
     player_q: &PlayerUiQItem,
     grid: &EntityGrid,
     active_curio: &ActiveCurio,

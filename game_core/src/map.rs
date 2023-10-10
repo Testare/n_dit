@@ -16,6 +16,14 @@ pub struct MapPosition(pub UVec2);
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
+pub enum MapShape {
+    #[default]
+    Free,
+    SimpleRect(UVec2),
+}
+
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct InteractionPoint;
 
 #[derive(Event)]

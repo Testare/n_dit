@@ -14,6 +14,16 @@ use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
+/// Represents a component that can be scrolled both horizontally and vertically
+/// Currently, this scroll has to be used directly by the rendering systems individually
+///
+/// Later, we might change it so that those components will normally just render fully
+/// and the scroll can be used to clip the image in layouts, to simplify render systems.
+/// We can add a marker component used to indicate entities that will render the scrolled
+/// layout themselves.
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+pub struct Scroll2d(pub UVec2);
+
 #[derive(Default)]
 pub struct BaseUiPlugin;
 

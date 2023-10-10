@@ -2,16 +2,14 @@ use game_core::node::{InNode, Node};
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, NodeCursor};
+use crate::base_ui::Scroll2d;
 use crate::layout::CalculatedSizeTty;
 use crate::prelude::*;
-
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-pub struct Scroll2D(pub UVec2);
 
 pub fn adjust_scroll(
     players: Query<(&NodeCursor, &InNode), With<Player>>,
     node_grids: Query<&EntityGrid, With<Node>>,
-    mut ui: Query<(&CalculatedSizeTty, &mut Scroll2D, &ForPlayer), With<GridUi>>,
+    mut ui: Query<(&CalculatedSizeTty, &mut Scroll2d, &ForPlayer), With<GridUi>>,
 ) {
     for (size, mut scroll, ForPlayer(player)) in ui.iter_mut() {
         if let Ok((cursor, InNode(node))) = players.get(*player) {
