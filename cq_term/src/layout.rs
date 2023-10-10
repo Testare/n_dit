@@ -102,24 +102,13 @@ impl VisibilityTty {
 }
 
 impl StyleTty {
-    fn taffy_style(&self, vis: Option<&VisibilityTty>) -> Style {
-        if *vis.copied().unwrap_or_default() {
-            self.0
-        } else {
-            Style {
-                display: Display::None,
-                ..self.0
-            }
-        }
-    }
-
-    fn taffy_style_(&self, visible: bool) -> Style {
+    fn taffy_style(&self, visible: bool) -> Style {
         if visible {
-            self.0
+            self.0.clone()
         } else {
             Style {
                 display: Display::None,
-                ..self.0
+                ..self.0.clone()
             }
         }
     }
@@ -178,7 +167,7 @@ fn taffy_new_style_components(
 ) {
     for (id, style, vis) in new_styles.iter() {
         commands.get_entity(id).unwrap().insert((
-            NodeTty::new(&mut taffy, style.taffy_style_(vis)),
+            NodeTty::new(&mut taffy, style.taffy_style(vis)),
             CalculatedSizeTty::default(),
             GlobalTranslationTty::default(),
         ));
@@ -188,7 +177,11 @@ fn taffy_new_style_components(
 fn taffy_apply_style_updates(
     mut taffy: ResMut<Taffy>,
     changed_styles: Query<
-        (&NodeTty, &StyleTty, Option<&VisibilityTty>),
+        (
+            &NodeTty,
+            &StyleTty,
+            OrBool<AsDerefCopied<VisibilityTty>, true>,
+        ),
         Or<(Changed<StyleTty>, Changed<VisibilityTty>)>,
     >,
 ) {

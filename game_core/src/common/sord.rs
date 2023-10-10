@@ -196,7 +196,7 @@ mod test {
         count: u8,
     }
 
-    const SERIALIZED: &'static str = "{\"name\":\"Test\",\"count\":8}";
+    const SERIALIZED: &str = "{\"name\":\"Test\",\"count\":8}";
 
     fn test_obj() -> TestySeDe {
         TestySeDe {

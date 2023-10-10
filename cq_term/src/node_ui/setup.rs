@@ -82,7 +82,7 @@ pub fn create_node_ui(
                                             height: Dimension::Auto,
                                         },
                                         flex_grow: 1.0,
-                                        justify_content: JustifyContent::Center,
+                                        justify_content: Some(JustifyContent::Center),
                                         ..default()
                                     }),
                                     Name::new("Title Bar Right"),
@@ -99,7 +99,7 @@ pub fn create_node_ui(
                                             width: Dimension::Points(1.0),
                                             height: Dimension::Auto,
                                         },
-                                        min_size: Size { ..default() },
+                                        min_size: Size { ..TaffyZero::ZERO },
                                         flex_grow: 0.0,
                                         flex_shrink: 2.0,
                                         ..default()

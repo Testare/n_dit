@@ -7,12 +7,12 @@
 pub mod card;
 pub mod common;
 mod entity_grid;
+pub mod map;
 pub mod node;
 pub mod op;
 pub mod player;
 pub mod prelude;
 pub mod registry;
-pub mod map;
 
 use op::OpResult;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
@@ -72,7 +72,12 @@ impl Plugin for NDitCorePlugin {
                     (card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands),
                 ),
             )
-            .add_plugins((card::CardPlugin, node::NodePlugin, registry::RegistryPlugin, map::MapPlugin));
+            .add_plugins((
+                card::CardPlugin,
+                node::NodePlugin,
+                registry::RegistryPlugin,
+                map::MapPlugin,
+            ));
     }
 }
 

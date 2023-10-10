@@ -196,12 +196,12 @@ mod test {
         m.insert("what".to_string(), "hey".to_string());
         m.insert("whata".to_string(), "hey".to_string());
         m.insert("foo".to_string(), "bar".to_string());
-        metadata.put(key, &343).unwrap();
+        metadata.put(key, 343).unwrap();
         metadata.put(mkey, &m).unwrap();
         metadata
             .put(metakey, &{
                 let mut metadata = Metadata::new();
-                metadata.put(key, &143).unwrap();
+                metadata.put(key, 143).unwrap();
                 metadata
             })
             .unwrap();

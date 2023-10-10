@@ -19,16 +19,17 @@ use game_core::player::{Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::registry::Reg;
 use taffy::prelude::Rect;
-use taffy::style::PositionType;
+use taffy::style::{LengthPercentageAuto, Position};
+use taffy::style_helpers::TaffyZero;
 
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
-use crate::layout::{LayoutRoot, CalculatedSizeTty, GlobalTranslationTty, StyleTty};
+use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
 use crate::map_ui::MapBackground;
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
-use crate::{KeyMap, TerminalWindow};
 use crate::render::TerminalRendering;
+use crate::{KeyMap, TerminalWindow};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
@@ -175,6 +176,7 @@ fn debug_key(
     }
 }
 
+#[allow(unused)] // While setting up map
 fn demo_startup(
     asset_server: Res<AssetServer>,
     no_op: Res<NoOpAction>,
@@ -399,39 +401,43 @@ fn demo_startup(
         ))
         .id();
 
-    let map = commands.spawn((
-        Name::new("Node map"),
-        Map(String::from("nightfall")),
-        TerminalRendering::new(Vec::new()),
-        CalculatedSizeTty(UVec2 { x: 400, y: 500}),
-        StyleTty(taffy::style::Style {
-            // display: taffy::style::Display::None,
-            ..default()
-        }),
-        LayoutRoot,
-    )).with_children(|map| {
-        map.spawn((
-            Name::new("Demo map background"),
-            MapBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
-            // GlobalTranslationTty::default(),
-            StyleTty(taffy::style::Style {
-                ..default()
-            }),
+    let map = commands
+        .spawn((
+            Name::new("Node map"),
+            Map(String::from("nightfall")),
             TerminalRendering::new(Vec::new()),
-        ));
-        map.spawn((
-            Name::new("Demo node"),
-            TerminalRendering::new(vec!["[AB]".to_owned()]),
-            // GlobalTranslationTty( UVec2{ x: 3, y : 3}),
+            CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
             StyleTty(taffy::style::Style {
-                position: Rect::from_points(3.0, 3.0, 3.0, 3.0),
-                position_type: PositionType::Absolute,
+                // display: taffy::style::Display::None,
                 ..default()
             }),
-            MapPosition(UVec2 { x: 3, y: 3 }),
-        ));
-
-    }).id();
+            LayoutRoot,
+        ))
+        .with_children(|map| {
+            map.spawn((
+                Name::new("Demo map background"),
+                MapBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
+                // GlobalTranslationTty::default(),
+                StyleTty(taffy::style::Style { ..default() }),
+                TerminalRendering::new(Vec::new()),
+            ));
+            map.spawn((
+                Name::new("Demo node"),
+                TerminalRendering::new(vec!["[AB]".to_owned()]),
+                // GlobalTranslationTty( UVec2{ x: 3, y : 3}),
+                StyleTty(taffy::style::Style {
+                    position: Position::Absolute,
+                    inset: Rect {
+                        left: LengthPercentageAuto::Points(3.0),
+                        top: LengthPercentageAuto::Points(3.0),
+                        ..TaffyZero::ZERO
+                    },
+                    ..default()
+                }),
+                MapPosition(UVec2 { x: 3, y: 3 }),
+            ));
+        })
+        .id();
 
     res_terminal_window.set_render_target(Some(map));
 

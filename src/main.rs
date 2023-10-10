@@ -30,8 +30,6 @@ fn main() {
 
 // Can set up more advanced CLI support in the future with clap
 fn setup_logging() {
-    
-
     if std::env::args().any(|arg| arg == "--debug") {
         let file = if std::env::args().any(|arg| arg == "--connect") {
             "debug.connect.log"

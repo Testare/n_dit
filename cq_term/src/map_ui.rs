@@ -1,18 +1,13 @@
+use charmi::CharacterMapImage;
+
 use crate::prelude::*;
 use crate::render::{TerminalRendering, RENDER_TTY_SCHEDULE};
-use charmi::CharacterMapImage;
-use game_core::map::Map;
 
 pub struct MapUiPlugin;
 
 impl Plugin for MapUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            RENDER_TTY_SCHEDULE,
-            render_map
-
-        );
-        
+        app.add_systems(RENDER_TTY_SCHEDULE, render_map);
     }
 }
 

@@ -3,17 +3,17 @@
     clippy::too_many_arguments,
     clippy::single_match
 )]
+pub mod animation;
 pub mod base_ui;
 pub mod configuration;
+pub mod demo;
 mod fx;
 pub mod input_event;
 mod key_map;
 pub mod layout;
+pub mod map_ui;
 pub mod node_ui;
 mod render;
-pub mod animation;
-pub mod map_ui;
-pub mod demo;
 
 use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
@@ -31,7 +31,7 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
-use charmi::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation, CharacterMapImage};
+use charmi::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
 use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty};
 use prelude::*;

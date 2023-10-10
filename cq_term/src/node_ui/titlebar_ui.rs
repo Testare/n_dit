@@ -39,8 +39,8 @@ impl NodeUi for TitleBarUi {
                 height: Dimension::Points(2.),
             },
             padding: Rect {
-                bottom: Dimension::Points(1.0),
-                ..default()
+                bottom: LengthPercentage::Points(1.0),
+                ..TaffyZero::ZERO
             },
             max_size: Size {
                 width: Dimension::Points(100.0),

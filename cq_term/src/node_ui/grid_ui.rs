@@ -110,8 +110,8 @@ impl NodeUi for GridUi {
                 height: Dimension::Points((node_q.grid.height() * 2 + 1) as f32),
             },
             border: Rect {
-                left: Dimension::Points(1.0),
-                ..default()
+                left: LengthPercentage::Points(1.0),
+                ..TaffyZero::ZERO
             },
             flex_grow: 1.0,
             ..default()
