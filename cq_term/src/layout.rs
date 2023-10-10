@@ -54,10 +54,10 @@ pub struct StyleTty(pub taffy::prelude::Style);
 
 // Actually these components probably should be part of render
 #[derive(Clone, Component, Copy, Debug, Default, Deref)]
-pub struct GlobalTranslationTty(UVec2);
+pub struct GlobalTranslationTty(pub UVec2);
 
 #[derive(Clone, Component, Copy, Debug, Default, Deref)]
-pub struct CalculatedSizeTty(UVec2);
+pub struct CalculatedSizeTty(pub UVec2);
 
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut)]
 pub struct VisibilityTty(pub bool);

@@ -7,6 +7,7 @@ use bevy::scene::DynamicSceneBuilder;
 use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
+use game_core::map::{Map, MapPosition};
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
     IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
@@ -17,12 +18,17 @@ use game_core::op::OpResult;
 use game_core::player::{Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::registry::Reg;
+use taffy::prelude::Rect;
+use taffy::style::PositionType;
 
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
+use crate::layout::{LayoutRoot, CalculatedSizeTty, GlobalTranslationTty, StyleTty};
+use crate::map_ui::MapBackground;
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
-use crate::KeyMap;
+use crate::{KeyMap, TerminalWindow};
+use crate::render::TerminalRendering;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 pub struct DemoPlugin;
@@ -172,6 +178,7 @@ fn debug_key(
 fn demo_startup(
     asset_server: Res<AssetServer>,
     no_op: Res<NoOpAction>,
+    mut res_terminal_window: ResMut<TerminalWindow>,
     mut commands: Commands,
     mut load_node_writer: EventWriter<ShowNode>,
 ) {
@@ -392,6 +399,42 @@ fn demo_startup(
         ))
         .id();
 
-    load_node_writer.send(ShowNode { node, player });
+    let map = commands.spawn((
+        Name::new("Node map"),
+        Map(String::from("nightfall")),
+        TerminalRendering::new(Vec::new()),
+        CalculatedSizeTty(UVec2 { x: 400, y: 500}),
+        StyleTty(taffy::style::Style {
+            // display: taffy::style::Display::None,
+            ..default()
+        }),
+        LayoutRoot,
+    )).with_children(|map| {
+        map.spawn((
+            Name::new("Demo map background"),
+            MapBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
+            // GlobalTranslationTty::default(),
+            StyleTty(taffy::style::Style {
+                ..default()
+            }),
+            TerminalRendering::new(Vec::new()),
+        ));
+        map.spawn((
+            Name::new("Demo node"),
+            TerminalRendering::new(vec!["[AB]".to_owned()]),
+            // GlobalTranslationTty( UVec2{ x: 3, y : 3}),
+            StyleTty(taffy::style::Style {
+                position: Rect::from_points(3.0, 3.0, 3.0, 3.0),
+                position_type: PositionType::Absolute,
+                ..default()
+            }),
+            MapPosition(UVec2 { x: 3, y: 3 }),
+        ));
+
+    }).id();
+
+    res_terminal_window.set_render_target(Some(map));
+
+    // load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
 }

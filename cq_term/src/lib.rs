@@ -11,8 +11,8 @@ mod key_map;
 pub mod layout;
 pub mod node_ui;
 mod render;
-// Temporary module to run the game while we get it set up
 pub mod animation;
+pub mod map_ui;
 pub mod demo;
 
 use game_core::NDitCoreSet;
@@ -31,7 +31,7 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
-use charmi::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
+use charmi::{CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation, CharacterMapImage};
 use crossterm::execute;
 use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty};
 use prelude::*;
@@ -211,6 +211,7 @@ impl Plugin for CharmiePlugin {
             .init_resource::<DrawConfiguration>()
             .add_asset::<CharmieAnimation>()
             .add_asset::<CharmieActor>()
+            .add_asset::<CharacterMapImage>()
             .add_state::<TerminalFocusMode>()
             .add_asset_loader(CharmiaLoader)
             .add_asset_loader(CharmiLoader)
@@ -219,6 +220,7 @@ impl Plugin for CharmiePlugin {
                 layout::TaffyTuiLayoutPlugin,
                 node_ui::NodeUiPlugin,
                 render::RenderTtyPlugin,
+                map_ui::MapUiPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
