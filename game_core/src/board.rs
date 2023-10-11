@@ -1,22 +1,22 @@
 use crate::prelude::*;
 
-pub struct MapPlugin;
+pub struct BoardPlugin;
 
-impl Plugin for MapPlugin {
+impl Plugin for BoardPlugin {
     fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct Map(pub String);
+pub struct Board(pub String);
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct MapPosition(pub UVec2);
+pub struct BoardPosition(pub UVec2);
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub enum MapShape {
+pub enum BoardShape {
     #[default]
     Free,
     SimpleRect(UVec2),

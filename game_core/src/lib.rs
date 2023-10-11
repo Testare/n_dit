@@ -4,10 +4,10 @@
     clippy::single_match
 )]
 
+pub mod board;
 pub mod card;
 pub mod common;
 mod entity_grid;
-pub mod map;
 pub mod node;
 pub mod op;
 pub mod player;
@@ -76,7 +76,7 @@ impl Plugin for NDitCorePlugin {
                 card::CardPlugin,
                 node::NodePlugin,
                 registry::RegistryPlugin,
-                map::MapPlugin,
+                board::BoardPlugin,
             ));
     }
 }

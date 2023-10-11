@@ -5,13 +5,13 @@
 )]
 pub mod animation;
 pub mod base_ui;
+pub mod board_ui;
 pub mod configuration;
 pub mod demo;
 mod fx;
 pub mod input_event;
 mod key_map;
 pub mod layout;
-pub mod map_ui;
 pub mod node_ui;
 mod render;
 
@@ -220,7 +220,7 @@ impl Plugin for CharmiePlugin {
                 layout::TaffyTuiLayoutPlugin,
                 node_ui::NodeUiPlugin,
                 render::RenderTtyPlugin,
-                map_ui::MapUiPlugin,
+                board_ui::BoardUiPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()

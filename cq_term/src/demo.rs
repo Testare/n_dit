@@ -4,10 +4,10 @@ use std::io::Write;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
+use game_core::board::{Board, BoardPosition};
 use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
-use game_core::map::{Map, MapPosition};
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
     IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
@@ -22,10 +22,10 @@ use taffy::prelude::Rect;
 use taffy::style::{LengthPercentageAuto, Position};
 use taffy::style_helpers::TaffyZero;
 
+use crate::board_ui::BoardBackground;
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
-use crate::map_ui::MapBackground;
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
@@ -425,7 +425,7 @@ fn demo_startup(
     let map = commands
         .spawn((
             Name::new("Node map"),
-            Map(String::from("nightfall")),
+            Board(String::from("nightfall")),
             TerminalRendering::new(Vec::new()),
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
             StyleTty(taffy::style::Style {
@@ -437,7 +437,7 @@ fn demo_startup(
         .with_children(|map| {
             map.spawn((
                 Name::new("Demo map background"),
-                MapBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
+                BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
                 // GlobalTranslationTty::default(),
                 StyleTty(taffy::style::Style { ..default() }),
                 TerminalRendering::new(Vec::new()),
@@ -455,7 +455,7 @@ fn demo_startup(
                     },
                     ..default()
                 }),
-                MapPosition(UVec2 { x: 3, y: 3 }),
+                BoardPosition(UVec2 { x: 3, y: 3 }),
             ));
         })
         .id();
