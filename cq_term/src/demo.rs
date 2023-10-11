@@ -22,7 +22,7 @@ use taffy::prelude::Rect;
 use taffy::style::{LengthPercentageAuto, Position};
 use taffy::style_helpers::TaffyZero;
 
-use crate::board_ui::BoardBackground;
+use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
@@ -40,7 +40,7 @@ pub struct DebugEntityMarker;
 #[derive(Default, Resource)]
 pub struct DemoState {
     node_ui_id: Option<Entity>,
-    map_ui_id: Option<Entity>,
+    board_ui_id: Option<Entity>,
 }
 
 #[derive(Component)]
@@ -188,7 +188,7 @@ fn debug_key(
                 res_demo_state.node_ui_id = current_render_target;
             }
             if current_render_target == res_demo_state.node_ui_id {
-                res_terminal_window.set_render_target(res_demo_state.map_ui_id);
+                res_terminal_window.set_render_target(res_demo_state.board_ui_id);
             } else {
                 res_terminal_window.set_render_target(res_demo_state.node_ui_id);
             }
@@ -422,30 +422,28 @@ fn demo_startup(
         ))
         .id();
 
-    let map = commands
+    let board = commands.spawn((Board("Demo board".into()),)).id();
+
+    let board_ui = commands
         .spawn((
             Name::new("Node map"),
             Board(String::from("nightfall")),
             TerminalRendering::new(Vec::new()),
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
-            StyleTty(taffy::style::Style {
-                // display: taffy::style::Display::None,
-                ..default()
-            }),
+            StyleTty(taffy::style::Style { ..default() }),
             LayoutRoot,
         ))
         .with_children(|map| {
             map.spawn((
                 Name::new("Demo map background"),
+                BoardUi(board),
                 BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
-                // GlobalTranslationTty::default(),
                 StyleTty(taffy::style::Style { ..default() }),
                 TerminalRendering::new(Vec::new()),
             ));
             map.spawn((
                 Name::new("Demo node"),
                 TerminalRendering::new(vec!["[AB]".to_owned()]),
-                // GlobalTranslationTty( UVec2{ x: 3, y : 3}),
                 StyleTty(taffy::style::Style {
                     position: Position::Absolute,
                     inset: Rect {
@@ -459,10 +457,7 @@ fn demo_startup(
             ));
         })
         .id();
-
-    res_demo_state.map_ui_id = Some(map);
-    // res_terminal_window.set_render_target(Some(map));
-
+    res_demo_state.board_ui_id = Some(board_ui);
     load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
 }

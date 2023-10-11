@@ -7,7 +7,17 @@ pub struct BoardUiPlugin;
 
 impl Plugin for BoardUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(RENDER_TTY_SCHEDULE, render_map);
+        app.add_systems(RENDER_TTY_SCHEDULE, (sys_render_board,));
+    }
+}
+
+#[derive(Clone, Component, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct BoardUi(pub Entity); // track Board
+
+impl FromWorld for BoardUi {
+    fn from_world(world: &mut World) -> Self {
+        BoardUi(world.spawn_empty().id())
     }
 }
 
@@ -15,11 +25,15 @@ impl Plugin for BoardUiPlugin {
 #[reflect(Component)]
 pub struct BoardBackground(pub Handle<CharacterMapImage>);
 
-fn render_map(
+fn sys_render_board(
     ast_charmi: Res<Assets<CharacterMapImage>>,
-    mut maps: Query<(AsDeref<BoardBackground>, &mut TerminalRendering)>,
+    mut map_uis: Query<(
+        AsDeref<BoardBackground>,
+        &mut TerminalRendering,
+        AsDeref<BoardUi>,
+    )>,
 ) {
-    for (background_handle, mut tr) in maps.iter_mut() {
+    for (background_handle, mut tr, _board_id) in map_uis.iter_mut() {
         let charmi = ast_charmi.get(background_handle);
         if let Some(charmi) = charmi {
             tr.update_charmie(charmi.clone());
