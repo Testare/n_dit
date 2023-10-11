@@ -7,7 +7,7 @@ use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
 use crate::prelude::*;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct TaffyTuiLayoutPlugin;
 
 #[derive(Default, Deref, DerefMut, Resource)]
@@ -18,7 +18,7 @@ struct Taffy(taffy::Taffy);
 struct NodeTty(taffy::node::Node);
 
 /// Root of a layout. Is fitted to terminal
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct LayoutRoot;
 
 /// Indicates a UI element that should be focused on
@@ -34,7 +34,7 @@ pub struct UiFocusOnClick;
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct UiFocus(pub Option<Entity>);
 
-#[derive(Bundle, Default)]
+#[derive(Bundle, Debug, Default)]
 pub struct UiFocusBundle {
     ui_focus: UiFocus,
     ui_focus_next: UiFocusNext,

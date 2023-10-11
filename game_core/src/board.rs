@@ -1,20 +1,21 @@
 use crate::prelude::*;
 
+#[derive(Debug, Default)]
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, _app: &mut App) {}
 }
 
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct Board(pub String);
 
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct BoardPosition(pub UVec2);
 
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub enum BoardShape {
     #[default]
@@ -22,7 +23,7 @@ pub enum BoardShape {
     SimpleRect(UVec2),
 }
 
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct InteractionPoint;
 

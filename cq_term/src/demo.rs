@@ -32,18 +32,19 @@ use crate::render::TerminalRendering;
 use crate::{KeyMap, TerminalWindow};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
+#[derive(Debug)]
 pub struct DemoPlugin;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct DebugEntityMarker;
 
-#[derive(Default, Resource)]
+#[derive(Debug, Default, Resource)]
 pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CardAssetPointer {
     handle: Handle<CardDefinition>,
 }

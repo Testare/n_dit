@@ -3,6 +3,7 @@ use charmi::CharacterMapImage;
 use crate::prelude::*;
 use crate::render::{TerminalRendering, RENDER_TTY_SCHEDULE};
 
+#[derive(Debug, Default)]
 pub struct BoardUiPlugin;
 
 impl Plugin for BoardUiPlugin {
@@ -11,7 +12,7 @@ impl Plugin for BoardUiPlugin {
     }
 }
 
-#[derive(Clone, Component, Deref, DerefMut, Reflect)]
+#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct BoardUi(pub Entity); // track Board
 
@@ -21,7 +22,7 @@ impl FromWorld for BoardUi {
     }
 }
 
-#[derive(Clone, Component, Default, Deref, DerefMut, Reflect)]
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct BoardBackground(pub Handle<CharacterMapImage>);
 

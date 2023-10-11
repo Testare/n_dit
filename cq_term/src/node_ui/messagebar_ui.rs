@@ -14,7 +14,7 @@ use crate::{KeyMap, Submap};
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct MessageBarUi(pub Vec<String>);
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct MessageBarUiPlugin;
 
 pub fn kb_messages(

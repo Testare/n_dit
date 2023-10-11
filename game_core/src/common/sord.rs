@@ -14,6 +14,7 @@ pub trait SeDe {
     fn serialize<T: Serialize>(input: &T) -> Result<String, Self::Error>;
 }
 
+#[derive(Debug)]
 pub struct TypedSord<T, S: SeDe> {
     se: OnceLock<Result<String, S::Error>>,
     de: OnceLock<Result<T, S::Error>>,
@@ -77,6 +78,7 @@ trait SeDeAny {}
 
 impl<T: Serialize + DeserializeOwned> SeDeAny for T {}
 
+#[derive(Debug)]
 pub struct Sord<S: SeDe> {
     se: OnceLock<Result<String, SordError<S::Error>>>,
     de: OnceLock<Result<Box<dyn Any>, SordError<S::Error>>>,

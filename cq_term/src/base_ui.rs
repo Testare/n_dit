@@ -24,7 +24,7 @@ use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct Scroll2d(pub UVec2);
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct BaseUiPlugin;
 
 impl Plugin for BaseUiPlugin {
@@ -40,7 +40,7 @@ impl Plugin for BaseUiPlugin {
     }
 }
 
-#[derive(Component, Default, Deref, DerefMut)]
+#[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct IsUnderHover(bool);
 
 #[derive(Component, Debug, Default)]
@@ -49,7 +49,7 @@ pub struct TooltipBar;
 #[derive(Clone, Component, Debug, Deref, DerefMut)]
 pub struct Tooltip(Cow<'static, str>);
 
-#[derive(Bundle)]
+#[derive(Bundle, Debug)]
 pub struct ButtonUiBundle {
     pub name: Name,
     pub text_ui: FlexibleTextUi,
@@ -132,19 +132,19 @@ impl ButtonUiBundle {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct FlexibleTextUi {
     pub style: ContentStyle,
     pub text: String,
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Debug, Reflect)]
 pub enum TextUiBorder {
     Brackets,
     Parenthesis,
 }
 
-#[derive(Clone, Component, Deref, DerefMut)]
+#[derive(Clone, Component, Debug, Deref, DerefMut)]
 pub struct DisabledTextEffect(ContentStyle);
 
 // TODO HoverTextEffect when mouse events supports it

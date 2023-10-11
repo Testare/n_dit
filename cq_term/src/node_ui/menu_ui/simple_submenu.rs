@@ -10,6 +10,7 @@ use crate::node_ui::NodeUiQItem;
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
+#[derive(Debug)]
 pub struct SimpleSubMenuPlugin<S> {
     _marker: PhantomData<S>,
 }

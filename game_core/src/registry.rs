@@ -77,6 +77,7 @@ impl RegistryTomlFile {
     }
 }
 
+#[derive(Debug)]
 pub struct RegistryPlugin;
 
 impl Plugin for RegistryPlugin {

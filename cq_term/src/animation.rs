@@ -4,7 +4,7 @@ use charmi::{CharmieAnimation, CharmieAnimationFrame};
 
 use crate::prelude::*;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct AnimationPlayer {
     animation: Option<Handle<CharmieAnimation>>,
     last_update: Instant,
@@ -109,7 +109,7 @@ impl AnimationPlayer {
     }
 }
 
-#[derive(Default, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub enum AnimationPlayerState {
     #[default]
     Unloaded,

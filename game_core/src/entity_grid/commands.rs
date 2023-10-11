@@ -7,6 +7,7 @@ pub trait AddToGrid {
     fn add_to_grid<P: Into<UVec2>>(&mut self, grid: Entity, points: Vec<P>) -> &mut Self;
 }
 
+#[derive(Debug)]
 pub struct AddToGridCommand {
     grid_entity: Entity,
     points: Vec<UVec2>,

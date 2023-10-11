@@ -4,13 +4,13 @@ use getset::{CopyGetters, Getters};
 
 use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
 
-#[derive(Clone, Copy, Deref, DerefMut, Event)]
+#[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
 pub struct CrosstermEvent(pub crossterm::event::Event);
 
-#[derive(Clone, Copy, Deref, DerefMut, Event)]
+#[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
 pub struct MouseEvent(pub crossterm::event::MouseEvent);
 
-#[derive(Clone, Copy, Event, PartialEq)]
+#[derive(Clone, Copy, Debug, Event, PartialEq)]
 pub struct KeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,

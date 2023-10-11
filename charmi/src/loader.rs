@@ -3,10 +3,10 @@ use bevy::utils::BoxedFuture;
 
 use super::{CharacterMapImage, CharmieActor, CharmieActorDef, CharmieDef};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct CharmiaLoader;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct CharmiLoader;
 
 impl AssetLoader for CharmiaLoader {

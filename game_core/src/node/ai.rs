@@ -22,7 +22,7 @@ impl Plugin for NodeAiPlugin {
     }
 }
 
-#[derive(Component, Deref)]
+#[derive(Component, Debug, Deref)]
 pub struct SimpleAiCurioOrder(pub usize);
 
 #[derive(Clone, Component, Copy, Debug)]

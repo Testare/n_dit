@@ -10,7 +10,7 @@ pub struct ForPlayer(pub Entity);
 #[derive(Clone, Component, Debug)]
 pub struct ForMultiPlayer(pub Vec<Entity>);
 
-#[derive(Bundle)]
+#[derive(Bundle, Debug)]
 pub struct PlayerBundle {
     player_marker: Player,
 }

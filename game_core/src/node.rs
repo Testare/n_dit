@@ -33,6 +33,8 @@ pub mod key {
     pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
 }
+
+#[derive(Debug)]
 pub struct NodePlugin;
 
 impl Plugin for NodePlugin {
@@ -69,7 +71,7 @@ impl Plugin for NodePlugin {
 }
 
 /// Indicates a point a player can play cards
-#[derive(Component, CopyGetters, Default, Reflect)]
+#[derive(Component, CopyGetters, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct AccessPoint {
     #[getset(get_copy = "pub")]
@@ -85,12 +87,12 @@ impl MapEntities for AccessPoint {
 }
 
 /// Indicates the current curio performing moving and/or performing an action
-#[derive(Component, Default, Deref, DerefMut, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct ActiveCurio(pub Option<Entity>);
 
 /// Indicates a node piece capable of moving and performing actions
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct Curio {
     // owner: Entity, // Potential replacement for Team mechanism
@@ -127,7 +129,7 @@ impl MapEntities for Curio {
 }
 
 /// Indicates the team whose turn it is
-#[derive(Component, Deref, DerefMut, Deserialize, Reflect, Serialize)]
+#[derive(Component, Debug, Deref, DerefMut, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct CurrentTurn(pub Entity);
 
@@ -173,12 +175,14 @@ pub struct Mon(pub u32);
 pub struct MovesTaken(pub u32);
 
 /// Indicates a Node entity
-#[derive(Component, Default, Deserialize, Reflect, Serialize)]
+#[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct Node;
 
 /// Indicates a piece that is loaded into a Node
-#[derive(Component, Deserialize, Default, Reflect, getset::Getters, getset::Setters, Serialize)]
+#[derive(
+    Component, Debug, Deserialize, Default, Reflect, getset::Getters, getset::Setters, Serialize,
+)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct NodePiece {
     #[getset(get = "pub", set = "pub")]
@@ -207,7 +211,7 @@ impl FromWorld for NoOpAction {
 }
 
 /// Indicates which team a node piece or player belongs to.
-#[derive(Clone, Component, Copy, Deref, DerefMut, Eq, PartialEq, Reflect)]
+#[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Eq, PartialEq, Reflect)]
 #[reflect(Component)]
 pub struct OnTeam(pub Entity);
 
@@ -247,7 +251,7 @@ impl Pickup {
 }
 
 /// Player Component, indicates which cards they've played already.
-#[derive(Component, Default, Deref, DerefMut, Reflect)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct PlayedCards(HashMap<Entity, u32>);
 
@@ -264,7 +268,7 @@ impl PlayedCards {
 
 // Might be moved to some combination of Rules and Tags
 /// Indicates that this entity has to take an action once activated.
-#[derive(Copy, Clone, Component, Default, Reflect)]
+#[derive(Copy, Clone, Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct PreventNoOp;
 

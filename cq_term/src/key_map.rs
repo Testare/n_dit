@@ -1,10 +1,10 @@
 use crate::input_event::{KeyCode, KeyModifiers};
 use crate::prelude::*;
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 struct KeyCombo(KeyCode, KeyModifiers);
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub enum Submap {
     Node = 0,
 }
@@ -23,7 +23,7 @@ pub enum NamedInput {
     NextMsg,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct KeyMap {
     submaps: HashMap<Submap, HashMap<KeyCombo, NamedInput>>,
 }

@@ -40,7 +40,7 @@ pub struct ShowNode {
 pub struct HasNodeUi;
 
 /// Plugin for NodeUI
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct NodeUiPlugin;
 
 /// Component that tells the UI which entity the node cursor is over
@@ -129,7 +129,7 @@ impl SelectedEntity {
     }
 }
 
-#[derive(WorldQuery)]
+#[derive(Debug, WorldQuery)]
 pub struct NodeUiQ {
     grid: &'static EntityGrid,
 }

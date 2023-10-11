@@ -3,7 +3,7 @@
     clippy::too_many_arguments,
     clippy::single_match
 )]
-
+#![warn(missing_debug_implementations)]
 mod charmie_actor;
 mod charmie_def;
 mod loader;

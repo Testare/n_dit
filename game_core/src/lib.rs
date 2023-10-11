@@ -3,7 +3,7 @@
     clippy::too_many_arguments,
     clippy::single_match
 )]
-
+#![warn(missing_debug_implementations)]
 pub mod board;
 pub mod card;
 pub mod common;
@@ -40,6 +40,7 @@ pub enum NDitError {
     },
 }
 
+#[derive(Debug)]
 pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {

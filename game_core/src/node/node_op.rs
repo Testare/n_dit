@@ -84,7 +84,7 @@ impl OpSubtype for NodeOp {
     type Error = NodeOpError;
 }
 
-#[derive(WorldQuery)]
+#[derive(Debug, WorldQuery)]
 pub struct CardInfo {
     card: &'static Card,
     description: Option<&'static Description>,
@@ -93,7 +93,7 @@ pub struct CardInfo {
     actions: Option<&'static Actions>,
 }
 
-#[derive(WorldQuery)]
+#[derive(Debug, WorldQuery)]
 #[world_query(mutable)]
 pub struct CurioQ {
     id: Entity,

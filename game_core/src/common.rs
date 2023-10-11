@@ -115,7 +115,7 @@ impl GridPoints for UVec2 {
 }
 
 /// Future improvement: iter methods for when there are multiple results
-#[derive(SystemParam)]
+#[derive(Debug, SystemParam)]
 pub struct IndexedQuery<'w, 's, I, Q, F = ()>(
     Query<'w, 's, (&'static I, Entity)>,
     Query<'w, 's, Q, F>,

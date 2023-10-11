@@ -12,7 +12,7 @@ pub use card_action::{
 pub use card_as_asset::{CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
@@ -50,7 +50,7 @@ pub struct MovementSpeed(pub u32);
 #[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
 pub struct MaximumSize(pub u32);
 
-#[derive(Clone, Component, Deref, Reflect)]
+#[derive(Clone, Component, Debug, Deref, Reflect)]
 pub struct Description(String);
 
 #[derive(Component, Deref, Reflect)]
