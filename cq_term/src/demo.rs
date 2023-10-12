@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
-use game_core::board::{Board, BoardPosition};
+use game_core::board::{Board, BoardPosition, BoardPiece};
 use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -423,9 +423,17 @@ fn demo_startup(
         ))
         .id();
 
-    let board = commands.spawn((Board("Demo board".into()),)).id();
+    let board = commands.spawn((Board("Demo board".into()),))
+    .with_children(|board| {
+        board.spawn((
+                TerminalRendering::new(vec!["[DM]".to_owned()]),
+                BoardPosition(UVec2{x: 6, y: 4}),
+                BoardPiece("Demo Node".to_owned())
+        ));
+    })
+    .id();
 
-    let board_ui = commands
+    let board_ui_root = commands
         .spawn((
             Name::new("Node map"),
             Board(String::from("nightfall")),
@@ -434,31 +442,30 @@ fn demo_startup(
             StyleTty(taffy::style::Style { ..default() }),
             LayoutRoot,
         ))
-        .with_children(|map| {
-            map.spawn((
+        .with_children(|board_ui_root| {
+            board_ui_root.spawn((
                 Name::new("Demo map background"),
                 BoardUi(board),
                 BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
                 StyleTty(taffy::style::Style { ..default() }),
                 TerminalRendering::new(Vec::new()),
             ));
-            map.spawn((
-                Name::new("Demo node"),
-                TerminalRendering::new(vec!["[AB]".to_owned()]),
+            board_ui_root.spawn((
+                Name::new("Overlay"),
+                TerminalRendering::new(vec!["[  ]".to_owned()]),
                 StyleTty(taffy::style::Style {
                     position: Position::Absolute,
                     inset: Rect {
-                        left: LengthPercentageAuto::Points(3.0),
-                        top: LengthPercentageAuto::Points(3.0),
+                        left: LengthPercentageAuto::Points(14.0),
+                        top: LengthPercentageAuto::Points(4.0),
                         ..TaffyZero::ZERO
                     },
                     ..default()
                 }),
-                BoardPosition(UVec2 { x: 3, y: 3 }),
             ));
         })
         .id();
-    res_demo_state.board_ui_id = Some(board_ui);
+    res_demo_state.board_ui_id = Some(board_ui_root);
     load_node_writer.send(ShowNode { node, player });
     log::debug!("Demo startup executed");
 }

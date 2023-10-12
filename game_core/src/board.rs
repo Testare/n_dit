@@ -13,7 +13,12 @@ pub struct Board(pub String);
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
+pub struct BoardPiece(pub String);
+
+#[derive(Clone, Component, Copy, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
 pub struct BoardPosition(pub UVec2);
+
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
