@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
-use game_core::board::{Board, BoardPosition, BoardPiece};
+use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -18,9 +18,7 @@ use game_core::op::OpResult;
 use game_core::player::{Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::registry::Reg;
-use taffy::prelude::Rect;
-use taffy::style::{LengthPercentageAuto, Position};
-use taffy::style_helpers::TaffyZero;
+use taffy::style::NonRepeatedTrackSizingFunction;
 
 use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
@@ -423,20 +421,38 @@ fn demo_startup(
         ))
         .id();
 
-    let board = commands.spawn((Board("Demo board".into()),))
-    .with_children(|board| {
-        board.spawn((
-                TerminalRendering::new(vec!["[DM]".to_owned()]),
-                BoardPosition(UVec2{x: 6, y: 4}),
-                BoardPiece("Demo Node".to_owned())
-        ));
-    })
-    .id();
+    let mut board_piece_id: Option<Entity> = None;
+    let board = commands
+        .spawn((Board("Demo board".into()),))
+        .with_children(|board| {
+            board_piece_id = Some(
+                board
+                    .spawn((
+                        TerminalRendering::new(vec!["[DM]".to_owned()]),
+                        BoardPosition(UVec2 { x: 6, y: 4 }),
+                        BoardPiece("Demo Node".to_owned()),
+                        BoardSize(UVec2 { x: 4, y: 1 }),
+                        Name::new("Board piece 1"),
+                    ))
+                    .id(),
+            );
+            board_piece_id = Some(
+                board
+                    .spawn((
+                        TerminalRendering::new(vec!["[DM]".to_owned()]),
+                        BoardPiece("Next Demo Node".to_owned()),
+                        BoardPosition(UVec2 { x: 14, y: 4 }),
+                        BoardSize(UVec2 { x: 4, y: 1 }),
+                        Name::new("Board piece 2"),
+                    ))
+                    .id(),
+            );
+        })
+        .id();
 
     let board_ui_root = commands
         .spawn((
             Name::new("Node map"),
-            Board(String::from("nightfall")),
             TerminalRendering::new(Vec::new()),
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
             StyleTty(taffy::style::Style { ..default() }),
@@ -447,21 +463,28 @@ fn demo_startup(
                 Name::new("Demo map background"),
                 BoardUi(board),
                 BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
-                StyleTty(taffy::style::Style { ..default() }),
-                TerminalRendering::new(Vec::new()),
-            ));
-            board_ui_root.spawn((
-                Name::new("Overlay"),
-                TerminalRendering::new(vec!["[  ]".to_owned()]),
                 StyleTty(taffy::style::Style {
-                    position: Position::Absolute,
-                    inset: Rect {
-                        left: LengthPercentageAuto::Points(14.0),
-                        top: LengthPercentageAuto::Points(4.0),
-                        ..TaffyZero::ZERO
-                    },
+                    display: taffy::style::Display::Grid,
+                    // grid_template_columns: 18 x 5 for now
+                    grid_auto_rows: vec![NonRepeatedTrackSizingFunction {
+                        min: taffy::style::MinTrackSizingFunction::Fixed(
+                            taffy::style::LengthPercentage::Points(1.0),
+                        ),
+                        max: taffy::style::MaxTrackSizingFunction::Fixed(
+                            taffy::style::LengthPercentage::Points(1.0),
+                        ),
+                    }],
+                    grid_auto_columns: vec![NonRepeatedTrackSizingFunction {
+                        min: taffy::style::MinTrackSizingFunction::Fixed(
+                            taffy::style::LengthPercentage::Points(1.0),
+                        ),
+                        max: taffy::style::MaxTrackSizingFunction::Fixed(
+                            taffy::style::LengthPercentage::Points(1.0),
+                        ),
+                    }],
                     ..default()
                 }),
+                TerminalRendering::new(Vec::new()),
             ));
         })
         .id();

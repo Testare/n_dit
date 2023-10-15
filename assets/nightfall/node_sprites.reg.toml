@@ -1,0 +1,5 @@
+registry="term:sprites"
+
+[values]
+"Demo Node"     = { type="Image", image_path="nightfall/demo_map_node.charmi.toml"}
+"Next Demo Node"= { type="Image", image_path="nightfall/demo_map_node.charmi.toml"}

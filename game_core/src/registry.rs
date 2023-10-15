@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::path::PathBuf;
 
 use bevy::asset::{AssetLoader, FileAssetIo, LoadedAsset};
@@ -154,7 +155,10 @@ fn sys_consume_registry_file<R: Registry>(
                 let priority = reg_file.priority;
                 for (key, value) in reg_file.values_mut().drain() {
                     match value.try_into::<R::Value>() {
-                        Ok(value) => reg.add(key.clone(), priority, value),
+                        Ok(value) => {
+                            reg.add(key.clone(), priority, value);
+                            log::trace!("Registry [{}] loaded key [{}]", R::REGISTRY_NAME, key);
+                        },
                         Err(e) => log::warn!(
                             "Error reading registry[{}] value[{}]: {:?}",
                             R::REGISTRY_NAME,

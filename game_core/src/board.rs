@@ -19,6 +19,15 @@ pub struct BoardPiece(pub String);
 #[reflect(Component)]
 pub struct BoardPosition(pub UVec2);
 
+#[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct BoardSize(pub UVec2);
+
+impl Default for BoardSize {
+    fn default() -> Self {
+        BoardSize(UVec2 { x: 1, y: 1 })
+    }
+}
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
