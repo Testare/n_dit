@@ -1,3 +1,4 @@
+use bevy::prelude::AnimationPlayer;
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::registry::{Reg, Registry};
@@ -67,6 +68,14 @@ pub enum Sprite {
     },
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub enum AnimationType {
+    Stopped, // Animation does not play, frame is manually set
+    Run,     // Animations runs once and then is done
+    #[default]
+    Loop, // Animation loops when finished
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub enum RegSprite {
@@ -75,6 +84,10 @@ pub enum RegSprite {
     },
     Animation {
         animation_path: String,
+        #[serde(default)]
+        animation_type: AnimationType,
+        #[serde(default)]
+        timing: Option<u32>,
     },
     Actor {
         actor_path: String,
@@ -189,7 +202,16 @@ fn sys_default_piece_sprites(
             match sprite {
                 RegSprite::Image { image_path } => {
                     commands.entity(bp_ui_id).insert(Sprite::Image {
-                        image: asset_server.load(image_path),
+                        image: asset_server.load(image_path), // Perhaps I should just have there be some sort of "intermediate" for while it loads
+                    });
+                },
+                RegSprite::Animation {
+                    animation_path,
+                    animation_type,
+                    timing,
+                } => {
+                    commands.entity(bp_ui_id).insert(Sprite::Animation {
+                        animation: asset_server.load(animation_path),
                     });
                 },
                 _ => {},

@@ -191,10 +191,9 @@ fn render_grid(
                                     (&default_style, OPEN_SQUARE)
                                 }
                             });
+                        let combined_style = charmi::add_content_styles(&space_style, square_style);
                         if square.chars().count() == 1 {
-                            space_line.add_styled_text(
-                                space_style.apply(square_style.apply(draw_config.half_char())),
-                            );
+                            space_line.add_char(draw_config.half_char(), &combined_style);
                         } else {
                             // Whether we are getting the left half or the right half
                             let char_index = if x == x_start { 1 } else { 0 };
@@ -203,8 +202,7 @@ fn render_grid(
                                 .nth(char_index)
                                 .expect("there should be at least 2 characters");
 
-                            space_line
-                                .add_styled_text(space_style.apply(square_style.apply(half_char)));
+                            space_line.add_char(half_char, &combined_style);
                         }
                     }
                 } else if render_full_space {
@@ -229,9 +227,9 @@ fn render_grid(
                                     (&default_style, OPEN_SQUARE)
                                 }
                             });
-                        // TODO replace all calls to X.push_str(style.apply(y).as_str()) with style.push_str_to(&mut x (dest), y (addition))
-                        // TODO Instead of applying two styles, compose the styles then apply
-                        space_line.add_styled_text(space_style.apply(square_style.apply(square)));
+
+                        let combined_style = charmi::add_content_styles(&space_style, square_style);
+                        space_line.add_text(square, &combined_style);
                     }
                 }
             }

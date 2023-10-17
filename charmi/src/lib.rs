@@ -213,7 +213,10 @@ impl CharmieRow {
             {
                 self.segments.pop();
                 if half_char == last_half_char && !first_half {
-                    self.add_text(half_char.to_string(), &add_styles(&last_style, style));
+                    self.add_text(
+                        half_char.to_string(),
+                        &add_content_styles(&last_style, style),
+                    );
                     return self;
                 }
                 if let Some(last_replace_char) = last_replace_char {
@@ -670,11 +673,11 @@ impl CharmieSegment {
         match self {
             Self::Textual { text, style } => Self::Textual {
                 text: text.to_string(),
-                style: add_styles(style, effect_style),
+                style: add_content_styles(style, effect_style),
             },
             Self::Effect { len, style } => Self::Effect {
                 len: *len,
-                style: add_styles(style, effect_style),
+                style: add_content_styles(style, effect_style),
             },
             Self::Empty { len } => Self::Effect {
                 len: *len,
@@ -689,7 +692,7 @@ impl CharmieSegment {
                 half_char: *chr,
                 first_half: *first_half,
                 replace_char: *replace_chr,
-                style: add_styles(style, effect_style),
+                style: add_content_styles(style, effect_style),
             },
         }
     }
@@ -755,8 +758,8 @@ impl<D: Display> From<StyledContent<D>> for CharmieSegment {
     }
 }
 
-// HELPER FUNCTION: Combine styles
-fn add_styles(lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyle {
+/// Helper function to add styles together
+pub fn add_content_styles(lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyle {
     ContentStyle {
         foreground_color: rhs.foreground_color.or(lhs.foreground_color),
         background_color: rhs.background_color.or(lhs.background_color),

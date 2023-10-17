@@ -75,12 +75,6 @@ impl Plugin for GridUi {
                     .after(super::node_ui_op::sys_adjust_selected_entity)
                     .in_set(NDitCoreSet::PostProcessUiOps),
                 grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
-                (
-                    grid_animation::sys_update_animations,
-                    grid_animation::sys_render_animations,
-                )
-                    .chain()
-                    .before(NDitCoreSet::PostProcessCommands),
             ),
         )
         .add_systems(

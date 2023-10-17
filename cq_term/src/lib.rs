@@ -223,6 +223,7 @@ impl Plugin for CharmiePlugin {
                 node_ui::NodeUiPlugin,
                 render::RenderTtyPlugin,
                 board_ui::BoardUiPlugin,
+                animation::AnimationPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()

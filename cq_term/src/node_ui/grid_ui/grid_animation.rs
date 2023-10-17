@@ -127,35 +127,12 @@ pub fn sys_grid_animations(
             for (mut animation_player, ForPlayer(player)) in grid_animation_player.iter_mut() {
                 if players_in_node.contains(player) {
                     animation_player
-                        .load(animation_handle.clone(), assets_animation.as_ref())
+                        .load(animation_handle.clone())
                         .play_once()
                         .unload_when_finished();
                 }
             }
         }
-    }
-}
-
-pub fn sys_update_animations(mut animation_player: Query<&mut AnimationPlayer>) {
-    for mut animation_player in animation_player.iter_mut() {
-        if animation_player.is_playing() {
-            // Do the check here so that change detection can work
-            animation_player.advance();
-        }
-    }
-}
-
-pub fn sys_render_animations(
-    animation: Res<Assets<CharmieAnimation>>,
-    mut animation_player: Query<(&AnimationPlayer, &mut TerminalRendering)>,
-) {
-    for (animation_player, mut tr) in animation_player.iter_mut() {
-        tr.update_charmie(
-            animation_player
-                .frame(&animation)
-                .map(|frame| frame.into_charmi())
-                .unwrap_or_default(),
-        );
     }
 }
 
