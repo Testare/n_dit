@@ -68,7 +68,7 @@ impl CharmieAnimation {
         self.timings
             .iter()
             .enumerate()
-            .skip_while(|(_, t)| **t < timing)
+            .skip_while(|(_, t)| **t <= timing)
             .map(|(i, _)| &self.frames[i])
             .next()
     }

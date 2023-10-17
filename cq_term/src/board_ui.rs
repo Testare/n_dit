@@ -1,10 +1,10 @@
-use bevy::prelude::AnimationPlayer;
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::registry::{Reg, Registry};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+use crate::animation::AnimationPlayer;
 use crate::layout::StyleTty;
 use crate::prelude::*;
 use crate::render::{TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -87,7 +87,7 @@ pub enum RegSprite {
         #[serde(default)]
         animation_type: AnimationType,
         #[serde(default)]
-        timing: Option<u32>,
+        timing: Option<f32>,
     },
     Actor {
         actor_path: String,
@@ -210,9 +210,20 @@ fn sys_default_piece_sprites(
                     animation_type,
                     timing,
                 } => {
-                    commands.entity(bp_ui_id).insert(Sprite::Animation {
-                        animation: asset_server.load(animation_path),
-                    });
+                    let animation = asset_server.load(animation_path);
+                    let mut animation_player = AnimationPlayer::default();
+                    animation_player.load(animation.clone());
+                    if let Some(timing) = timing {
+                        animation_player.set_timing(*timing);
+                    }
+                    match animation_type {
+                        AnimationType::Run => animation_player.play_once(),
+                        AnimationType::Loop => animation_player.play_loop(),
+                        AnimationType::Stopped => animation_player.pause(),
+                    };
+                    commands
+                        .entity(bp_ui_id)
+                        .insert((Sprite::Animation { animation }, animation_player));
                 },
                 _ => {},
             }

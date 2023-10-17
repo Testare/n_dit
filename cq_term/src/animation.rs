@@ -20,6 +20,7 @@ impl Plugin for AnimationPlugin {
     }
 }
 
+/// In the future, we might change this to a bundle of components instead?
 #[derive(Component, Debug)]
 pub struct AnimationPlayer {
     animation: Option<Handle<CharmieAnimation>>,
@@ -55,25 +56,25 @@ impl AnimationPlayer {
         )
     }
 
-    fn is_loaded_or_update(
-        ap: &mut Mut<AnimationPlayer>,
-        assets_animations: &Assets<CharmieAnimation>,
-    ) -> bool {
-        match ap.load_state {
-            AnimationLoadingState::Loaded => true,
-            AnimationLoadingState::Unloaded => false,
-            AnimationLoadingState::LoadPending => {
-                if let Some(loaded_animation) = assets_animations.get(ap.animation.as_ref().expect(
+    pub fn set_timing(&mut self, timing: f32) {
+        self.timing = timing;
+    }
+
+    fn update_load_state(ap: &mut Mut<AnimationPlayer>, ast_animation: &Assets<CharmieAnimation>) {
+        if ap.load_state == AnimationLoadingState::LoadPending {
+            if let Some(loaded_animation) =
+                ast_animation.get(ap.animation.as_ref().expect(
                     "finalize load should not be called for animations that aren't loading",
-                )) {
-                    ap.duration = loaded_animation.duration();
-                    ap.load_state = AnimationLoadingState::Loaded;
-                    true
-                } else {
-                    false
-                }
-            },
+                ))
+            {
+                ap.duration = loaded_animation.duration();
+                ap.load_state = AnimationLoadingState::Loaded;
+            }
         }
+    }
+
+    fn is_loaded(&self) -> bool {
+        matches!(self.load_state, AnimationLoadingState::Loaded)
     }
 
     pub fn load(&mut self, handle: Handle<CharmieAnimation>) -> &mut Self {
@@ -102,6 +103,16 @@ impl AnimationPlayer {
         self.load_state = AnimationLoadingState::Unloaded;
         self.play_state = AnimationPlayerState::Paused;
         self.unload_when_finished = false; // Reset each time
+    }
+
+    pub fn pause(&mut self) -> &mut Self {
+        self.play_state = AnimationPlayerState::Paused;
+        self
+    }
+
+    pub fn play_loop(&mut self) -> &mut Self {
+        self.play_state = AnimationPlayerState::Loop;
+        self
     }
 
     pub fn play_once(&mut self) -> &mut Self {
@@ -137,7 +148,9 @@ impl AnimationPlayer {
                         self.play_state = AnimationPlayerState::FinishedAndUnloaded;
                     }
                 } else if looping {
-                    self.timing -= self.duration;
+                    let old_time = self.timing;
+                    let over = (self.timing / self.duration).floor();
+                    self.timing -= self.duration * over;
                 }
             }
         }
@@ -163,8 +176,12 @@ pub enum AnimationPlayerState {
     Loop,
 }
 
-pub fn sys_update_animations(mut animation_player: Query<&mut AnimationPlayer>) {
+pub fn sys_update_animations(
+    ast_animation: Res<Assets<CharmieAnimation>>,
+    mut animation_player: Query<&mut AnimationPlayer>,
+) {
     for mut animation_player in animation_player.iter_mut() {
+        AnimationPlayer::update_load_state(&mut animation_player, &ast_animation);
         if animation_player.is_playing() {
             // Do the check here so that change detection can work
             animation_player.advance();
@@ -174,10 +191,10 @@ pub fn sys_update_animations(mut animation_player: Query<&mut AnimationPlayer>) 
 
 pub fn sys_render_animations(
     ast_animation: Res<Assets<CharmieAnimation>>,
-    mut animation_player: Query<(&mut AnimationPlayer, &mut TerminalRendering)>,
+    mut animation_player: Query<(&AnimationPlayer, &mut TerminalRendering)>,
 ) {
-    for (mut animation_player, mut tr) in animation_player.iter_mut() {
-        if AnimationPlayer::is_loaded_or_update(&mut animation_player, &ast_animation) {
+    for (animation_player, mut tr) in animation_player.iter_mut() {
+        if animation_player.is_loaded() {
             tr.update_charmie(
                 animation_player
                     .frame(&ast_animation)

@@ -1,5 +1,5 @@
 registry="term:sprites"
 
 [values]
-"Demo Node"     = { type="Image", image_path="nightfall/demo_map_node.charmi.toml"}
-"Next Demo Node"= { type="Image", image_path="nightfall/demo_map_node.charmi.toml"}
+"Demo Node"     = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_b", animation_type="Stopped", timing = 0.0}
+"Next Demo Node"= { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_a", animation_type="Stopped"}
