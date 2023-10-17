@@ -148,7 +148,6 @@ impl AnimationPlayer {
                         self.play_state = AnimationPlayerState::FinishedAndUnloaded;
                     }
                 } else if looping {
-                    let old_time = self.timing;
                     let over = (self.timing / self.duration).floor();
                     self.timing -= self.duration * over;
                 }
