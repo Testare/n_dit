@@ -56,17 +56,21 @@ impl AnimationPlayer {
         )
     }
 
+    fn handle(&self) -> Option<&Handle<CharmieAnimation>> {
+        self.animation.as_ref()
+    }
+
     pub fn set_timing(&mut self, timing: f32) {
         self.timing = timing;
     }
 
+    pub fn is_loading(&self) -> bool {
+        self.load_state == AnimationLoadingState::LoadPending
+    }
+
     fn update_load_state(ap: &mut Mut<AnimationPlayer>, ast_animation: &Assets<CharmieAnimation>) {
-        if ap.load_state == AnimationLoadingState::LoadPending {
-            if let Some(loaded_animation) =
-                ast_animation.get(ap.animation.as_ref().expect(
-                    "finalize load should not be called for animations that aren't loading",
-                ))
-            {
+        if let Some(handle) = ap.animation.as_ref() {
+            if let Some(loaded_animation) = ast_animation.get(handle) {
                 ap.duration = loaded_animation.duration();
                 ap.load_state = AnimationLoadingState::Loaded;
             }
@@ -176,11 +180,26 @@ pub enum AnimationPlayerState {
 }
 
 pub fn sys_update_animations(
+    mut evr_ast_animation: EventReader<AssetEvent<CharmieAnimation>>,
     ast_animation: Res<Assets<CharmieAnimation>>,
     mut animation_player: Query<&mut AnimationPlayer>,
 ) {
+    let changed_animation_assets = evr_ast_animation
+        .into_iter()
+        .filter_map(|ast_event| match ast_event {
+            AssetEvent::Modified { handle } => Some(handle),
+            _ => None, 
+        })
+        .collect::<HashSet<_>>();
     for mut animation_player in animation_player.iter_mut() {
-        AnimationPlayer::update_load_state(&mut animation_player, &ast_animation);
+        if animation_player.is_loading()
+            || animation_player
+                .handle()
+                .map(|handle| changed_animation_assets.contains(handle))
+                .unwrap_or(false)
+        {
+            AnimationPlayer::update_load_state(&mut animation_player, &ast_animation);
+        }
         if animation_player.is_playing() {
             // Do the check here so that change detection can work
             animation_player.advance();
