@@ -7,11 +7,11 @@ impl Plugin for BoardPlugin {
     fn build(&self, _app: &mut App) {}
 }
 
-#[derive(Component, Debug, Default, Reflect)]
+#[derive(Component, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
 pub struct Board(pub String);
 
-#[derive(Component, Debug, Default, Reflect)]
+#[derive(Component, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
 pub struct BoardPiece(pub String);
 

@@ -1,6 +1,10 @@
+use std::ops::Deref;
+
+use bevy::ecs::system::EntityCommands;
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
-use game_core::registry::{Reg, Registry};
+use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
+use game_core::NDitCoreSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +21,14 @@ impl Plugin for BoardUiPlugin {
         app.add_plugins(Reg::<RegSprite>::default())
             .add_systems(RENDER_TTY_SCHEDULE, (sys_render_board, sys_render_sprites))
             .add_systems(PreUpdate, sys_board_piece_lifetimes)
-            .add_systems(Update, sys_default_piece_sprites);
+            .add_systems(
+                Update,
+                (
+                    sys_handle_sprite_registry_updates,
+                    sys_default_piece_sprites,
+                )
+                    .in_set(NDitCoreSet::PostProcessCommands),
+            );
     }
 }
 
@@ -54,7 +65,13 @@ pub struct BoardBackground(pub Handle<CharacterMapImage>);
 #[reflect(Component)]
 pub struct NoDefaultRendering;
 
-#[derive(Component, Clone, Debug)]
+/// Component indicates that if the sprite registry is updated
+/// and this key changed, we should reload the sprite.
+#[derive(Clone, Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
+pub struct SpriteKey(pub String);
+
+#[derive(Component, Clone, Debug, PartialEq)]
 pub enum Sprite {
     Image {
         image: Handle<CharacterMapImage>,
@@ -68,15 +85,17 @@ pub enum Sprite {
     },
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+/// Describes whether the animation remains in place, runs once, or loops
+/// Using dog terms for easy memorization and whimsy
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AnimationType {
-    Stopped, // Animation does not play, frame is manually set
-    Run,     // Animations runs once and then is done
+    Stay, // Animation does not play, frame is manually set
+    Walk, // Animations runs once and then clears
     #[default]
-    Loop, // Animation loops when finished
+    RollOver, // Animation loops when finished
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum RegSprite {
     Image {
@@ -98,6 +117,14 @@ pub enum RegSprite {
 impl Registry for RegSprite {
     const REGISTRY_NAME: &'static str = "term:sprites";
     type Value = Self;
+
+    fn detect_change(old_value: &Self::Value, new_value: &Self::Value) -> bool {
+        old_value != new_value
+    }
+
+    fn emit_change_events() -> bool {
+        true
+    }
 }
 
 fn sys_render_board(
@@ -166,7 +193,6 @@ fn sys_board_piece_lifetimes(
                 board_ui.spawn((
                     BoardPieceUi(bp_id),
                     Name::new(format!("BoardPieceUi tracking {:?}", debug_name)),
-                    TerminalRendering::new(vec!["STUB".to_owned()]),
                     StyleTty(Style {
                         grid_column,
                         grid_row,
@@ -199,35 +225,10 @@ fn sys_default_piece_sprites(
     for (bp_ui_id, bp_id) in board_ui_pieces_without_sprites.iter() {
         get_assert!(bp_id, board_pieces, |bp| {
             let sprite = reg_sprites.get(bp.0.as_str())?;
-            match sprite {
-                RegSprite::Image { image_path } => {
-                    commands.entity(bp_ui_id).insert(Sprite::Image {
-                        image: asset_server.load(image_path), // Perhaps I should just have there be some sort of "intermediate" for while it loads
-                    });
-                },
-                RegSprite::Animation {
-                    animation_path,
-                    animation_type,
-                    timing,
-                } => {
-                    let animation = asset_server.load(animation_path);
-                    let mut animation_player = AnimationPlayer::default();
-                    animation_player.load(animation.clone());
-                    if let Some(timing) = timing {
-                        animation_player.set_timing(*timing);
-                    }
-                    match animation_type {
-                        AnimationType::Run => animation_player.play_once(),
-                        AnimationType::Loop => animation_player.play_loop(),
-                        AnimationType::Stopped => animation_player.pause(),
-                    };
-                    commands
-                        .entity(bp_ui_id)
-                        .insert((Sprite::Animation { animation }, animation_player));
-                },
-                _ => {},
-            }
-
+            let sprite_key = SpriteKey(bp.0.clone());
+            let mut entity_commands = commands.entity(bp_ui_id);
+            entity_commands.insert((TerminalRendering::default(), sprite_key));
+            sprite.update(&asset_server, entity_commands, None, None);
             Some(())
         });
     }
@@ -245,6 +246,94 @@ fn sys_render_sprites(
                 }
             },
             _ => {},
+        }
+    }
+}
+
+fn sys_handle_sprite_registry_updates(
+    mut commands: Commands,
+    mut evr_reg_sprites: EventReader<UpdatedRegistryKey<RegSprite>>,
+    asset_server: Res<AssetServer>,
+    reg_sprites: Res<Reg<RegSprite>>,
+    mut board_uis: Query<
+        (
+            Entity,
+            AsDeref<SpriteKey>,
+            &mut Sprite,
+            Option<&mut AnimationPlayer>,
+        ),
+        (With<BoardPieceUi>, Without<NoDefaultRendering>),
+    >,
+) {
+    let updated_keys: HashSet<_> = evr_reg_sprites.iter().map(|d| d.deref()).collect();
+    if updated_keys.is_empty() {
+        return;
+    }
+    for (ui_id, sprite_key, sprite, animation_player) in board_uis.iter_mut() {
+        if !updated_keys.contains(sprite_key) {
+            continue;
+        }
+        if let Some(reg_sprite) = reg_sprites.get(sprite_key) {
+            reg_sprite.update(
+                &asset_server,
+                commands.entity(ui_id),
+                Some(sprite),
+                animation_player,
+            );
+        }
+    }
+}
+
+impl RegSprite {
+    fn update(
+        &self,
+        asset_server: &AssetServer,
+        mut commands: EntityCommands,
+        current_sprite: Option<Mut<Sprite>>,
+        animation_player: Option<Mut<AnimationPlayer>>,
+    ) {
+        let (next_sprite, next_ap) = match self {
+            Self::Image { image_path } => (
+                Sprite::Image {
+                    image: asset_server.load(image_path), // Perhaps I should just have there be some sort of "intermediate" for while it loads
+                },
+                None,
+            ),
+            Self::Animation {
+                animation_path,
+                animation_type,
+                timing,
+            } => {
+                let animation = asset_server.load(animation_path);
+                let mut animation_player = AnimationPlayer::default();
+                animation_player.load(animation.clone());
+                if let Some(timing) = timing {
+                    animation_player.set_timing(*timing);
+                }
+                match animation_type {
+                    AnimationType::Walk => animation_player.play_once(),
+                    AnimationType::RollOver => animation_player.play_loop(),
+                    AnimationType::Stay => animation_player.pause(),
+                };
+                (Sprite::Animation { animation }, Some(animation_player))
+            },
+            _ => todo!("Actor logic"),
+        };
+        if let Some(mut current_sprite) = current_sprite {
+            current_sprite.set_if_neq(next_sprite);
+        } else {
+            commands.insert(next_sprite);
+        }
+        if let Some(mut ap) = animation_player {
+            if let Some(next_ap) = next_ap {
+                *ap = next_ap;
+            } else {
+                // It seems unlikely this will change often, so might as well remove AnimationPlayer
+                // If not, we can change it to ap.unload()
+                commands.remove::<AnimationPlayer>();
+            }
+        } else if let Some(next_ap) = next_ap {
+            commands.insert(next_ap);
         }
     }
 }
