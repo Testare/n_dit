@@ -1,8 +1,10 @@
+use bevy::prelude::HierarchyQueryExt;
 pub use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
 use game_core::prelude::*;
 use getset::{CopyGetters, Getters};
 
 use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::TerminalWindow;
 
 #[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
 pub struct CrosstermEvent(pub crossterm::event::Event);
@@ -81,6 +83,8 @@ pub enum MouseButton {
 
 pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
+    res_terminal_window: Res<TerminalWindow>,
+    children: Query<&Children>,
     layout_elements: Query<
         (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
         (With<MouseEventListener>, Without<MouseEventTtyDisabled>),
@@ -119,48 +123,54 @@ pub fn sys_mouse_tty(
                 MEK::Drag(_mb) => MouseEventTtyKind::Todo, // TODO drag events
             }
         };
+        if let Some(render_target) = res_terminal_window.render_target {
+            let layout_elements = children
+                .iter_descendants(render_target)
+                .filter_map(|e| layout_elements.get(e).ok());
 
-        for (entity, size, translation) in layout_elements.iter() {
-            if translation.x <= event_x
-                && event_x < (translation.x + size.width32())
-                && translation.y <= event_y
-                && event_y < (translation.y + size.height32())
-            {
-                let pos = UVec2 {
-                    x: event_x - translation.x,
-                    y: event_y - translation.y,
-                };
-                evw_mouse_tty.send(MouseEventTty {
-                    entity,
-                    pos,
-                    modifiers: *modifiers,
-                    event_kind,
-                    double_click,
-                })
-            } else if last_position
-                .as_ref()
-                .map(
-                    |UVec2 {
-                         x: last_x,
-                         y: last_y,
-                     }| {
-                        translation.x <= *last_x
-                            && *last_x < (translation.x + size.width32())
-                            && translation.y <= *last_y
-                            && *last_y < (translation.y + size.height32())
-                    },
-                )
-                .unwrap_or(false)
-            {
-                evw_mouse_tty.send(MouseEventTty {
-                    entity,
-                    pos: default(), // In this case, we don't really have a helpful value for pos
-                    modifiers: *modifiers,
-                    event_kind: MouseEventTtyKind::Exit,
-                    double_click,
-                });
+            for (entity, size, translation) in layout_elements {
+                if translation.x <= event_x
+                    && event_x < (translation.x + size.width32())
+                    && translation.y <= event_y
+                    && event_y < (translation.y + size.height32())
+                {
+                    let pos = UVec2 {
+                        x: event_x - translation.x,
+                        y: event_y - translation.y,
+                    };
+                    evw_mouse_tty.send(MouseEventTty {
+                        entity,
+                        pos,
+                        modifiers: *modifiers,
+                        event_kind,
+                        double_click,
+                    })
+                } else if last_position
+                    .as_ref()
+                    .map(
+                        |UVec2 {
+                             x: last_x,
+                             y: last_y,
+                         }| {
+                            translation.x <= *last_x
+                                && *last_x < (translation.x + size.width32())
+                                && translation.y <= *last_y
+                                && *last_y < (translation.y + size.height32())
+                        },
+                    )
+                    .unwrap_or(false)
+                {
+                    evw_mouse_tty.send(MouseEventTty {
+                        entity,
+                        pos: default(), // In this case, we don't really have a helpful value for pos
+                        modifiers: *modifiers,
+                        event_kind: MouseEventTtyKind::Exit,
+                        double_click,
+                    });
+                }
             }
         }
+
         match *kind {
             MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
                 last_click.replace((std::time::Instant::now(), *event));

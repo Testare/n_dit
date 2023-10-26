@@ -26,7 +26,7 @@ use crate::nf::{NFNode, NfPlugin, RequiredNodes};
 use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
-use crate::{KeyMap, TerminalWindow};
+use crate::{KeyMap, Submap, TerminalWindow};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 #[derive(Debug)]
@@ -118,6 +118,7 @@ fn debug_key(
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
     mut quest_status: Query<&mut QuestStatus>,
+    mut key_maps: Query<&mut KeyMap>,
     nodes: Query<
         (
             Entity,
@@ -163,6 +164,9 @@ fn debug_key(
             std::process::Command::new("aseprite").spawn().unwrap();
         } else if *code == KeyCode::Char('m') {
             let current_render_target = res_terminal_window.render_target();
+            for mut key_map in key_maps.iter_mut() {
+                key_map.toggle_submap(Submap::Node);
+            }
 
             if res_demo_state.node_ui_id.is_none() {
                 res_demo_state.node_ui_id = current_render_target;
