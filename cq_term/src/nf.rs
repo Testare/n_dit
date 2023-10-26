@@ -23,15 +23,20 @@ impl Plugin for NfPlugin {
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct RequiredNodes(pub Vec<NodeId>);
 
-// A board piece that indicates a UI component for an NF node on the node map
+#[derive(Component, Debug)]
+pub struct NFNode;
+
 #[derive(Component, Debug)]
 struct NFNodeUi;
 
 // Needs to happen after board_uis have been created and sprites added
 // Check new board_uis if they point to a node
-pub fn sys_apply_ui_to_node_nodes(
+fn sys_apply_ui_to_node_nodes(
     mut commands: Commands,
-    board_pieces: Query<(AsDeref<ForNode>, Option<AsDeref<RequiredNodes>>), With<BoardPiece>>,
+    board_pieces: Query<
+        (Option<AsDeref<ForNode>>, Option<AsDeref<RequiredNodes>>),
+        (With<BoardPiece>, With<NFNode>),
+    >,
     players: Query<&QuestStatus, With<Player>>,
     mut new_board_uis: Query<
         (
@@ -45,8 +50,6 @@ pub fn sys_apply_ui_to_node_nodes(
 ) {
     for (bp_ui_id, bp_id, mut ap, for_player) in new_board_uis.iter_mut() {
         if let Ok((for_node, required_nodes)) = board_pieces.get(bp_id) {
-            let mut bp_ui = commands.entity(bp_ui_id);
-            bp_ui.insert(NFNodeUi);
             get_assert!(for_player, players, |quest_status| {
                 let met_requirements = required_nodes
                     .map(|req_nodes| {
@@ -55,15 +58,16 @@ pub fn sys_apply_ui_to_node_nodes(
                             .all(|node_id| quest_status.is_node_done(node_id))
                     })
                     .unwrap_or(true);
-                if met_requirements {
-                    bp_ui.insert(VisibilityTty(true));
-                    if quest_status.is_node_done(for_node) {
-                        ap.set_timing(1.0);
-                    } else {
-                        ap.set_timing(0.0);
-                    }
+                commands
+                    .entity(bp_ui_id)
+                    .insert((VisibilityTty(met_requirements), NFNodeUi));
+                if for_node
+                    .map(|for_node| quest_status.is_node_done(for_node))
+                    .unwrap_or(false)
+                {
+                    ap.set_timing(1.0);
                 } else {
-                    bp_ui.insert(VisibilityTty(false));
+                    ap.set_timing(0.0);
                 }
                 Some(())
             });

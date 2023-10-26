@@ -25,7 +25,7 @@ use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
-use crate::nf::{NfPlugin, RequiredNodes};
+use crate::nf::{NFNode, NfPlugin, RequiredNodes};
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
@@ -437,6 +437,7 @@ fn demo_startup(
             board_piece_id = Some(
                 board
                     .spawn((
+                        NFNode,
                         ForNode(demo_node_id.clone()),
                         TerminalRendering::new(vec!["[DM]".to_owned()]),
                         BoardPosition(UVec2 { x: 6, y: 4 }),
@@ -449,6 +450,7 @@ fn demo_startup(
             board_piece_id = Some(
                 board
                     .spawn((
+                        NFNode,
                         ForNode(NodeId::new("node:demo", 1)),
                         RequiredNodes(vec![demo_node_id.clone()]),
                         TerminalRendering::new(vec!["[DM]".to_owned()]),
