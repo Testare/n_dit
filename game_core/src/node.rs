@@ -50,6 +50,7 @@ impl Plugin for NodePlugin {
             .register_type::<Mon>()
             .register_type::<MovesTaken>()
             .register_type::<Node>()
+            .register_type::<NodeId>()
             .register_type::<NodePiece>()
             .register_type::<OnTeam>()
             .register_type::<Pickup>()
@@ -140,6 +141,11 @@ impl FromWorld for CurrentTurn {
 }
 
 /// Indicates this Player is in the specified node
+#[derive(Component, Debug, Default, Deref, DerefMut, Deserialize, Reflect, Serialize)]
+#[reflect(Component, Serialize, Deserialize)]
+pub struct ForNode(pub NodeId);
+
+/// Indicates this Player is in the specified node
 #[derive(Component, Debug, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct InNode(pub Entity);
@@ -177,7 +183,41 @@ pub struct MovesTaken(pub u32);
 /// Indicates a Node entity
 #[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Serialize, Deserialize)]
-pub struct Node;
+pub struct Node(pub NodeId);
+
+/// Unique identifier for a Node.
+#[derive(Clone, Component, Debug, Default, Deserialize, Hash, PartialEq, Reflect, Serialize)]
+#[reflect(Deserialize, Serialize)]
+pub struct NodeId {
+    /// Nodes are within sets of up to 32 nodes
+    set: String,
+    /// Number of node in series,
+    num: u32,
+}
+
+impl NodeId {
+    /// ## Panics
+    /// Panics if num is 32 or more
+    pub fn new<S: ToString>(set: S, num: u32) -> Self {
+        debug_assert!(num < 32, "Node ID has invalid value: [{}] >= 32", num);
+        Self {
+            num,
+            set: set.to_string(),
+        }
+    }
+
+    pub fn num(&self) -> u32 {
+        self.num
+    }
+
+    pub fn set(&self) -> &str {
+        self.set.as_str()
+    }
+
+    pub fn num_flag(&self) -> u32 {
+        1 << self.num
+    }
+}
 
 /// Indicates a piece that is loaded into a Node
 #[derive(

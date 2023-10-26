@@ -12,6 +12,7 @@ pub mod node;
 pub mod op;
 pub mod player;
 pub mod prelude;
+pub mod quest;
 pub mod registry;
 
 use op::OpResult;

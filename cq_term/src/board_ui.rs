@@ -3,6 +3,7 @@ use std::ops::Deref;
 use bevy::ecs::system::EntityCommands;
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
+use game_core::player::ForPlayer;
 use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
 use game_core::NDitCoreSet;
 use itertools::Itertools;
@@ -141,8 +142,19 @@ fn sys_render_board(
 
 fn sys_board_piece_lifetimes(
     mut commands: Commands,
-    created_board_uis: Query<(Entity, AsDerefCopied<BoardUi>), Added<BoardUi>>,
-    board_uis: Query<(Entity, AsDerefCopied<BoardUi>)>,
+    created_board_uis: Query<
+        (
+            Entity,
+            AsDerefCopied<BoardUi>,
+            Option<AsDerefCopied<ForPlayer>>,
+        ),
+        Added<BoardUi>,
+    >,
+    board_uis: Query<(
+        Entity,
+        AsDerefCopied<BoardUi>,
+        Option<AsDerefCopied<ForPlayer>>,
+    )>,
     created_pieces: Query<(Entity, AsDerefCopied<Parent>), Added<BoardPiece>>,
     boards: Query<Option<AsDeref<Children>>, With<Board>>,
     board_pieces: Query<
@@ -157,11 +169,11 @@ fn sys_board_piece_lifetimes(
     board_ui_pieces: Query<(Entity, AsDerefCopied<BoardPieceUi>)>,
 ) {
     // STRANGE BEHAVIOR: If an entity removes the BoardPiece component and then adds it back.
-    let mut new_uis: HashSet<(Entity, Entity)> = HashSet::new();
-    for (board_ui_id, board_id) in created_board_uis.iter() {
+    let mut new_uis: HashSet<(Entity, Entity, Option<Entity>)> = HashSet::new();
+    for (board_ui_id, board_id, for_player) in created_board_uis.iter() {
         if let Some(board_pieces) = get_assert!(board_id, boards).flatten() {
             for bp_id in board_pieces.iter() {
-                new_uis.insert((board_ui_id, *bp_id));
+                new_uis.insert((board_ui_id, *bp_id, for_player));
             }
         }
     }
@@ -171,14 +183,18 @@ fn sys_board_piece_lifetimes(
         .into_iter()
     {
         let (new_pieces, _): (Vec<_>, Vec<_>) = group.unzip();
-        for (board_ui_id, board_ui_tracks) in board_uis.iter() {
+        for (board_ui_id, board_ui_tracks, for_player) in board_uis.iter() {
             if board_ui_tracks != board_id {
                 continue;
             }
-            new_uis.extend(new_pieces.iter().map(|bp_id| (board_ui_id, *bp_id)));
+            new_uis.extend(
+                new_pieces
+                    .iter()
+                    .map(|bp_id| (board_ui_id, *bp_id, for_player)),
+            );
         }
     }
-    for (board_ui_id, bp_id) in new_uis.into_iter() {
+    for (board_ui_id, bp_id, for_player) in new_uis.into_iter() {
         commands.entity(board_ui_id).with_children(|board_ui| {
             if let Ok((pos, size, debug_name)) = board_pieces.get(bp_id) {
                 use taffy::prelude::*;
@@ -190,7 +206,7 @@ fn sys_board_piece_lifetimes(
                     start: line(pos.y as i16 + 1),
                     end: span(size.y as u16),
                 };
-                board_ui.spawn((
+                let mut bp_ui = board_ui.spawn((
                     BoardPieceUi(bp_id),
                     Name::new(format!("BoardPieceUi tracking {:?}", debug_name)),
                     StyleTty(Style {
@@ -199,6 +215,9 @@ fn sys_board_piece_lifetimes(
                         ..default()
                     }),
                 ));
+                if let Some(for_player) = for_player {
+                    bp_ui.insert(ForPlayer(for_player));
+                }
             }
         });
     }

@@ -188,7 +188,7 @@ pub fn sys_update_animations(
         .into_iter()
         .filter_map(|ast_event| match ast_event {
             AssetEvent::Modified { handle } => Some(handle),
-            _ => None, 
+            _ => None,
         })
         .collect::<HashSet<_>>();
     for mut animation_player in animation_player.iter_mut() {

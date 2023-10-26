@@ -18,6 +18,11 @@ timing=1.0
 text="[&&]"
 fg="gggg"
 
+[[a.node_warez.f]]
+timing=1.0
+text="[$$]"
+fg="yyyy"
+
 [values.colors]
 g="grey"
 y="yellow"

@@ -9,14 +9,15 @@ use game_core::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, InNode,
-    IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence, NodeOp,
-    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase,
-    TeamStatus, Teams, VictoryStatus,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, ForNode,
+    InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
+    NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor,
+    TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
-use game_core::player::{Player, PlayerBundle};
+use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
+use game_core::quest::QuestStatus;
 use game_core::registry::Reg;
 use taffy::style::NonRepeatedTrackSizingFunction;
 
@@ -24,6 +25,7 @@ use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
+use crate::nf::{NfPlugin, RequiredNodes};
 use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
@@ -50,6 +52,7 @@ pub struct CardAssetPointer {
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DemoState>()
+            .add_plugins(NfPlugin)
             .add_systems(Startup, demo_startup)
             .add_systems(PostUpdate, (debug_key, save_key, log_ops, log_op_results));
     }
@@ -220,7 +223,7 @@ fn demo_startup(
             "Hack",
             "curio:hack",
             None,
-            asset_server.load("/nightfall/lvl1.cards.json#Hack"),
+            asset_server.load("nightfall/lvl1.cards.json#Hack"),
         ),))
         .id();
     let card_0 = commands
@@ -290,9 +293,10 @@ fn demo_startup(
             asset_server.load("nightfall/lvl3.cards.json#Fiddle"),
         ),))
         .id();
+    let demo_node_id = NodeId::new("node:demo", 0);
     let node = commands
         .spawn((
-            Node,
+            Node(demo_node_id.clone()),
             Teams(vec![player_team, enemy_team]),
             CurrentTurn(player_team),
             AccessPointLoadingRule::Staggered,
@@ -387,9 +391,14 @@ fn demo_startup(
         Name::new("Jackson"),
         AiThread::default(),
     ));
+
+    let mut quest_status = QuestStatus::default();
+    quest_status.record_node_done(&demo_node_id);
+
     let player = commands
         .spawn((
             PlayerBundle::default(),
+            quest_status,
             KeyMap::default(),
             OnTeam(player_team),
             InNode(node),
@@ -428,6 +437,7 @@ fn demo_startup(
             board_piece_id = Some(
                 board
                     .spawn((
+                        ForNode(demo_node_id.clone()),
                         TerminalRendering::new(vec!["[DM]".to_owned()]),
                         BoardPosition(UVec2 { x: 6, y: 4 }),
                         BoardPiece("Demo Node".to_owned()),
@@ -439,6 +449,8 @@ fn demo_startup(
             board_piece_id = Some(
                 board
                     .spawn((
+                        ForNode(NodeId::new("node:demo", 1)),
+                        RequiredNodes(vec![demo_node_id.clone()]),
                         TerminalRendering::new(vec!["[DM]".to_owned()]),
                         BoardPiece("Next Demo Node".to_owned()),
                         BoardPosition(UVec2 { x: 14, y: 4 }),
@@ -461,6 +473,7 @@ fn demo_startup(
         .with_children(|board_ui_root| {
             board_ui_root.spawn((
                 Name::new("Demo map background"),
+                ForPlayer(player),
                 BoardUi(board),
                 BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
                 StyleTty(taffy::style::Style {
