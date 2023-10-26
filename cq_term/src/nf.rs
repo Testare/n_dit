@@ -16,7 +16,8 @@ impl Plugin for NfPlugin {
         // Might need to tweak scheduling to make sure it is added same frame.
         // I mean, rendering should be in/oafter PostUpdate anyways.
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
-        app.add_systems(PostUpdate, sys_apply_ui_to_node_nodes);
+        app.add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
+            .add_systems(Update, sys_adjust_nf_ui_when_quest_status_updates);
     }
 }
 
@@ -72,6 +73,47 @@ fn sys_apply_ui_to_node_nodes(
                 Some(())
             });
             log::debug!("FOR PLAYER: {:?}", for_player);
+        }
+    }
+}
+
+fn sys_adjust_nf_ui_when_quest_status_updates(
+    players: Query<(Entity, &QuestStatus), Changed<QuestStatus>>,
+    nf_nodes: Query<(Option<AsDeref<RequiredNodes>>, Option<AsDeref<ForNode>>), With<NFNode>>,
+    mut nf_node_ui: Query<
+        (
+            AsDerefCopied<ForPlayer>,
+            AsDerefCopied<BoardPieceUi>,
+            &mut AnimationPlayer,
+            AsDerefMut<VisibilityTty>,
+        ),
+        With<NFNodeUi>,
+    >,
+) {
+    for (player_id, quest_status) in players.iter() {
+        for (for_player, bp_id, mut ap, mut is_visible) in nf_node_ui.iter_mut() {
+            if player_id != for_player {
+                continue;
+            }
+            get_assert!(bp_id, nf_nodes, |(required_nodes, for_node)| {
+                let met_requirements = required_nodes
+                    .map(|req_nodes| {
+                        req_nodes
+                            .iter()
+                            .all(|node_id| quest_status.is_node_done(node_id))
+                    })
+                    .unwrap_or(true);
+                is_visible.set_if_neq(met_requirements);
+                if for_node
+                    .map(|for_node| quest_status.is_node_done(for_node))
+                    .unwrap_or(false)
+                {
+                    ap.set_timing(1.0);
+                } else {
+                    ap.set_timing(0.0);
+                }
+                Some(())
+            });
         }
     }
 }

@@ -5,9 +5,7 @@ use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
-use game_core::card::{
-    Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
-};
+use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, ForNode,
     InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
@@ -18,7 +16,6 @@ use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
-use game_core::registry::Reg;
 use taffy::style::NonRepeatedTrackSizingFunction;
 
 use crate::board_ui::{BoardBackground, BoardUi};
@@ -26,7 +23,7 @@ use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
-use crate::node_ui::{NodeCursor, NodeGlyph, NodeUiOp, ShowNode};
+use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
 use crate::{KeyMap, TerminalWindow};
@@ -42,11 +39,6 @@ pub struct DebugEntityMarker;
 pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
-}
-
-#[derive(Component, Debug)]
-pub struct CardAssetPointer {
-    handle: Handle<CardDefinition>,
 }
 
 impl Plugin for DemoPlugin {
@@ -120,14 +112,12 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
 fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
-    reg_curio_display: Res<Reg<NodeGlyph>>,
     mut res_terminal_window: ResMut<TerminalWindow>,
     mut res_demo_state: ResMut<DemoState>,
     asset_server: Res<AssetServer>,
-    card_assets: Res<Assets<CardDefinition>>,
-    action_assets: Res<Assets<Action>>,
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
+    mut quest_status: Query<&mut QuestStatus>,
     nodes: Query<
         (
             Entity,
@@ -138,26 +128,14 @@ fn debug_key(
         ),
         With<Node>,
     >,
-    debug_asset: Query<&CardAssetPointer>,
 ) {
     for layout_event in evr_mouse.iter() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
     }
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
-            log::debug!("Node Glyph Reg: {:?}", reg_curio_display);
-            for CardAssetPointer { handle } in debug_asset.iter() {
-                log::debug!(
-                    "ASSET LOAD STATE: {:?} ",
-                    asset_server.get_load_state(handle)
-                );
-                let card_asset = card_assets.get(handle);
-                log::debug!("CARD ASSET: {:?}", card_asset);
-                if let Some(card_asset) = card_asset {
-                    for action_handle in card_asset.actions().iter() {
-                        log::debug!("CARD ACTION: {:?}", action_assets.get(action_handle))
-                    }
-                }
+            for mut quest_status in quest_status.iter_mut() {
+                quest_status.record_node_done(&NodeId::new("node:demo", 0));
             }
             log::debug!("Debug event occured");
             log::debug!(
@@ -207,12 +185,6 @@ fn demo_startup(
     mut commands: Commands,
     mut load_node_writer: EventWriter<ShowNode>,
 ) {
-    let _card_asset = commands.spawn((
-        DebugEntityMarker,
-        CardAssetPointer {
-            handle: asset_server.load("nightfall/lvl1.cards.json#Hack"),
-        },
-    ));
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
@@ -393,7 +365,7 @@ fn demo_startup(
     ));
 
     let mut quest_status = QuestStatus::default();
-    quest_status.record_node_done(&demo_node_id);
+    // quest_status.record_node_done(&demo_node_id);
 
     let player = commands
         .spawn((
