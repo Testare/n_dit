@@ -18,16 +18,20 @@ use crate::node_ui::{
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
-use crate::TerminalWindow;
+use crate::{KeyMap, Submap, TerminalWindow};
 
 pub fn create_node_ui(
     mut commands: Commands,
     mut show_node: EventReader<ShowNode>,
     mut terminal_window: ResMut<TerminalWindow>,
+    mut players: Query<&mut KeyMap>,
     node_qs: Query<(NodeUiQ, &Name), With<Node>>,
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.iter().next() {
+        if let Ok(mut key_map) = players.get_mut(*player) {
+            key_map.activate_submap(Submap::Node);
+        }
         if let Ok((node_q, node_name)) = node_qs.get(*node) {
             let render_root = commands
                 .spawn((

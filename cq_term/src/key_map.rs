@@ -26,6 +26,7 @@ pub enum NamedInput {
 #[derive(Component, Debug)]
 pub struct KeyMap {
     submaps: HashMap<Submap, HashMap<KeyCombo, NamedInput>>,
+    active_submaps: HashSet<Submap>,
 }
 
 impl Default for KeyMap {
@@ -136,6 +137,7 @@ impl Default for KeyMap {
             )]
             .into_iter()
             .collect(),
+            active_submaps: HashSet::new(),
         }
     }
 }
@@ -147,9 +149,31 @@ impl KeyMap {
         code: KeyCode,
         modifiers: KeyModifiers,
     ) -> Option<NamedInput> {
-        self.submaps
-            .get(&submap)?
-            .get(&KeyCombo(code, modifiers))
-            .cloned()
+        if self.active_submaps.contains(&submap) {
+            self.submaps
+                .get(&submap)?
+                .get(&KeyCombo(code, modifiers))
+                .cloned()
+        } else {
+            None
+        }
+    }
+
+    pub fn is_submap_active(&self, submap: Submap) -> bool {
+        self.active_submaps.contains(&submap)
+    }
+
+    pub fn activate_submap(&mut self, submap: Submap) {
+        self.active_submaps.insert(submap);
+    }
+
+    pub fn deactivate_submap(&mut self, submap: Submap) {
+        self.active_submaps.remove(&submap);
+    }
+
+    pub fn toggle_submap(&mut self, submap: Submap) {
+        if !self.active_submaps.remove(&submap) {
+            self.active_submaps.insert(submap);
+        }
     }
 }
