@@ -136,7 +136,11 @@ fn debug_key(
     for KeyEvent { code, .. } in ev_keys.iter() {
         if *code == KeyCode::Char('/') {
             for mut quest_status in quest_status.iter_mut() {
-                quest_status.record_node_done(&NodeId::new("node:demo", 0));
+                if let Some(n) =
+                    (0..32).find(|i| !quest_status.is_node_done(&NodeId::new("node:demo", *i)))
+                {
+                    quest_status.record_node_done(&NodeId::new("node:demo", n));
+                }
             }
             log::debug!("Debug event occured");
             log::debug!(
