@@ -1,6 +1,7 @@
 use charmi::CharacterMapImage;
 use game_core::player::ForPlayer;
 use pad::PadStr;
+use serde::{Deserialize, Serialize};
 use taffy::prelude::{Display, Style};
 
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -49,7 +50,7 @@ pub struct UiFocusNext(pub Option<Entity>);
 pub struct UiFocusCycleOrder(pub u32);
 
 /// Part of a layout, defines the style
-#[derive(Component, Debug, Default, Deref, DerefMut)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Serialize, Deserialize)]
 pub struct StyleTty(pub taffy::prelude::Style);
 
 // Actually these components probably should be part of render

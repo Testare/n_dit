@@ -16,7 +16,6 @@ use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
-use taffy::style::NonRepeatedTrackSizingFunction;
 
 use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
@@ -411,7 +410,7 @@ fn demo_startup(
         .id();
 
     let board = commands
-        .spawn((Board("Demo board".into()),))
+        .spawn((Board("Network Map".into()),))
         .with_children(|board| {
             board.spawn((
                 NFNode,
@@ -456,41 +455,93 @@ fn demo_startup(
 
     let board_ui_root = commands
         .spawn((
-            Name::new("Node map"),
+            Name::new("Network map"),
             TerminalRendering::new(Vec::new()),
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
-            StyleTty(taffy::style::Style { ..default() }),
+            StyleTty(taffy::style::Style {
+                flex_direction: taffy::style::FlexDirection::Column,
+                ..default()
+            }),
             LayoutRoot,
         ))
         .with_children(|board_ui_root| {
+            use taffy::prelude::*;
             board_ui_root.spawn((
-                Name::new("Demo map background"),
+                Name::new("Network map title bar"),
                 ForPlayer(player),
-                BoardUi(board),
-                BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
                 StyleTty(taffy::style::Style {
-                    display: taffy::style::Display::Grid,
-                    // grid_template_columns: 18 x 5 for now
-                    grid_auto_rows: vec![NonRepeatedTrackSizingFunction {
-                        min: taffy::style::MinTrackSizingFunction::Fixed(
-                            taffy::style::LengthPercentage::Points(1.0),
-                        ),
-                        max: taffy::style::MaxTrackSizingFunction::Fixed(
-                            taffy::style::LengthPercentage::Points(1.0),
-                        ),
-                    }],
-                    grid_auto_columns: vec![NonRepeatedTrackSizingFunction {
-                        min: taffy::style::MinTrackSizingFunction::Fixed(
-                            taffy::style::LengthPercentage::Points(1.0),
-                        ),
-                        max: taffy::style::MaxTrackSizingFunction::Fixed(
-                            taffy::style::LengthPercentage::Points(1.0),
-                        ),
-                    }],
-                    ..default()
+                    size: Size {
+                        width: Dimension::Auto,
+                        height: Dimension::Points(2.),
+                    },
+                    padding: Rect {
+                        bottom: LengthPercentage::Points(1.0),
+                        ..TaffyZero::ZERO
+                    },
+                    max_size: Size {
+                        width: Dimension::Points(100.0),
+                        height: Dimension::Auto,
+                    },
+                    flex_shrink: 0.0,
+                    ..Default::default()
                 }),
-                TerminalRendering::new(Vec::new()),
+                TerminalRendering::new(vec!["Network Map".to_owned()]),
             ));
+            board_ui_root
+                .spawn((
+                    StyleTty(taffy::prelude::Style {
+                        size: Size {
+                            width: Dimension::Auto,
+                            height: Dimension::Auto,
+                        },
+                        flex_grow: 1.0,
+                        flex_shrink: 0.0,
+                        ..default()
+                    }),
+                    Name::new("Network Map Content Pane"),
+                ))
+                .with_children(|content_pane| {
+                    content_pane.spawn((
+                        StyleTty(taffy::prelude::Style {
+                            size: Size {
+                                width: Dimension::Points(14.),
+                                height: Dimension::Auto,
+                            },
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        }),
+                        Name::new("Menu Bar"),
+                        TerminalRendering::new(vec!["WIP".to_owned()]),
+                    ));
+                    content_pane.spawn((
+                        Name::new("Demo map background"),
+                        ForPlayer(player),
+                        BoardUi(board),
+                        BoardBackground(asset_server.load("nightfall/demo_map.charmi.toml")),
+                        StyleTty(taffy::style::Style {
+                            display: taffy::style::Display::Grid,
+                            // grid_template_columns: 18 x 5 for now
+                            grid_auto_rows: vec![NonRepeatedTrackSizingFunction {
+                                min: taffy::style::MinTrackSizingFunction::Fixed(
+                                    taffy::style::LengthPercentage::Points(1.0),
+                                ),
+                                max: taffy::style::MaxTrackSizingFunction::Fixed(
+                                    taffy::style::LengthPercentage::Points(1.0),
+                                ),
+                            }],
+                            grid_auto_columns: vec![NonRepeatedTrackSizingFunction {
+                                min: taffy::style::MinTrackSizingFunction::Fixed(
+                                    taffy::style::LengthPercentage::Points(1.0),
+                                ),
+                                max: taffy::style::MaxTrackSizingFunction::Fixed(
+                                    taffy::style::LengthPercentage::Points(1.0),
+                                ),
+                            }],
+                            ..default()
+                        }),
+                        TerminalRendering::new(Vec::new()),
+                    ));
+                });
         })
         .id();
     res_demo_state.board_ui_id = Some(board_ui_root);

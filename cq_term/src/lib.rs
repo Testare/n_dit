@@ -9,6 +9,7 @@ pub mod base_ui;
 pub mod board_ui;
 pub mod configuration;
 pub mod demo;
+pub mod dialogue_ui;
 mod fx;
 pub mod input_event;
 mod key_map;
