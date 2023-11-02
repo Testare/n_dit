@@ -5,7 +5,7 @@ use game_core::quest::QuestStatus;
 
 use crate::animation::AnimationPlayer;
 use crate::board_ui::BoardPieceUi;
-use crate::input_event::{MouseEventListener, MouseEventTty, MouseEventTtyKind, self};
+use crate::input_event::{self, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
@@ -18,10 +18,13 @@ impl Plugin for NfPlugin {
         // I mean, rendering should be in/oafter PostUpdate anyways.
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
         app.add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
-            .add_systems(Update, (
-                sys_adjust_nf_ui_when_quest_status_updates,
-                mouse_network_map_nodes
-            ));
+            .add_systems(
+                Update,
+                (
+                    sys_adjust_nf_ui_when_quest_status_updates,
+                    mouse_network_map_nodes,
+                ),
+            );
     }
 }
 
@@ -63,10 +66,8 @@ fn sys_apply_ui_to_node_nodes(
                             .all(|node_id| quest_status.is_node_done(node_id))
                     })
                     .unwrap_or(true);
-                commands
-                    .entity(bp_ui_id)
-                    .insert((
-                    VisibilityTty(met_requirements), 
+                commands.entity(bp_ui_id).insert((
+                    VisibilityTty(met_requirements),
                     NFNodeUi,
                     MouseEventListener,
                 ));
@@ -128,33 +129,39 @@ fn sys_adjust_nf_ui_when_quest_status_updates(
 
 fn mouse_network_map_nodes(
     mut evr_mouse: EventReader<MouseEventTty>,
-    mut nf_nodes: Query<(AsDerefCopied<ForPlayer>, AsDerefCopied<BoardPieceUi>, &mut AnimationPlayer), With<NFNodeUi>>,
-    board_pieces: Query<Option<AsDeref<ForNode>>, (With<BoardPiece>, With<NFNode>),
+    mut nf_nodes: Query<
+        (
+            AsDerefCopied<ForPlayer>,
+            AsDerefCopied<BoardPieceUi>,
+            &mut AnimationPlayer,
+        ),
+        With<NFNodeUi>,
     >,
+    board_pieces: Query<Option<AsDeref<ForNode>>, (With<BoardPiece>, With<NFNode>)>,
     players: Query<(&QuestStatus,), With<Player>>,
 ) {
     for event in evr_mouse.iter() {
         if let Ok((for_player, bp_id, mut ap)) = nf_nodes.get_mut(event.entity()) {
             get_assert!(for_player, players, |(quest_status,)| {
                 match event.event_kind() {
-                    MouseEventTtyKind::Moved => {
-                        ap.set_timing(2.0)
-                    },
+                    MouseEventTtyKind::Moved => ap.set_timing(2.0),
                     MouseEventTtyKind::Exit => {
-                        if get_assert!(bp_id, board_pieces)?.map(|node_id|quest_status.is_node_done(node_id)).unwrap_or(false) {
+                        if get_assert!(bp_id, board_pieces)?
+                            .map(|node_id| quest_status.is_node_done(node_id))
+                            .unwrap_or(false)
+                        {
                             ap.set_timing(1.0)
                         } else {
                             ap.set_timing(0.0);
                         }
-                    }
+                    },
                     MouseEventTtyKind::Down(input_event::MouseButton::Left) => {
                         log::debug!("Click event for NF node");
                     },
-                    _ => {}
+                    _ => {},
                 }
                 Some(())
             });
         }
     }
-
 }
