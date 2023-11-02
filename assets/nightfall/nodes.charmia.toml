@@ -1,29 +1,49 @@
 [[a.node_a.f]]
 timing=1.0
 text="[<>]"
-fg="ywwy"
+fg="wBBw"
 
 [[a.node_a.f]]
 timing=1.0
 text="[<>]"
 fg="gggg"
 
+[[a.node_a.f]]
+timing=1.0
+text="[<>]"
+fg="wwww"
+bg="BBBB"
+
 [[a.node_b.f]]
 timing=1.0
 text="[&&]"
-fg="ywwy"
+fg="wyyw"
 
 [[a.node_b.f]]
 timing=1.0
 text="[&&]"
 fg="gggg"
 
-[[a.node_warez.f]]
+[[a.node_b.f]]
 timing=1.0
+text="[&&]"
+fg="bbbb"
+bg="yyyy"
+
+[[a.node_warez.f]]
+timing=2.0
 text="[$$]"
 fg="yyyy"
+
+[[a.node_warez.f]]
+timing=1.0
+text="$$$$"
+fg="bbbb"
+bg="yyyy"
 
 [values.colors]
 g="grey"
 y="yellow"
 w="white"
+b="black"
+B="blue"
