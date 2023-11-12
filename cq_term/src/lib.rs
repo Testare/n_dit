@@ -213,12 +213,12 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TerminalWindow>()
             .init_resource::<fx::Fx>()
             .init_resource::<DrawConfiguration>()
-            .add_asset::<CharmieAnimation>()
-            .add_asset::<CharmieActor>()
-            .add_asset::<CharacterMapImage>()
+            .init_asset::<CharmieAnimation>()
+            .init_asset::<CharmieActor>()
+            .init_asset::<CharacterMapImage>()
             .add_state::<TerminalFocusMode>()
-            .add_asset_loader(CharmiaLoader)
-            .add_asset_loader(CharmiLoader)
+            .init_asset_loader::<CharmiaLoader>()
+            .init_asset_loader::<CharmiLoader>()
             .add_plugins((
                 base_ui::BaseUiPlugin,
                 layout::TaffyTuiLayoutPlugin,

@@ -90,12 +90,12 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
         )>>()
         .iter(world)
         .collect();
-    let mut scene = DynamicSceneBuilder::from_world(world);
-    scene.deny_all_resources();
-    scene.allow_all();
-    scene.allow::<Node>();
-    scene.extract_entities(entities.into_iter());
-    let scene = scene.build();
+    let scene = DynamicSceneBuilder::from_world(world)
+        .deny_all_resources()
+        .allow_all()
+        .allow::<Node>()
+        .extract_entities(entities.into_iter())
+        .build();
     match scene.serialize_ron(&type_registry) {
         Ok(scene_serialized) => {
             log::info!("Serialization successful");

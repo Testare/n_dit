@@ -221,7 +221,7 @@ fn sys_board_piece_lifetimes(
             }
         });
     }
-    let removed_bp_ids: HashSet<Entity> = removed_pieces.into_iter().collect();
+    let removed_bp_ids: HashSet<Entity> = removed_pieces.read().collect();
     for (bp_ui_id, bp_id) in board_ui_pieces.into_iter() {
         if removed_bp_ids.contains(&bp_id) {
             commands.entity(bp_ui_id).despawn();

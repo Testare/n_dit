@@ -185,9 +185,9 @@ pub fn sys_update_animations(
     mut animation_player: Query<&mut AnimationPlayer>,
 ) {
     let changed_animation_assets = evr_ast_animation
-        .into_iter()
+        .read()
         .filter_map(|ast_event| match ast_event {
-            AssetEvent::Modified { handle } => Some(handle),
+            AssetEvent::Modified { id } => Some(*id),
             _ => None,
         })
         .collect::<HashSet<_>>();
@@ -195,7 +195,7 @@ pub fn sys_update_animations(
         if animation_player.is_loading()
             || animation_player
                 .handle()
-                .map(|handle| changed_animation_assets.contains(handle))
+                .map(|handle| changed_animation_assets.contains(&handle.id()))
                 .unwrap_or(false)
         {
             AnimationPlayer::update_load_state(&mut animation_player, &ast_animation);

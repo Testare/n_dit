@@ -1,10 +1,14 @@
+use std::any::Any;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use bevy::asset::{AssetLoader, FileAssetIo, LoadedAsset};
-use bevy::prelude::{AssetEvent, HandleUntyped};
+use bevy::asset::io::file::FileAssetReader;
+use bevy::asset::io::{AssetSourceId, Reader};
+use bevy::asset::{AssetLoader, LoadContext, LoadedUntypedAsset};
+use bevy::prelude::AssetApp;
 use bevy::reflect::{TypePath, TypeUuid};
+use bevy::tasks::block_on;
 use glob::glob;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -16,8 +20,8 @@ pub struct RegistryPlugin;
 
 impl Plugin for RegistryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset_loader(RegistryTomlAssetLoader)
-            .add_asset::<RegistryTomlFile>()
+        app.init_asset::<RegistryTomlFile>()
+            .init_asset_loader::<RegistryTomlAssetLoader>()
             .init_resource::<Registries>();
     }
 }
@@ -117,7 +121,7 @@ impl<R: Registry> Plugin for Reg<R> {
     }
 }
 
-#[derive(Serialize, Deserialize, TypeUuid, TypePath)]
+#[derive(Asset, Serialize, Deserialize, TypeUuid, TypePath)]
 #[uuid = "60c5b905-a8a2-4194-828e-bb1f62432b37"]
 struct RegistryTomlFile {
     #[serde(skip)]
@@ -143,10 +147,11 @@ impl RegistryTomlFile {
 }
 
 #[derive(Resource)]
-struct Registries(Vec<HandleUntyped>);
+struct Registries(Vec<Handle<LoadedUntypedAsset>>);
 
 impl FromWorld for Registries {
     fn from_world(world: &mut World) -> Self {
+        /* TODO Registry mechanics change coming soon
         let handles = world
             .get_resource::<AssetServer>()
             .and_then(|asset_server| {
@@ -160,30 +165,38 @@ impl FromWorld for Registries {
                     .filter_map(|path| {
                         let path = path.ok()?;
                         log::info!("Found registry file {}", path.to_string_lossy());
-                        Some(asset_server.load_untyped(path.to_str()?))
+                        Some(asset_server.load_untyped(path.to_string_lossy().into_owned()))
                     })
                     .collect();
                 Some(paths)
             })
             .expect("should be able to load registry files");
         Registries(handles)
+        */
+        Registries(Vec::new())
     }
 }
 
+#[derive(Default)]
 struct RegistryTomlAssetLoader;
 
 impl AssetLoader for RegistryTomlAssetLoader {
+    type Asset = RegistryTomlFile;
+    type Settings = ();
+    type Error = toml::de::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+        reader: &'a mut Reader,
+        _: &Self::Settings,
+        load_context: &'a mut LoadContext,
+    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let value_str = std::str::from_utf8(bytes)?;
-            let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str)?;
+            let mut value_str = String::new();
+            reader.read_to_string(&mut value_str).await;
+            let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str.as_str())?;
             registry_file.source_file = load_context.path().to_path_buf();
-            load_context.set_default_asset(LoadedAsset::new(registry_file));
-            Ok(())
+            Ok(registry_file)
         })
     }
 
@@ -198,14 +211,14 @@ fn sys_consume_registry_file<R: Registry>(
     mut evr_asset: EventReader<AssetEvent<RegistryTomlFile>>,
     mut evw_reg_change: EventWriter<UpdatedRegistryKey<R>>,
 ) {
-    for event in evr_asset.into_iter() {
+    for event in evr_asset.read() {
         match event {
-            AssetEvent::Created { handle } | AssetEvent::Modified { handle } => {
-                let reg_file = ast_reg_files.get(handle).unwrap();
+            AssetEvent::LoadedWithDependencies { id } | AssetEvent::Modified { id } => {
+                let reg_file = ast_reg_files.get(*id).unwrap();
                 if reg_file.registry() != R::REGISTRY_NAME || reg_file.values().is_empty() {
                     continue;
                 }
-                let reg_file = ast_reg_files.get_mut(handle).unwrap();
+                let reg_file = ast_reg_files.get_mut(*id).unwrap();
                 let priority = reg_file.priority;
                 for (key, value) in reg_file.values_mut().drain() {
                     match value.try_into::<R::Value>() {

@@ -13,6 +13,7 @@ use std::cmp::Ordering;
 use std::fmt::Display;
 use std::ops::AddAssign;
 
+use bevy::prelude::Asset;
 use bevy::reflect::{TypePath, TypeUuid};
 pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 pub use charmie_def::{
@@ -32,7 +33,7 @@ pub enum ColorSupportLevel {
     Plain,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
+#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
 #[uuid = "a58d71d0-9e0f-4c6d-a078-c5621756579c"]
 pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,

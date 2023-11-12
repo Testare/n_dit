@@ -24,7 +24,7 @@ pub mod key {
     pub const TARGET_ENTITY: Key<Entity> = typed_key!("target_entity");
 }
 
-#[derive(Clone, Debug, Getters, Reflect, TypeUuid)]
+#[derive(Asset, Clone, Debug, Getters, Reflect, TypeUuid)]
 #[uuid = "fc3bb5f8-59f7-4e1e-8ea1-25d736483b6f"]
 pub struct Action {
     pub(crate) range: Option<ActionRange>,

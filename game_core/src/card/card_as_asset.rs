@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use bevy::asset::{AssetLoader, AssetPath, LoadedAsset};
+use bevy::asset::io::Reader;
+use bevy::asset::{AssetLoader, AssetPath, LoadContext};
 use bevy::reflect::TypeUuid;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
@@ -52,7 +53,7 @@ pub enum ActionRangeRepr {
     },
 }
 
-#[derive(CopyGetters, Clone, Debug, Getters, Hash, PartialEq, Reflect, TypeUuid)]
+#[derive(Asset, CopyGetters, Clone, Debug, Getters, Hash, PartialEq, Reflect, TypeUuid)]
 #[uuid = "e8d74f73-96cf-4916-84c5-9041fa10c4ed"]
 pub struct CardDefinition {
     id: String,
@@ -71,16 +72,24 @@ pub struct CardDefinition {
     tags: Vec<String>,
 }
 
+#[derive(Default)]
 pub struct ActionAssetLoader;
 
 impl AssetLoader for ActionAssetLoader {
+    type Asset = ();
+    type Settings = ();
+    type Error = serde_json::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+        reader: &'a mut Reader,
+        _: &Self::Settings,
+        load_context: &'a mut LoadContext,
+    ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
         Box::pin(async move {
-            let asset_map: HashMap<String, ActionAssetDef> = serde_json::from_slice(bytes)?;
+            let mut bytes = vec![];
+            reader.read_to_end(&mut bytes).await;
+            let asset_map: HashMap<String, ActionAssetDef> = serde_json::from_slice(&bytes[..])?;
             for (id, def) in asset_map.into_iter() {
                 let ActionAssetDef {
                     effects,
@@ -101,13 +110,10 @@ impl AssetLoader for ActionAssetLoader {
                     prereqs,
                     description,
                 };
-                match validations::validate_action_effects_match_target(&def) {
-                    Ok(()) => {
-                        load_context.set_labeled_asset(id.as_str(), LoadedAsset::new(def));
-                    },
-                    Err(err_msg) => {
-                        log::error!("{}", err_msg);
-                    },
+                if let Err(err_msg) = validations::validate_action_effects_match_target(&def) {
+                    log::error!("{}", err_msg);
+                } else {
+                    load_context.labeled_asset_scope(id, |lc| def);
                 }
             }
             Ok(())
@@ -123,37 +129,41 @@ impl AssetLoader for ActionAssetLoader {
 pub struct CardAssetLoader;
 
 impl AssetLoader for CardAssetLoader {
+    type Asset = ();
+    type Settings = ();
+    type Error = serde_json::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
+        reader: &'a mut Reader,
+        _: &Self::Settings,
         load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+    ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
         Box::pin(async move {
-            let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(bytes)?;
+            let mut bytes = vec![];
+            reader.read_to_end(&mut bytes).await;
+            let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(&bytes[..])?;
             for (id, def) in asset_map.into_iter() {
-                let mut action_assets = Vec::new();
-                let mut actions = Vec::new();
-                for action_path in def.actions.into_iter() {
-                    actions.push(load_context.get_handle(action_path.as_str()));
-                    if !action_path.starts_with('#') {
-                        action_assets.push(AssetPath::from(action_path));
+                load_context.labeled_asset_scope(id.clone(), |lc| {
+                    let mut action_assets = Vec::new();
+                    let mut actions = Vec::new();
+                    for action_path in def.actions.into_iter() {
+                        actions.push(lc.load(action_path.to_string()));
+                        if !action_path.starts_with('#') {
+                            action_assets.push(AssetPath::from(action_path));
+                        }
                     }
-                }
-                let def = CardDefinition {
-                    id: id.clone(),
-                    actions,
-                    short_name: def.short_name.unwrap_or_else(|| id.clone()),
-                    description: def.description,
-                    max_size: def.max_size,
-                    movement_speed: def.speed,
-                    prevent_no_op: def.prevent_no_op,
-                    tags: def.tags,
-                };
-
-                load_context.set_labeled_asset(
-                    id.as_str(),
-                    LoadedAsset::new(def).with_dependencies(action_assets),
-                );
+                    CardDefinition {
+                        id: id.clone(),
+                        actions,
+                        short_name: def.short_name.unwrap_or_else(|| id.clone()),
+                        description: def.description,
+                        max_size: def.max_size,
+                        movement_speed: def.speed,
+                        prevent_no_op: def.prevent_no_op,
+                        tags: def.tags,
+                    }
+                });
             }
 
             Ok(())

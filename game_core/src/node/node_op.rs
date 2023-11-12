@@ -130,7 +130,7 @@ pub fn curio_ops(
     pickups: Query<&Pickup>,
     mut ev_results: EventWriter<OpResult<NodeOp>>,
 ) {
-    for fullop @ Op { op, player } in ops.into_iter() {
+    for fullop @ Op { op, player } in ops.read() {
         players.get(*player).ok().and_then(|(player_team, node)| {
             let (mut grid, current_turn, mut active_curio, teams, mut team_status) =
                 nodes.get_mut(**node).ok()?;

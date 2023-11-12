@@ -20,11 +20,11 @@ tracing = { version = "*", features = ["log"] }
 simplelog = "^0.10.0"
 
 [dependencies.bevy]
-version = "0.11"
+version = "0.12"
 default-features = false
 features = [
     "bevy_asset",
-    "filesystem_watcher",
+    "file_watcher",
     "bevy_scene",
     "bevy_audio",
     "animation"
