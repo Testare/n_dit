@@ -4,6 +4,7 @@ use std::io::Write;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
+use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use game_core::node::{
@@ -195,6 +196,7 @@ fn demo_startup(
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
         .id();
+    let root_bam = commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
     let act_phaser = asset_server.load("nightfall/program.actions.json#Phaser");
     let hack = commands

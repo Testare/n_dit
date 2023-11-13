@@ -5,6 +5,26 @@ members = [
     "cq_term"
 ]
 
+[workspace.dependencies]
+bevy_query_ext = "0.2"
+
+[patch.crates-io.bevy]
+git="https://github.com/Testare/bevy"
+branch="load_untyped"
+
+[workspace.dependencies.bevy]
+# git="https://github.com/Testare/bevy"
+# branch="load_untyped"
+version = "0.12"
+default-features = false
+features = [
+    "bevy_asset",
+    "file_watcher",
+    "bevy_scene",
+    "bevy_audio",
+    "animation"
+]
+
 [package]
 name = "n_dit"
 version = "0.1.0"
@@ -18,17 +38,8 @@ game_core = { path = "game_core" }
 cq_term = { path = "cq_term" }
 tracing = { version = "*", features = ["log"] }
 simplelog = "^0.10.0"
+bevy.workspace = true
 
-[dependencies.bevy]
-version = "0.12"
-default-features = false
-features = [
-    "bevy_asset",
-    "file_watcher",
-    "bevy_scene",
-    "bevy_audio",
-    "animation"
-]
 
 [dev-dependencies]
 test-log = "0.2.12"

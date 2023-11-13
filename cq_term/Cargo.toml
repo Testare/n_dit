@@ -23,14 +23,4 @@ textwrap = "0.16.0"
 thiserror = "1.0"
 unicode-width = "0.1.8"
 bevy_query_ext = "0.2"
-
-[dependencies.bevy]
-version = "0.12"
-default-features = false
-features = [
-    "bevy_asset",
-    "file_watcher",
-    "bevy_scene",
-    "bevy_audio",
-    "wav",
-]
+bevy = {workspace = true, features = ["wav"]}

@@ -4,6 +4,7 @@
     clippy::single_match
 )]
 #![warn(missing_debug_implementations)]
+pub mod bam;
 pub mod board;
 pub mod card;
 pub mod common;
@@ -79,6 +80,7 @@ impl Plugin for NDitCorePlugin {
                 node::NodePlugin,
                 registry::RegistryPlugin,
                 board::BoardPlugin,
+                bam::BamPlugin,
             ));
     }
 }

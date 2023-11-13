@@ -15,17 +15,7 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
 thiserror = "1.0.44"
 typed_key = "0.1"
-bevy_query_ext = "^0.2"
+bevy_query_ext.workspace = true
 glob = "0.3.1"
 toml = "0.8.2"
-
-[dependencies.bevy]
-version = "0.12"
-default-features = false
-features = [
-    "bevy_asset",
-    "file_watcher",
-    "bevy_scene",
-    "bevy_audio",
-    "animation",
-]
+bevy.workspace = true

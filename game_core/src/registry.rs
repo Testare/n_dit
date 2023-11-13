@@ -159,7 +159,8 @@ impl FromWorld for Registries {
                 let path = asset_io.root_path().to_string_lossy().into_owned();
                 // let mut json_path = path.clone();
                 let mut toml_path = path;
-                toml_path.push_str("/**/*.reg.toml");
+                toml_path.push_str("/**/
+*.reg.toml");
                 let paths = glob(toml_path.as_str())
                     .ok()?
                     .filter_map(|path| {
@@ -177,7 +178,7 @@ impl FromWorld for Registries {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct RegistryTomlAssetLoader;
 
 impl AssetLoader for RegistryTomlAssetLoader {
