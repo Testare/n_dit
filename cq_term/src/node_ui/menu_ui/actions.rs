@@ -30,7 +30,7 @@ impl MenuUiActions {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
-        for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for KeyEvent { code, modifiers } in ev_keys.read() {
             for (player_id, focus, key_map, selected_entity, selected_action) in players.iter() {
                 if (**focus)
                     .map(|focused_ui| !action_menu_uis.contains(focused_ui))
@@ -105,7 +105,7 @@ impl MenuUiActions {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
-        for layout_event in ev_mouse.iter() {
+        for layout_event in ev_mouse.read() {
             ui_actions
                 .get(layout_event.entity())
                 .ok()

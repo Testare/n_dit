@@ -50,7 +50,7 @@ impl MenuUiCardSelection {
         mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
-        for layout_event in evr_mouse.iter() {
+        for layout_event in evr_mouse.read() {
             if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
                 ui.get_mut(layout_event.entity())
             {
@@ -174,7 +174,7 @@ impl MenuUiCardSelection {
         mut ev_keys: EventReader<KeyEvent>,
         mut ev_node_op: EventWriter<Op<NodeOp>>,
     ) {
-        for KeyEvent { code, modifiers } in ev_keys.iter() {
+        for KeyEvent { code, modifiers } in ev_keys.read() {
             for (player, key_map, deck, selected_entity, focus_opt, played_cards) in players.iter()
             {
                 focus_opt.and_then(|focused_ui| {

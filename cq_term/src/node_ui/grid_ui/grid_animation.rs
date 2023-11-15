@@ -32,7 +32,7 @@ pub fn sys_grid_animations(
     reg_glyph: Res<Reg<NodeGlyph>>,
     node_pieces: Query<&NodePiece>,
 ) {
-    for node_op_result in ev_node_op.iter() {
+    for node_op_result in ev_node_op.read() {
         if let Some((node_id, animation_handle)) = match node_op_result.source().op() {
             NodeOp::PerformCurioAction { target, .. } => {
                 node_op_result.result().as_ref().ok().and_then(|metadata| {
@@ -237,7 +237,7 @@ pub fn sys_create_grid_animation_player(
     mut commands: Commands,
     mut ev_show_node: EventReader<ShowNode>,
 ) {
-    for show_node in ev_show_node.iter() {
+    for show_node in ev_show_node.read() {
         commands.spawn((
             Name::new("GridAnimationPlayer"),
             GridUiAnimation,

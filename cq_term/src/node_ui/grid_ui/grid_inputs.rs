@@ -37,7 +37,7 @@ pub fn handle_layout_events(
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
-    for event in ev_mouse.iter() {
+    for event in ev_mouse.read() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventTtyKind::Down(button) = event.event_kind() {
                 log::trace!("Clicked on the grid");
@@ -170,7 +170,7 @@ pub fn kb_grid(
     mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
-    for KeyEvent { code, modifiers } in ev_keys.iter() {
+    for KeyEvent { code, modifiers } in ev_keys.read() {
         for (
             player,
             InNode(node),

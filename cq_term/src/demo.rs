@@ -51,23 +51,23 @@ impl Plugin for DemoPlugin {
 }
 
 fn log_ops(mut ops_node: EventReader<Op<NodeOp>>, mut ops_node_ui: EventReader<Op<NodeUiOp>>) {
-    for op in ops_node.iter() {
+    for op in ops_node.read() {
         log::debug!("NODE_OP {:?}", op)
     }
-    for op in ops_node_ui.iter() {
+    for op in ops_node_ui.read() {
         log::debug!("NODE_UI_OP {:?}", op)
     }
 }
 
 fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
-    for op in node_ops.iter() {
+    for op in node_ops.read() {
         log::debug!("NODE_OP_RESULT {:?}", op)
     }
 }
 
 fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent>>>) {
     let mut evr_keys = state.get(world);
-    let save_button_pressed = evr_keys.iter().any(|event| {
+    let save_button_pressed = evr_keys.read().any(|event| {
         matches!(
             event,
             KeyEvent {
@@ -130,10 +130,10 @@ fn debug_key(
         With<Node>,
     >,
 ) {
-    for layout_event in evr_mouse.iter() {
+    for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
     }
-    for KeyEvent { code, .. } in ev_keys.iter() {
+    for KeyEvent { code, .. } in ev_keys.read() {
         if *code == KeyCode::Char('/') {
             for mut quest_status in quest_status.iter_mut() {
                 if let Some(n) =

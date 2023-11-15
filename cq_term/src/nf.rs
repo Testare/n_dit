@@ -140,7 +140,7 @@ fn mouse_network_map_nodes(
     board_pieces: Query<Option<AsDeref<ForNode>>, (With<BoardPiece>, With<NFNode>)>,
     players: Query<(&QuestStatus,), With<Player>>,
 ) {
-    for event in evr_mouse.iter() {
+    for event in evr_mouse.read() {
         if let Ok((for_player, bp_id, mut ap)) = nf_nodes.get_mut(event.entity()) {
             get_assert!(for_player, players, |(quest_status,)| {
                 match event.event_kind() {

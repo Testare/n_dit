@@ -31,7 +31,7 @@ pub fn mouse_button_menu(
     mut evw_node_op: EventWriter<Op<NodeOp>>,
     mut evw_app_exit: EventWriter<AppExit>,
 ) {
-    for mouse_event in evr_mouse.iter() {
+    for mouse_event in evr_mouse.read() {
         if !matches!(
             mouse_event.event_kind(),
             MouseEventTtyKind::Down(MouseButton::Left)
@@ -73,7 +73,7 @@ pub fn sys_ready_button_disable(
     players: Query<(Entity, AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     access_points: Query<(Entity, AsDerefCopied<OnTeam>, &AccessPoint), With<NodePiece>>,
 ) {
-    for node_op_result in ev_node_op_result.iter() {
+    for node_op_result in ev_node_op_result.read() {
         if let OpResult {
             result: Ok(_),
             source: Op { player, op },

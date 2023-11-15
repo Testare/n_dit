@@ -19,7 +19,7 @@ pub fn kb_ready(
     mut ev_keys: EventReader<KeyEvent>,
     mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
-    for KeyEvent { code, modifiers } in ev_keys.iter() {
+    for KeyEvent { code, modifiers } in ev_keys.read() {
         for (player, key_map) in players.iter_mut() {
             if matches!(
                 key_map.named_input_for_key(Submap::Node, *code, *modifiers),
@@ -54,7 +54,7 @@ pub fn kb_skirm_focus(
     action_menus: Query<(), With<MenuUiActions>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
-    for KeyEvent { code, modifiers } in ev_keys.iter() {
+    for KeyEvent { code, modifiers } in ev_keys.read() {
         for (player, in_node, team, focus, key_map, selected_entity, selected_action) in
             players.iter()
         {

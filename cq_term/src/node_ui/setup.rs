@@ -28,7 +28,7 @@ pub fn create_node_ui(
     node_qs: Query<(NodeUiQ, &Name), With<Node>>,
 ) {
     use taffy::prelude::*;
-    if let Some(ShowNode { player, node }) = show_node.iter().next() {
+    if let Some(ShowNode { player, node }) = show_node.read().next() {
         if let Ok(mut key_map) = players.get_mut(*player) {
             key_map.activate_submap(Submap::Node);
         }

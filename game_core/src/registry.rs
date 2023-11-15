@@ -1,17 +1,14 @@
-use std::any::Any;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use bevy::asset::io::file::FileAssetReader;
-use bevy::asset::io::{AssetSourceId, Reader};
+use bevy::asset::io::Reader;
 use bevy::asset::{AssetLoader, LoadContext, LoadedUntypedAsset};
 use bevy::prelude::AssetApp;
 use bevy::reflect::{TypePath, TypeUuid};
-use bevy::tasks::block_on;
-use glob::glob;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::prelude::*;
 
@@ -150,30 +147,7 @@ impl RegistryTomlFile {
 struct Registries(Vec<Handle<LoadedUntypedAsset>>);
 
 impl FromWorld for Registries {
-    fn from_world(world: &mut World) -> Self {
-        /* TODO Registry mechanics change coming soon
-        let handles = world
-            .get_resource::<AssetServer>()
-            .and_then(|asset_server| {
-                let asset_io = asset_server.asset_io().downcast_ref::<FileAssetIo>()?;
-                let path = asset_io.root_path().to_string_lossy().into_owned();
-                // let mut json_path = path.clone();
-                let mut toml_path = path;
-                toml_path.push_str("/**/
-*.reg.toml");
-                let paths = glob(toml_path.as_str())
-                    .ok()?
-                    .filter_map(|path| {
-                        let path = path.ok()?;
-                        log::info!("Found registry file {}", path.to_string_lossy());
-                        Some(asset_server.load_untyped(path.to_string_lossy().into_owned()))
-                    })
-                    .collect();
-                Some(paths)
-            })
-            .expect("should be able to load registry files");
-        Registries(handles)
-        */
+    fn from_world(_: &mut World) -> Self {
         Registries(Vec::new())
     }
 }
@@ -181,10 +155,18 @@ impl FromWorld for Registries {
 #[derive(Debug, Default)]
 struct RegistryTomlAssetLoader;
 
+#[derive(Debug, Error)]
+pub enum RegistryLoadError {
+    #[error(transparent)]
+    VoldemortError(#[from] toml::de::Error),
+    #[error(transparent)]
+    IanError(#[from] std::io::Error),
+}
+
 impl AssetLoader for RegistryTomlAssetLoader {
     type Asset = RegistryTomlFile;
     type Settings = ();
-    type Error = toml::de::Error;
+    type Error = RegistryLoadError;
 
     fn load<'a>(
         &'a self,
@@ -194,7 +176,7 @@ impl AssetLoader for RegistryTomlAssetLoader {
     ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
             let mut value_str = String::new();
-            reader.read_to_string(&mut value_str).await;
+            reader.read_to_string(&mut value_str).await?;
             let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str.as_str())?;
             registry_file.source_file = load_context.path().to_path_buf();
             Ok(registry_file)

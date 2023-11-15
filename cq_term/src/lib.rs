@@ -246,7 +246,7 @@ fn exit_key(
     mut ev_key: EventReader<KeyEvent>,
     mut exit: EventWriter<bevy::app::AppExit>,
 ) {
-    for input_event::KeyEvent { code, .. } in ev_key.iter() {
+    for input_event::KeyEvent { code, .. } in ev_key.read() {
         if *code == input_event::KeyCode::Char(term_config.exit_key) {
             exit.send(bevy::app::AppExit);
         }
@@ -298,7 +298,7 @@ fn terminal_size_adjustment(
     mut inputs: EventReader<CrosstermEvent>,
     mut window: ResMut<TerminalWindow>,
 ) {
-    for input in inputs.iter() {
+    for input in inputs.read() {
         if let crossterm::event::Event::Resize(width, height) = **input {
             window.set_size(UVec2 {
                 x: width as u32,

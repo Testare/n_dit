@@ -126,7 +126,7 @@ fn sys_react_to_node_op(
     player_teams: Query<(Entity, AsDerefCopied<OnTeam>), (With<Player>, With<HasNodeUi>)>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
-    for op_result in ev_op_result.iter() {
+    for op_result in ev_op_result.read() {
         // Reactions to ops from other players in node
         if let (Ok(_), NodeOp::EndTurn) = (op_result.result(), op_result.source().op()) {
             get_assert!(op_result.source().player(), player_nodes, |node| {

@@ -369,7 +369,7 @@ pub fn ready_to_go_ops(
     mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
     mut ev_op_result: EventWriter<OpResult<NodeOp>>,
 ) {
-    for op in ops.iter() {
+    for op in ops.read() {
         if let Op {
             player,
             op: NodeOp::ReadyToGo,
@@ -491,7 +491,7 @@ pub fn end_turn_op(
     >,
     mut evw_op_results: EventWriter<OpResult<NodeOp>>,
 ) {
-    for ev in evr_node_ops.iter() {
+    for ev in evr_node_ops.read() {
         if matches!(ev.op(), NodeOp::EndTurn) {
             // Potential future improvement: Check if there is an active curio that does not have the no_op action and prevent end_turn.
             let result = get_assert!(ev.player(), players)
@@ -543,7 +543,7 @@ pub fn access_point_ops(
     mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
     mut ev_op_result: EventWriter<OpResult<NodeOp>>,
 ) {
-    for node_op in ops.iter() {
+    for node_op in ops.read() {
         if let Ok((mut played_cards, deck)) = players.get_mut(node_op.player()) {
             match node_op.op() {
                 NodeOp::LoadAccessPoint {

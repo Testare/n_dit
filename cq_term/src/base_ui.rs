@@ -223,7 +223,7 @@ pub fn sys_apply_hover(
     new_disabled: Query<Entity, (With<IsUnderHover>, Added<MouseEventTtyDisabled>)>,
     mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
 ) {
-    for event in evr_mouse_tty.iter() {
+    for event in evr_mouse_tty.read() {
         match event.event_kind() {
             MouseEventTtyKind::Moved => {
                 if let Ok((mut is_under_hover,)) = buttons.get_mut(event.entity()) {

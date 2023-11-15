@@ -24,7 +24,7 @@ pub fn kb_messages(
 ) {
     for KeyEvent {
         code, modifiers, ..
-    } in ev_keys.iter()
+    } in ev_keys.read()
     {
         for (player, key_map) in players.iter() {
             if let Some(NamedInput::NextMsg) =

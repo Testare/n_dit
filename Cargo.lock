@@ -165,12 +165,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.75"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
-
-[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1083,7 +1077,6 @@ checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 name = "charmi"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bevy",
  "crossterm",
  "env_logger",
@@ -1603,7 +1596,6 @@ dependencies = [
  "bevy_query_ext",
  "bitvec",
  "getset",
- "glob",
  "lazy_static",
  "log",
  "serde",

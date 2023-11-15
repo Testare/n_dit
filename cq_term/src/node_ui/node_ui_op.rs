@@ -39,7 +39,7 @@ pub fn sys_node_ui_op_change_focus(
     card_selection_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiCardSelection>>,
     mut players: Query<(AsDerefMut<UiFocus>, AsDerefMut<CursorIsHidden>), With<Player>>,
 ) {
-    for Op { player, op } in ev_node_ui_op.iter() {
+    for Op { player, op } in ev_node_ui_op.read() {
         if let NodeUiOp::ChangeFocus(focus_target) = op {
             get_assert_mut!(*player, &mut players, |(
                 mut focus,
@@ -64,7 +64,7 @@ pub fn sys_node_ui_op_set_selected_action(
     mut ev_node_ui_op: EventReader<Op<NodeUiOp>>,
     mut players: Query<(AsDerefMut<SelectedAction>,), With<Player>>,
 ) {
-    for Op { player, op } in ev_node_ui_op.iter() {
+    for Op { player, op } in ev_node_ui_op.read() {
         if let NodeUiOp::SetSelectedAction(next_selected_action) = op {
             get_assert_mut!(*player, &mut players, |(mut selected_action,)| {
                 selected_action.set_if_neq(*next_selected_action);
@@ -79,7 +79,7 @@ pub fn sys_node_ui_op_move_cursor(
     mut players: Query<(&InNode, AsDerefMut<NodeCursor>, AsDerefMut<CursorIsHidden>), With<Player>>,
     nodes: Query<(&EntityGrid,), With<Node>>,
 ) {
-    for Op { player, op } in ev_node_ui_op.iter() {
+    for Op { player, op } in ev_node_ui_op.read() {
         if let NodeUiOp::MoveNodeCursor(compass_or_point) = op {
             get_assert_mut!(*player, &mut players, |(
                 InNode(node),
@@ -102,7 +102,7 @@ pub fn sys_node_ui_op_hide_cursor(
     mut ev_node_ui_op: EventReader<Op<NodeUiOp>>,
     mut players: Query<AsDerefMut<CursorIsHidden>, With<Player>>,
 ) {
-    for Op { player, op } in ev_node_ui_op.iter() {
+    for Op { player, op } in ev_node_ui_op.read() {
         if let NodeUiOp::SetCursorHidden(val) = op {
             get_assert_mut!(*player, &mut players, |mut cursor_is_hidden| {
                 cursor_is_hidden.set_if_neq(*val);

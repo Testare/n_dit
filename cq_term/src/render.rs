@@ -91,30 +91,18 @@ impl Plugin for RenderTtyPlugin {
                     .in_set(RenderTtySet::RenderToTerminal),
             )
             .add_systems(PreUpdate, pause_rendering_on_resize)
-            // TODO Merge these statements
-            .configure_set(
+            .configure_sets(
                 RENDER_TTY_SCHEDULE,
-                RenderTtySet::AdjustLayoutStyle.after(NDitCoreSet::PostProcessUiOps),
-            )
-            .configure_set(
-                RENDER_TTY_SCHEDULE,
-                RenderTtySet::AdjustLayoutStyle.before(RenderTtySet::CalculateLayout),
-            )
-            .configure_set(
-                RENDER_TTY_SCHEDULE,
-                RenderTtySet::PreCalculateLayout.before(RenderTtySet::CalculateLayout),
-            )
-            .configure_set(
-                RENDER_TTY_SCHEDULE,
-                RenderTtySet::CalculateLayout.before(RenderTtySet::PostCalculateLayout),
-            )
-            .configure_set(
-                RENDER_TTY_SCHEDULE,
-                RenderTtySet::PostCalculateLayout.before(RenderTtySet::RenderLayouts),
-            )
-            .configure_set(
-                RENDER_TTY_SCHEDULE,
-                RenderTtySet::RenderLayouts.before(RenderTtySet::RenderToTerminal),
+                (
+                    NDitCoreSet::PostProcessUiOps,
+                    RenderTtySet::AdjustLayoutStyle,
+                    RenderTtySet::PreCalculateLayout,
+                    RenderTtySet::CalculateLayout,
+                    RenderTtySet::PostCalculateLayout,
+                    RenderTtySet::RenderLayouts,
+                    RenderTtySet::RenderToTerminal,
+                )
+                    .chain(),
             );
     }
 }
@@ -123,7 +111,7 @@ pub fn pause_rendering_on_resize(
     mut event_reader: EventReader<CrosstermEvent>,
     mut render_pause: ResMut<RenderPause>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         if matches!(
             event,
             CrosstermEvent(crossterm::event::Event::Resize { .. })

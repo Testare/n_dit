@@ -78,7 +78,7 @@ pub struct ActionAssetLoader;
 impl AssetLoader for ActionAssetLoader {
     type Asset = ();
     type Settings = ();
-    type Error = serde_json::Error;
+    type Error = std::io::Error;
 
     fn load<'a>(
         &'a self,
@@ -88,7 +88,7 @@ impl AssetLoader for ActionAssetLoader {
     ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
         Box::pin(async move {
             let mut bytes = vec![];
-            reader.read_to_end(&mut bytes).await;
+            reader.read_to_end(&mut bytes).await?;
             let asset_map: HashMap<String, ActionAssetDef> = serde_json::from_slice(&bytes[..])?;
             for (id, def) in asset_map.into_iter() {
                 let ActionAssetDef {
@@ -113,7 +113,7 @@ impl AssetLoader for ActionAssetLoader {
                 if let Err(err_msg) = validations::validate_action_effects_match_target(&def) {
                     log::error!("{}", err_msg);
                 } else {
-                    load_context.labeled_asset_scope(id, |lc| def);
+                    load_context.labeled_asset_scope(id, |_| def);
                 }
             }
             Ok(())
@@ -131,7 +131,7 @@ pub struct CardAssetLoader;
 impl AssetLoader for CardAssetLoader {
     type Asset = ();
     type Settings = ();
-    type Error = serde_json::Error;
+    type Error = std::io::Error;
 
     fn load<'a>(
         &'a self,
@@ -141,7 +141,7 @@ impl AssetLoader for CardAssetLoader {
     ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
         Box::pin(async move {
             let mut bytes = vec![];
-            reader.read_to_end(&mut bytes).await;
+            reader.read_to_end(&mut bytes).await?;
             let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(&bytes[..])?;
             for (id, def) in asset_map.into_iter() {
                 load_context.labeled_asset_scope(id.clone(), |lc| {

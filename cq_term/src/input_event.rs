@@ -98,7 +98,7 @@ pub fn sys_mouse_tty(
         column,
         row,
         modifiers,
-    }) in evr_crossterm_mouse.iter()
+    }) in evr_crossterm_mouse.read()
     {
         let (event_x, event_y) = (*column as u32, *row as u32);
         let double_click = last_click

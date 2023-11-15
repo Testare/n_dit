@@ -284,7 +284,7 @@ fn sys_handle_sprite_registry_updates(
         (With<BoardPieceUi>, Without<NoDefaultRendering>),
     >,
 ) {
-    let updated_keys: HashSet<_> = evr_reg_sprites.iter().map(|d| d.deref()).collect();
+    let updated_keys: HashSet<_> = evr_reg_sprites.read().map(|d| d.deref()).collect();
     if updated_keys.is_empty() {
         return;
     }
