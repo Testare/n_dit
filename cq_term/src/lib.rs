@@ -77,13 +77,6 @@ impl TerminalWindow {
         self.size.y as usize
     }
 
-    pub fn scroll_x(&self) -> usize {
-        0 // TODO Move to Node logic
-    }
-    pub fn scroll_y(&self) -> usize {
-        0
-    }
-
     fn new() -> std::io::Result<TerminalWindow> {
         Self::reset_terminal_on_panic();
         Self::set_terminal_state()?;

@@ -18,11 +18,12 @@ branch="load_untyped"
 version = "0.12"
 default-features = false
 features = [
+    "animation",
     "bevy_asset",
-    "file_watcher",
-    "bevy_scene",
     "bevy_audio",
-    "animation"
+    "bevy_scene",
+    "file_watcher",
+    "multi-threaded"
 ]
 
 [package]
