@@ -18,3 +18,4 @@ typed_key = "0.1"
 bevy_query_ext.workspace = true
 toml = "0.8.2"
 bevy.workspace = true
+anyhow = "1.0.75"

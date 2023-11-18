@@ -11,6 +11,7 @@ pub mod common;
 mod entity_grid;
 pub mod node;
 pub mod op;
+pub mod opv2;
 pub mod player;
 pub mod prelude;
 pub mod quest;
