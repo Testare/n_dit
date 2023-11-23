@@ -1,3 +1,4 @@
+mod node_opv2;
 use std::borrow::Cow;
 
 use bevy::ecs::query::WorldQuery;
@@ -19,7 +20,7 @@ use crate::prelude::*;
 
 const ACCESS_POINT_DISPLAY_ID: &str = "env:access_point";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Reflect)]
 pub enum NodeOp {
     PerformCurioAction {
         action_id: Cow<'static, str>,

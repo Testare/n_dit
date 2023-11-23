@@ -1,32 +1,82 @@
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 
+use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::{StaticSystemParam, SystemId};
 use bevy::reflect::TypePath;
 use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Debug, Default)]
-struct OpPlugin<T: Op + TypePath + FromReflect>(PhantomData<T>);
+// TODO refactor most of this into a module "op_sys" which will be more generic, 
+// then the more game-specific queues defined somewhere else
+#[derive(Debug, Default, Deref, DerefMut, Resource)]
+pub struct PrimeOpQueue(VecDeque<OpRequest<Self>>);
 
-impl<T: Op + TypePath + FromReflect> Plugin for OpPlugin<T> {
+pub trait OpErrorUtils<T> {
+    fn critical(self) -> Result<T, OpError>;
+    fn invalid(self) -> Result<T, OpError>;
+}
+
+impl <T> OpErrorUtils<T> for &str {
+    fn critical(self) -> Result<T, OpError> {
+        Err(OpError::OpFailureCritical(anyhow::anyhow!(self.to_string())))
+    }
+    fn invalid(self) -> Result<T, OpError> {
+        Err(OpError::InvalidOp(self.to_string()))
+    }
+}
+
+impl <T, E: std::error::Error + Send + Sync + 'static> OpErrorUtils<T> for Result<T, E> {
+    fn critical(self) -> Result<T, OpError> {
+        self.map_err(|e|OpError::OpFailureCritical(anyhow::Error::from(e)))
+    }
+
+    fn invalid(self) -> Result<T, OpError> {
+        self.map_err(|e|OpError::InvalidOp(e.to_string()))
+    }
+}
+
+
+/// A type alias for Result<Metadata, OpError>, different 
+/// from OpResult because OpResult also contains a copy of the 
+/// Op.
+pub type OpSysResult = Result<Metadata, OpError>;
+
+#[derive(Debug)]
+pub struct OpPlugin<T: OpV2 + TypePath + FromReflect>(PhantomData<T>);
+
+impl <T: OpV2 + TypePath + FromReflect> Default for OpPlugin<T> {
+    fn default() -> Self {
+        OpPlugin(default())
+    }
+}
+
+impl<T: OpV2 + TypePath + FromReflect> Plugin for OpPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, sys_register_op::<T>)
             .add_event::<OpResult<T>>();
     }
 }
 
-#[derive(Debug, Default)]
-struct OpQueuePlugin<Q> {
+
+#[derive(Debug)]
+pub struct OpQueuePlugin<Q, S: ScheduleLabel + Clone = Update> {
     phantom_data: PhantomData<Q>,
+    schedule: S
 }
 
-impl<Q: OpQueue> Plugin for OpQueuePlugin<Q> {
+impl <Q> Default for OpQueuePlugin<Q, Update> {
+    fn default() -> Self {
+        OpQueuePlugin { phantom_data: PhantomData, schedule: Update }
+    }
+}
+
+impl<Q: OpQueue, K: ScheduleLabel + Clone> Plugin for OpQueuePlugin<Q, K> {
     fn build(&self, app: &mut App) {
         app.init_resource::<Q>()
             .init_resource::<OpLoader<Q>>()
-            .add_systems(Update, sys_perform_ops::<Q>);
+            .add_systems(self.schedule.clone(), sys_perform_ops::<Q>);
     }
 }
 
@@ -46,12 +96,12 @@ impl OpRegistry {
 }
 
 #[derive(Debug)]
-pub struct OpRegistrar<'a, O: Op + TypePath + FromReflect>(&'a mut World, PhantomData<O>);
+pub struct OpRegistrar<'a, O: OpV2 + TypePath + FromReflect>(&'a mut World, PhantomData<O>);
 
-impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
+impl<'a, O: OpV2 + TypePath + FromReflect> OpRegistrar<'a, O> {
     pub fn register_op<M: 'static, S>(&mut self, op_sys: S) -> &mut Self
     where
-        S: SystemParamFunction<M, In = O, Out = Result<Metadata, OpError>>,
+        S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
     {
         let sys_id = self.0.register_system(wrap_op_system(op_sys));
         let mut op_reg = self.0.get_resource_or_insert_with(OpRegistry::default);
@@ -61,7 +111,7 @@ impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
 }
 
 #[derive(Debug, Resource)]
-struct OpLoader<Q: OpQueue>(Option<Box<dyn Op<Queue = Q>>>);
+struct OpLoader<Q: OpQueue>(Option<OpRequest<Q>>);
 
 impl<Q: OpQueue> Default for OpLoader<Q> {
     fn default() -> Self {
@@ -73,19 +123,20 @@ fn wrap_op_system<S, M, O>(
     mut op_sys: S,
 ) -> impl FnMut(ResMut<OpLoader<O::Queue>>, StaticSystemParam<S::Param>, EventWriter<OpResult<O>>)
 where
-    S: SystemParamFunction<M, In = O, Out = Result<Metadata, OpError>>,
-    O: Op + FromReflect,
+    S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+    O: OpV2 + FromReflect,
 {
-    move |mut dbr, param, mut evw| {
-        if let Some(next_op) = dbr.0.take() {
-            let source = next_op.into_reflect();
-            // let m: O = (*source.clone_value().into();
+    move |mut op_loader, param, mut evw| {
+        if let Some(op_request) = op_loader.0.take() {
+            let OpRequest { op, source } = op_request;
+            let reflect_op = op.into_reflect();
             let op: O =
-                FromReflect::from_reflect(&*source.clone_value()).expect("Unwrap should be good?");
+                FromReflect::from_reflect(&*reflect_op.clone_value()).expect("Unwrap should be good?");
             // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
-            let result = op_sys.run(op, param.into_inner());
+            let result = op_sys.run((source.clone(), op), param.into_inner());
             let res = OpResult {
-                source: *source.downcast().unwrap(),
+                source,
+                op: *reflect_op.downcast().unwrap(),
                 result,
             };
             evw.send(res);
@@ -106,7 +157,7 @@ fn sys_perform_ops<Q: OpQueue>(world: &mut World) {
     let ops = world.get_resource::<OpRegistry>().map(|op_registry| {
         ops.into_iter()
             .map(|op| {
-                let sys_id = op_registry.get_op_system(op.reflect_type_path(), op.system_index());
+                let sys_id = op_registry.get_op_system(op.op.reflect_type_path(), op.op.system_index());
                 (op, sys_id)
             })
             .collect::<Vec<_>>()
@@ -129,35 +180,49 @@ fn sys_perform_ops<Q: OpQueue>(world: &mut World) {
     }
 }
 
-fn sys_register_op<O: Op + TypePath + FromReflect>(world: &mut World) {
+fn sys_register_op<O: OpV2 + TypePath + FromReflect>(world: &mut World) {
     let op_reg: OpRegistrar<O> = OpRegistrar(world, PhantomData);
     O::register_systems(op_reg);
 }
 
-pub trait Op: std::fmt::Debug + Sync + Send + Reflect + 'static {
+#[derive(Debug)]
+pub struct OpRequest<Q: OpQueue + std::fmt::Debug + ?Sized > {
+    source: Entity,
+    op: Box<dyn OpV2<Queue = Q>>
+}
+
+pub trait OpV2: std::fmt::Debug + Sync + Send + Reflect + 'static {
     type Queue: OpQueue;
     // type Queue; Multiple queues to be added later
-    fn full_sys_index(&self) -> (&str, usize) {
-        (self.reflect_type_path(), self.system_index())
-    }
 
     fn system_index(&self) -> usize;
     fn register_systems(registrar: OpRegistrar<Self>)
     where
         Self: Sized + TypePath + FromReflect;
+
+    fn to_request(self, source: Entity) -> OpRequest<Self::Queue> 
+        where Self: Sized {
+        OpRequest { 
+            source, 
+            op: Box::new(self)
+        }
+    }
 }
 
 pub trait OpQueue:
     core::ops::DerefMut
-    + core::ops::Deref<Target = VecDeque<Box<dyn Op<Queue = Self>>>>
+    + std::fmt::Debug
+    + core::ops::Deref<Target = VecDeque<OpRequest<Self>>>
     + Resource
     + FromWorld
 {
 }
 impl<
         T: core::ops::DerefMut
-            + core::ops::Deref<Target = VecDeque<Box<dyn Op<Queue = Self>>>>
+            // + core::ops::Deref<Target = VecDeque<Box<dyn OpV2<Queue = Self>>>>
+            + core::ops::Deref<Target = VecDeque<OpRequest<Self>>>
             + Resource
+            + std::fmt::Debug
             + FromWorld,
     > OpQueue for T
 {
@@ -168,6 +233,9 @@ pub enum OpError {
     /// This error usually means a user or system was trying to perform an OP but it is unsuccessful
     #[error("Invalid op: {0}")]
     InvalidOp(String),
+    /// The op doesn't match the system it was called for.
+    #[error("Dev error: System called for op that does not match")]
+    MismatchedOpSystem,
     /// This error means we encountered an expected error while performing the op but we can continue running
     #[error("Encountered error [{1:3}] running op: {0}")]
     OpFailureRecoverable(#[source] anyhow::Error, usize),
@@ -191,7 +259,9 @@ impl From<&str> for OpError {
 #[derive(Debug, Event, getset::Getters)]
 pub struct OpResult<O> {
     #[getset(get = "pub")]
-    pub source: O,
+    pub source: Entity,
+    #[getset(get = "pub")]
+    pub op: O,
     #[getset(get = "pub")]
     pub result: Result<Metadata, OpError>,
 }
@@ -201,7 +271,7 @@ mod test {
     use super::*;
 
     #[derive(Debug, Default, Deref, DerefMut, Resource)]
-    pub struct ExampleQueue(VecDeque<Box<dyn Op<Queue = Self>>>);
+    pub struct ExampleQueue(VecDeque<OpRequest<Self>>);
 
     #[derive(Debug, Default, Reflect, PartialEq)]
     pub enum ExampleOp {
@@ -210,15 +280,15 @@ mod test {
         ExampleTwo,
     }
 
-    impl Op for ExampleOp {
+    impl OpV2 for ExampleOp {
         type Queue = ExampleQueue;
         fn register_systems(mut registrar: OpRegistrar<Self>) {
             registrar
-                .register_op(|In(op): In<ExampleOp>| {
+                .register_op(|In((_, op))| {
                     println!("Hello from One: {op:?}!");
                     Ok(Metadata::default())
                 })
-                .register_op(|In(op), mut count: Local<usize>| {
+                .register_op(|In((_, op)), mut count: Local<usize>| {
                     *count += 1;
                     let modulo = *count % 2;
                     println!("Hello from Two: {op:?} count: {count:?}! Module {modulo}");
@@ -245,10 +315,10 @@ mod test {
             OpPlugin::<ExampleOp>::default(),
         ))
         .add_systems(Startup, |mut res: ResMut<ExampleQueue>| {
-            res.push_back(Box::new(ExampleOp::ExampleOne));
-            res.push_back(Box::new(ExampleOp::ExampleTwo));
-            res.push_back(Box::new(ExampleOp::ExampleTwo));
-            res.push_back(Box::new(ExampleOp::ExampleTwo));
+            res.push_back(ExampleOp::ExampleOne.to_request(Entity::PLACEHOLDER));
+            res.push_back(ExampleOp::ExampleTwo.to_request(Entity::PLACEHOLDER));
+            res.push_back(ExampleOp::ExampleTwo.to_request(Entity::PLACEHOLDER));
+            res.push_back(ExampleOp::ExampleTwo.to_request(Entity::PLACEHOLDER));
         })
         .add_systems(PostUpdate, |mut evr: EventReader<OpResult<ExampleOp>>| {
             let results: Vec<_> = evr.read().collect();
@@ -256,7 +326,8 @@ mod test {
                 matches!(
                     results[0],
                     OpResult {
-                        source: ExampleOp::ExampleOne,
+                        source: Entity::PLACEHOLDER,
+                        op: ExampleOp::ExampleOne,
                         result: Ok(_)
                     }
                 ),
@@ -266,7 +337,8 @@ mod test {
                 matches!(
                     results[1],
                     OpResult {
-                        source: ExampleOp::ExampleTwo,
+                        source: Entity::PLACEHOLDER,
+                        op: ExampleOp::ExampleTwo,
                         result: Ok(_)
                     }
                 ),
@@ -276,7 +348,8 @@ mod test {
                 matches!(
                     results[2],
                     OpResult {
-                        source: ExampleOp::ExampleTwo,
+                        source: Entity::PLACEHOLDER,
+                        op: ExampleOp::ExampleTwo,
                         result: Err(OpError::InvalidOp(_))
                     }
                 ),
@@ -290,7 +363,8 @@ mod test {
                 matches!(
                     results[3],
                     OpResult {
-                        source: ExampleOp::ExampleTwo,
+                        source: Entity::PLACEHOLDER,
+                        op: ExampleOp::ExampleTwo,
                         result: Ok(_)
                     }
                 ),

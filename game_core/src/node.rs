@@ -1,4 +1,5 @@
 use crate::card::{Action, Deck};
+use crate::opv2::OpPlugin;
 use crate::prelude::*;
 use crate::NDitCoreSet;
 
@@ -67,7 +68,10 @@ impl Plugin for NodePlugin {
                 (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
                     .in_set(NDitCoreSet::ProcessCommands),
             )
-            .add_plugins(ai::NodeAiPlugin);
+            .add_plugins((
+                ai::NodeAiPlugin,
+                OpPlugin::<NodeOp>::default()
+            ));
     }
 }
 
@@ -332,7 +336,7 @@ pub enum TeamColor {
 /// Indicates what phase of the game the team is in.
 /// * Setup - Putting their pieces on the board
 /// * Play - Usual play
-#[derive(Component, Debug, Default, PartialEq, Reflect)]
+#[derive(Clone, Component, Copy, Debug, Default, PartialEq, Reflect)]
 #[reflect(Component)]
 pub enum TeamPhase {
     #[default]
