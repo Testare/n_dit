@@ -51,10 +51,10 @@ fn opsys_node_movement(
         let (mut grid, current_turn, mut active_curio) = nodes.get_mut(node_id).critical()?;
 
         if player_team_id != current_turn {
-            "Not this player's turn".invalid()?;
+            Err("Not this player's turn".invalid())?;
         }
         if *team_phases.get(player_team_id).critical()? == TeamPhase::Setup {
-            "Can't move pieces during setup phase".invalid()?;
+            Err("Can't move pieces during setup phase".invalid())?;
         }
         let active_curio_id = active_curio.ok_or("No active curio to move")?;
 
@@ -68,7 +68,7 @@ fn opsys_node_movement(
         }
         let head = grid
             .head(active_curio_id)
-            .map_or_else(|| "Active curio not in grid".critical(), Ok)?;
+            .ok_or("Active curio not in grid".critical())?;
         let next_pt = head + dir;
         metadata.put(key::TARGET_POINT, next_pt).critical()?;
         if grid.square_is_closed(next_pt) {
@@ -154,51 +154,49 @@ fn opsys_node_action(
             nodes.get_mut(node_id).critical()?;
 
         if player_team_id != current_turn {
-            "Not this player's turn".invalid()?;
+            Err("Not this player's turn".invalid())?;
         }
         if *team_phases.get(player_team_id).critical()? == TeamPhase::Setup {
-            "Can't perform actions during setup phase".invalid()?;
+            Err("Can't perform actions during setup phase".invalid())?;
         }
         if active_curio.is_some() && curio.is_some() && *active_curio != curio {
-            "There's already an active curio and it's not that one".invalid()?;
+            Err("There's already an active curio and it's not that one".invalid())?;
         }
         let curio_id = active_curio
             .or(curio)
-            .map_or_else(|| "No curio to perform that action".invalid(), Ok)?;
+            .ok_or("No curio to perform that action".invalid())?;
 
         let curios_p0 = curios.p0();
-        let curio_q = get_assert!(curio_id, curios_p0).map_or_else(
-            || "Calling curio action on entity that is not a curio".critical(),
-            Ok,
-        )?;
+        let curio_q = get_assert!(curio_id, curios_p0)
+            .ok_or("Calling curio action on entity that is not a curio".critical())?;
         if **curio_q.tapped {
-            "Curio is tapped".invalid()?;
+            Err("Curio is tapped".invalid())?;
         }
         let action_def = curio_q
             .actions
-            .map_or_else(|| "Curio has no actions".invalid(), Ok)?
+            .ok_or("Curio has no actions".invalid())?
             .iter()
             .find_map(|action_handle| {
                 let action_def = ast_action.get(action_handle)?;
                 (action_def.id() == action_id).then_some(action_def)
             })
-            .map_or_else(|| "That action is not defined".invalid(), Ok)?;
+            .ok_or("That action is not defined".invalid())?;
 
         if let Some(range) = action_def.range() {
             if !range.in_range_of(grid.as_ref(), curio_id, target) {
-                "Target out of range".invalid()?;
+                Err("Target out of range".invalid())?;
             }
         }
         for prereq in action_def.prereqs() {
             if !prereq.satisfied(&grid, curio_id, target) {
-                "Prerequisites not satisfied".invalid()?;
+                Err("Prerequisites not satisfied".invalid())?;
             }
         }
         if !action_def
             .target()
             .valid_target(&grid, curio_id, target, |id| curio_teams.get(id).ok())
         {
-            "Invalid target".invalid()?;
+            Err("Invalid target".invalid())?;
         }
         let mut metadata = Metadata::new();
         let effect_metadata = action_def
@@ -229,7 +227,7 @@ fn opsys_node_action(
         // Have to drop curios_p0 temporarily to apply actions, then we need to bring them back to tap the piece
         let mut curios_p0 = curios.p0();
         let mut curio_q = get_assert_mut!(curio_id, curios_p0)
-            .map_or_else(|| "Curio disappeared mid operation".critical(), Ok)?;
+            .ok_or("Curio disappeared mid operation".critical())?;
         **curio_q.tapped = true;
         *active_curio = None;
 

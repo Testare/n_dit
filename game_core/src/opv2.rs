@@ -14,23 +14,24 @@ use crate::prelude::*;
 #[derive(Debug, Default, Deref, DerefMut, Resource)]
 pub struct PrimeOps(OpExecutor);
 
-pub trait OpErrorUtils<T> {
-    fn critical(self) -> Result<T, OpError>;
-    fn invalid(self) -> Result<T, OpError>;
+pub trait OpErrorUtils {
+    type Error;
+    fn critical(self) -> Self::Error;
+    fn invalid(self) -> Self::Error;
 }
 
-impl<T> OpErrorUtils<T> for &str {
-    fn critical(self) -> Result<T, OpError> {
-        Err(OpError::OpFailureCritical(
-            anyhow::anyhow!(self.to_string()),
-        ))
+impl OpErrorUtils for &str {
+    type Error = OpError;
+    fn critical(self) -> OpError {
+        OpError::OpFailureCritical(anyhow::anyhow!(self.to_string()))
     }
-    fn invalid(self) -> Result<T, OpError> {
-        Err(OpError::InvalidOp(self.to_string()))
+    fn invalid(self) -> Self::Error {
+        OpError::InvalidOp(self.to_string())
     }
 }
 
-impl<T, E: std::error::Error + Send + Sync + 'static> OpErrorUtils<T> for Result<T, E> {
+impl<T, E: std::error::Error + Send + Sync + 'static> OpErrorUtils for Result<T, E> {
+    type Error = Result<T, OpError>;
     fn critical(self) -> Result<T, OpError> {
         self.map_err(|e| OpError::OpFailureCritical(anyhow::Error::from(e)))
     }
