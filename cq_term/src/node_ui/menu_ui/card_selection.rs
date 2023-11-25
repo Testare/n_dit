@@ -3,6 +3,7 @@ use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::op::OpSubtype;
+use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -159,6 +160,7 @@ impl MenuUiCardSelection {
 
     pub fn kb_card_selection(
         mut card_menus: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
+        mut res_prime_ops: ResMut<PrimeOps>,
         players: Query<
             (
                 Entity,
@@ -212,26 +214,25 @@ impl MenuUiCardSelection {
                             **selected_item = Some(next_pt);
                         },
                         NamedInput::Activate | NamedInput::AltActivate => {
-                            // TODO assert_and_then
                             selected_entity.and_then(|access_point_id| {
                                 let card_id = deck.cards_with_count().nth((**selected_item)?)?.0;
                                 let access_point = get_assert!(access_point_id, &access_points)?;
 
                                 if access_point.card() == Some(card_id) {
                                     if named_input != NamedInput::AltActivate {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
-                                        ));
+                                        );
                                     }
                                 } else if played_cards.can_be_played(deck, card_id) {
-                                    ev_node_op.send(Op::new(
+                                    res_prime_ops.request(
                                         player,
                                         NodeOp::LoadAccessPoint {
                                             access_point_id,
                                             card_id,
                                         },
-                                    ));
+                                    );
                                 }
                                 Some(())
                             });
@@ -240,10 +241,10 @@ impl MenuUiCardSelection {
                             selected_entity.and_then(|access_point_id| {
                                 let access_point = get_assert!(access_point_id, &access_points)?;
                                 if access_point.card().is_some() {
-                                    ev_node_op.send(Op::new(
+                                    res_prime_ops.request(
                                         player,
                                         NodeOp::UnloadAccessPoint { access_point_id },
-                                    ));
+                                    );
                                 }
                                 Some(())
                             });

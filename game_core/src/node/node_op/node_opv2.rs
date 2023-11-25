@@ -1,14 +1,19 @@
 use bevy::reflect::TypePath;
 
-use super::{CurioQ, NodeOp};
-use crate::card::{Action, MaximumSize, MovementSpeed};
+use super::{CardInfo, CurioQ, NodeOp};
+use crate::card::{
+    Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
+};
 use crate::node::{
-    key, ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, OnTeam, Pickup, Team,
-    TeamPhase, TeamStatus, Teams, VictoryStatus,
+    key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
+    NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase, TeamStatus, Teams,
+    VictoryStatus,
 };
 use crate::opv2::{OpError, OpErrorUtils, OpImplResult, OpRegistrar, OpV2};
 use crate::player::Player;
 use crate::prelude::*;
+
+const ACCESS_POINT_DISPLAY_ID: &str = "env:access_point";
 
 impl OpV2 for NodeOp {
     fn register_systems(mut registrar: OpRegistrar<Self>)
@@ -321,17 +326,82 @@ fn opsys_node_activate(
     }
 }
 
-fn opsys_node_access_point(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
-    if let NodeOp::LoadAccessPoint {
-        access_point_id, ..
+fn opsys_node_access_point(
+    In((player, node_op)): In<(Entity, NodeOp)>,
+    ast_cards: Res<Assets<CardDefinition>>,
+    mut commands: Commands,
+    cards: Query<CardInfo>,
+    mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
+    mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
+) -> OpImplResult {
+    let (access_point_id, next_card_id) = match node_op {
+        NodeOp::LoadAccessPoint {
+            access_point_id,
+            card_id,
+        } => (access_point_id, Some(card_id)),
+        NodeOp::UnloadAccessPoint { access_point_id } => (access_point_id, None),
+        _ => return Err(OpError::MismatchedOpSystem),
+    };
+    let mut metadata = Metadata::new();
+    let (mut access_point, mut node_piece) = access_points
+        .get_mut(access_point_id)
+        .map_err(|_| "No such access point".invalid())?;
+    let (mut played_cards, deck) = players.get_mut(player).critical()?;
+    if access_point.card.is_none() && next_card_id.is_none() {
+        Err("Access point is already unloaded".invalid())?;
     }
-    | NodeOp::UnloadAccessPoint { access_point_id } = node_op
-    {}
-    // Load AND unload
-    Ok(default())
+    if access_point.card == next_card_id {
+        Err("That is already loaded".invalid())?;
+    }
+    if let Some(card) = access_point.card {
+        metadata.put(key::CARD, card).critical()?;
+        let card_count = played_cards
+            .get_mut(&card)
+            .ok_or("Unloading card that wasn't played".critical())?;
+        *card_count -= 1;
+    }
+
+    let mut access_point_commands = commands.entity(access_point_id);
+    if let Some(next_card_id) = next_card_id {
+        if !played_cards.can_be_played(deck, next_card_id) {
+            Err("Already played all of those".invalid())?;
+        }
+        let card_info = cards
+            .get(next_card_id)
+            .map_err(|_| "Cannot find that card".invalid())?;
+        let card_def = ast_cards
+            .get(card_info.card.definition())
+            .ok_or("Card definition is not loaded".invalid())?; // Not really invalid?
+
+        *played_cards.entry(next_card_id).or_default() += 1;
+        node_piece.set_display_id(card_info.card.card_name().to_owned());
+
+        access_point_commands.insert((
+            Description::new(card_def.description().to_owned()),
+            MovementSpeed(card_def.movement_speed()),
+            MaximumSize(card_def.max_size()),
+            Actions(card_def.actions().clone()),
+        ));
+    } else {
+        node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
+        access_point_commands.remove::<(Description, MovementSpeed, MaximumSize, Actions)>();
+    };
+    access_point.card = next_card_id;
+
+    Ok(metadata)
 }
 
-fn opsys_node_ready(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
+fn opsys_node_ready(
+    In((player, node_op)): In<(Entity, NodeOp)>,
+    ast_cards: Res<Assets<CardDefinition>>,
+    mut commands: Commands,
+    mut ops: EventReader<Op<NodeOp>>,
+    cards: Query<&Card>,
+    mut players: Query<(Entity, &OnTeam, &InNode, AsDerefMut<IsReadyToGo>), With<Player>>,
+    mut team_phases: Query<&mut TeamPhase, With<Team>>,
+    access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
+    mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
+) -> OpImplResult {
     Ok(default())
 }
 
