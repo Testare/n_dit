@@ -218,14 +218,15 @@ pub fn kb_grid(
                                             return None;
                                         }
                                         let action = ast_actions.get(actions?.get(selected_action_index)?)?;
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             player,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),
                                                 curio: **selected_entity,
                                                 target: **cursor,
                                             },
-                                        ));
+                                        );
+
                                         Some(())
                                     },
                                 );
@@ -237,26 +238,26 @@ pub fn kb_grid(
                                         }
                                         match actions.map(|actions| (actions.len(), actions)) {
                                             None | Some((0, _)) => {
-                                                ev_node_op.send(Op::new(
+                                                res_prime_ops.request(
                                                     player,
                                                     NodeOp::PerformCurioAction {
                                                         action_id: NO_OP_ACTION_ID,
                                                         curio: **selected_entity,
                                                         target: default(),
                                                     },
-                                                ));
+                                                );
                                             },
                                             Some((1, actions)) => {
                                                 if let Some(action) = ast_actions.get(actions.0.get(0).expect("if the len is 1, there should be an action at 0")) {
                                                     if action.range().is_none() {
-                                                        ev_node_op.send(Op::new(
+                                                        res_prime_ops.request(
                                                             player,
                                                             NodeOp::PerformCurioAction {
                                                                 action_id: action.id_cow(),
                                                                 curio: **selected_entity,
                                                                 target: default(),
                                                             },
-                                                        ));
+                                                        );
                                                     }
                                                 }
                                             },

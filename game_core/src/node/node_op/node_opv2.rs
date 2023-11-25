@@ -1,12 +1,12 @@
 use bevy::reflect::TypePath;
 
-use super::{CurioQ, NodeOp, NodeOpError};
+use super::{CurioQ, NodeOp};
 use crate::card::{Action, MaximumSize, MovementSpeed};
 use crate::node::{
     key, ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, OnTeam, Pickup, Team,
-    TeamPhase, TeamStatus, Teams,
+    TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
-use crate::opv2::{OpError, OpErrorUtils, OpImplResult, OpRegistrar, OpResult, OpV2};
+use crate::opv2::{OpError, OpErrorUtils, OpImplResult, OpRegistrar, OpV2};
 use crate::player::Player;
 use crate::prelude::*;
 
@@ -15,13 +15,16 @@ impl OpV2 for NodeOp {
     where
         Self: Sized + TypePath + FromReflect,
     {
-        registrar.register_op(opsys_node_movement);
+        registrar
+            .register_op(opsys_node_movement)
+            .register_op(opsys_node_action);
     }
 
     fn system_index(&self) -> usize {
         match self {
             Self::MoveActiveCurio { .. } => 0,
-            _ => 1,
+            Self::PerformCurioAction { .. } => 1,
+            _ => 10,
         }
     }
 }
@@ -39,10 +42,7 @@ fn opsys_node_movement(
     >,
     players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
-    mut curios: ParamSet<(
-        Query<CurioQ, With<Curio>>,
-        Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
-    )>,
+    mut curios: Query<CurioQ, With<Curio>>,
     pickups: Query<&Pickup>,
 ) -> OpImplResult {
     if let NodeOp::MoveActiveCurio { dir } = node_op {
@@ -60,7 +60,6 @@ fn opsys_node_movement(
 
         metadata.put(key::NODE_ID, node_id).critical()?;
         metadata.put(key::CURIO, active_curio_id).critical()?;
-        let mut curios = curios.p0();
         let mut curio_q = curios.get_mut(active_curio_id).critical()?;
         debug_assert!(!**curio_q.tapped, "a tapped curio was active");
         let movement_speed = **curio_q.movement_speed.ok_or("Movement speed is 0")?;
@@ -116,6 +115,155 @@ fn opsys_node_movement(
             metadata.put(key::TAPPED, true).critical()?;
             **curio_q.tapped = true;
             *active_curio = None;
+        }
+        Ok(metadata)
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
+}
+
+fn opsys_node_action(
+    In((player, node_op)): In<(Entity, NodeOp)>,
+    ast_action: Res<Assets<Action>>,
+    mut nodes: Query<
+        (
+            &mut EntityGrid,
+            AsDerefCopied<CurrentTurn>,
+            AsDerefMut<ActiveCurio>,
+            &Teams,
+            AsDerefMut<TeamStatus>,
+        ),
+        With<Node>,
+    >,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    team_phases: Query<&TeamPhase, With<Team>>,
+    mut curios: ParamSet<(
+        Query<CurioQ, With<Curio>>,
+        Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
+    )>,
+    curio_teams: Query<AsDerefCopied<OnTeam>, With<Curio>>,
+) -> OpImplResult {
+    if let NodeOp::PerformCurioAction {
+        action_id,
+        curio,
+        target,
+    } = node_op
+    {
+        let (player_team_id, node_id) = players.get(player).critical()?;
+        let (mut grid, current_turn, mut active_curio, teams, mut team_status) =
+            nodes.get_mut(node_id).critical()?;
+
+        if player_team_id != current_turn {
+            "Not this player's turn".invalid()?;
+        }
+        if *team_phases.get(player_team_id).critical()? == TeamPhase::Setup {
+            "Can't perform actions during setup phase".invalid()?;
+        }
+        if active_curio.is_some() && curio.is_some() && *active_curio != curio {
+            "There's already an active curio and it's not that one".invalid()?;
+        }
+        let curio_id = active_curio
+            .or(curio)
+            .map_or_else(|| "No curio to perform that action".invalid(), Ok)?;
+
+        let curios_p0 = curios.p0();
+        let curio_q = get_assert!(curio_id, curios_p0).map_or_else(
+            || "Calling curio action on entity that is not a curio".critical(),
+            Ok,
+        )?;
+        if **curio_q.tapped {
+            "Curio is tapped".invalid()?;
+        }
+        let action_def = curio_q
+            .actions
+            .map_or_else(|| "Curio has no actions".invalid(), Ok)?
+            .iter()
+            .find_map(|action_handle| {
+                let action_def = ast_action.get(action_handle)?;
+                (action_def.id() == action_id).then_some(action_def)
+            })
+            .map_or_else(|| "That action is not defined".invalid(), Ok)?;
+
+        if let Some(range) = action_def.range() {
+            if !range.in_range_of(grid.as_ref(), curio_id, target) {
+                "Target out of range".invalid()?;
+            }
+        }
+        for prereq in action_def.prereqs() {
+            if !prereq.satisfied(&grid, curio_id, target) {
+                "Prerequisites not satisfied".invalid()?;
+            }
+        }
+        if !action_def
+            .target()
+            .valid_target(&grid, curio_id, target, |id| curio_teams.get(id).ok())
+        {
+            "Invalid target".invalid()?;
+        }
+        let mut metadata = Metadata::new();
+        let effect_metadata = action_def
+            .effects()
+            .iter()
+            .map(|effect| effect.apply_effect(&mut grid, curio_id, target, &mut curios.p1()))
+            .collect::<Result<Vec<_>, _>>()
+            .critical()?;
+
+        metadata
+            .put_optional(key::EFFECTS, Metadata::aggregate(effect_metadata))
+            .critical()?;
+
+        let self_effects = action_def
+            .self_effects()
+            .iter()
+            .filter_map(|effect| {
+                let head = grid.head(curio_id)?;
+                Some(effect.apply_effect(&mut grid, curio_id, head, &mut curios.p1()))
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .critical()?;
+        metadata
+            .put_optional(key::SELF_EFFECTS, Metadata::aggregate(self_effects))
+            .critical()?;
+        metadata.put(key::NODE_ID, node_id).critical()?;
+
+        // Have to drop curios_p0 temporarily to apply actions, then we need to bring them back to tap the piece
+        let mut curios_p0 = curios.p0();
+        let mut curio_q = get_assert_mut!(curio_id, curios_p0)
+            .map_or_else(|| "Curio disappeared mid operation".critical(), Ok)?;
+        **curio_q.tapped = true;
+        *active_curio = None;
+
+        // WIP Test victory conditions
+        // Need to rework for different victory conditions, such as obtaining key items, or time limits
+        for team in teams.iter() {
+            if team_status[team].is_undecided() {
+                let still_in_this = curios
+                    .p0()
+                    .iter()
+                    .any(|curio_q| **curio_q.team == *team && grid.contains_key(curio_q.id));
+                if !still_in_this {
+                    team_status.insert(*team, VictoryStatus::Loss);
+                }
+            }
+        }
+        let remaining_teams: Vec<Entity> = teams
+            .iter()
+            .filter(|team| team_status[*team].is_undecided())
+            .copied()
+            .collect();
+        if remaining_teams.len() == 1 {
+            let team = remaining_teams[0];
+            let is_victory_flawed = curios.p0().iter().any(|curio_q| {
+                curio_q.in_node == node_id
+                    && **curio_q.team == team
+                    && !grid.contains_key(curio_q.id)
+            });
+            let victory_status = if is_victory_flawed {
+                VictoryStatus::Victory
+            } else {
+                VictoryStatus::PerfectVictory
+            };
+            team_status.insert(team, victory_status);
         }
         Ok(metadata)
     } else {

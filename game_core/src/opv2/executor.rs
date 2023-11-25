@@ -51,7 +51,7 @@ impl OpExecutor {
         }
     }
 
-    pub fn accept_events<E: Iterator<Item = OpRequest>>(&mut self, events: E) {
+    pub fn accept_requests<E: Iterator<Item = OpRequest>>(&mut self, events: E) {
         match self {
             Self::Local(ref mut queue) => {
                 queue.extend(events);
@@ -64,6 +64,7 @@ impl OpExecutor {
         match self {
             Self::Local(ref mut queue) => {
                 let new_queue = Vec::new();
+                // In the future, might only implement X ops per frame
                 std::mem::replace(queue, new_queue)
             },
             Self::Network => todo!("TODO Network support"),
