@@ -5,7 +5,7 @@ use game_core::node::{
     Team, TeamPhase,
 };
 use game_core::op::OpSubtype;
-use game_core::opv2::{PrimeOpQueue, OpV2};
+use game_core::opv2::{OpV2, PrimeOps};
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2d};
@@ -151,7 +151,7 @@ pub fn handle_layout_events(
 pub fn kb_grid(
     ast_actions: Res<Assets<Action>>,
     mut ev_keys: EventReader<KeyEvent>,
-    mut res_prime_op_queue: ResMut<PrimeOpQueue>,
+    mut res_prime_ops: ResMut<PrimeOps>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     players: Query<
         (
@@ -203,7 +203,8 @@ pub fn kb_grid(
                         NamedInput::Direction(dir) => {
                             if is_controlling_active_curio && selected_action.is_none() {
                                 // ev_node_op.send(NodeOp::MoveActiveCurio { dir }.for_p(player));
-                                res_prime_op_queue.push_back(NodeOp::MoveActiveCurio { dir }.to_request(player));
+                                // res_prime_op_queue.push_back(NodeOp::MoveActiveCurio { dir }.to_request(player));
+                                res_prime_ops.request(player, NodeOp::MoveActiveCurio { dir })
                             } else {
                                 ev_node_ui_op
                                     .send(NodeUiOp::MoveNodeCursor(dir.into()).for_p(player))

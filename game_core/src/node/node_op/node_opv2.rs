@@ -1,21 +1,23 @@
 use bevy::reflect::TypePath;
 
+use super::{CurioQ, NodeOp, NodeOpError};
 use crate::card::{Action, MaximumSize, MovementSpeed};
-use crate::node::{NoOpAction, CurrentTurn, ActiveCurio, Teams, TeamStatus, OnTeam, InNode, Node, TeamPhase, Team, Curio, Pickup, key};
-use crate::opv2::{OpV2, PrimeOpQueue, OpSysResult, OpRegistrar, OpError, OpResult, OpErrorUtils};
+use crate::node::{
+    key, ActiveCurio, Curio, CurrentTurn, InNode, NoOpAction, Node, OnTeam, Pickup, Team,
+    TeamPhase, TeamStatus, Teams,
+};
+use crate::opv2::{OpError, OpErrorUtils, OpImplResult, OpRegistrar, OpResult, OpV2};
 use crate::player::Player;
 use crate::prelude::*;
 
-use super::{NodeOp, NodeOpError, CurioQ};
-
 impl OpV2 for NodeOp {
-    type Queue = PrimeOpQueue;
     fn register_systems(mut registrar: OpRegistrar<Self>)
-        where
-            Self: Sized + TypePath + FromReflect {
-                registrar.register_op(opsys_node_movement);
-        
+    where
+        Self: Sized + TypePath + FromReflect,
+    {
+        registrar.register_op(opsys_node_movement);
     }
+
     fn system_index(&self) -> usize {
         match self {
             Self::MoveActiveCurio { .. } => 0,
@@ -42,7 +44,7 @@ fn opsys_node_movement(
         Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
     )>,
     pickups: Query<&Pickup>,
-) -> OpSysResult {
+) -> OpImplResult {
     if let NodeOp::MoveActiveCurio { dir } = node_op {
         let mut metadata = Metadata::default();
         let (player_team_id, node_id) = players.get(player).critical()?;
@@ -59,17 +61,15 @@ fn opsys_node_movement(
         metadata.put(key::NODE_ID, node_id).critical()?;
         metadata.put(key::CURIO, active_curio_id).critical()?;
         let mut curios = curios.p0();
-        let mut curio_q = curios
-            .get_mut(active_curio_id)
-            .critical()?;
+        let mut curio_q = curios.get_mut(active_curio_id).critical()?;
         debug_assert!(!**curio_q.tapped, "a tapped curio was active");
-        let movement_speed =
-            **curio_q.movement_speed.ok_or("Movement speed is 0")?;
+        let movement_speed = **curio_q.movement_speed.ok_or("Movement speed is 0")?;
         if movement_speed == **curio_q.moves_taken {
             return Err("No movement remains")?;
         }
-        let head = grid.head(active_curio_id)
-            .map_or_else(||"Active curio not in grid".critical(), Ok)?;
+        let head = grid
+            .head(active_curio_id)
+            .map_or_else(|| "Active curio not in grid".critical(), Ok)?;
         let next_pt = head + dir;
         metadata.put(key::TARGET_POINT, next_pt).critical()?;
         if grid.square_is_closed(next_pt) {
@@ -88,25 +88,28 @@ fn opsys_node_movement(
         }
         grid.push_front(next_pt, active_curio_id);
         **curio_q.moves_taken += 1;
-        if grid.len_of(active_curio_id) as u32
-            > curio_q.max_size.map(|ms| **ms).unwrap_or(1)
-        {
-            metadata.put(
-                key::DROPPED_SQUARE,
-                grid.back(active_curio_id)
-                    .expect("piece should be at least one square long"),
-            ).critical()?;
+        if grid.len_of(active_curio_id) as u32 > curio_q.max_size.map(|ms| **ms).unwrap_or(1) {
+            metadata
+                .put(
+                    key::DROPPED_SQUARE,
+                    grid.back(active_curio_id)
+                        .expect("piece should be at least one square long"),
+                )
+                .critical()?;
             grid.pop_back(active_curio_id);
         }
         let remaining_moves = movement_speed - **curio_q.moves_taken;
 
-        metadata.put(key::REMAINING_MOVES, remaining_moves).critical()?;
+        metadata
+            .put(key::REMAINING_MOVES, remaining_moves)
+            .critical()?;
         if movement_speed == **curio_q.moves_taken
             && curio_q
                 .actions
-                .as_ref()
                 .map(|curio_actions| {
-                    curio_actions.iter().any(|action| *action != **no_op_action)
+                    !curio_actions
+                        .iter()
+                        .any(|action| action.id() != no_op_action.id())
                 })
                 .unwrap_or(true)
         {

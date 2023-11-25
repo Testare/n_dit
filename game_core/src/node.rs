@@ -68,10 +68,7 @@ impl Plugin for NodePlugin {
                 (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
                     .in_set(NDitCoreSet::ProcessCommands),
             )
-            .add_plugins((
-                ai::NodeAiPlugin,
-                OpPlugin::<NodeOp>::default()
-            ));
+            .add_plugins((ai::NodeAiPlugin, OpPlugin::<NodeOp>::default()));
     }
 }
 

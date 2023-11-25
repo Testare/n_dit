@@ -18,7 +18,7 @@ pub mod quest;
 pub mod registry;
 
 use op::OpResult;
-use opv2::PrimeOpQueue;
+use opv2::PrimeOps;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
 use thiserror::Error;
 
@@ -83,7 +83,7 @@ impl Plugin for NDitCorePlugin {
                 registry::RegistryPlugin,
                 board::BoardPlugin,
                 bam::BamPlugin,
-                opv2::OpQueuePlugin::<PrimeOpQueue>::default(),
+                opv2::OpExecutorPlugin::<PrimeOps>::default(),
             ));
     }
 }
