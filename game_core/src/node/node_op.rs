@@ -22,13 +22,13 @@ const ACCESS_POINT_DISPLAY_ID: &str = "env:access_point";
 
 #[derive(Clone, Debug, Reflect)]
 pub enum NodeOp {
+    MoveActiveCurio {
+        dir: Compass,
+    },
     PerformCurioAction {
         action_id: Cow<'static, str>,
         curio: Option<Entity>,
         target: UVec2,
-    },
-    MoveActiveCurio {
-        dir: Compass,
     },
     ActivateCurio {
         curio_id: Entity,

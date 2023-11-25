@@ -17,14 +17,22 @@ impl OpV2 for NodeOp {
     {
         registrar
             .register_op(opsys_node_movement)
-            .register_op(opsys_node_action);
+            .register_op(opsys_node_action)
+            .register_op(opsys_node_activate)
+            .register_op(opsys_node_access_point)
+            .register_op(opsys_node_ready)
+            .register_op(opsys_node_end_turn);
     }
 
     fn system_index(&self) -> usize {
         match self {
             Self::MoveActiveCurio { .. } => 0,
             Self::PerformCurioAction { .. } => 1,
-            _ => 10,
+            Self::ActivateCurio { .. } => 2,
+            Self::LoadAccessPoint { .. } => 3,
+            Self::UnloadAccessPoint { .. } => 3,
+            Self::ReadyToGo { .. } => 4,
+            Self::EndTurn => 5,
         }
     }
 }
@@ -267,4 +275,66 @@ fn opsys_node_action(
     } else {
         Err(OpError::MismatchedOpSystem)
     }
+}
+
+fn opsys_node_activate(
+    In((player, node_op)): In<(Entity, NodeOp)>,
+    mut nodes: Query<(AsDerefCopied<CurrentTurn>, AsDerefMut<ActiveCurio>), With<Node>>,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    team_phases: Query<&TeamPhase, With<Team>>,
+    mut curios: Query<CurioQ, With<Curio>>,
+) -> OpImplResult {
+    if let NodeOp::ActivateCurio { curio_id } = node_op {
+        let mut metadata = Metadata::default();
+        let (player_team_id, node_id) = players.get(player).critical()?;
+        let (current_turn, mut active_curio) = nodes.get_mut(node_id).critical()?;
+
+        if player_team_id != current_turn {
+            Err("Not this player's turn".invalid())?;
+        }
+        if *team_phases.get(player_team_id).critical()? == TeamPhase::Setup {
+            Err("Can't activate pieces during setup phase".invalid())?;
+        }
+
+        let target_curio = curios
+            .get(curio_id)
+            .map_err(|_| "Target curio not found".invalid())?;
+        if **target_curio.team != player_team_id {
+            Err("Cannot activate pieces on the other team".invalid())?;
+        }
+        if **target_curio.tapped {
+            Err("Cannot activate tapped curio".invalid())?
+        }
+        if let Some(last_active) = *active_curio {
+            if last_active == curio_id {
+                Err("That curio is already active".invalid())?;
+            }
+            metadata
+                .put(key::DEACTIVATED_CURIO, last_active)
+                .critical()?; // Recoverable?
+            **curios.get_mut(last_active).critical()?.tapped = true;
+        }
+        *active_curio = Some(curio_id);
+        Ok(metadata)
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
+}
+
+fn opsys_node_access_point(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
+    if let NodeOp::LoadAccessPoint {
+        access_point_id, ..
+    }
+    | NodeOp::UnloadAccessPoint { access_point_id } = node_op
+    {}
+    // Load AND unload
+    Ok(default())
+}
+
+fn opsys_node_ready(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
+    Ok(default())
+}
+
+fn opsys_node_end_turn(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
+    Ok(default())
 }

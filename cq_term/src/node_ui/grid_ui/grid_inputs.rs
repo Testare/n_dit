@@ -269,8 +269,7 @@ pub fn kb_grid(
                             // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
                                 if **turn == *team && *team_phase != TeamPhase::Setup {
-                                    ev_node_op
-                                        .send(Op::new(player, NodeOp::ActivateCurio { curio_id }));
+                                    res_prime_ops.request(player, NodeOp::ActivateCurio { curio_id });
                                 }
                             }
                         },
