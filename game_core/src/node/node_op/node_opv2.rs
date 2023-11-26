@@ -6,8 +6,8 @@ use crate::card::{
 };
 use crate::node::{
     key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
-    NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team, TeamPhase, TeamStatus, Teams,
-    VictoryStatus,
+    IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
+    TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use crate::opv2::{OpError, OpErrorUtils, OpImplResult, OpRegistrar, OpV2};
 use crate::player::Player;
@@ -393,18 +393,159 @@ fn opsys_node_access_point(
 
 fn opsys_node_ready(
     In((player, node_op)): In<(Entity, NodeOp)>,
+    no_op_action: Res<NoOpAction>,
     ast_cards: Res<Assets<CardDefinition>>,
     mut commands: Commands,
-    mut ops: EventReader<Op<NodeOp>>,
     cards: Query<&Card>,
     mut players: Query<(Entity, &OnTeam, &InNode, AsDerefMut<IsReadyToGo>), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
     mut nodes: Query<(&AccessPointLoadingRule, &mut EntityGrid, &Teams), With<Node>>,
 ) -> OpImplResult {
-    Ok(default())
+    if !matches!(node_op, NodeOp::ReadyToGo) {
+        Err(OpError::MismatchedOpSystem)?;
+    }
+
+    let mut metadata = Metadata::new();
+
+    let (_, OnTeam(player_team), InNode(node_id), is_ready_to_go) =
+        players.get(player).critical()?;
+    if *is_ready_to_go {
+        Err("You are already marked as ready".invalid())?;
+    }
+    let (access_point_loading_rule, mut grid, teams) = nodes.get_mut(*node_id).critical()?;
+    let relevant_teams = match access_point_loading_rule {
+        AccessPointLoadingRule::Staggered => vec![*player_team],
+        AccessPointLoadingRule::Simultaneous => teams.0.clone(),
+    };
+    let has_loaded_access_point = access_points
+        .iter()
+        .any(|(id, OnTeam(team), access_point)| {
+            grid.contains_key(id) && team == player_team && access_point.card.is_some()
+        });
+    if !has_loaded_access_point {
+        Err("Must load an access point first".invalid())?;
+    }
+
+    let relevant_teams_are_ready =
+        players
+            .iter()
+            .all(|(iter_player, OnTeam(team), _, ready_to_go)| {
+                !relevant_teams.contains(team) || *ready_to_go || iter_player == player
+            });
+    metadata
+        .put(key::ALL_TEAM_MEMBERS_READY, relevant_teams_are_ready)
+        .critical()?;
+    if relevant_teams_are_ready {
+        let relevant_access_points: Vec<(Entity, Option<Entity>)> = access_points
+            .iter()
+            .filter(|(id, OnTeam(team), _)| player_team == team && grid.contains_key(*id))
+            .map(|(id, _, access_point)| (id, access_point.card))
+            .collect();
+        for (player_id, OnTeam(team), _, _) in players.iter() {
+            if relevant_teams.contains(team) {
+                commands.entity(player_id).remove::<IsReadyToGo>();
+            }
+        }
+        for (node_piece, card_id) in relevant_access_points.into_iter() {
+            card_id
+                .and_then(|card_id| {
+                    let card = get_assert!(card_id, cards)?;
+                    let card_base = ast_cards.get(card.definition())?;
+                    let mut ap_commands = commands.entity(node_piece);
+
+                    ap_commands
+                        .insert((
+                            Curio::new_with_card(card.card_name(), card_id),
+                            IsTapped::default(),
+                            MovesTaken::default(),
+                        ))
+                        .remove::<AccessPoint>();
+
+                    if !card_base.prevent_no_op() {
+                        // Add No Op action
+                        let mut new_actions = card_base.actions().clone();
+                        new_actions.push(no_op_action.0.clone());
+
+                        ap_commands.insert(Actions(new_actions));
+                    }
+                    Some(())
+                })
+                .unwrap_or_else(|| {
+                    grid.remove_entity(node_piece);
+                    // Leaving access points lying around seems bug prone, but so does despawning them?
+                    // TODO Use play phase checks in ops, then remove the following line
+                    commands.entity(node_piece).despawn()
+                });
+        }
+        for team in relevant_teams {
+            *team_phases
+                .get_mut(team)
+                .expect("Team should have team phase component") = TeamPhase::Play;
+        }
+    } else {
+        *players.get_mut(player).unwrap().3 = true;
+    };
+
+    Ok(metadata)
 }
 
-fn opsys_node_end_turn(In((player, node_op)): In<(Entity, NodeOp)>) -> OpImplResult {
-    Ok(default())
+fn opsys_node_end_turn(
+    In((player, node_op)): In<(Entity, NodeOp)>,
+    mut nodes: Query<
+        (
+            AsDerefMut<CurrentTurn>,
+            AsDerefMut<ActiveCurio>,
+            AsDeref<Teams>,
+        ),
+        With<Node>,
+    >,
+    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    mut pieces: Query<
+        (
+            Entity,
+            AsDerefCopied<OnTeam>,
+            AsDerefMut<IsTapped>,
+            AsDerefMut<MovesTaken>,
+        ),
+        With<NodePiece>,
+    >,
+) -> OpImplResult {
+    if !matches!(node_op, NodeOp::EndTurn) {
+        Err(OpError::MismatchedOpSystem)?;
+    }
+
+    let (player_team, node) = players.get(player).critical()?;
+    let (mut current_turn, mut active_curio, teams) = nodes.get_mut(node).critical()?;
+
+    if *current_turn.as_ref() != player_team {
+        Err("Not this player's turn")?;
+    }
+    let mut metadata = Metadata::new();
+    if let Some(id) = *active_curio {
+        metadata.put(key::CURIO, id).critical()?;
+    }
+    active_curio.set_if_neq(None);
+    let team_index = teams
+        .iter()
+        .position(|team_id| *team_id == player_team)
+        .ok_or("Can't find this team".critical())?;
+    *current_turn = teams[(team_index + 1) % teams.len()];
+
+    // Gotta untap all player things
+    let moved_pieces: HashMap<Entity, u32> = pieces
+        .iter_mut()
+        .filter_map(|(id, team, mut is_tapped, mut moves_taken)| {
+            if team == player_team && (*is_tapped || *moves_taken > 0) {
+                let old_moves_taken = *moves_taken;
+                *moves_taken = 0;
+                *is_tapped = false;
+                Some((id, old_moves_taken))
+            } else {
+                None
+            }
+        })
+        .collect();
+    metadata.put(key::MOVED_PIECES, moved_pieces).critical()?;
+    Ok(metadata)
 }

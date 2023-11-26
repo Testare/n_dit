@@ -2,6 +2,7 @@ use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
 use game_core::op::OpResult;
+use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
@@ -24,11 +25,11 @@ pub struct HelpButton;
 pub struct QuitButton;
 
 pub fn mouse_button_menu(
+    mut res_prime_ops: ResMut<PrimeOps>,
     mut evr_mouse: EventReader<MouseEventTty>,
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,
     end_turn_button: Query<AsDerefCopied<ForPlayer>, With<EndTurnButton>>,
-    mut evw_node_op: EventWriter<Op<NodeOp>>,
     mut evw_app_exit: EventWriter<AppExit>,
 ) {
     for mouse_event in evr_mouse.read() {
@@ -39,11 +40,11 @@ pub fn mouse_button_menu(
             continue;
         }
         if let Ok(for_player) = ready_buttons.get(mouse_event.entity()) {
-            NodeOp::ReadyToGo.for_p(**for_player).send(&mut evw_node_op);
+            res_prime_ops.request(**for_player, NodeOp::ReadyToGo);
         } else if quit_buttons.contains(mouse_event.entity()) {
             evw_app_exit.send(AppExit);
         } else if let Ok(for_player) = end_turn_button.get(mouse_event.entity()) {
-            NodeOp::EndTurn.for_p(for_player).send(&mut evw_node_op);
+            res_prime_ops.request(for_player, NodeOp::EndTurn);
         }
     }
 }

@@ -174,7 +174,6 @@ impl MenuUiCardSelection {
         >,
         access_points: Query<&AccessPoint>,
         mut ev_keys: EventReader<KeyEvent>,
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.read() {
             for (player, key_map, deck, selected_entity, focus_opt, played_cards) in players.iter()

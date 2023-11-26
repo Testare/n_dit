@@ -3,6 +3,7 @@ use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam,
 };
 use game_core::op::OpSubtype;
+use game_core::opv2::PrimeOps;
 use game_core::player::Player;
 
 use super::grid_ui::GridUi;
@@ -15,9 +16,9 @@ use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
 pub fn kb_ready(
+    mut res_prime_op: ResMut<PrimeOps>,
     mut players: Query<(Entity, &KeyMap), (With<Player>, With<InNode>)>,
     mut ev_keys: EventReader<KeyEvent>,
-    mut ev_node_op: EventWriter<Op<NodeOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.read() {
         for (player, key_map) in players.iter_mut() {
@@ -25,7 +26,7 @@ pub fn kb_ready(
                 key_map.named_input_for_key(Submap::Node, *code, *modifiers),
                 Some(NamedInput::Ready)
             ) {
-                ev_node_op.send(Op::new(player, NodeOp::ReadyToGo));
+                res_prime_op.request(player, NodeOp::ReadyToGo);
             }
         }
     }

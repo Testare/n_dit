@@ -5,7 +5,7 @@ use game_core::node::{
     Team, TeamPhase,
 };
 use game_core::op::OpSubtype;
-use game_core::opv2::{OpV2, PrimeOps};
+use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2d};
@@ -169,7 +169,6 @@ pub fn kb_grid(
     node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
     grid_uis: Query<(), With<GridUi>>,
     teams: Query<&TeamPhase, With<Team>>,
-    mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.read() {
@@ -202,8 +201,6 @@ pub fn kb_grid(
                     match named_input {
                         NamedInput::Direction(dir) => {
                             if is_controlling_active_curio && selected_action.is_none() {
-                                // ev_node_op.send(NodeOp::MoveActiveCurio { dir }.for_p(player));
-                                // res_prime_op_queue.push_back(NodeOp::MoveActiveCurio { dir }.to_request(player));
                                 res_prime_ops.request(player, NodeOp::MoveActiveCurio { dir })
                             } else {
                                 ev_node_ui_op
@@ -292,7 +289,8 @@ pub fn kb_grid(
                         _ => {},
                     }
                     Some(())
-                });
+                }
+            );
         }
     }
 }
