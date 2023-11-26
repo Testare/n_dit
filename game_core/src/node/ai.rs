@@ -8,6 +8,7 @@ use bevy::time::Time;
 
 use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
 use crate::card::{Action, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID};
+use crate::opv2::PrimeOps;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::NDitCoreSet;
@@ -41,14 +42,14 @@ pub struct AiThread {
 #[derive(Debug)]
 pub struct AiThreadInternal {
     handle: JoinHandle<()>,
-    events: Mutex<Receiver<(Op<NodeOp>, Duration)>>,
+    events: Mutex<Receiver<(NodeOp, Duration)>>,
     pause_until: Duration,
 }
 
 fn sys_ai_apply(
     time: Res<Time>,
+    mut res_prime_ops: ResMut<PrimeOps>,
     mut ai_players: Query<(Entity, AsDerefMut<AiThread>)>,
-    mut evr_node_ops: EventWriter<Op<NodeOp>>,
 ) {
     for (id, ai_internal) in ai_players.iter_mut() {
         let mut thread_finished = false;
@@ -66,14 +67,14 @@ fn sys_ai_apply(
             if let Ok(rx) = events.get_mut() {
                 match rx.try_recv() {
                     Ok((op, pause)) => {
-                        evr_node_ops.send(op);
+                        res_prime_ops.request(id, op);
                         *pause_until = elapsed + pause;
                     },
                     Err(TryRecvError::Empty) => {},
                     Err(TryRecvError::Disconnected) => {
                         if handle.is_finished() {
                             thread_finished = true;
-                            NodeOp::EndTurn.for_p(id).send(&mut evr_node_ops);
+                            res_prime_ops.request(id, NodeOp::EndTurn);
                         }
                     },
                 }
@@ -234,7 +235,7 @@ fn sys_ai(
 fn simple_ai_script(
     id: Entity,
     actions: HashMap<String, Action>,
-    sx: Sender<(Op<NodeOp>, Duration)>,
+    sx: Sender<(NodeOp, Duration)>,
     mut grid: EntityGrid,
     mut my_pieces: Vec<(Entity, Vec<String>, Option<MovementSpeed>, usize)>,
     enemy_pieces: Vec<Entity>,
@@ -248,7 +249,7 @@ fn simple_ai_script(
                 None => continue,
             };
             sx.send((
-                NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
+                NodeOp::ActivateCurio { curio_id: piece.0 },
                 Duration::from_millis(500),
             ))?;
             if let Some(closest_enemy_pt) = enemy_pieces
@@ -280,7 +281,7 @@ fn simple_ai_script(
                                 log::trace!("{:?} Went {:?} from {:?}", piece.0, dir1, grid_head);
                                 grid_head = grid_head + dir1;
                                 sx.send((
-                                    NodeOp::MoveActiveCurio { dir: dir1 }.for_p(id),
+                                    NodeOp::MoveActiveCurio { dir: dir1 },
                                     Duration::from_millis(400),
                                 ))?;
                             } else if grid.square_is_free(grid_head + dir2)
@@ -289,7 +290,7 @@ fn simple_ai_script(
                                 log::trace!("{:?} Went {:?} from {:?}", piece.0, dir2, grid_head);
                                 grid_head = grid_head + dir2;
                                 sx.send((
-                                    NodeOp::MoveActiveCurio { dir: dir2 }.for_p(id),
+                                    NodeOp::MoveActiveCurio { dir: dir2 },
                                     Duration::from_millis(400),
                                 ))?;
                             } else {
@@ -311,7 +312,7 @@ fn simple_ai_script(
                                 log::trace!("{:?} Went {:?} from {:?}", piece.0, dir, grid_head);
                                 grid_head = grid_head + dir;
                                 sx.send((
-                                    NodeOp::MoveActiveCurio { dir }.for_p(id),
+                                    NodeOp::MoveActiveCurio { dir },
                                     Duration::from_millis(400),
                                 ))?;
                             } else {
@@ -368,8 +369,7 @@ fn simple_ai_script(
                         action_id,
                         curio: None,
                         target,
-                    }
-                    .for_p(id),
+                    },
                     Duration::from_secs(2),
                 ))?;
                 grid.pop_back_n(*target_id, dmg);
@@ -379,8 +379,7 @@ fn simple_ai_script(
                         action_id: NO_OP_ACTION_ID,
                         curio: None,
                         target: UVec2::default(),
-                    }
-                    .for_p(id),
+                    },
                     Duration::from_millis(500),
                 ))?;
             }
@@ -393,9 +392,9 @@ fn simple_ai_script(
 
 // Attacks whatever is nearby, no movement
 fn lazy_ai_script(
-    id: Entity,
+    _id: Entity,
     actions: HashMap<String, Action>,
-    sx: Sender<(Op<NodeOp>, Duration)>,
+    sx: Sender<(NodeOp, Duration)>,
     mut grid: EntityGrid,
     my_pieces: Vec<(Entity, Vec<String>)>,
     enemy_pieces: Vec<Entity>,
@@ -404,7 +403,7 @@ fn lazy_ai_script(
         std::thread::sleep(Duration::from_millis(350));
         for piece in my_pieces {
             sx.send((
-                NodeOp::ActivateCurio { curio_id: piece.0 }.for_p(id),
+                NodeOp::ActivateCurio { curio_id: piece.0 },
                 Duration::from_millis(500),
             ))?;
             if let Some((action, target)) = piece.1.into_iter().find_map(|action| {
@@ -446,8 +445,7 @@ fn lazy_ai_script(
                         action_id: action,
                         curio: None,
                         target,
-                    }
-                    .for_p(id),
+                    },
                     Duration::from_secs(2),
                 ))?;
             } else {
@@ -456,8 +454,7 @@ fn lazy_ai_script(
                         action_id: NO_OP_ACTION_ID,
                         curio: None,
                         target: UVec2::default(),
-                    }
-                    .for_p(id),
+                    },
                     Duration::from_millis(500),
                 ))?;
             }

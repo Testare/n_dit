@@ -49,8 +49,7 @@ pub struct NDitCorePlugin;
 
 impl Plugin for NDitCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Op<node::NodeOp>>()
-            .add_event::<OpResult<node::NodeOp>>()
+        app.add_event::<OpResult<node::NodeOp>>()
             .configure_sets(
                 First,
                 (NDitCoreSet::RawInputs.before(NDitCoreSet::ProcessInputs),),

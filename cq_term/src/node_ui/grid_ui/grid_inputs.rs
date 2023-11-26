@@ -19,6 +19,7 @@ use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
+    mut res_prime_ops: ResMut<PrimeOps>,
     mut ev_mouse: EventReader<MouseEventTty>,
     ui: Query<(&ForPlayer, &Scroll2d), With<GridUi>>,
     players: Query<
@@ -35,7 +36,6 @@ pub fn handle_layout_events(
     teams: Query<&TeamPhase, With<Team>>,
     pickups: Query<(), With<Pickup>>,
     curios: Query<(&OnTeam, &Actions, &IsTapped), With<Curio>>,
-    mut ev_node_op: EventWriter<Op<NodeOp>>,
     mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for event in ev_mouse.read() {
@@ -90,14 +90,14 @@ pub fn handle_layout_events(
                             })
                             .unwrap_or(false);
                         if let (Some(action), true) = (selected_action, pt_in_range) {
-                            ev_node_op.send(Op::new(
+                            res_prime_ops.request(
                                 *player,
                                 NodeOp::PerformCurioAction {
                                     action_id: action.id_cow(),
                                     curio: **selected_entity,
                                     target: clicked_node_pos,
                                 },
-                            ));
+                            );
                         } else if is_controlling_active_curio {
                             let active_curio_id = active_curio.unwrap();
                             let head = grid.head(active_curio_id).unwrap();
@@ -114,10 +114,10 @@ pub fn handle_layout_events(
 
                                 if valid_move_target {
                                     if let [Some(dir), _] = head.dirs_to(&clicked_node_pos) {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             *player,
                                             NodeOp::MoveActiveCurio { dir },
-                                        ));
+                                        );
                                         return Some(());
                                     }
                                 }
@@ -132,10 +132,10 @@ pub fn handle_layout_events(
                             if let Some(pt_key) = grid.item_at(**cursor) {
                                 if let Ok((curio_team, _, _)) = curios.get(pt_key) {
                                     if curio_team == team {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             *player,
                                             NodeOp::ActivateCurio { curio_id: pt_key },
-                                        ));
+                                        );
                                     }
                                 }
                             }

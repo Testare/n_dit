@@ -23,7 +23,7 @@ use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
-use crate::node_ui::{NodeCursor, NodeUiOp, ShowNode};
+use crate::node_ui::{NodeCursor, ShowNode};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
 use crate::{KeyMap, Submap, TerminalWindow};
@@ -46,16 +46,7 @@ impl Plugin for DemoPlugin {
         app.init_resource::<DemoState>()
             .add_plugins(NfPlugin)
             .add_systems(Startup, demo_startup)
-            .add_systems(PostUpdate, (debug_key, save_key, log_ops, log_op_results));
-    }
-}
-
-fn log_ops(mut ops_node: EventReader<Op<NodeOp>>, mut ops_node_ui: EventReader<Op<NodeUiOp>>) {
-    for op in ops_node.read() {
-        log::debug!("NODE_OP {:?}", op)
-    }
-    for op in ops_node_ui.read() {
-        log::debug!("NODE_UI_OP {:?}", op)
+            .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
     }
 }
 

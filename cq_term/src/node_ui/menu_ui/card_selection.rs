@@ -35,6 +35,7 @@ pub struct MenuUiCardSelectionPlugin;
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut evr_mouse: EventReader<MouseEventTty>,
+        mut res_prime_ops: ResMut<PrimeOps>,
         mut ui: Query<(
             &mut Self,
             &CalculatedSizeTty,
@@ -48,7 +49,6 @@ impl MenuUiCardSelection {
             With<Player>,
         >,
         access_points: Query<&AccessPoint, With<NodePiece>>,
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for layout_event in evr_mouse.read() {
@@ -106,18 +106,18 @@ impl MenuUiCardSelection {
                                     **selected_item = Some(index);
 
                                     if access_point.card() == Some(card_id) {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             *player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
-                                        ));
+                                        );
                                     } else if played_cards.can_be_played(deck, card_id) {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             *player,
                                             NodeOp::LoadAccessPoint {
                                                 access_point_id,
                                                 card_id,
                                             },
-                                        ));
+                                        );
                                     }
                                 }
                             }

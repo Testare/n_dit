@@ -4,6 +4,7 @@ use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
 use game_core::op::OpSubtype;
+use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -22,12 +23,12 @@ pub struct MenuUiActions;
 
 impl MenuUiActions {
     pub fn kb_action_menu(
-        ast_actions: Res<Assets<Action>>,
         mut ev_keys: EventReader<KeyEvent>,
+        ast_actions: Res<Assets<Action>>,
+        mut res_prime_ops: ResMut<PrimeOps>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.read() {
@@ -77,14 +78,14 @@ impl MenuUiActions {
                                     .and_then(|handle| ast_actions.get(handle))
                                 {
                                     if action.range().is_none() {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             player_id,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),
                                                 curio: **selected_entity,
                                                 target: default(),
                                             },
-                                        ))
+                                        );
                                     }
                                 }
                             },
@@ -99,10 +100,10 @@ impl MenuUiActions {
     pub fn mouse_action_menu(
         ast_actions: Res<Assets<Action>>,
         mut ev_mouse: EventReader<MouseEventTty>,
+        mut res_prime_ops: ResMut<PrimeOps>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         players: Query<&SelectedEntity, With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
-        mut ev_node_op: EventWriter<Op<NodeOp>>,
         mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for layout_event in ev_mouse.read() {
@@ -137,14 +138,14 @@ impl MenuUiActions {
                                     if matches!(is_tapped, Some(IsTapped(false)))
                                         && action.range().is_none()
                                     {
-                                        ev_node_op.send(Op::new(
+                                        res_prime_ops.request(
                                             *player_id,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),
                                                 curio: **selected_entity,
                                                 target: default(),
                                             },
-                                        ))
+                                        );
                                     }
                                 }
                             }

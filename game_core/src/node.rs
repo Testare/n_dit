@@ -1,7 +1,6 @@
 use crate::card::{Action, Deck};
 use crate::opv2::OpPlugin;
 use crate::prelude::*;
-use crate::NDitCoreSet;
 
 mod ai;
 mod node_op;
@@ -10,11 +9,9 @@ mod rule;
 pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
 use bevy::ecs::entity::MapEntities;
 use getset::CopyGetters;
-pub use node_op::{access_point_ops, curio_ops, ready_to_go_ops, NodeOp};
+pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
-
-use self::node_op::end_turn_op;
 
 pub mod key {
     use typed_key::{typed_key, Key};
@@ -64,11 +61,6 @@ impl Plugin for NodePlugin {
             .register_type::<TeamStatus>()
             .register_type::<Teams>()
             .register_type::<VictoryStatus>()
-            .add_systems(
-                Update,
-                (access_point_ops, ready_to_go_ops, curio_ops, end_turn_op)
-                    .in_set(NDitCoreSet::ProcessCommands),
-            )
             .add_plugins((ai::NodeAiPlugin, OpPlugin::<NodeOp>::default()));
     }
 }
