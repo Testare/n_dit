@@ -4,7 +4,6 @@ use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam, Pickup,
     Team, TeamPhase,
 };
-use game_core::op::OpSubtype;
 use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 
@@ -12,7 +11,7 @@ use super::{GridUi, Scroll2d};
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
-use crate::node_ui::node_ui_op::FocusTarget;
+use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeCursor, NodeUiOp, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
@@ -20,6 +19,7 @@ use crate::{KeyMap, Submap};
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
     mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_ui_ops: ResMut<UiOps>,
     mut ev_mouse: EventReader<MouseEventTty>,
     ui: Query<(&ForPlayer, &Scroll2d), With<GridUi>>,
     players: Query<
@@ -36,15 +36,12 @@ pub fn handle_layout_events(
     teams: Query<&TeamPhase, With<Team>>,
     pickups: Query<(), With<Pickup>>,
     curios: Query<(&OnTeam, &Actions, &IsTapped), With<Curio>>,
-    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for event in ev_mouse.read() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
             if let MouseEventTtyKind::Down(button) = event.event_kind() {
                 log::trace!("Clicked on the grid");
-                NodeUiOp::ChangeFocus(FocusTarget::Grid)
-                    .for_p(*player)
-                    .send(&mut ev_node_ui_op);
+                res_ui_ops.request(*player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                 get_assert!(*player, players, |(
                     node,
                     team,
@@ -69,8 +66,7 @@ pub fn handle_layout_events(
                         active_curio.is_some() && **current_turn == **team;
 
                     if !alternative_click {
-                        ev_node_ui_op
-                            .send(NodeUiOp::MoveNodeCursor(clicked_node_pos.into()).for_p(*player))
+                        res_ui_ops.request(*player, NodeUiOp::MoveNodeCursor(clicked_node_pos.into()));
                     } else {
                         let selected_action = selected_action.and_then(|selected_action| {
                             let (_, actions, tapped) = selected_entity.of(&curios)?;
@@ -150,8 +146,9 @@ pub fn handle_layout_events(
 
 pub fn kb_grid(
     ast_actions: Res<Assets<Action>>,
-    mut ev_keys: EventReader<KeyEvent>,
     mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_ui_ops: ResMut<UiOps>,
+    mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
     players: Query<
         (
@@ -169,7 +166,6 @@ pub fn kb_grid(
     node_pieces: Query<(Option<&Actions>, &IsTapped), With<NodePiece>>,
     grid_uis: Query<(), With<GridUi>>,
     teams: Query<&TeamPhase, With<Team>>,
-    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.read() {
         for (
@@ -203,8 +199,7 @@ pub fn kb_grid(
                             if is_controlling_active_curio && selected_action.is_none() {
                                 res_prime_ops.request(player, NodeOp::MoveActiveCurio { dir })
                             } else {
-                                ev_node_ui_op
-                                    .send(NodeUiOp::MoveNodeCursor(dir.into()).for_p(player))
+                                res_ui_ops.request(player, NodeUiOp::MoveNodeCursor(dir.into()));
                             }
                         },
                         NamedInput::Activate => {
@@ -272,15 +267,11 @@ pub fn kb_grid(
                         },
                         NamedInput::Undo => {
                             if selected_action.is_some() {
-                                NodeUiOp::SetSelectedAction(None)
-                                    .for_p(player)
-                                    .send(&mut ev_node_ui_op);
+                                res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                                 if is_controlling_active_curio {
                                     active_curio.and_then(|active_curio_id| {
                                         let head = grid.head(active_curio_id)?;
-                                        NodeUiOp::MoveNodeCursor(head.into())
-                                            .for_p(player)
-                                            .send(&mut ev_node_ui_op);
+                                        res_ui_ops.request(player, NodeUiOp::MoveNodeCursor(head.into()));
                                         Some(())
                                     });
                                 }

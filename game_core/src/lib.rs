@@ -82,7 +82,7 @@ impl Plugin for NDitCorePlugin {
                 registry::RegistryPlugin,
                 board::BoardPlugin,
                 bam::BamPlugin,
-                opv2::OpExecutorPlugin::<PrimeOps>::default(),
+                opv2::OpExecutorPlugin::<PrimeOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
             ));
     }
 }

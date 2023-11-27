@@ -3,7 +3,6 @@ use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
-use game_core::op::OpSubtype;
 use game_core::opv2::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
@@ -12,7 +11,7 @@ use taffy::style::Dimension;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
-use crate::node_ui::node_ui_op::FocusTarget;
+use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -26,10 +25,10 @@ impl MenuUiActions {
         mut ev_keys: EventReader<KeyEvent>,
         ast_actions: Res<Assets<Action>>,
         mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_ui_ops: ResMut<UiOps>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
-        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for KeyEvent { code, modifiers } in ev_keys.read() {
             for (player_id, focus, key_map, selected_entity, selected_action) in players.iter() {
@@ -58,21 +57,15 @@ impl MenuUiActions {
                                         % actions_bound,
                                 );
                                 if **selected_action != next_action {
-                                    NodeUiOp::SetSelectedAction(next_action)
-                                        .for_p(player_id)
-                                        .send(&mut ev_node_ui_op);
+                                    res_ui_ops.request(player_id, NodeUiOp::SetSelectedAction(next_action));
                                 }
                             },
                             NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
-                                NodeUiOp::SetSelectedAction(None)
-                                    .for_p(player_id)
-                                    .send(&mut ev_node_ui_op);
+                                res_ui_ops.request(player_id, NodeUiOp::SetSelectedAction(None));
                             },
                             NamedInput::Activate => {
                                 if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
-                                    NodeUiOp::SetSelectedAction(None)
-                                        .for_p(player_id)
-                                        .send(&mut ev_node_ui_op);
+                                    res_ui_ops.request(player_id, NodeUiOp::SetSelectedAction(None));
                                 } else if let Some(action) = actions
                                     .get(selected_action.unwrap_or_default())
                                     .and_then(|handle| ast_actions.get(handle))
@@ -99,12 +92,12 @@ impl MenuUiActions {
 
     pub fn mouse_action_menu(
         ast_actions: Res<Assets<Action>>,
-        mut ev_mouse: EventReader<MouseEventTty>,
         mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_ui_ops: ResMut<UiOps>,
+        mut ev_mouse: EventReader<MouseEventTty>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         players: Query<&SelectedEntity, With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
-        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for layout_event in ev_mouse.read() {
             ui_actions
@@ -117,16 +110,12 @@ impl MenuUiActions {
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
                         MouseEventTtyKind::Down(MouseButton::Left) => {
-                            NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)
-                                .for_p(*player_id)
-                                .send(&mut ev_node_ui_op);
+                            res_ui_ops.request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
                             if layout_event.pos().y > 0
                                 && layout_event.pos().y <= actions.len() as u32
                             {
                                 let clicked_action = (layout_event.pos().y - 1) as usize;
-                                NodeUiOp::SetSelectedAction(Some(clicked_action))
-                                    .for_p(*player_id)
-                                    .send(&mut ev_node_ui_op);
+                                res_ui_ops.request(*player_id, NodeUiOp::SetSelectedAction(Some(clicked_action)));
 
                                 if layout_event.double_click()
                                     || !layout_event

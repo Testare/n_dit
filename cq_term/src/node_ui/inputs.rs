@@ -2,13 +2,12 @@ use game_core::card::Actions;
 use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam,
 };
-use game_core::op::OpSubtype;
 use game_core::opv2::PrimeOps;
 use game_core::player::Player;
 
 use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
-use super::node_ui_op::FocusTarget;
+use super::node_ui_op::{FocusTarget, UiOps};
 use super::{NodeUiOp, SelectedAction, SelectedEntity};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
@@ -33,6 +32,7 @@ pub fn kb_ready(
 }
 
 pub fn kb_skirm_focus(
+    mut res_ui_ops: ResMut<UiOps>,
     mut ev_keys: EventReader<KeyEvent>,
     players: Query<
         (
@@ -53,7 +53,6 @@ pub fn kb_skirm_focus(
     grid_uis: Query<(), With<GridUi>>,
     card_menus: Query<(), With<MenuUiCardSelection>>,
     action_menus: Query<(), With<MenuUiActions>>,
-    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for KeyEvent { code, modifiers } in ev_keys.read() {
         for (player, in_node, team, focus, key_map, selected_entity, selected_action) in
@@ -118,9 +117,7 @@ pub fn kb_skirm_focus(
                     }
                 })
             {
-                NodeUiOp::ChangeFocus(focus_target)
-                    .for_p(player)
-                    .send(&mut ev_node_ui_op)
+                res_ui_ops.request(player, NodeUiOp::ChangeFocus(focus_target));
             }
         }
     }

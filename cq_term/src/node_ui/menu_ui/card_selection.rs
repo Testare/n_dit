@@ -11,7 +11,7 @@ use taffy::style::Dimension;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
-use crate::node_ui::node_ui_op::FocusTarget;
+use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -36,6 +36,7 @@ impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut evr_mouse: EventReader<MouseEventTty>,
         mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_ui_ops: ResMut<UiOps>,
         mut ui: Query<(
             &mut Self,
             &CalculatedSizeTty,
@@ -49,7 +50,6 @@ impl MenuUiCardSelection {
             With<Player>,
         >,
         access_points: Query<&AccessPoint, With<NodePiece>>,
-        mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
     ) {
         for layout_event in evr_mouse.read() {
             if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
@@ -67,9 +67,7 @@ impl MenuUiCardSelection {
                             card_selection.scroll = card_selection.scroll.saturating_sub(1);
                         },
                         MouseEventTtyKind::Down(MouseButton::Left) => {
-                            NodeUiOp::ChangeFocus(FocusTarget::CardMenu)
-                                .for_p(*player)
-                                .send(&mut ev_node_ui_op);
+                            res_ui_ops.request(*player, NodeUiOp::ChangeFocus(FocusTarget::CardMenu));
                             let height = size.height32();
 
                             let padding: u32 = is_padded.0.into();

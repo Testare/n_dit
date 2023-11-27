@@ -12,12 +12,12 @@ use game_core::card::MovementSpeed;
 use game_core::node::{
     self, AccessPoint, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam,
 };
-use game_core::op::{OpResult, OpSubtype};
+use game_core::op::OpResult;
 use game_core::player::Player;
 use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
 
-use super::node_ui_op::FocusTarget;
+use super::node_ui_op::{FocusTarget, UiOps};
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
     NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity,
@@ -120,11 +120,11 @@ impl NodeUi for GridUi {
 // TODO move to node_ui
 fn sys_react_to_node_op(
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
+    mut res_ui_ops: ResMut<UiOps>,
     nodes: Query<(&EntityGrid, AsDerefCopied<CurrentTurn>), With<Node>>,
     players_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
     player_nodes: Query<AsDerefCopied<InNode>, With<Player>>,
     player_teams: Query<(Entity, AsDerefCopied<OnTeam>), (With<Player>, With<HasNodeUi>)>,
-    mut ev_node_ui_op: EventWriter<Op<NodeUiOp>>,
 ) {
     for op_result in ev_op_result.read() {
         // Reactions to ops from other players in node
@@ -133,9 +133,7 @@ fn sys_react_to_node_op(
                 let (_, current_turn) = get_assert!(node, nodes)?;
                 for (id, team) in player_teams.iter() {
                     if team == current_turn {
-                        NodeUiOp::SetCursorHidden(false)
-                            .for_p(id)
-                            .send(&mut ev_node_ui_op);
+                        res_ui_ops.request(id, NodeUiOp::SetCursorHidden(true));
                     }
                 }
                 Some(())
@@ -151,12 +149,8 @@ fn sys_react_to_node_op(
             match op_result.source().op() {
                 NodeOp::PerformCurioAction { .. } => {
                     let player = op_result.source().player();
-                    NodeUiOp::ChangeFocus(FocusTarget::Grid)
-                        .for_p(player)
-                        .send(&mut ev_node_ui_op);
-                    NodeUiOp::SetSelectedAction(None)
-                        .for_p(player)
-                        .send(&mut ev_node_ui_op)
+                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                 },
                 NodeOp::MoveActiveCurio { .. } => {
                     let player = op_result.source().player();
@@ -167,29 +161,20 @@ fn sys_react_to_node_op(
                         let remaining_moves =
                             metadata.get_required(node::key::REMAINING_MOVES).ok()?;
                         let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
-                        NodeUiOp::MoveNodeCursor(grid.head(curio)?.into())
-                            .for_p(player)
-                            .send(&mut ev_node_ui_op);
+                        res_ui_ops.request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
                         if remaining_moves == 0 && !tapped {
-                            NodeUiOp::ChangeFocus(FocusTarget::ActionMenu)
-                                .for_p(player)
-                                .send(&mut ev_node_ui_op);
+                            res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
                         }
                         Some(())
                     });
                 },
                 NodeOp::ReadyToGo => {
-                    NodeUiOp::ChangeFocus(FocusTarget::Grid)
-                        .for_p(op_result.source().player())
-                        .send(&mut ev_node_ui_op);
+                    res_ui_ops.request(op_result.source().player(), NodeUiOp::ChangeFocus(FocusTarget::Grid));
                 },
                 NodeOp::EndTurn => {
-                    NodeUiOp::ChangeFocus(FocusTarget::Grid)
-                        .for_p(op_result.source().player())
-                        .send(&mut ev_node_ui_op);
-                    NodeUiOp::SetCursorHidden(true)
-                        .for_p(op_result.source().player())
-                        .send(&mut ev_node_ui_op);
+                    let player = op_result.source().player();
+                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
                 },
                 _ => {},
             }

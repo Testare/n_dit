@@ -11,6 +11,7 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
+use game_core::opv2::{OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::registry::Reg;
 use game_core::NDitCoreSet;
@@ -22,6 +23,7 @@ use self::menu_ui::{
 pub use self::messagebar_ui::MessageBarUi;
 pub use self::node_glyph::NodeGlyph;
 pub use self::node_ui_op::NodeUiOp;
+use self::node_ui_op::UiOps;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
@@ -65,7 +67,11 @@ pub struct CursorIsHidden(pub bool);
 
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(Reg::<NodeGlyph>::default())
+        app.add_plugins((
+            Reg::<NodeGlyph>::default(),
+            OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
+            OpPlugin::<NodeUiOp>::default(),
+        ))
             .add_event::<ShowNode>()
             .add_event::<Op<NodeUiOp>>()
             .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
@@ -81,16 +87,6 @@ impl Plugin for NodeUiPlugin {
             .add_systems(
                 Update,
                 (
-                    (
-                        (
-                            node_ui_op::sys_node_ui_op_change_focus,
-                            node_ui_op::sys_node_ui_op_set_selected_action,
-                            node_ui_op::sys_node_ui_op_move_cursor,
-                        ),
-                        node_ui_op::sys_node_ui_op_hide_cursor,
-                    )
-                        .chain()
-                        .in_set(NDitCoreSet::ProcessUiOps),
                     (
                         node_ui_op::sys_adjust_selected_action,
                         node_ui_op::sys_adjust_selected_entity,

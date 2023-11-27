@@ -5,29 +5,51 @@ use bevy::ecs::schedule::ScheduleLabel;
 use super::{OpLoader, OpRegistry, OpRequest, OpV2};
 use crate::prelude::*;
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct UnspecifiedSystemSet;
+
 #[derive(Debug)]
-pub struct OpExecutorPlugin<E, S: ScheduleLabel + Clone = Update> {
-    phantom_data: PhantomData<E>,
-    schedule: S,
+pub struct OpExecutorPlugin<E, S = UnspecifiedSystemSet, L: ScheduleLabel + Clone = Update> {
+    phantom_data: PhantomData<(E, S)>,
+    schedule: L,
+    system_set: Option<S>,
 }
 
-impl<E> Default for OpExecutorPlugin<E, Update> {
+impl<E, S> Default for OpExecutorPlugin<E, S, Update> {
     fn default() -> Self {
         Self {
             phantom_data: PhantomData,
             schedule: Update,
+            system_set: None,
         }
     }
 }
 
-impl<E, K: ScheduleLabel + Clone> Plugin for OpExecutorPlugin<E, K>
+impl <E, S, L: ScheduleLabel + Clone> OpExecutorPlugin<E, S, L> {
+
+    pub fn new<S2, L2: ScheduleLabel + Clone>(schedule: L2, system_set: Option<S2>) -> OpExecutorPlugin<E, S2, L2> {
+        OpExecutorPlugin {
+            phantom_data: PhantomData,
+            schedule,
+            system_set,
+        }
+    }
+
+}
+
+
+impl<E, L: ScheduleLabel + Clone, S: SystemSet + Clone> Plugin for OpExecutorPlugin<E, S, L>
 where
     E: Resource + Default + std::ops::DerefMut + std::ops::Deref<Target = OpExecutor>,
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<E>()
-            .init_resource::<OpLoader>()
-            .add_systems(self.schedule.clone(), sys_perform_ops::<E>);
+            .init_resource::<OpLoader>();
+        if let Some(ref system_set) = self.system_set{
+            app.add_systems(self.schedule.clone(), sys_perform_ops::<E>.in_set(system_set.clone()));
+        } else {
+            app.add_systems(self.schedule.clone(), sys_perform_ops::<E>);
+        }
     }
 }
 
@@ -72,7 +94,7 @@ impl OpExecutor {
     }
 }
 
-fn sys_perform_ops<E: Resource + std::ops::DerefMut + std::ops::Deref<Target = OpExecutor>>(
+pub fn sys_perform_ops<E: Resource + std::ops::DerefMut + std::ops::Deref<Target = OpExecutor>>(
     world: &mut World,
 ) {
     // TODO make resource to get list of Ops to perform
