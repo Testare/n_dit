@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::ecs::schedule::ScheduleLabel;
 
-use super::{OpLoader, OpRegistry, OpRequest, OpV2};
+use super::{Op, OpLoader, OpRegistry, OpRequest};
 use crate::prelude::*;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -25,28 +25,30 @@ impl<E, S> Default for OpExecutorPlugin<E, S, Update> {
     }
 }
 
-impl <E, S, L: ScheduleLabel + Clone> OpExecutorPlugin<E, S, L> {
-
-    pub fn new<S2, L2: ScheduleLabel + Clone>(schedule: L2, system_set: Option<S2>) -> OpExecutorPlugin<E, S2, L2> {
+impl<E, S, L: ScheduleLabel + Clone> OpExecutorPlugin<E, S, L> {
+    pub fn new<S2, L2: ScheduleLabel + Clone>(
+        schedule: L2,
+        system_set: Option<S2>,
+    ) -> OpExecutorPlugin<E, S2, L2> {
         OpExecutorPlugin {
             phantom_data: PhantomData,
             schedule,
             system_set,
         }
     }
-
 }
-
 
 impl<E, L: ScheduleLabel + Clone, S: SystemSet + Clone> Plugin for OpExecutorPlugin<E, S, L>
 where
     E: Resource + Default + std::ops::DerefMut + std::ops::Deref<Target = OpExecutor>,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<E>()
-            .init_resource::<OpLoader>();
-        if let Some(ref system_set) = self.system_set{
-            app.add_systems(self.schedule.clone(), sys_perform_ops::<E>.in_set(system_set.clone()));
+        app.init_resource::<E>().init_resource::<OpLoader>();
+        if let Some(ref system_set) = self.system_set {
+            app.add_systems(
+                self.schedule.clone(),
+                sys_perform_ops::<E>.in_set(system_set.clone()),
+            );
         } else {
             app.add_systems(self.schedule.clone(), sys_perform_ops::<E>);
         }
@@ -66,7 +68,7 @@ impl Default for OpExecutor {
 }
 
 impl OpExecutor {
-    pub fn request<O: OpV2>(&mut self, source: Entity, op: O) {
+    pub fn request<O: Op>(&mut self, source: Entity, op: O) {
         match self {
             Self::Local(ref mut queue) => queue.push(OpRequest::new(source, op)),
             Self::Network => todo!("TODO network support"),

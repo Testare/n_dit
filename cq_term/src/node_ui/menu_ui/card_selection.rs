@@ -2,8 +2,7 @@ use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
-use game_core::op::OpSubtype;
-use game_core::opv2::PrimeOps;
+use game_core::op::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -67,7 +66,8 @@ impl MenuUiCardSelection {
                             card_selection.scroll = card_selection.scroll.saturating_sub(1);
                         },
                         MouseEventTtyKind::Down(MouseButton::Left) => {
-                            res_ui_ops.request(*player, NodeUiOp::ChangeFocus(FocusTarget::CardMenu));
+                            res_ui_ops
+                                .request(*player, NodeUiOp::ChangeFocus(FocusTarget::CardMenu));
                             let height = size.height32();
 
                             let padding: u32 = is_padded.0.into();

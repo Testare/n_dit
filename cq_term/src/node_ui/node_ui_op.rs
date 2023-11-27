@@ -1,6 +1,5 @@
 use game_core::node::{CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
-use game_core::op::OpSubtype;
-use game_core::opv2::{OpExecutor, OpV2, OpError, OpImplResult, OpErrorUtils};
+use game_core::op::{Op, OpError, OpErrorUtils, OpExecutor, OpImplResult};
 use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
@@ -31,15 +30,13 @@ pub enum FocusTarget {
     ActionMenu,
 }
 
-impl OpSubtype for NodeUiOp {
-    type Error = ();
-}
-
-impl OpV2 for NodeUiOp {
-    fn register_systems(mut registrar: game_core::opv2::OpRegistrar<Self>)
-        where
-            Self: Sized + bevy::prelude::TypePath + FromReflect {
-        registrar.register_op(opsys_nodeui_focus)
+impl Op for NodeUiOp {
+    fn register_systems(mut registrar: game_core::op::OpRegistrar<Self>)
+    where
+        Self: Sized + bevy::prelude::TypePath + FromReflect,
+    {
+        registrar
+            .register_op(opsys_nodeui_focus)
             .register_op(opsys_nodeui_move_cursor)
             .register_op(opsys_nodeui_hide_cursor)
             .register_op(opsys_nodeui_selected_action);
@@ -63,7 +60,7 @@ pub fn opsys_nodeui_focus(
     card_selection_menus: IndexedQuery<ForPlayer, Entity, With<MenuUiCardSelection>>,
     mut players: Query<(AsDerefMut<UiFocus>, AsDerefMut<CursorIsHidden>), With<Player>>,
 ) -> OpImplResult {
-    if let NodeUiOp::ChangeFocus(focus_target) = op { 
+    if let NodeUiOp::ChangeFocus(focus_target) = op {
         let (mut focus, mut cursor_is_hidden) = players.get_mut(player).critical()?;
         let next_focus = match focus_target {
             FocusTarget::Next => ui_focus_cycle_next(*focus, player, 0, &ui_nodes),
@@ -99,7 +96,8 @@ pub fn opsys_nodeui_move_cursor(
     nodes: Query<(&EntityGrid,), With<Node>>,
 ) -> OpImplResult {
     if let NodeUiOp::MoveNodeCursor(compass_or_point) = op {
-        let (InNode(node), mut cursor, mut cursor_is_hidden,) = players.get_mut(player).critical()?;
+        let (InNode(node), mut cursor, mut cursor_is_hidden) =
+            players.get_mut(player).critical()?;
         let (grid,) = nodes.get(*node).critical()?;
         let next_pt = grid
             .index_bounds()
@@ -110,7 +108,6 @@ pub fn opsys_nodeui_move_cursor(
     } else {
         Err(OpError::MismatchedOpSystem)
     }
-
 }
 
 pub fn opsys_nodeui_hide_cursor(

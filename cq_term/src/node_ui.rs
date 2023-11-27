@@ -11,7 +11,7 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
-use game_core::opv2::{OpExecutorPlugin, OpPlugin};
+use game_core::op::{OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::registry::Reg;
 use game_core::NDitCoreSet;
@@ -72,40 +72,37 @@ impl Plugin for NodeUiPlugin {
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
             OpPlugin::<NodeUiOp>::default(),
         ))
-            .add_event::<ShowNode>()
-            .add_event::<Op<NodeUiOp>>()
-            .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
-            .add_systems(
-                PreUpdate,
-                (
-                    inputs::kb_ready,
-                    inputs::kb_skirm_focus,
-                    button_ui::mouse_button_menu,
-                )
-                    .in_set(NDitCoreSet::ProcessInputs),
+        .add_event::<ShowNode>()
+        .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
+        .add_systems(
+            PreUpdate,
+            (
+                inputs::kb_ready,
+                inputs::kb_skirm_focus,
+                button_ui::mouse_button_menu,
             )
-            .add_systems(
-                Update,
-                (
-                    (
-                        node_ui_op::sys_adjust_selected_action,
-                        node_ui_op::sys_adjust_selected_entity,
-                        button_ui::sys_ready_button_disable,
-                    )
-                        .chain()
-                        .in_set(NDitCoreSet::PostProcessUiOps),
-                ),
+                .in_set(NDitCoreSet::ProcessInputs),
+        )
+        .add_systems(
+            Update,
+            ((
+                node_ui_op::sys_adjust_selected_action,
+                node_ui_op::sys_adjust_selected_entity,
+                button_ui::sys_ready_button_disable,
             )
-            .add_plugins((
-                MenuUiCardSelection::plugin(),
-                MenuUiStats::plugin(),
-                MenuUiLabel::plugin(),
-                MenuUiActions::plugin(),
-                MenuUiDescription::plugin(),
-                GridUi::plugin(),
-                MessageBarUi::plugin(),
-                TitleBarUi::plugin(),
-            ));
+                .chain()
+                .in_set(NDitCoreSet::PostProcessUiOps),),
+        )
+        .add_plugins((
+            MenuUiCardSelection::plugin(),
+            MenuUiStats::plugin(),
+            MenuUiLabel::plugin(),
+            MenuUiActions::plugin(),
+            MenuUiDescription::plugin(),
+            GridUi::plugin(),
+            MessageBarUi::plugin(),
+            TitleBarUi::plugin(),
+        ));
     }
 }
 

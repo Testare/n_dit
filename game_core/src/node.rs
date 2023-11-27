@@ -1,5 +1,5 @@
 use crate::card::{Action, Deck};
-use crate::opv2::OpPlugin;
+use crate::op::OpPlugin;
 use crate::prelude::*;
 
 mod ai;

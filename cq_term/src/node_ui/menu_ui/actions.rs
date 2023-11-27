@@ -3,7 +3,7 @@ use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
-use game_core::opv2::PrimeOps;
+use game_core::op::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -57,7 +57,10 @@ impl MenuUiActions {
                                         % actions_bound,
                                 );
                                 if **selected_action != next_action {
-                                    res_ui_ops.request(player_id, NodeUiOp::SetSelectedAction(next_action));
+                                    res_ui_ops.request(
+                                        player_id,
+                                        NodeUiOp::SetSelectedAction(next_action),
+                                    );
                                 }
                             },
                             NamedInput::MenuFocusNext | NamedInput::MenuFocusPrev => {
@@ -65,7 +68,8 @@ impl MenuUiActions {
                             },
                             NamedInput::Activate => {
                                 if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(true) {
-                                    res_ui_ops.request(player_id, NodeUiOp::SetSelectedAction(None));
+                                    res_ui_ops
+                                        .request(player_id, NodeUiOp::SetSelectedAction(None));
                                 } else if let Some(action) = actions
                                     .get(selected_action.unwrap_or_default())
                                     .and_then(|handle| ast_actions.get(handle))
@@ -110,12 +114,18 @@ impl MenuUiActions {
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
                         MouseEventTtyKind::Down(MouseButton::Left) => {
-                            res_ui_ops.request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
+                            res_ui_ops.request(
+                                *player_id,
+                                NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
+                            );
                             if layout_event.pos().y > 0
                                 && layout_event.pos().y <= actions.len() as u32
                             {
                                 let clicked_action = (layout_event.pos().y - 1) as usize;
-                                res_ui_ops.request(*player_id, NodeUiOp::SetSelectedAction(Some(clicked_action)));
+                                res_ui_ops.request(
+                                    *player_id,
+                                    NodeUiOp::SetSelectedAction(Some(clicked_action)),
+                                );
 
                                 if layout_event.double_click()
                                     || !layout_event

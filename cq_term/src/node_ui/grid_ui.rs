@@ -128,8 +128,8 @@ fn sys_react_to_node_op(
 ) {
     for op_result in ev_op_result.read() {
         // Reactions to ops from other players in node
-        if let (Ok(_), NodeOp::EndTurn) = (op_result.result(), op_result.source().op()) {
-            get_assert!(op_result.source().player(), player_nodes, |node| {
+        if let (Ok(_), NodeOp::EndTurn) = (op_result.result(), op_result.op()) {
+            get_assert!(op_result.source(), player_nodes, |node| {
                 let (_, current_turn) = get_assert!(node, nodes)?;
                 for (id, team) in player_teams.iter() {
                     if team == current_turn {
@@ -140,20 +140,19 @@ fn sys_react_to_node_op(
             });
         }
 
-        if !players_with_node_ui.contains(op_result.source().player()) {
+        if !players_with_node_ui.contains(op_result.source()) {
             continue;
         }
 
         // Reactions to own actions
         if let Ok(metadata) = op_result.result() {
-            match op_result.source().op() {
+            let player = op_result.source();
+            match op_result.op() {
                 NodeOp::PerformCurioAction { .. } => {
-                    let player = op_result.source().player();
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                     res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                 },
                 NodeOp::MoveActiveCurio { .. } => {
-                    let player = op_result.source().player();
                     // NOTE this will probably fail when an AI takes an action
                     get_assert!(player, player_nodes, |node| {
                         let (grid, _) = get_assert!(node, nodes)?;
@@ -161,18 +160,19 @@ fn sys_react_to_node_op(
                         let remaining_moves =
                             metadata.get_required(node::key::REMAINING_MOVES).ok()?;
                         let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
-                        res_ui_ops.request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
+                        res_ui_ops
+                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
                         if remaining_moves == 0 && !tapped {
-                            res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
+                            res_ui_ops
+                                .request(player, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
                         }
                         Some(())
                     });
                 },
                 NodeOp::ReadyToGo => {
-                    res_ui_ops.request(op_result.source().player(), NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                 },
                 NodeOp::EndTurn => {
-                    let player = op_result.source().player();
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                     res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
                 },

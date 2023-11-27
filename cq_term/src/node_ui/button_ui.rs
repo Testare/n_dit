@@ -1,8 +1,7 @@
 use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
-use game_core::op::OpResult;
-use game_core::opv2::PrimeOps;
+use game_core::op::{OpResult, PrimeOps};
 use game_core::player::{ForPlayer, Player};
 
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
@@ -77,7 +76,8 @@ pub fn sys_ready_button_disable(
     for node_op_result in ev_node_op_result.read() {
         if let OpResult {
             result: Ok(_),
-            source: Op { player, op },
+            source: player,
+            op,
         } = node_op_result
         {
             let updates = match op {

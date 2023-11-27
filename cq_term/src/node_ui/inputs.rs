@@ -2,7 +2,7 @@ use game_core::card::Actions;
 use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam,
 };
-use game_core::opv2::PrimeOps;
+use game_core::op::PrimeOps;
 use game_core::player::Player;
 
 use super::grid_ui::GridUi;

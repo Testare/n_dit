@@ -33,7 +33,7 @@ pub fn sys_grid_animations(
     node_pieces: Query<&NodePiece>,
 ) {
     for node_op_result in ev_node_op.read() {
-        if let Some((node_id, animation_handle)) = match node_op_result.source().op() {
+        if let Some((node_id, animation_handle)) = match node_op_result.op() {
             NodeOp::PerformCurioAction { target, .. } => {
                 node_op_result.result().as_ref().ok().and_then(|metadata| {
                     let effects_metadata = metadata.get_or_default(node::key::EFFECTS).ok()?;

@@ -4,7 +4,7 @@ use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam, Pickup,
     Team, TeamPhase,
 };
-use game_core::opv2::PrimeOps;
+use game_core::op::PrimeOps;
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2d};
@@ -66,7 +66,8 @@ pub fn handle_layout_events(
                         active_curio.is_some() && **current_turn == **team;
 
                     if !alternative_click {
-                        res_ui_ops.request(*player, NodeUiOp::MoveNodeCursor(clicked_node_pos.into()));
+                        res_ui_ops
+                            .request(*player, NodeUiOp::MoveNodeCursor(clicked_node_pos.into()));
                     } else {
                         let selected_action = selected_action.and_then(|selected_action| {
                             let (_, actions, tapped) = selected_entity.of(&curios)?;
@@ -110,10 +111,8 @@ pub fn handle_layout_events(
 
                                 if valid_move_target {
                                     if let [Some(dir), _] = head.dirs_to(&clicked_node_pos) {
-                                        res_prime_ops.request(
-                                            *player,
-                                            NodeOp::MoveActiveCurio { dir },
-                                        );
+                                        res_prime_ops
+                                            .request(*player, NodeOp::MoveActiveCurio { dir });
                                         return Some(());
                                     }
                                 }
