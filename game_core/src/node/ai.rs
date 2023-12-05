@@ -1,9 +1,9 @@
 use std::sync::mpsc::{Receiver, SendError, Sender, TryRecvError};
 use std::sync::Mutex;
-use std::thread::JoinHandle;
 use std::time::Duration;
 
 use bevy::ecs::query::WorldQuery;
+use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy::time::Time;
 
 use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
@@ -41,7 +41,7 @@ pub struct AiThread {
 
 #[derive(Debug)]
 pub struct AiThreadInternal {
-    handle: JoinHandle<()>,
+    handle: Task<()>,
     events: Mutex<Receiver<(NodeOp, Duration)>>,
     pause_until: Duration,
 }
@@ -113,13 +113,15 @@ fn sys_ai(
     >,
     pieces: Query<(AsDerefCopied<OnTeam>, PieceQ), (With<NodePiece>, With<Curio>)>,
 ) {
+    let task_pool = AsyncComputeTaskPool::get();
+
     for (current_turn, grid) in changed_turn_nodes.iter() {
         if let Ok((id, intelligence, mut ai_thread)) = ai_players.get_for_mut(current_turn) {
             match intelligence {
                 NodeBattleIntelligence::DoNothing => {
                     let (sx, rx) = std::sync::mpsc::channel();
                     *ai_thread = Some(AiThreadInternal {
-                        handle: std::thread::spawn(|| {
+                        handle: task_pool.spawn(async {
                             std::thread::sleep(Duration::from_secs(3));
                             let _ = sx;
                         }),
@@ -166,7 +168,7 @@ fn sys_ai(
                     *ai_thread = Some(AiThreadInternal {
                         pause_until: default(),
                         events: Mutex::new(rx),
-                        handle: std::thread::spawn(move || {
+                        handle: task_pool.spawn(async move {
                             lazy_ai_script(id, actions, sx, grid, my_pieces, enemy_pieces);
                         }),
                     });
@@ -216,7 +218,7 @@ fn sys_ai(
                     *ai_thread = Some(AiThreadInternal {
                         pause_until: default(),
                         events: Mutex::new(rx),
-                        handle: std::thread::spawn(move || {
+                        handle: task_pool.spawn(async move {
                             simple_ai_script(id, actions, sx, grid, my_pieces, enemy_pieces);
                         }),
                     });
