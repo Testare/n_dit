@@ -8,14 +8,8 @@ members = [
 [workspace.dependencies]
 bevy_query_ext = "0.2"
 
-[patch.crates-io.bevy]
-git="https://github.com/Testare/bevy"
-branch="load_untyped"
-
 [workspace.dependencies.bevy]
-# git="https://github.com/Testare/bevy"
-# branch="load_untyped"
-version = "0.12"
+version = "0.12.1"
 default-features = false
 features = [
     "animation",
