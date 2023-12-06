@@ -1,12 +1,19 @@
 [package]
 name = "game_core"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+edition.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lints]
+workspace = true
 
 [dependencies]
+anyhow = "1.0.75"
 base64 = "0.13"
+bevy.workspace = true
+bevy_query_ext.workspace = true
 bitvec = "1"
 getset = "0.1.1"
 lazy_static = "1.4.0"
@@ -14,8 +21,5 @@ log = "0.4"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
 thiserror = "1.0.44"
-typed_key = "0.1"
-bevy_query_ext.workspace = true
 toml = "0.8.2"
-bevy.workspace = true
-anyhow = "1.0.75"
+typed_key = "0.1"

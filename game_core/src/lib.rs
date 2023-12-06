@@ -1,9 +1,3 @@
-#![allow(
-    clippy::type_complexity,
-    clippy::too_many_arguments,
-    clippy::single_match
-)]
-#![warn(missing_debug_implementations)]
 pub mod bam;
 pub mod board;
 pub mod card;
