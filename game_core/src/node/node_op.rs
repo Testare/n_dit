@@ -37,6 +37,9 @@ pub enum NodeOp {
     },
     ReadyToGo,
     EndTurn,
+    TelegraphAction {
+        action_id: Cow<'static, str>,
+    },
 }
 
 #[derive(Debug, WorldQuery)]
@@ -74,7 +77,8 @@ impl Op for NodeOp {
             .register_op(opsys_node_activate)
             .register_op(opsys_node_access_point)
             .register_op(opsys_node_ready)
-            .register_op(opsys_node_end_turn);
+            .register_op(opsys_node_end_turn)
+            .register_op(opsys_telegraph_action);
     }
 
     fn system_index(&self) -> usize {
@@ -86,6 +90,7 @@ impl Op for NodeOp {
             Self::UnloadAccessPoint { .. } => 3,
             Self::ReadyToGo { .. } => 4,
             Self::EndTurn => 5,
+            Self::TelegraphAction { .. } => 6,
         }
     }
 }
@@ -596,4 +601,13 @@ fn opsys_node_end_turn(
         .collect();
     metadata.put(key::MOVED_PIECES, moved_pieces).critical()?;
     Ok(metadata)
+}
+
+fn opsys_telegraph_action(In((_, op)): In<(Entity, NodeOp)>) -> OpImplResult {
+    if let NodeOp::TelegraphAction { .. } = op {
+        let metadata = Metadata::new();
+        Ok(metadata)
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
 }

@@ -16,7 +16,7 @@ pub mod prelude;
 pub mod quest;
 pub mod registry;
 
-use op::PrimeOps;
+use op::CoreOps;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
 use thiserror::Error;
 
@@ -79,7 +79,7 @@ impl Plugin for NDitCorePlugin {
             registry::RegistryPlugin,
             board::BoardPlugin,
             bam::BamPlugin,
-            op::OpExecutorPlugin::<PrimeOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
+            op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
         ));
     }
 }

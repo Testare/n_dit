@@ -8,9 +8,10 @@ mod render_square;
 mod scroll;
 
 use bevy::ecs::query::WorldQuery;
-use game_core::card::MovementSpeed;
+use game_core::card::{Action, Actions, MovementSpeed};
 use game_core::node::{
-    self, AccessPoint, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam,
+    self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece,
+    OnTeam,
 };
 use game_core::op::OpResult;
 use game_core::player::Player;
@@ -20,7 +21,7 @@ pub use grid_animation::GridUiAnimation;
 use super::node_ui_op::{FocusTarget, UiOps};
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
-    NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity,
+    NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity, TelegraphedAction,
 };
 use crate::base_ui::Scroll2d;
 use crate::input_event::MouseEventListener;
@@ -45,6 +46,7 @@ pub struct PlayerUiQ {
     entity: Entity,
     selected_entity: &'static SelectedEntity,
     selected_action: &'static SelectedAction,
+    telegraphed_action: &'static TelegraphedAction,
     node_cursor: &'static NodeCursor,
     cursor_is_hidden: AsDerefCopied<CursorIsHidden>,
     available_moves: &'static AvailableMoves,
@@ -119,27 +121,69 @@ impl NodeUi for GridUi {
 
 // TODO move to node_ui
 fn sys_react_to_node_op(
+    ast_action: Res<Assets<Action>>,
     mut ev_op_result: EventReader<OpResult<NodeOp>>,
     mut res_ui_ops: ResMut<UiOps>,
-    nodes: Query<(&EntityGrid, AsDerefCopied<CurrentTurn>), With<Node>>,
+    nodes: Query<
+        (
+            &EntityGrid,
+            AsDerefCopied<CurrentTurn>,
+            AsDerefCopied<ActiveCurio>,
+        ),
+        With<Node>,
+    >,
     players_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
     player_nodes: Query<AsDerefCopied<InNode>, With<Player>>,
-    player_teams: Query<(Entity, AsDerefCopied<OnTeam>), (With<Player>, With<HasNodeUi>)>,
+    mut player_uis: Query<
+        (
+            Entity,
+            AsDerefCopied<OnTeam>,
+            AsDerefCopied<InNode>,
+            &mut TelegraphedAction,
+        ),
+        (With<Player>, With<HasNodeUi>),
+    >,
+    curio_actions: Query<&Actions, With<Curio>>,
 ) {
     for op_result in ev_op_result.read() {
         // Reactions to ops from other players in node
-        if let (Ok(_), NodeOp::EndTurn) = (op_result.result(), op_result.op()) {
+        if op_result.result().is_ok() {
             get_assert!(op_result.source(), player_nodes, |node| {
-                let (_, current_turn) = get_assert!(node, nodes)?;
-                for (id, team) in player_teams.iter() {
-                    if team == current_turn {
-                        res_ui_ops.request(id, NodeUiOp::SetCursorHidden(true));
-                    }
+                match op_result.op() {
+                    NodeOp::EndTurn => {
+                        let (_, current_turn, _) = get_assert!(node, nodes)?;
+                        for (id, team, _, _) in player_uis.iter() {
+                            if team == current_turn {
+                                res_ui_ops.request(id, NodeUiOp::SetCursorHidden(false));
+                            }
+                        }
+                    },
+                    NodeOp::TelegraphAction { action_id } => {
+                        let (_, _, active_curio) = get_assert!(node, nodes)?;
+                        let actions = curio_actions.get(active_curio?).ok()?;
+                        let action_handle = actions.iter().find_map(|action_handle| {
+                            let action_def = ast_action.get(action_handle)?;
+                            (action_def.id() == action_id).then_some(action_handle.clone())
+                        });
+
+                        for (_, _, in_node, mut telegraphed_action) in player_uis.iter_mut() {
+                            if in_node == node {
+                                **telegraphed_action = action_handle.clone();
+                            }
+                        }
+                    },
+                    NodeOp::PerformCurioAction { .. } => {
+                        for (_, _, in_node, mut telegraphed_action) in player_uis.iter_mut() {
+                            if in_node == node {
+                                **telegraphed_action = None;
+                            }
+                        }
+                    },
+                    _ => {},
                 }
                 Some(())
             });
         }
-
         if !players_with_node_ui.contains(op_result.source()) {
             continue;
         }
@@ -155,7 +199,7 @@ fn sys_react_to_node_op(
                 NodeOp::MoveActiveCurio { .. } => {
                     // NOTE this will probably fail when an AI takes an action
                     get_assert!(player, player_nodes, |node| {
-                        let (grid, _) = get_assert!(node, nodes)?;
+                        let (grid, _, _) = get_assert!(node, nodes)?;
                         let curio = metadata.get_required(node::key::CURIO).ok()?;
                         let remaining_moves =
                             metadata.get_required(node::key::REMAINING_MOVES).ok()?;

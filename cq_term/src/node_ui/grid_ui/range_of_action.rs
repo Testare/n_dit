@@ -5,7 +5,7 @@ use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
 use super::{AvailableActionTargets, PlayerUiQ, SelectedAction, SelectedEntity};
-use crate::node_ui::AvailableMoves;
+use crate::node_ui::{AvailableMoves, TelegraphedAction};
 use crate::prelude::*;
 
 pub fn get_range_of_action(
@@ -22,6 +22,7 @@ pub fn get_range_of_action(
                 Changed<SelectedAction>,
                 Changed<SelectedEntity>,
                 Changed<AvailableMoves>,
+                Changed<TelegraphedAction>,
             )>,
         ),
     >,
@@ -54,7 +55,11 @@ pub fn get_range_of_action(
             if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(false) {
                 return None;
             }
-            let action_id = &curio_actions[(**player_q.selected_action)?];
+
+            let action_id = match player_q.telegraphed_action.as_ref() {
+                Some(action_id) => action_id,
+                None => &curio_actions[(**player_q.selected_action)?],
+            };
             let range = ast_actions.get(action_id)?.range()?; // Not all actions have a range
             let available_moves = player_q.available_moves.deref();
             let entity = (**player_q.selected_entity)?;

@@ -12,7 +12,7 @@ use crate::prelude::*;
 // TODO refactor most of this into a module "op_sys" which will be more generic,
 // then the more game-specific stuff defined somewhere else
 #[derive(Debug, Default, Deref, DerefMut, Resource)]
-pub struct PrimeOps(OpExecutor);
+pub struct CoreOps(OpExecutor);
 
 pub trait OpErrorUtils {
     type Error;
@@ -81,11 +81,11 @@ impl OpRegistry {
 pub struct OpRegistrar<'a, O: Op + TypePath + FromReflect>(&'a mut World, PhantomData<O>);
 
 impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
-    pub fn register_op<M: 'static, S>(&mut self, op_sys: S) -> &mut Self
+    pub fn register_op<M: 'static, S>(&mut self, opsys: S) -> &mut Self
     where
         S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
     {
-        let sys_id = self.0.register_system(wrap_op_system(op_sys));
+        let sys_id = self.0.register_system(wrap_op_system(opsys));
         let mut op_reg = self.0.get_resource_or_insert_with(OpRegistry::default);
         op_reg.add_op_system::<O>(sys_id);
         self

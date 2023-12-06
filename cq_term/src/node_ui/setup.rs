@@ -14,7 +14,7 @@ use crate::node_ui::menu_ui::{
 };
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, SelectedAction,
-    SelectedEntity,
+    SelectedEntity, TelegraphedAction,
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -228,6 +228,7 @@ pub fn create_node_ui(
                 CursorIsHidden::default(),
                 SelectedEntity(node_q.grid.item_at(default())),
                 SelectedAction(None),
+                TelegraphedAction(None),
                 AvailableActionTargets::default(),
                 UiFocusBundle::default(),
                 AvailableMoves::default(),

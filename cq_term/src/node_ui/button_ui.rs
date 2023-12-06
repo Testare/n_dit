@@ -1,7 +1,7 @@
 use bevy::app::AppExit;
 use bevy::ecs::query::Has;
 use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
-use game_core::op::{OpResult, PrimeOps};
+use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Player};
 
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
@@ -24,7 +24,7 @@ pub struct HelpButton;
 pub struct QuitButton;
 
 pub fn mouse_button_menu(
-    mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_prime_ops: ResMut<CoreOps>,
     mut evr_mouse: EventReader<MouseEventTty>,
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,

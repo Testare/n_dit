@@ -11,6 +11,7 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
+use game_core::card::Action;
 use game_core::op::{OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::registry::Reg;
@@ -51,6 +52,9 @@ pub struct SelectedEntity(pub Option<Entity>);
 
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct SelectedAction(Option<usize>);
+
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct TelegraphedAction(Option<Handle<Action>>);
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct AvailableMoves(HashSet<UVec2>);

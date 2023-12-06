@@ -4,7 +4,7 @@ use game_core::node::{
     ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece, OnTeam, Pickup,
     Team, TeamPhase,
 };
-use game_core::op::PrimeOps;
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, Scroll2d};
@@ -18,7 +18,7 @@ use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
-    mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_prime_ops: ResMut<CoreOps>,
     mut res_ui_ops: ResMut<UiOps>,
     mut ev_mouse: EventReader<MouseEventTty>,
     ui: Query<(&ForPlayer, &Scroll2d), With<GridUi>>,
@@ -145,7 +145,7 @@ pub fn handle_layout_events(
 
 pub fn kb_grid(
     ast_actions: Res<Assets<Action>>,
-    mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_prime_ops: ResMut<CoreOps>,
     mut res_ui_ops: ResMut<UiOps>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,

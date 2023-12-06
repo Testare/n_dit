@@ -58,6 +58,8 @@ pub trait Registry: Sync + Send + 'static {
     /// keys that have new values.
     ///
     /// Default is false.
+    ///
+    /// [`detect_change`]: Registry::detect_change
     fn emit_change_events() -> bool {
         false
     }

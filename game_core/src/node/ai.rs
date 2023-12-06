@@ -8,7 +8,7 @@ use bevy::time::Time;
 
 use super::{Curio, CurrentTurn, Node, NodeOp, NodePiece, OnTeam};
 use crate::card::{Action, ActionEffect, ActionRange, Actions, MovementSpeed, NO_OP_ACTION_ID};
-use crate::op::PrimeOps;
+use crate::op::CoreOps;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::NDitCoreSet;
@@ -48,7 +48,7 @@ pub struct AiThreadInternal {
 
 fn sys_ai_apply(
     time: Res<Time>,
-    mut res_prime_ops: ResMut<PrimeOps>,
+    mut res_prime_ops: ResMut<CoreOps>,
     mut ai_players: Query<(Entity, AsDerefMut<AiThread>)>,
 ) {
     for (id, ai_internal) in ai_players.iter_mut() {
@@ -366,6 +366,12 @@ fn simple_ai_script(
                     None
                 })
             {
+                sx.send((
+                    NodeOp::TelegraphAction {
+                        action_id: action_id.clone(),
+                    },
+                    Duration::from_millis(500),
+                ))?;
                 sx.send((
                     NodeOp::PerformCurioAction {
                         action_id,

@@ -2,7 +2,7 @@ use charmi::{CharacterMapImage, CharmieRow};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
-use game_core::op::PrimeOps;
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -34,7 +34,7 @@ pub struct MenuUiCardSelectionPlugin;
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut evr_mouse: EventReader<MouseEventTty>,
-        mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_prime_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ui: Query<(
             &mut Self,
@@ -158,7 +158,7 @@ impl MenuUiCardSelection {
 
     pub fn kb_card_selection(
         mut card_menus: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
-        mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_prime_ops: ResMut<CoreOps>,
         players: Query<
             (
                 Entity,

@@ -2,7 +2,7 @@ use game_core::card::Actions;
 use game_core::node::{
     AccessPoint, ActiveCurio, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam,
 };
-use game_core::op::PrimeOps;
+use game_core::op::CoreOps;
 use game_core::player::Player;
 
 use super::grid_ui::GridUi;
@@ -15,7 +15,7 @@ use crate::prelude::*;
 use crate::{KeyMap, Submap};
 
 pub fn kb_ready(
-    mut res_prime_op: ResMut<PrimeOps>,
+    mut res_prime_op: ResMut<CoreOps>,
     mut players: Query<(Entity, &KeyMap), (With<Player>, With<InNode>)>,
     mut ev_keys: EventReader<KeyEvent>,
 ) {

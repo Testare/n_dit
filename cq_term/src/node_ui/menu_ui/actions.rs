@@ -3,7 +3,7 @@ use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
-use game_core::op::PrimeOps;
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
@@ -24,7 +24,7 @@ impl MenuUiActions {
     pub fn kb_action_menu(
         mut ev_keys: EventReader<KeyEvent>,
         ast_actions: Res<Assets<Action>>,
-        mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_prime_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
@@ -96,7 +96,7 @@ impl MenuUiActions {
 
     pub fn mouse_action_menu(
         ast_actions: Res<Assets<Action>>,
-        mut res_prime_ops: ResMut<PrimeOps>,
+        mut res_prime_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ev_mouse: EventReader<MouseEventTty>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
