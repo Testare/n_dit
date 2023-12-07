@@ -48,7 +48,7 @@ pub struct AiThreadInternal {
 
 fn sys_ai_apply(
     time: Res<Time>,
-    mut res_prime_ops: ResMut<CoreOps>,
+    mut res_core_ops: ResMut<CoreOps>,
     mut ai_players: Query<(Entity, AsDerefMut<AiThread>)>,
 ) {
     for (id, ai_internal) in ai_players.iter_mut() {
@@ -67,14 +67,14 @@ fn sys_ai_apply(
             if let Ok(rx) = events.get_mut() {
                 match rx.try_recv() {
                     Ok((op, pause)) => {
-                        res_prime_ops.request(id, op);
+                        res_core_ops.request(id, op);
                         *pause_until = elapsed + pause;
                     },
                     Err(TryRecvError::Empty) => {},
                     Err(TryRecvError::Disconnected) => {
                         if handle.is_finished() {
                             thread_finished = true;
-                            res_prime_ops.request(id, NodeOp::EndTurn);
+                            res_core_ops.request(id, NodeOp::EndTurn);
                         }
                     },
                 }

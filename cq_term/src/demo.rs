@@ -7,6 +7,7 @@ use bevy::scene::DynamicSceneBuilder;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
+use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
     AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, ForNode,
     InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
@@ -370,6 +371,11 @@ fn demo_startup(
     let player = commands
         .spawn((
             PlayerBundle::default(),
+            PlayerConfiguration {
+                node: Some(NodeConfiguration {
+                    end_turn_after_all_pieces_tap: true,
+                }),
+            },
             quest_status,
             KeyMap::default(),
             OnTeam(player_team),

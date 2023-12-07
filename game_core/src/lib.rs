@@ -2,6 +2,7 @@ pub mod bam;
 pub mod board;
 pub mod card;
 pub mod common;
+pub mod configuration;
 mod entity_grid;
 pub mod node;
 pub mod op;

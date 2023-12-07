@@ -18,7 +18,7 @@ use crate::{KeyMap, Submap};
 
 pub fn handle_layout_events(
     ast_actions: Res<Assets<Action>>,
-    mut res_prime_ops: ResMut<CoreOps>,
+    mut res_core_ops: ResMut<CoreOps>,
     mut res_ui_ops: ResMut<UiOps>,
     mut ev_mouse: EventReader<MouseEventTty>,
     ui: Query<(&ForPlayer, &Scroll2d), With<GridUi>>,
@@ -87,7 +87,7 @@ pub fn handle_layout_events(
                             })
                             .unwrap_or(false);
                         if let (Some(action), true) = (selected_action, pt_in_range) {
-                            res_prime_ops.request(
+                            res_core_ops.request(
                                 *player,
                                 NodeOp::PerformCurioAction {
                                     action_id: action.id_cow(),
@@ -111,7 +111,7 @@ pub fn handle_layout_events(
 
                                 if valid_move_target {
                                     if let [Some(dir), _] = head.dirs_to(&clicked_node_pos) {
-                                        res_prime_ops
+                                        res_core_ops
                                             .request(*player, NodeOp::MoveActiveCurio { dir });
                                         return Some(());
                                     }
@@ -127,7 +127,7 @@ pub fn handle_layout_events(
                             if let Some(pt_key) = grid.item_at(**cursor) {
                                 if let Ok((curio_team, _, _)) = curios.get(pt_key) {
                                     if curio_team == team {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             *player,
                                             NodeOp::ActivateCurio { curio_id: pt_key },
                                         );
@@ -145,7 +145,7 @@ pub fn handle_layout_events(
 
 pub fn kb_grid(
     ast_actions: Res<Assets<Action>>,
-    mut res_prime_ops: ResMut<CoreOps>,
+    mut res_core_ops: ResMut<CoreOps>,
     mut res_ui_ops: ResMut<UiOps>,
     mut ev_keys: EventReader<KeyEvent>,
     nodes: Query<(&EntityGrid, &ActiveCurio, &CurrentTurn), With<Node>>,
@@ -196,7 +196,7 @@ pub fn kb_grid(
                     match named_input {
                         NamedInput::Direction(dir) => {
                             if is_controlling_active_curio && selected_action.is_none() {
-                                res_prime_ops.request(player, NodeOp::MoveActiveCurio { dir })
+                                res_core_ops.request(player, NodeOp::MoveActiveCurio { dir })
                             } else {
                                 res_ui_ops.request(player, NodeUiOp::MoveNodeCursor(dir.into()));
                             }
@@ -209,7 +209,7 @@ pub fn kb_grid(
                                             return None;
                                         }
                                         let action = ast_actions.get(actions?.get(selected_action_index)?)?;
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             player,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),
@@ -229,7 +229,7 @@ pub fn kb_grid(
                                         }
                                         match actions.map(|actions| (actions.len(), actions)) {
                                             None | Some((0, _)) => {
-                                                res_prime_ops.request(
+                                                res_core_ops.request(
                                                     player,
                                                     NodeOp::PerformCurioAction {
                                                         action_id: NO_OP_ACTION_ID,
@@ -241,7 +241,7 @@ pub fn kb_grid(
                                             Some((1, actions)) => {
                                                 if let Some(action) = ast_actions.get(actions.0.get(0).expect("if the len is 1, there should be an action at 0")) {
                                                     if action.range().is_none() {
-                                                        res_prime_ops.request(
+                                                        res_core_ops.request(
                                                             player,
                                                             NodeOp::PerformCurioAction {
                                                                 action_id: action.id_cow(),
@@ -260,7 +260,7 @@ pub fn kb_grid(
                             // If the curio has an action menu, focus on it
                             } else if let Some(curio_id) = **selected_entity {
                                 if **turn == *team && *team_phase != TeamPhase::Setup {
-                                    res_prime_ops.request(player, NodeOp::ActivateCurio { curio_id });
+                                    res_core_ops.request(player, NodeOp::ActivateCurio { curio_id });
                                 }
                             }
                         },

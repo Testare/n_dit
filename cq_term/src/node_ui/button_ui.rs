@@ -24,7 +24,7 @@ pub struct HelpButton;
 pub struct QuitButton;
 
 pub fn mouse_button_menu(
-    mut res_prime_ops: ResMut<CoreOps>,
+    mut res_core_ops: ResMut<CoreOps>,
     mut evr_mouse: EventReader<MouseEventTty>,
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,
@@ -39,11 +39,11 @@ pub fn mouse_button_menu(
             continue;
         }
         if let Ok(for_player) = ready_buttons.get(mouse_event.entity()) {
-            res_prime_ops.request(**for_player, NodeOp::ReadyToGo);
+            res_core_ops.request(**for_player, NodeOp::ReadyToGo);
         } else if quit_buttons.contains(mouse_event.entity()) {
             evw_app_exit.send(AppExit);
         } else if let Ok(for_player) = end_turn_button.get(mouse_event.entity()) {
-            res_prime_ops.request(for_player, NodeOp::EndTurn);
+            res_core_ops.request(for_player, NodeOp::EndTurn);
         }
     }
 }

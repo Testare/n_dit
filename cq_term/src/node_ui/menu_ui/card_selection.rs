@@ -34,7 +34,7 @@ pub struct MenuUiCardSelectionPlugin;
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut evr_mouse: EventReader<MouseEventTty>,
-        mut res_prime_ops: ResMut<CoreOps>,
+        mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ui: Query<(
             &mut Self,
@@ -104,12 +104,12 @@ impl MenuUiCardSelection {
                                     **selected_item = Some(index);
 
                                     if access_point.card() == Some(card_id) {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             *player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
                                         );
                                     } else if played_cards.can_be_played(deck, card_id) {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             *player,
                                             NodeOp::LoadAccessPoint {
                                                 access_point_id,
@@ -158,7 +158,7 @@ impl MenuUiCardSelection {
 
     pub fn kb_card_selection(
         mut card_menus: Query<(&mut Self, &ForPlayer, &mut SelectedItem)>,
-        mut res_prime_ops: ResMut<CoreOps>,
+        mut res_core_ops: ResMut<CoreOps>,
         players: Query<
             (
                 Entity,
@@ -217,13 +217,13 @@ impl MenuUiCardSelection {
 
                                 if access_point.card() == Some(card_id) {
                                     if named_input != NamedInput::AltActivate {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             player,
                                             NodeOp::UnloadAccessPoint { access_point_id },
                                         );
                                     }
                                 } else if played_cards.can_be_played(deck, card_id) {
-                                    res_prime_ops.request(
+                                    res_core_ops.request(
                                         player,
                                         NodeOp::LoadAccessPoint {
                                             access_point_id,
@@ -238,7 +238,7 @@ impl MenuUiCardSelection {
                             selected_entity.and_then(|access_point_id| {
                                 let access_point = get_assert!(access_point_id, &access_points)?;
                                 if access_point.card().is_some() {
-                                    res_prime_ops.request(
+                                    res_core_ops.request(
                                         player,
                                         NodeOp::UnloadAccessPoint { access_point_id },
                                     );

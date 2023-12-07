@@ -24,7 +24,7 @@ impl MenuUiActions {
     pub fn kb_action_menu(
         mut ev_keys: EventReader<KeyEvent>,
         ast_actions: Res<Assets<Action>>,
-        mut res_prime_ops: ResMut<CoreOps>,
+        mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
@@ -75,7 +75,7 @@ impl MenuUiActions {
                                     .and_then(|handle| ast_actions.get(handle))
                                 {
                                     if action.range().is_none() {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             player_id,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),
@@ -96,7 +96,7 @@ impl MenuUiActions {
 
     pub fn mouse_action_menu(
         ast_actions: Res<Assets<Action>>,
-        mut res_prime_ops: ResMut<CoreOps>,
+        mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ev_mouse: EventReader<MouseEventTty>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
@@ -137,7 +137,7 @@ impl MenuUiActions {
                                     if matches!(is_tapped, Some(IsTapped(false)))
                                         && action.range().is_none()
                                     {
-                                        res_prime_ops.request(
+                                        res_core_ops.request(
                                             *player_id,
                                             NodeOp::PerformCurioAction {
                                                 action_id: action.id_cow(),

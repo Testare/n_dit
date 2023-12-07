@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use game_core::card::{Action, Actions};
-use game_core::node::{AccessPoint, IsTapped, Node, NodePiece};
+use game_core::node::{AccessPoint, ActiveCurio, IsTapped, Node, NodePiece};
 use game_core::player::Player;
 
 use super::{AvailableActionTargets, PlayerUiQ, SelectedAction, SelectedEntity};
@@ -28,7 +28,7 @@ pub fn get_range_of_action(
     >,
     changed_access_point: Query<(), Changed<AccessPoint>>,
     node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
-    node_grids: Query<&EntityGrid, With<Node>>,
+    node_grids: Query<(&EntityGrid, AsDerefCopied<ActiveCurio>), With<Node>>,
 ) {
     let players_to_update: HashSet<Entity> = players
         .p0()
@@ -55,15 +55,17 @@ pub fn get_range_of_action(
             if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(false) {
                 return None;
             }
+            let (grid, active_curio) = node_grids.get(**player_q.in_node).ok()?;
 
-            let action_id = match player_q.telegraphed_action.as_ref() {
-                Some(action_id) => action_id,
-                None => &curio_actions[(**player_q.selected_action)?],
+            let (action_id, entity) = match player_q.telegraphed_action.as_ref() {
+                Some(action_id) => (action_id, active_curio?),
+                None => (
+                    &curio_actions[(**player_q.selected_action)?],
+                    (**player_q.selected_entity)?,
+                ),
             };
             let range = ast_actions.get(action_id)?.range()?; // Not all actions have a range
             let available_moves = player_q.available_moves.deref();
-            let entity = (**player_q.selected_entity)?;
-            let grid = node_grids.get(**player_q.in_node).ok()?;
             let UVec2 {
                 x: width,
                 y: height,

@@ -6,12 +6,13 @@ use bevy::reflect::TypePath;
 use crate::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
+use crate::configuration::PlayerConfiguration;
 use crate::node::{
     key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
     IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
     TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
-use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
+use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
 
@@ -191,6 +192,7 @@ fn opsys_node_movement(
 fn opsys_node_action(
     In((player, node_op)): In<(Entity, NodeOp)>,
     ast_action: Res<Assets<Action>>,
+    mut res_core_ops: ResMut<CoreOps>,
     mut nodes: Query<
         (
             &mut EntityGrid,
@@ -201,7 +203,14 @@ fn opsys_node_action(
         ),
         With<Node>,
     >,
-    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    players: Query<
+        (
+            AsDerefCopied<OnTeam>,
+            AsDerefCopied<InNode>,
+            Option<&PlayerConfiguration>,
+        ),
+        With<Player>,
+    >,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: ParamSet<(
         Query<CurioQ, With<Curio>>,
@@ -215,7 +224,7 @@ fn opsys_node_action(
         target,
     } = node_op
     {
-        let (player_team_id, node_id) = players.get(player).critical()?;
+        let (player_team_id, node_id, player_config) = players.get(player).critical()?;
         let (mut grid, current_turn, mut active_curio, teams, mut team_status) =
             nodes.get_mut(node_id).critical()?;
 
@@ -329,6 +338,21 @@ fn opsys_node_action(
             };
             team_status.insert(team, victory_status);
         }
+
+        if player_config
+            .and_then(|config| config.node.as_ref())
+            .map(|node_config| node_config.end_turn_after_all_pieces_tap)
+            .unwrap_or(false)
+        {
+            let all_curios_tapped = curios
+                .p0()
+                .iter()
+                .all(|curio_q| **curio_q.team != player_team_id || **curio_q.tapped);
+            if all_curios_tapped {
+                res_core_ops.request(player, NodeOp::EndTurn);
+            }
+        }
+
         Ok(metadata)
     } else {
         Err(OpError::MismatchedOpSystem)
