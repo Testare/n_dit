@@ -4,7 +4,7 @@ use game_core::player::ForPlayer;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ, ShowNode};
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, Tooltip, TooltipBar};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
@@ -207,17 +207,58 @@ pub fn create_node_ui(
                             .with_children(|menu_bar| {
                                 menu_bar.spawn(MenuUiLabel::bundle(*player, &node_q));
                                 menu_bar
-                                    .spawn(MenuUiCardSelection::bundle(*player, &node_q))
-                                    .insert(UiFocusCycleOrder(2));
+                                    .spawn((
+                                        MenuUiCardSelection::bundle(*player, &node_q),
+                                        UiFocusCycleOrder(2),
+                                    ));
                                 menu_bar.spawn(MenuUiStats::bundle(*player, &node_q));
                                 menu_bar
-                                    .spawn(MenuUiActions::bundle(*player, &node_q))
-                                    .insert(UiFocusCycleOrder(1));
+                                    .spawn((
+                                        MenuUiActions::bundle(*player, &node_q),
+                                        UiFocusCycleOrder(1),
+                                    ));
                                 menu_bar.spawn(MenuUiDescription::bundle(*player, &node_q));
                             });
                         content_pane
-                            .spawn(GridUi::bundle(*player, &node_q))
-                            .insert(UiFocusCycleOrder(0));
+                            .spawn((
+                                GridUi::bundle(*player, &node_q),
+                                UiFocusCycleOrder(0),
+                            ))
+                            .with_children(|grid_ui| {
+                                grid_ui.spawn(StyleTty::buffer());
+                                grid_ui.spawn(
+                                    StyleTty(taffy::prelude::Style {
+                                        flex_direction: FlexDirection::Column,
+                                        ..default()
+                                    })
+                                ).with_children(|grid_ui_center| {
+                                    grid_ui_center.spawn(StyleTty::buffer());
+                                    grid_ui_center.spawn((
+                                        TerminalRendering::default(),
+                                        Name::new("Node popup menu"),
+                                        StyleTty(taffy::prelude::Style {
+                                            flex_grow: 0.0,
+                                            padding: Rect::points(1.0),
+                                            ..default()
+                                        }),
+                                        PopupMenu,
+                                    )).with_children(|popup_menu| {
+                                        popup_menu.spawn((
+                                            TerminalRendering::new(vec!["I love you,".to_string(), "my dear wife!".to_string()]),
+                                            StyleTty(taffy::prelude::Style {
+                                                size: Size {
+                                                    width: Dimension::Points(13.0),
+                                                    height: Dimension::Points(2.0),
+                                                },
+                                                ..default()
+                                            }),
+                                            VisibilityTty(true),
+                                        ));
+                                    });
+                                    grid_ui_center.spawn(StyleTty::buffer());
+                                });
+                                grid_ui.spawn(StyleTty::buffer());
+                            });
                     });
                     root.spawn(super::MessageBarUi::bundle(*player, &node_q));
                 })

@@ -113,6 +113,13 @@ impl StyleTty {
             }
         }
     }
+
+    pub fn buffer() -> StyleTty {
+        StyleTty(taffy::prelude::Style {
+            flex_grow: 1.0,
+            ..default()
+        })
+    }
 }
 
 impl Plugin for TaffyTuiLayoutPlugin {

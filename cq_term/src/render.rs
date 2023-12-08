@@ -47,7 +47,7 @@ impl TerminalRendering {
         mut rendering: Mut<TerminalRendering>,
         new_rendering: CharacterMapImage,
     ) {
-        if *rendering.deref().charmie() == new_rendering {
+        if *rendering.deref().charmie() != new_rendering {
             rendering.update_charmie(new_rendering);
         }
     }

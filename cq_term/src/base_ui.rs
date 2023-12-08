@@ -1,3 +1,5 @@
+mod popup;
+
 use std::borrow::{Borrow, Cow};
 
 use bevy::ecs::query::Has;
@@ -7,6 +9,7 @@ use pad::PadStr;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 
+pub use self::popup::*;
 use crate::input_event::{
     MouseEventListener, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind,
 };
@@ -34,6 +37,7 @@ impl Plugin for BaseUiPlugin {
             (
                 sys_apply_hover,
                 sys_render_flexible_text.in_set(RenderTtySet::RenderLayouts),
+                popup::sys_render_popup_menu.in_set(RenderTtySet::RenderLayouts),
                 sys_tooltip_on_hover,
             ),
         );
