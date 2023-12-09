@@ -6,6 +6,7 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::ops::AddAssign;
+use std::sync::OnceLock;
 
 use bevy::prelude::Asset;
 use bevy::reflect::{TypePath, TypeUuid};
@@ -14,7 +15,6 @@ pub use charmie_def::{
     CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef, ColorDef,
 };
 use crossterm::style::{ContentStyle, StyledContent};
-use itertools::Itertools;
 pub use loader::{CharmiLoader, CharmiaLoader};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -31,6 +31,7 @@ pub enum ColorSupportLevel {
 #[uuid = "a58d71d0-9e0f-4c6d-a078-c5621756579c"]
 pub struct CharacterMapImage {
     rows: Vec<CharmieRow>,
+    repr: OnceLock<Vec<String>>,
 }
 
 impl CharacterMapImage {
@@ -38,12 +39,18 @@ impl CharacterMapImage {
         Self::default()
     }
 
+    pub fn repr(&self) -> &Vec<String> {
+        self.repr
+            .get_or_init(|| self.rows.iter().map(|row| row.to_string()).collect())
+    }
+
     /// Mostly useful for debugging
     pub fn debug_string(&self) -> String {
-        self.rows.iter().map(|row| row.to_string()).join("\n")
+        self.repr().join("\n")
     }
 
     pub fn apply_effect(&mut self, style: &ContentStyle) -> &mut Self {
+        self.repr.take();
         for row in self.rows.iter_mut() {
             row.apply_effect(style);
         }
@@ -68,18 +75,23 @@ impl CharacterMapImage {
     }
 
     pub fn fit_to_size(&mut self, width: u32, height: u32) {
+        self.repr.take();
         self.rows.truncate(height as usize);
         for row in self.rows.iter_mut() {
             row.pad_to(width);
         }
     }
 
-    pub fn width(&self) -> u32 {
-        self.rows.iter().map(|row| row.len()).max().unwrap_or(0)
+    pub fn width(&self) -> usize {
+        self.repr()
+            .iter()
+            .map(|row| row.width_cjk())
+            .max()
+            .unwrap_or(0)
     }
 
-    pub fn height(&self) -> u32 {
-        self.rows.len() as u32
+    pub fn height(&self) -> usize {
+        self.rows.len()
     }
 
     pub fn clip(&self, x: u32, y: u32, width: u32, height: u32, bcfb: Option<char>) -> Self {
@@ -91,20 +103,24 @@ impl CharacterMapImage {
                 .take(height as usize)
                 .map(|row| row.clip(x, width, bcfb))
                 .collect(),
+            repr: OnceLock::new(),
         }
     }
 
     pub fn push_row(&mut self, row: CharmieRow) -> &mut Self {
+        self.repr.take();
         self.rows.push(row);
         self
     }
 
     pub fn with_blank_row(mut self) -> Self {
+        self.repr.take();
         self.rows.push(CharmieRow::default());
         self
     }
 
     pub fn with_row<B: FnOnce(CharmieRow) -> CharmieRow>(mut self, builder: B) -> Self {
+        self.repr.take();
         self.rows.push(builder(CharmieRow::default()));
         self
     }
@@ -112,14 +128,15 @@ impl CharacterMapImage {
 
 impl From<&CharacterMapImage> for Vec<String> {
     fn from(value: &CharacterMapImage) -> Self {
-        value.rows.iter().map(ToString::to_string).collect()
+        value.repr().clone()
     }
 }
 
 impl From<Vec<String>> for CharacterMapImage {
     fn from(value: Vec<String>) -> Self {
         CharacterMapImage {
-            rows: value.into_iter().map(|row| row.into()).collect(),
+            rows: value.iter().map(|row| row.into()).collect(),
+            repr: OnceLock::from(value),
         }
     }
 }
@@ -128,6 +145,7 @@ impl<T: Into<CharmieRow>> FromIterator<T> for CharacterMapImage {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         CharacterMapImage {
             rows: iter.into_iter().map(|row| row.into()).collect(),
+            repr: OnceLock::new(),
         }
     }
 }
