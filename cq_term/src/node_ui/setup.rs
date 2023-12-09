@@ -7,11 +7,14 @@ use super::{NodeCursor, NodeUiQ, ShowNode};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
-use crate::node_ui::button_ui::{EndTurnButton, HelpButton, PauseButton, QuitButton, ReadyButton};
+use crate::node_ui::button_ui::{
+    EndTurnButton, HelpButton, OptionsButton, QuitButton, ReadyButton,
+};
 use crate::node_ui::grid_ui::GridUi;
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
+use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu};
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, SelectedAction,
     SelectedEntity, TelegraphedAction,
@@ -93,21 +96,24 @@ pub fn create_node_ui(
                                 ))
                                 .with_children(|title_bar_right| {
                                     title_bar_right.spawn((
-                                        ButtonUiBundle::new("Pause", ContentStyle::new().green()),
-                                        PauseButton,
-                                        Tooltip::new("[Escape] TODO Puase the agme and open pause menu")
+                                        ButtonUiBundle::new("Options", ContentStyle::new().green()),
+                                        ForPlayer(*player),
+                                        OptionsButton,
+                                        Tooltip::new("[Esc] Opens menu for options"),
                                     ));
 
-                                    title_bar_right.spawn((StyleTty(taffy::prelude::Style {
-                                        size: Size {
-                                            width: Dimension::Points(1.0),
-                                            height: Dimension::Auto,
-                                        },
-                                        min_size: Size { ..TaffyZero::ZERO },
-                                        flex_grow: 0.0,
-                                        flex_shrink: 2.0,
-                                        ..default()
-                                    }),));
+                                    title_bar_right.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            size: Size {
+                                                width: Dimension::Points(1.0),
+                                                height: Dimension::Auto,
+                                            },
+                                            min_size: Size { ..TaffyZero::ZERO },
+                                            flex_grow: 0.0,
+                                            flex_shrink: 2.0,
+                                            ..default()
+                                        }),
+                                    ));
 
                                     title_bar_right.spawn((
                                         ForPlayer(*player),
@@ -138,8 +144,9 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
+                                        ForPlayer(*player),
                                         HelpButton,
-                                        Tooltip::new("[?] TODO Open guide to the game")
+                                        Tooltip::new("[?] TODO Open guide to the game"),
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
@@ -252,7 +259,36 @@ pub fn create_node_ui(
                                                 },
                                                 ..default()
                                             }),
-                                            VisibilityTty(true),
+                                            VisibilityTty(false),
+                                        ));
+                                        let help_msg = help_msg();
+                                        popup_menu.spawn((
+                                            ForPlayer(*player),
+                                            HelpMenu,
+                                            Name::new("Help menu"),
+                                            StyleTty(taffy::prelude::Style {
+                                                size: Size {
+                                                    width: Dimension::Points(help_msg.width() as f32),
+                                                    height: Dimension::Points(help_msg.height() as f32),
+                                                },
+                                                ..default()
+                                            }),
+                                            TerminalRendering::from(help_msg),
+                                            VisibilityTty(false),
+                                        ));
+                                        popup_menu.spawn((
+                                            ForPlayer(*player),
+                                            Name::new("Options menu"),
+                                            OptionsMenu,
+                                            StyleTty(taffy::prelude::Style {
+                                                size: Size {
+                                                    width: Dimension::Points(13.0),
+                                                    height: Dimension::Points(2.0),
+                                                },
+                                                ..default()
+                                            }),
+                                            TerminalRendering::new(vec!["Options!".to_string()]),
+                                            VisibilityTty(false),
                                         ));
                                     });
                                     grid_ui_center.spawn(StyleTty::buffer());

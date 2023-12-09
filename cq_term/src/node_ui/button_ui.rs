@@ -4,12 +4,13 @@ use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece,
 use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Player};
 
+use super::node_popups::{HelpMenu, OptionsMenu};
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Component, Reflect)]
-pub struct PauseButton;
+pub struct OptionsButton;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct ReadyButton;
@@ -29,6 +30,19 @@ pub fn mouse_button_menu(
     ready_buttons: Query<&ForPlayer, With<ReadyButton>>,
     quit_buttons: Query<(), With<QuitButton>>,
     end_turn_button: Query<AsDerefCopied<ForPlayer>, With<EndTurnButton>>,
+    options_button: Query<AsDerefCopied<ForPlayer>, With<OptionsButton>>,
+    help_button: Query<AsDerefCopied<ForPlayer>, With<HelpButton>>,
+    mut options_menu: IndexedQuery<
+        ForPlayer,
+        AsDerefMut<VisibilityTty>,
+        (With<OptionsMenu>, Without<HelpMenu>),
+    >,
+    mut help_menu: IndexedQuery<
+        ForPlayer,
+        AsDerefMut<VisibilityTty>,
+        (With<HelpMenu>, Without<OptionsMenu>),
+    >,
+
     mut evw_app_exit: EventWriter<AppExit>,
 ) {
     for mouse_event in evr_mouse.read() {
@@ -44,6 +58,20 @@ pub fn mouse_button_menu(
             evw_app_exit.send(AppExit);
         } else if let Ok(for_player) = end_turn_button.get(mouse_event.entity()) {
             res_core_ops.request(for_player, NodeOp::EndTurn);
+        } else if let Ok(for_player) = options_button.get(mouse_event.entity()) {
+            if let Ok(mut options_vis) = options_menu.get_for_mut(for_player) {
+                *options_vis = !*options_vis;
+            }
+            if let Ok(mut help_vis) = help_menu.get_for_mut(for_player) {
+                help_vis.set_if_neq(false);
+            }
+        } else if let Ok(for_player) = help_button.get(mouse_event.entity()) {
+            if let Ok(mut help_vis) = help_menu.get_for_mut(for_player) {
+                *help_vis = !*help_vis;
+            }
+            if let Ok(mut options_vis) = options_menu.get_for_mut(for_player) {
+                options_vis.set_if_neq(false);
+            }
         }
     }
 }

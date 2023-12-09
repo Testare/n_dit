@@ -81,6 +81,16 @@ impl TerminalRendering {
     }
 }
 
+impl From<CharacterMapImage> for TerminalRendering {
+    fn from(rendering: CharacterMapImage) -> Self {
+        let render_cache = (&rendering).into();
+        Self {
+            rendering,
+            render_cache,
+        }
+    }
+}
+
 impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<RenderPause>()

@@ -4,6 +4,7 @@ mod inputs;
 mod menu_ui;
 mod messagebar_ui;
 mod node_glyph;
+mod node_popups;
 mod node_ui_op;
 mod setup;
 mod titlebar_ui;

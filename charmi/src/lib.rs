@@ -74,6 +74,14 @@ impl CharacterMapImage {
         }
     }
 
+    pub fn width(&self) -> u32 {
+        self.rows.iter().map(|row| row.len()).max().unwrap_or(0)
+    }
+
+    pub fn height(&self) -> u32 {
+        self.rows.len() as u32
+    }
+
     pub fn clip(&self, x: u32, y: u32, width: u32, height: u32, bcfb: Option<char>) -> Self {
         CharacterMapImage {
             rows: self
