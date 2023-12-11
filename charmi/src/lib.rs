@@ -39,6 +39,10 @@ impl CharacterMapImage {
         Self::default()
     }
 
+    pub fn from_toml(def: &str) -> Result<Self, toml::de::Error> {
+        Ok(toml::from_str::<CharmieDef>(def)?.into())
+    }
+
     pub fn repr(&self) -> &Vec<String> {
         self.repr
             .get_or_init(|| self.rows.iter().map(|row| row.to_string()).collect())
@@ -83,11 +87,7 @@ impl CharacterMapImage {
     }
 
     pub fn width(&self) -> usize {
-        self.repr()
-            .iter()
-            .map(|row| row.width_cjk())
-            .max()
-            .unwrap_or(0)
+        self.rows.iter().map(|row| row.len()).max().unwrap_or(0) as usize
     }
 
     pub fn height(&self) -> usize {

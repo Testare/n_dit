@@ -273,7 +273,7 @@ pub fn create_node_ui(
                                                 },
                                                 ..default()
                                             }),
-                                            TerminalRendering::from(help_msg),
+                                            TerminalRendering::from(help_msg.clone()),
                                             VisibilityTty(false),
                                         ));
                                         popup_menu.spawn((
