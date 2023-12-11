@@ -126,6 +126,7 @@ impl CharacterMapImage {
     }
 
     pub fn new_row(&mut self) -> &mut CharmieRow {
+        self.repr.take();
         self.rows.push(CharmieRow::default());
         self.rows.last_mut().unwrap()
     }

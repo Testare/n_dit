@@ -146,7 +146,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
                                         ForPlayer(*player),
                                         HelpButton,
-                                        Tooltip::new("[?] TODO Open guide to the game"),
+                                        Tooltip::new("[?] Open guide to the game"),
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {

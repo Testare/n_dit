@@ -1,5 +1,5 @@
 use charmi::{CharacterMapImage, CharmieRow};
-use crossterm::style::{ContentStyle, Stylize};
+use crossterm::style::Stylize;
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
 use game_core::op::CoreOps;
@@ -7,7 +7,8 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
-use crate::base_ui::HoverPoint;
+use crate::base_ui::{HoverPoint, Tooltip};
+use crate::configuration::DrawConfiguration;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
@@ -284,6 +285,7 @@ impl MenuUiCardSelection {
 
     /// System for rendering a simple submenu
     fn render_system(
+        res_draw_config: Res<DrawConfiguration>,
         access_points: Query<Ref<AccessPoint>>,
         cards: Query<&Card>,
         players: Query<(&Deck, &SelectedEntity, &PlayedCards, &UiFocus), With<Player>>,
@@ -338,7 +340,7 @@ impl MenuUiCardSelection {
                             }
 
                             let style = is_mouse_hover
-                                .then(|| ContentStyle::new().blue())
+                                .then(|| res_draw_config.color_scheme().menu_hover())
                                 .unwrap_or_default();
 
                             row.add_text(name, &style)
@@ -382,11 +384,9 @@ impl MenuUiCardSelection {
 
                     let mut cards_menu = CharacterMapImage::new();
                     let title_style = if Some(id) == **focus {
-                        // TODO replace with configurable "MenuUiTitleFocused"
-                        ContentStyle::new().reverse()
+                        res_draw_config.color_scheme().menu_title_hover()
                     } else {
-                        // TODO replace with configurable "MenuUiTitleUnfocused"
-                        ContentStyle::new()
+                        res_draw_config.color_scheme().menu_title()
                     };
                     let title_bar = CharmieRow::of_text(
                         format!("{0:═<1$}", "═Cards", size.width()).as_str(),
@@ -436,7 +436,13 @@ impl Plugin for MenuUiCardSelectionPlugin {
 
 impl NodeUi for MenuUiCardSelection {
     const NAME: &'static str = "Menu Card Selection";
-    type UiBundleExtras = (MouseEventListener, HoverPoint, SelectedItem, IsPadded);
+    type UiBundleExtras = (
+        MouseEventListener,
+        HoverPoint,
+        SelectedItem,
+        IsPadded,
+        Tooltip,
+    );
     type UiPlugin = MenuUiCardSelectionPlugin;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -459,6 +465,7 @@ impl NodeUi for MenuUiCardSelection {
             HoverPoint::default(),
             SelectedItem::default(),
             IsPadded::default(),
+            Tooltip::new("Select card to play"),
         )
     }
 }

@@ -1,6 +1,5 @@
 use charmi::CharacterMapImage;
 use crossterm::event::KeyModifiers;
-use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
 use game_core::node::{IsTapped, NodeOp, NodePiece};
 use game_core::op::CoreOps;
@@ -8,7 +7,8 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
-use crate::base_ui::HoverPoint;
+use crate::base_ui::{HoverPoint, Tooltip};
+use crate::configuration::DrawConfiguration;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
@@ -210,6 +210,7 @@ impl MenuUiActions {
     }
 
     fn sys_render_action_menu(
+        res_draw_config: Res<DrawConfiguration>,
         ast_actions: Res<Assets<Action>>,
         node_pieces: Query<&Actions, With<NodePiece>>,
         players: Query<(&SelectedEntity, &SelectedAction, &UiFocus), With<Player>>,
@@ -231,11 +232,9 @@ impl MenuUiActions {
                     .of(&node_pieces)
                     .map(|piece_actions| {
                         let title_style = if Some(id) == **focus {
-                            // TODO replace with configurable "MenuUiTitleFocused"
-                            ContentStyle::new().reverse()
+                            res_draw_config.color_scheme().menu_title_hover()
                         } else {
-                            // TODO replace with configurable "MenuUiTitleUnfocused"
-                            ContentStyle::new()
+                            res_draw_config.color_scheme().menu_title()
                         };
                         let hover_index = hover_point
                             .as_ref()
@@ -247,7 +246,7 @@ impl MenuUiActions {
                         for (idx, action) in piece_actions.iter().enumerate() {
                             if let Some(action) = ast_actions.get(action) {
                                 let style = (Some(idx) == hover_index)
-                                    .then(|| ContentStyle::new().blue())
+                                    .then(|| res_draw_config.color_scheme().menu_hover())
                                     .unwrap_or_default();
                                 let action_text = if Some(idx) == **selected_action {
                                     format!("▶{}", action.id())
@@ -287,7 +286,7 @@ impl Plugin for MenuUiActions {
 
 impl NodeUi for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = (MouseEventListener, HoverPoint);
+    type UiBundleExtras = (MouseEventListener, HoverPoint, Tooltip);
     type UiPlugin = Self;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -304,6 +303,10 @@ impl NodeUi for MenuUiActions {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (MouseEventListener, HoverPoint::default())
+        (
+            MouseEventListener,
+            HoverPoint::default(),
+            Tooltip::new("Select action"),
+        )
     }
 }

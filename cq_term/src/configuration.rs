@@ -30,6 +30,12 @@ pub struct ColorScheme {
     player_team_active: ContentStyle,
     #[get_copy = "pub"]
     player_team_tapped: ContentStyle,
+    #[get_copy = "pub"]
+    menu_hover: ContentStyle,
+    #[get_copy = "pub"]
+    menu_title: ContentStyle,
+    #[get_copy = "pub"]
+    menu_title_hover: ContentStyle,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -60,6 +66,9 @@ impl Default for ColorScheme {
                 Some(Attribute::Bold),
             ),
             player_team_tapped: style(Some(Color::Grey), None, None),
+            menu_hover: style(Some(Color::Blue), None, None),
+            menu_title: style(None, None, None),
+            menu_title_hover: style(None, None, Some(Attribute::Reverse)),
         }
     }
 }
