@@ -215,6 +215,7 @@ fn sys_react_to_node_op(
                 },
                 NodeOp::ReadyToGo => {
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                 },
                 NodeOp::EndTurn => {
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));

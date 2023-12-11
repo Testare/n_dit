@@ -124,6 +124,11 @@ impl CharacterMapImage {
         self.rows.push(builder(CharmieRow::default()));
         self
     }
+
+    pub fn new_row(&mut self) -> &mut CharmieRow {
+        self.rows.push(CharmieRow::default());
+        self.rows.last_mut().unwrap()
+    }
 }
 
 impl From<&CharacterMapImage> for Vec<String> {

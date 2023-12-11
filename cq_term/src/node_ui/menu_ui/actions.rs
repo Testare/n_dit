@@ -100,7 +100,7 @@ impl MenuUiActions {
         mut res_ui_ops: ResMut<UiOps>,
         mut ev_mouse: EventReader<MouseEventTty>,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
-        players: Query<&SelectedEntity, With<Player>>,
+        players: Query<(&SelectedEntity, AsDerefCopied<SelectedAction>), With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
     ) {
         for layout_event in ev_mouse.read() {
@@ -108,45 +108,70 @@ impl MenuUiActions {
                 .get(layout_event.entity())
                 .ok()
                 .and_then(|ForPlayer(player_id)| {
-                    let selected_entity = get_assert!(*player_id, players)?;
+                    let (selected_entity, selected_action) = get_assert!(*player_id, players)?;
                     let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
 
                     // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
                     match layout_event.event_kind() {
-                        MouseEventTtyKind::Down(MouseButton::Left) => {
-                            res_ui_ops.request(
-                                *player_id,
-                                NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
-                            );
-                            if layout_event.pos().y > 0
+                        MouseEventTtyKind::Down(MouseButton::Left)
+                        | MouseEventTtyKind::DoubleClick => {
+                            let clicked_action = if layout_event.pos().y > 0
                                 && layout_event.pos().y <= actions.len() as u32
                             {
-                                let clicked_action = (layout_event.pos().y - 1) as usize;
+                                Some((layout_event.pos().y - 1) as usize)
+                            } else {
+                                None
+                            };
+                            let double_click = layout_event.double_click()
+                                || !layout_event
+                                    .modifiers()
+                                    .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
+                                    .is_empty();
+
+                            let same_action_clicked = clicked_action == selected_action;
+
+                            if clicked_action.is_none() {
                                 res_ui_ops.request(
                                     *player_id,
-                                    NodeUiOp::SetSelectedAction(Some(clicked_action)),
+                                    NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
                                 );
-
-                                if layout_event.double_click()
-                                    || !layout_event
-                                        .modifiers()
-                                        .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
-                                        .is_empty()
+                            } else if double_click {
+                                res_ui_ops
+                                    .request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                                let action = ast_actions.get(
+                                    &actions[clicked_action
+                                        .expect("clicked_action should be checked by this point")],
+                                )?;
+                                if matches!(is_tapped, Some(IsTapped(false))) // Should only match if the game has started
+                                    && action.range().is_none()
                                 {
-                                    let action = ast_actions.get(&actions[clicked_action])?;
-                                    if matches!(is_tapped, Some(IsTapped(false)))
-                                        && action.range().is_none()
-                                    {
-                                        res_core_ops.request(
-                                            *player_id,
-                                            NodeOp::PerformCurioAction {
-                                                action_id: action.id_cow(),
-                                                curio: **selected_entity,
-                                                target: default(),
-                                            },
-                                        );
-                                    }
+                                    res_core_ops.request(
+                                        *player_id,
+                                        NodeOp::PerformCurioAction {
+                                            action_id: action.id_cow(),
+                                            curio: **selected_entity,
+                                            target: default(),
+                                        },
+                                    );
+                                } else {
+                                    res_ui_ops.request(
+                                        *player_id,
+                                        NodeUiOp::SetSelectedAction(clicked_action),
+                                    );
                                 }
+                            } else if same_action_clicked {
+                                res_ui_ops
+                                    .request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                                res_ui_ops.request(*player_id, NodeUiOp::SetSelectedAction(None));
+                            } else {
+                                res_ui_ops.request(
+                                    *player_id,
+                                    NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
+                                );
+                                res_ui_ops.request(
+                                    *player_id,
+                                    NodeUiOp::SetSelectedAction(clicked_action),
+                                );
                             }
                         },
                         _ => {},

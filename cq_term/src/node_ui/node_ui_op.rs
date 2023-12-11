@@ -69,6 +69,7 @@ pub fn opsys_nodeui_focus(
             FocusTarget::Grid => grid_uis.get_for(player).ok(),
             FocusTarget::CardMenu => card_selection_menus.get_for(player).ok(),
         };
+        log::debug!("FOCUS CHANGE: Old {focus:?} Next {next_focus:?} Target {focus_target:?}");
         focus.set_if_neq(next_focus);
         cursor_is_hidden.set_if_neq(false);
         Ok(default())
