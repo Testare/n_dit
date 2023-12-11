@@ -45,7 +45,7 @@ impl Plugin for BaseUiPlugin {
 }
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct IsUnderHover(bool);
+pub struct HoverPoint(Option<UVec2>);
 
 #[derive(Component, Debug, Default)]
 pub struct TooltipBar;
@@ -60,7 +60,7 @@ pub struct ButtonUiBundle {
     pub borders: TextUiBorder,
     pub mouse_target: MouseEventListener,
     pub disabled_effect: DisabledTextEffect,
-    pub hover: IsUnderHover,
+    pub hover_point: HoverPoint,
     pub rendering: TerminalRendering,
     pub style_tty: StyleTty,
 }
@@ -77,7 +77,7 @@ impl ButtonUiBundle {
             mouse_target: MouseEventListener,
             disabled_effect: DisabledTextEffect(ContentStyle::default().dark_grey()),
             rendering: TerminalRendering::default(),
-            hover: IsUnderHover::default(),
+            hover_point: HoverPoint::default(),
             style_tty: StyleTty(taffy::prelude::Style {
                 size: Size {
                     width: Dimension::Points(text.borrow().len() as f32 + 2.0),
@@ -165,7 +165,7 @@ pub fn sys_render_flexible_text(
         &CalculatedSizeTty,
         &mut TerminalRendering,
         Has<MouseEventTtyDisabled>,
-        AsDerefOrBool<IsUnderHover, false>,
+        Option<AsDeref<HoverPoint>>,
         Option<&TextUiBorder>,
         Option<&DisabledTextEffect>,
     )>,
@@ -175,7 +175,7 @@ pub fn sys_render_flexible_text(
         size,
         mut rendering,
         disabled,
-        is_under_hover,
+        hover_point,
         text_ui_border,
         disabled_text_effect,
     ) in buttons.iter_mut()
@@ -192,7 +192,7 @@ pub fn sys_render_flexible_text(
             CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
         if let (true, Some(effect)) = (disabled, disabled_text_effect) {
             next_rendering.apply_effect(effect);
-        } else if is_under_hover {
+        } else if matches!(hover_point, Some(Some(_))) {
             next_rendering.apply_effect(&ContentStyle::new().reverse());
         }
         rendering.update_charmie(next_rendering)
@@ -201,12 +201,12 @@ pub fn sys_render_flexible_text(
 }
 
 pub fn sys_tooltip_on_hover(
-    tooltips: Query<(AsDeref<Tooltip>, AsDerefOrBool<IsUnderHover, false>)>,
+    tooltips: Query<(AsDeref<Tooltip>, AsDeref<HoverPoint>)>,
     mut tooltip_bars: Query<&mut FlexibleTextUi, With<TooltipBar>>,
 ) {
     let tooltip = tooltips
         .iter()
-        .find_map(|(tooltip, is_under_hover)| is_under_hover.then(|| tooltip.clone().into_owned()));
+        .find_map(|(tooltip, is_under_hover)| is_under_hover.map(|_| tooltip.clone().into_owned()));
     for tooltip_bar_text_ui in tooltip_bars.iter_mut() {
         tooltip_bar_text_ui
             .map_unchanged(|ui| &mut ui.text)
@@ -218,25 +218,21 @@ pub fn sys_apply_hover(
     mut evr_mouse_tty: EventReader<MouseEventTty>,
     changed_visibility: Query<
         (Entity, AsDerefCopied<VisibilityTty>),
-        (
-            Changed<VisibilityTty>,
-            With<IsUnderHover>,
-            With<FlexibleTextUi>,
-        ),
+        (Changed<VisibilityTty>, With<HoverPoint>),
     >,
-    new_disabled: Query<Entity, (With<IsUnderHover>, Added<MouseEventTtyDisabled>)>,
-    mut buttons: Query<(AsDerefMut<IsUnderHover>,), With<FlexibleTextUi>>,
+    new_disabled: Query<Entity, (With<HoverPoint>, Added<MouseEventTtyDisabled>)>,
+    mut hoverable_ui: Query<(AsDerefMut<HoverPoint>,)>,
 ) {
     for event in evr_mouse_tty.read() {
         match event.event_kind() {
             MouseEventTtyKind::Moved => {
-                if let Ok((mut is_under_hover,)) = buttons.get_mut(event.entity()) {
-                    is_under_hover.set_if_neq(true);
+                if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
+                    hover_point.set_if_neq(Some(event.relative_pos()));
                 }
             },
             MouseEventTtyKind::Exit => {
-                if let Ok((mut is_under_hover,)) = buttons.get_mut(event.entity()) {
-                    is_under_hover.set_if_neq(false);
+                if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
+                    hover_point.set_if_neq(None);
                 }
             },
             _ => {},
@@ -244,14 +240,14 @@ pub fn sys_apply_hover(
     }
     for (id, is_visible) in changed_visibility.iter() {
         if !is_visible {
-            if let Ok((mut is_under_hover,)) = buttons.get_mut(id) {
-                is_under_hover.set_if_neq(false);
+            if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
+                hover_point.set_if_neq(None);
             }
         }
     }
     for id in new_disabled.iter() {
-        if let Ok((mut is_under_hover,)) = buttons.get_mut(id) {
-            is_under_hover.set_if_neq(false);
+        if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
+            hover_point.set_if_neq(None);
         }
     }
 }

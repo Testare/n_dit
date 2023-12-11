@@ -7,9 +7,10 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
+use crate::base_ui::HoverPoint;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
+use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -71,7 +72,7 @@ impl MenuUiCardSelection {
                             let height = size.height32();
 
                             let padding: u32 = is_padded.0.into();
-                            let UVec2 { x, y } = layout_event.pos();
+                            let UVec2 { x, y } = layout_event.relative_pos();
                             if x == 0 && max_scroll != 0 {
                                 // Click on scroll bar
                                 match y {
@@ -293,6 +294,7 @@ impl MenuUiCardSelection {
             Ref<CalculatedSizeTty>,
             &ForPlayer,
             Ref<SelectedItem>,
+            AsDeref<HoverPoint>,
             &mut TerminalRendering,
         )>,
     ) {
@@ -303,9 +305,13 @@ impl MenuUiCardSelection {
             size,
             ForPlayer(player),
             selected_item,
+            hover_point,
             mut tr,
         ) in ui.iter_mut()
         {
+            let mouse_hover_index = hover_point
+                .as_ref()
+                .and_then(|pt| (pt.y as usize).checked_sub(1));
             let mut rendering = players
                 .get(*player)
                 .ok()
@@ -319,6 +325,7 @@ impl MenuUiCardSelection {
                             let remaining_count = played_cards.remaining_count(player_deck, id);
                             let is_selected = Some(id) == access_point.card();
                             let is_hover = **selected_item == Some(num);
+                            let is_mouse_hover = mouse_hover_index == Some(num);
                             let name = cards
                                 .get(id)
                                 .map(|card| card.short_name_or_nickname())
@@ -329,7 +336,12 @@ impl MenuUiCardSelection {
                             } else if is_selected {
                                 row.add_plain_text("▶");
                             }
-                            row.add_plain_text(name)
+
+                            let style = is_mouse_hover
+                                .then(|| ContentStyle::new().blue())
+                                .unwrap_or_default();
+
+                            row.add_text(name, &style)
                                 .fit_to_len(size.width32() - 4)
                                 .add_plain_text(" ")
                                 .add_plain_text(remaining_count.to_string());
@@ -424,7 +436,7 @@ impl Plugin for MenuUiCardSelectionPlugin {
 
 impl NodeUi for MenuUiCardSelection {
     const NAME: &'static str = "Menu Card Selection";
-    type UiBundleExtras = (MouseEventListener, UiFocusOnClick, SelectedItem, IsPadded);
+    type UiBundleExtras = (MouseEventListener, HoverPoint, SelectedItem, IsPadded);
     type UiPlugin = MenuUiCardSelectionPlugin;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -444,7 +456,7 @@ impl NodeUi for MenuUiCardSelection {
     fn ui_bundle_extras() -> Self::UiBundleExtras {
         (
             MouseEventListener,
-            UiFocusOnClick,
+            HoverPoint::default(),
             SelectedItem::default(),
             IsPadded::default(),
         )

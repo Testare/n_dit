@@ -1,4 +1,4 @@
-use charmi::{CharacterMapImage, CharmieRow};
+use charmi::CharacterMapImage;
 use crossterm::event::KeyModifiers;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::{Action, Actions};
@@ -8,9 +8,10 @@ use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
+use crate::base_ui::HoverPoint;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, UiFocusOnClick};
+use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -115,10 +116,10 @@ impl MenuUiActions {
                     match layout_event.event_kind() {
                         MouseEventTtyKind::Down(MouseButton::Left)
                         | MouseEventTtyKind::DoubleClick => {
-                            let clicked_action = if layout_event.pos().y > 0
-                                && layout_event.pos().y <= actions.len() as u32
+                            let clicked_action = if layout_event.relative_pos().y > 0
+                                && layout_event.relative_pos().y <= actions.len() as u32
                             {
-                                Some((layout_event.pos().y - 1) as usize)
+                                Some((layout_event.relative_pos().y - 1) as usize)
                             } else {
                                 None
                             };
@@ -217,13 +218,14 @@ impl MenuUiActions {
                 Entity,
                 &CalculatedSizeTty,
                 &ForPlayer,
+                AsDeref<HoverPoint>,
                 &mut TerminalRendering,
             ),
             With<MenuUiActions>,
         >,
     ) {
         // let render_param = render_param.into_inner();
-        for (id, size, ForPlayer(player), mut tr) in ui.iter_mut() {
+        for (id, size, ForPlayer(player), hover_point, mut tr) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action, focus)) = players.get(*player) {
                 let rendering = selected_entity
                     .of(&node_pieces)
@@ -235,17 +237,24 @@ impl MenuUiActions {
                             // TODO replace with configurable "MenuUiTitleUnfocused"
                             ContentStyle::new()
                         };
+                        let hover_index = hover_point
+                            .as_ref()
+                            .and_then(|pt| (pt.y as usize).checked_sub(1));
                         let mut menu = CharacterMapImage::new();
                         let menu_title = format!("{0:-<1$}", "-Actions", size.width());
-                        menu.push_row(CharmieRow::of_text(menu_title, &title_style));
+                        menu.new_row().add_text(menu_title, &title_style);
 
                         for (idx, action) in piece_actions.iter().enumerate() {
                             if let Some(action) = ast_actions.get(action) {
-                                if Some(idx) == **selected_action {
-                                    menu.push_row(format!("▶{}", action.id()).into());
+                                let style = (Some(idx) == hover_index)
+                                    .then(|| ContentStyle::new().blue())
+                                    .unwrap_or_default();
+                                let action_text = if Some(idx) == **selected_action {
+                                    format!("▶{}", action.id())
                                 } else {
-                                    menu.push_row(action.id().into());
-                                }
+                                    action.id().to_string()
+                                };
+                                menu.new_row().add_text(action_text, &style);
                             }
                         }
                         menu
@@ -278,7 +287,7 @@ impl Plugin for MenuUiActions {
 
 impl NodeUi for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = (MouseEventListener, UiFocusOnClick);
+    type UiBundleExtras = (MouseEventListener, HoverPoint);
     type UiPlugin = Self;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -295,6 +304,6 @@ impl NodeUi for MenuUiActions {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {
-        (MouseEventListener, UiFocusOnClick)
+        (MouseEventListener, HoverPoint::default())
     }
 }

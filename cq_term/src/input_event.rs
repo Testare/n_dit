@@ -46,7 +46,9 @@ pub struct MouseEventTty {
     #[getset(get_copy = "pub")]
     entity: Entity,
     #[getset(get_copy = "pub")]
-    pos: UVec2,
+    relative_pos: UVec2,
+    #[getset(get_copy = "pub")]
+    absolute_pos: UVec2,
     #[getset(get = "pub")]
     modifiers: KeyModifiers,
     #[getset(get = "pub")]
@@ -101,6 +103,10 @@ pub fn sys_mouse_tty(
     }) in evr_crossterm_mouse.read()
     {
         let (event_x, event_y) = (*column as u32, *row as u32);
+        let absolute_pos = UVec2 {
+            x: event_x,
+            y: event_y,
+        };
         let double_click = last_click
             .map(|(last_event_time, last_event)| {
                 last_event_time.elapsed().as_millis() <= 500
@@ -134,13 +140,14 @@ pub fn sys_mouse_tty(
                     && translation.y <= event_y
                     && event_y < (translation.y + size.height32())
                 {
-                    let pos = UVec2 {
+                    let relative_pos = UVec2 {
                         x: event_x - translation.x,
                         y: event_y - translation.y,
                     };
                     evw_mouse_tty.send(MouseEventTty {
                         entity,
-                        pos,
+                        relative_pos,
+                        absolute_pos,
                         modifiers: *modifiers,
                         event_kind,
                         double_click,
@@ -162,7 +169,8 @@ pub fn sys_mouse_tty(
                 {
                     evw_mouse_tty.send(MouseEventTty {
                         entity,
-                        pos: default(), // In this case, we don't really have a helpful value for pos
+                        absolute_pos,
+                        relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
                         modifiers: *modifiers,
                         event_kind: MouseEventTtyKind::Exit,
                         double_click,

@@ -51,7 +51,7 @@ pub fn handle_layout_events(
                 )| {
                     let (grid, active_curio, current_turn) = get_assert!(**node, nodes)?;
                     let team_phase = get_assert!(**team, teams)?;
-                    let clicked_pos = event.pos() + **scroll;
+                    let clicked_pos = event.relative_pos() + **scroll;
                     let clicked_node_pos = UVec2 {
                         x: clicked_pos.x / 3,
                         y: clicked_pos.y / 2,
