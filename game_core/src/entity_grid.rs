@@ -26,6 +26,37 @@ pub mod commands;
 // * moves direction from head (move/grow)
 // * push_back logic to match push_front logic when the square is already occupied by the item.
 
+#[derive(Debug)]
+pub struct EntityGridSupportPlugin;
+
+impl Plugin for EntityGridSupportPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<EntityGridDef>()
+            .add_systems(Update, plugin::sys_create_entity_grid);
+    }
+}
+
+mod plugin {
+    use super::{EntityGrid, EntityGridDef};
+    use crate::prelude::*;
+
+    pub fn sys_create_entity_grid(
+        mut commands: Commands,
+        grids: Query<(Entity, &EntityGridDef), Changed<EntityGridDef>>,
+    ) {
+        for (id, new_grid_def) in grids.iter() {
+            match EntityGrid::try_from(new_grid_def) {
+                Ok(new_grid) => {
+                    commands.entity(id).insert(new_grid);
+                },
+                Err(err) => {
+                    log::error!("Failed to create EntityGrid from EntityGridDef. Error[{err:?}] EnttiyGridDef[{new_grid_def:?}");
+                },
+            }
+        }
+    }
+}
+
 /// Represents a point of space that may contain a square.
 
 /// Internal representation of available space. Contains:
@@ -83,6 +114,32 @@ impl TryFrom<EntityGridDef> for EntityGrid {
                     grid.put_item(place, entity).is_some()
                 } else {
                     grid.push_back(place, entity)
+                };
+                if !success {
+                    return Err(anyhow::anyhow!(
+                        "Unable to add {entity:?} to coordinate: [{place:?}]"
+                    ));
+                }
+                first = false;
+            }
+        }
+        Ok(grid)
+    }
+}
+
+impl TryFrom<&EntityGridDef> for EntityGrid {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &EntityGridDef) -> Result<Self, Self::Error> {
+        let mut grid = EntityGrid::from_shape_string(&value.shape)?;
+        for (entity, places) in value.entities.iter() {
+            let mut first = true;
+
+            for place in places.iter() {
+                let success = if first {
+                    grid.put_item(*place, *entity).is_some()
+                } else {
+                    grid.push_back(*place, *entity)
                 };
                 if !success {
                     return Err(anyhow::anyhow!(

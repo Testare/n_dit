@@ -30,7 +30,6 @@ use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
 use crate::prelude::*;
-use crate::TerminalFocusMode;
 
 /// Event that tells us to show a specific Node entity
 /// Should likely be replaced with a gamecore Op
@@ -78,7 +77,7 @@ impl Plugin for NodeUiPlugin {
             OpPlugin::<NodeUiOp>::default(),
         ))
         .add_event::<ShowNode>()
-        .add_systems(OnEnter(TerminalFocusMode::Node), setup::create_node_ui)
+        .add_systems(Update, setup::create_node_ui)
         .add_systems(
             PreUpdate,
             (

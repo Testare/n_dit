@@ -41,6 +41,8 @@ pub struct DebugEntityMarker;
 pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
+    node_id: Option<Entity>,
+    player_id: Option<Entity>,
 }
 
 impl Plugin for DemoPlugin {
@@ -122,6 +124,8 @@ fn debug_key(
         ),
         With<Node>,
     >,
+
+    mut evw_show_node: EventWriter<ShowNode>,
 ) {
     for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
@@ -173,6 +177,11 @@ fn debug_key(
             } else {
                 res_terminal_window.set_render_target(res_demo_state.node_ui_id);
             }
+        } else if *code == KeyCode::Char('+') {
+            evw_show_node.send(ShowNode {
+                player: res_demo_state.player_id.unwrap(),
+                node: res_demo_state.node_id.unwrap(),
+            });
         }
     }
 }
@@ -380,7 +389,7 @@ fn demo_startup(
             );
         })
         .insert(grid.clone())
-        .insert(EntityGrid::try_from(grid).unwrap())
+        // .insert(EntityGrid::try_from(grid).unwrap())
         .id();
     commands.spawn((
         PlayerBundle::default(),
@@ -571,6 +580,9 @@ fn demo_startup(
         })
         .id();
     res_demo_state.board_ui_id = Some(board_ui_root);
+    res_demo_state.node_id = Some(node);
+    res_demo_state.player_id = Some(player);
     load_node_writer.send(ShowNode { node, player });
+
     log::debug!("Demo startup executed");
 }

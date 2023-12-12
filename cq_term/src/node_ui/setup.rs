@@ -32,10 +32,10 @@ pub fn create_node_ui(
 ) {
     use taffy::prelude::*;
     if let Some(ShowNode { player, node }) = show_node.read().next() {
-        if let Ok(mut key_map) = players.get_mut(*player) {
-            key_map.activate_submap(Submap::Node);
-        }
         if let Ok((node_q, node_name)) = node_qs.get(*node) {
+            if let Ok(mut key_map) = players.get_mut(*player) {
+                key_map.activate_submap(Submap::Node);
+            }
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {

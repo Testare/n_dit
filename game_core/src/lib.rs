@@ -62,7 +62,6 @@ impl Plugin for NDitCorePlugin {
             )
                 .chain(),
         )
-        .register_type::<EntityGridDef>()
         .add_systems(
             Update,
             (
@@ -77,6 +76,7 @@ impl Plugin for NDitCorePlugin {
             board::BoardPlugin,
             bam::BamPlugin,
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
+            entity_grid::EntityGridSupportPlugin,
         ));
     }
 }
