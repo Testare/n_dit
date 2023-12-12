@@ -3,7 +3,7 @@ pub mod board;
 pub mod card;
 pub mod common;
 pub mod configuration;
-mod entity_grid;
+pub mod entity_grid;
 pub mod node;
 pub mod op;
 pub mod player;
@@ -11,6 +11,7 @@ pub mod prelude;
 pub mod quest;
 pub mod registry;
 
+pub use entity_grid::EntityGridDef;
 use op::CoreOps;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
 use thiserror::Error;
@@ -61,6 +62,7 @@ impl Plugin for NDitCorePlugin {
             )
                 .chain(),
         )
+        .register_type::<EntityGridDef>()
         .add_systems(
             Update,
             (

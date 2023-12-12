@@ -1,10 +1,10 @@
 //! Documentation might be outdated! This was recently migrated from a very
 //! different implementation.
 
-use std::collections::HashMap;
 use std::iter::Rev;
 use std::vec::IntoIter;
 
+use bevy::ecs::entity::MapEntities;
 use bevy::reflect::Reflect;
 use bitvec::slice::BitSlice;
 use bitvec::vec::BitVec;
@@ -50,6 +50,66 @@ pub struct EntityGrid {
     height: u32,
     entries: HashMap<Entity, UVec2>,
     grid: Vec<Vec<Option<Square>>>, // None = closed. No grid to be. At no point should a square be inserted here from outside
+}
+
+/// Simple representation
+#[derive(Component, Clone, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct EntityGridDef {
+    pub shape: String,
+    pub entities: HashMap<Entity, Vec<UVec2>>,
+}
+
+impl MapEntities for EntityGridDef {
+    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+        self.entities = self
+            .entities
+            .drain()
+            .map(|(id, places)| (entity_mapper.get_or_reserve(id), places))
+            .collect();
+    }
+}
+
+impl TryFrom<EntityGridDef> for EntityGrid {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EntityGridDef) -> Result<Self, Self::Error> {
+        let mut grid = EntityGrid::from_shape_string(&value.shape)?;
+        for (entity, places) in value.entities.into_iter() {
+            let mut first = true;
+
+            for place in places.into_iter() {
+                let success = if first {
+                    grid.put_item(place, entity).is_some()
+                } else {
+                    grid.push_back(place, entity)
+                };
+                if !success {
+                    return Err(anyhow::anyhow!(
+                        "Unable to add {entity:?} to coordinate: [{place:?}]"
+                    ));
+                }
+                first = false;
+            }
+        }
+        Ok(grid)
+    }
+}
+
+impl EntityGridDef {
+    pub fn with_shape(shape: &str) -> Self {
+        EntityGridDef {
+            shape: shape.into(),
+            entities: HashMap::new(),
+        }
+    }
+
+    pub fn add(&mut self, id: Entity, locations: Vec<(u32, u32)>) {
+        self.entities.insert(
+            id,
+            locations.into_iter().map(|(x, y)| UVec2 { x, y }).collect(),
+        );
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -211,7 +271,6 @@ impl EntityGrid {
     }
 
     /// Creates a base grid_map from a shape string
-    ///
     pub fn from_shape_bitslice(bits: &BitSlice<u8>) -> Self {
         let (hw, squarebits) = bits.split_at(32);
         let (wbits, hbits) = hw.split_at(16);

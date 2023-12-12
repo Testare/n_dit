@@ -18,6 +18,7 @@ use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
+use game_core::EntityGridDef;
 
 use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
@@ -78,7 +79,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
             With<Node>,
             With<NodePiece>,
             With<Team>,
-            With<Card>,
+            // With<Card>,
             With<Player>,
         )>>()
         .iter(world)
@@ -267,6 +268,10 @@ fn demo_startup(
         ),))
         .id();
     let demo_node_id = NodeId::new("node:demo", 0);
+
+    let mut grid = EntityGridDef::with_shape("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==");
+    // "CwAHAP///////////x8=" for the first level
+
     let node = commands
         .spawn((
             Node(demo_node_id.clone()),
@@ -282,67 +287,87 @@ fn demo_startup(
                 .collect(),
             ),
             ActiveCurio::default(),
-            EntityGrid::from_shape_string("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==").unwrap(),
             Name::new("Demo Node"),
         ))
         .with_children(|node| {
             let node_id = node.parent_entity();
-            node.spawn((
-                NodePiece::new("env:access_point"),
-                AccessPoint::default(),
-                OnTeam(player_team),
-            ))
-            .add_to_grid(node_id, vec![(6, 2)]);
-            node.spawn((
-                NodePiece::new("env:access_point"),
-                AccessPoint::default(),
-                OnTeam(player_team),
-            ))
-            .add_to_grid(node_id, vec![(12, 2)]);
-            node.spawn((
-                NodePiece::new("env:access_point"),
-                AccessPoint::default(),
-                OnTeam(player_team),
-            ))
-            .add_to_grid(node_id, vec![(12, 10)]);
-            node.spawn((
-                Pickup::Card(hack),
-                NodePiece::new("pickup:card"),
-                Description::new("A card! Get this card! It's a good card! A very good card!"),
-            ))
-            .add_to_grid(node_id, vec![(4, 3)]);
-            node.spawn((
-                Pickup::Mon(Mon(1000)),
-                NodePiece::new("pickup:mon"),
-                Description::new("Put food on the table, and cards in your deck"),
-            ))
-            .add_to_grid(node_id, vec![(11, 10)]);
+            grid.add(
+                node.spawn((
+                    NodePiece::new("env:access_point"),
+                    AccessPoint::default(),
+                    OnTeam(player_team),
+                ))
+                .id(),
+                vec![(6, 2)],
+            );
 
-            node.spawn((
-                Actions(vec![act_phaser.clone(), (**no_op).clone()]),
-                Curio::new("Shinigami"),
-                IsTapped(false),
-                MaximumSize(7),
-                MovementSpeed(2),
-                MovesTaken(0),
-                NodePiece::new("Attack Dog"),
-                SimpleAiCurioOrder(1),
-                OnTeam(enemy_team),
-            ))
-            .add_to_grid(node_id, vec![(2, 5)]);
-            node.spawn((
-                Actions(vec![act_phaser.clone(), (**no_op).clone()]),
-                Curio::new("Shinigami"),
-                IsTapped(false),
-                MaximumSize(7),
-                MovementSpeed(2),
-                MovesTaken(0),
-                NodePiece::new("Attack Dog"),
-                SimpleAiCurioOrder(0),
-                OnTeam(enemy_team),
-            ))
-            .add_to_grid(
-                node_id,
+            grid.add(
+                node.spawn((
+                    NodePiece::new("env:access_point"),
+                    AccessPoint::default(),
+                    OnTeam(player_team),
+                ))
+                .id(),
+                vec![(12, 2)],
+            );
+
+            grid.add(
+                node.spawn((
+                    NodePiece::new("env:access_point"),
+                    AccessPoint::default(),
+                    OnTeam(player_team),
+                ))
+                .id(),
+                vec![(12, 10)],
+            );
+
+            grid.add(
+                node.spawn((
+                    Pickup::Card(hack),
+                    NodePiece::new("pickup:card"),
+                    Description::new("A card! Get this card! It's a good card! A very good card!"),
+                ))
+                .id(),
+                vec![(4, 3)],
+            );
+            grid.add(
+                node.spawn((
+                    Pickup::Mon(Mon(1000)),
+                    NodePiece::new("pickup:mon"),
+                    Description::new("Put food on the table, and cards in your deck"),
+                ))
+                .id(),
+                vec![(11, 10)],
+            );
+
+            grid.add(
+                node.spawn((
+                    Actions(vec![act_phaser.clone(), (**no_op).clone()]),
+                    Curio::new("Shinigami"),
+                    IsTapped(false),
+                    MaximumSize(7),
+                    MovementSpeed(2),
+                    MovesTaken(0),
+                    NodePiece::new("Attack Dog"),
+                    SimpleAiCurioOrder(1),
+                    OnTeam(enemy_team),
+                ))
+                .id(),
+                vec![(2, 5)],
+            );
+            grid.add(
+                node.spawn((
+                    Actions(vec![act_phaser.clone(), (**no_op).clone()]),
+                    Curio::new("Shinigami"),
+                    IsTapped(false),
+                    MaximumSize(7),
+                    MovementSpeed(2),
+                    MovesTaken(0),
+                    NodePiece::new("Attack Dog"),
+                    SimpleAiCurioOrder(0),
+                    OnTeam(enemy_team),
+                ))
+                .id(),
                 vec![
                     (12, 3),
                     (13, 3),
@@ -354,6 +379,8 @@ fn demo_startup(
                 ],
             );
         })
+        .insert(grid.clone())
+        .insert(EntityGrid::try_from(grid).unwrap())
         .id();
     commands.spawn((
         PlayerBundle::default(),
