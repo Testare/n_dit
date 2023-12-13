@@ -240,7 +240,7 @@ impl MenuUiActions {
                             .as_ref()
                             .and_then(|pt| (pt.y as usize).checked_sub(1));
                         let mut menu = CharacterMapImage::new();
-                        let menu_title = format!("{0:-<1$}", "-Actions", size.width());
+                        let menu_title = format!("{0:─<1$}", "─Actions", size.width());
                         menu.new_row().add_text(menu_title, &title_style);
 
                         for (idx, action) in piece_actions.iter().enumerate() {

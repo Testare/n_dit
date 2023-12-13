@@ -73,7 +73,7 @@ impl MenuUiDescription {
                             })
                             .or_else(|| Some(selected.description?.as_str()))?;
                         let wrapped_desc = textwrap::wrap(desc_str, size.width());
-                        let mut menu = vec![format!("{0:-<1$}", "-Desc", size.width())];
+                        let mut menu = vec![format!("{0:─<1$}", "─Desc", size.width())];
                         for desc_line in wrapped_desc.into_iter() {
                             menu.push(desc_line.into_owned());
                         }

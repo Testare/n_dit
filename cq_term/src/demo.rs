@@ -407,7 +407,6 @@ fn demo_startup(
             },
             quest_status,
             KeyMap::default(),
-            OnTeam(player_team),
             EnteringNode(demo_node_id_clone),
             // InNode(node),
             PlayedCards::default(),
