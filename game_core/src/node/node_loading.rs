@@ -8,7 +8,7 @@ pub struct NodeLoadingPlugin;
 
 impl Plugin for NodeLoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, sys_enter_node_when_ready);
+        app.add_systems(PostUpdate, sys_enter_node_when_ready);
     }
 }
 
@@ -23,7 +23,6 @@ fn sys_enter_node_when_ready(
             nodes.iter().find(|(node, _, _, _)| node.0 == *node_id)
         {
             if node_is_ready {
-                // TODO add player to the appropriate team
                 commands
                     .entity(player_id)
                     .remove::<EnteringNode>()

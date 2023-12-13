@@ -21,16 +21,15 @@ impl Plugin for CardPlugin {
         app.init_asset::<CardDefinition>()
             .init_asset::<Action>()
             .register_type::<Card>()
+            .register_type::<Description>()
+            .register_type::<MaximumSize>()
+            .register_type::<MovementSpeed>()
+            .register_type::<Tag>()
+            .register_type::<Tags>()
             // .register_type::<Deck>() // Can't register because of NonZeroU32
             .init_asset_loader::<card_as_asset::CardAssetLoader>()
             .init_asset_loader::<card_as_asset::ActionAssetLoader>();
     }
-}
-#[derive(Component, Debug, Deserialize, Default, Reflect, Serialize)]
-#[reflect(Component, Deserialize, Serialize)]
-pub struct Deck {
-    cards: HashMap<Entity, NonZeroU32>,
-    ordering: Vec<Entity>,
 }
 
 #[derive(Component, Debug, Default, Reflect, getset::Getters)]
@@ -45,19 +44,24 @@ pub struct Card {
     definition: Handle<CardDefinition>,
 }
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
-pub struct MovementSpeed(pub u32);
+#[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
+#[reflect(Component, Deserialize, Serialize)]
+pub struct Deck {
+    cards: HashMap<Entity, NonZeroU32>,
+    ordering: Vec<Entity>,
+}
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
-pub struct MaximumSize(pub u32);
-
-#[derive(Clone, Component, Debug, Deref, Reflect)]
+#[derive(Clone, Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
 pub struct Description(String);
 
-#[derive(Component, Deref, Reflect)]
-struct Tags {
-    tags: Vec<Tag>,
-}
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct MaximumSize(pub u32);
+
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct MovementSpeed(pub u32);
 
 #[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
 pub enum Tag {
@@ -65,6 +69,12 @@ pub enum Tag {
     Healing,
     Fire,
     Flying,
+}
+
+#[derive(Component, Default, Deref, Reflect)]
+#[reflect(Component)]
+struct Tags {
+    tags: Vec<Tag>,
 }
 
 impl Deck {

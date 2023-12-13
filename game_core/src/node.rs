@@ -62,6 +62,7 @@ impl Plugin for NodePlugin {
             .register_type::<TeamStatus>()
             .register_type::<Teams>()
             .register_type::<VictoryStatus>()
+            .register_type::<rule::AccessPointLoadingRule>()
             .add_plugins((
                 ai::NodeAiPlugin,
                 node_loading::NodeLoadingPlugin,

@@ -19,15 +19,21 @@ impl Plugin for NodeAiPlugin {
     fn build(&self, app: &mut App) {
         // Later might change this to be a post-commands op so that it sets up AI after player ends their turn
         app.add_systems(PreUpdate, sys_ai_apply.in_set(NDitCoreSet::ProcessInputs))
-            .add_systems(Update, sys_ai.in_set(NDitCoreSet::PostProcessCommands));
+            .add_systems(Update, sys_ai.in_set(NDitCoreSet::PostProcessCommands))
+            .add_systems(PostUpdate, sys_ai_setup)
+            .register_type::<NodeBattleIntelligence>()
+            .register_type::<SimpleAiCurioOrder>();
     }
 }
 
-#[derive(Component, Debug, Deref)]
+#[derive(Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
 pub struct SimpleAiCurioOrder(pub usize);
 
-#[derive(Clone, Component, Copy, Debug)]
+#[derive(Clone, Component, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub enum NodeBattleIntelligence {
+    #[default]
     DoNothing,
     Lazy,
     Simple,
@@ -44,6 +50,15 @@ pub struct AiThreadInternal {
     handle: Task<()>,
     events: Mutex<Receiver<(NodeOp, Duration)>>,
     pause_until: Duration,
+}
+
+fn sys_ai_setup(
+    mut commands: Commands,
+    ai: Query<Entity, (With<NodeBattleIntelligence>, Without<AiThread>)>,
+) {
+    for id in ai.iter() {
+        commands.entity(id).insert(AiThread::default());
+    }
 }
 
 fn sys_ai_apply(

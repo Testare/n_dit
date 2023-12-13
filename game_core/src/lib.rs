@@ -70,13 +70,14 @@ impl Plugin for NDitCorePlugin {
             ),
         )
         .add_plugins((
-            card::CardPlugin,
-            node::NodePlugin,
-            registry::RegistryPlugin,
-            board::BoardPlugin,
             bam::BamPlugin,
-            op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
+            board::BoardPlugin,
+            card::CardPlugin,
             entity_grid::EntityGridSupportPlugin,
+            node::NodePlugin,
+            op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
+            player::PlayerPlugin,
+            registry::RegistryPlugin,
         ));
     }
 }

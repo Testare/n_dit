@@ -1,14 +1,29 @@
+use bevy::ecs::entity::{EntityMapper, MapEntities};
+
 use crate::prelude::*;
 
-/// Marker for a player entity.
-#[derive(Component, Debug)]
-pub struct Player;
+#[derive(Debug)]
+pub struct PlayerPlugin;
 
-#[derive(Clone, Component, Copy, Debug, Deref)]
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<ForPlayer>().register_type::<Player>();
+    }
+}
+
+#[derive(Clone, Component, Copy, Debug, Deref, Reflect)]
 pub struct ForPlayer(pub Entity);
 
-#[derive(Clone, Component, Debug)]
-pub struct ForMultiPlayer(pub Vec<Entity>);
+impl MapEntities for ForPlayer {
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        self.0 = entity_mapper.get_or_reserve(self.0);
+    }
+}
+
+/// Marker for a player entity.
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct Player;
 
 #[derive(Bundle, Debug)]
 pub struct PlayerBundle {
@@ -22,6 +37,3 @@ impl Default for PlayerBundle {
         }
     }
 }
-
-#[derive(Component, Debug, Reflect)]
-pub struct Players(Vec<Entity>);

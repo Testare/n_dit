@@ -9,10 +9,10 @@ use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, EnteringNode,
-    ForNode, InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node,
-    NodeBattleIntelligence, NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards,
-    SimpleAiCurioOrder, Team, TeamColor, TeamPhase, TeamStatus, Teams, VictoryStatus,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, EnteringNode, ForNode,
+    InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
+    NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor,
+    TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -382,7 +382,6 @@ fn demo_startup(
             );
         })
         .insert(grid.clone())
-        // .insert(EntityGrid::try_from(grid).unwrap())
         .id();
     commands.spawn((
         PlayerBundle::default(),
@@ -391,7 +390,6 @@ fn demo_startup(
         OnTeam(enemy_team),
         NodeBattleIntelligence::Simple,
         Name::new("Jackson"),
-        AiThread::default(),
     ));
 
     let mut quest_status = QuestStatus::default();
@@ -408,7 +406,6 @@ fn demo_startup(
             quest_status,
             KeyMap::default(),
             EnteringNode(demo_node_id_clone),
-            // InNode(node),
             PlayedCards::default(),
             IsReadyToGo(false),
             Deck::new()
