@@ -10,9 +10,8 @@ use game_core::{card, node};
 
 use crate::animation::AnimationPlayer;
 use crate::fx::Fx;
-use crate::node_ui::{NodeGlyph, ShowNode};
+use crate::node_ui::NodeGlyph;
 use crate::prelude::*;
-use crate::render::TerminalRendering;
 
 const DAMAGE_TIMING: f32 = 150.0;
 const ATTACK_BASE_ANIM: &str = "attack";
@@ -231,19 +230,4 @@ fn generate_pickup_animation(
         .collect();
     generated_animation += float_animation;
     generated_animation
-}
-
-pub fn sys_create_grid_animation_player(
-    mut commands: Commands,
-    mut ev_show_node: EventReader<ShowNode>,
-) {
-    for show_node in ev_show_node.read() {
-        commands.spawn((
-            Name::new("GridAnimationPlayer"),
-            GridUiAnimation,
-            ForPlayer(show_node.player),
-            AnimationPlayer::default(),
-            TerminalRendering::default(),
-        ));
-    }
 }

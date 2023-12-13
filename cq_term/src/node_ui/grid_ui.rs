@@ -28,7 +28,6 @@ use crate::input_event::MouseEventListener;
 use crate::layout::{StyleTty, UiFocusOnClick};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
-use crate::TerminalFocusMode;
 
 #[derive(Component, Default)]
 pub struct GridUi;
@@ -60,10 +59,6 @@ impl Plugin for GridUi {
             PreUpdate,
             (grid_inputs::handle_layout_events, grid_inputs::kb_grid)
                 .in_set(NDitCoreSet::ProcessInputs),
-        )
-        .add_systems(
-            OnEnter(TerminalFocusMode::Node),
-            grid_animation::sys_create_grid_animation_player,
         )
         .add_systems(
             Update,

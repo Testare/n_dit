@@ -3,6 +3,7 @@ use crate::op::OpPlugin;
 use crate::prelude::*;
 
 mod ai;
+mod node_loading;
 mod node_op;
 mod rule;
 
@@ -61,7 +62,11 @@ impl Plugin for NodePlugin {
             .register_type::<TeamStatus>()
             .register_type::<Teams>()
             .register_type::<VictoryStatus>()
-            .add_plugins((ai::NodeAiPlugin, OpPlugin::<NodeOp>::default()));
+            .add_plugins((
+                ai::NodeAiPlugin,
+                node_loading::NodeLoadingPlugin,
+                OpPlugin::<NodeOp>::default(),
+            ));
     }
 }
 
@@ -134,13 +139,18 @@ impl FromWorld for CurrentTurn {
     }
 }
 
-/// Indicates this Player is in the specified node
+/// Indicates that this player is attempting to enter a specified node.
 #[derive(Component, Debug, Default, Deref, DerefMut, Deserialize, Reflect, Serialize)]
+#[reflect(Component, Serialize, Deserialize)]
+pub struct EnteringNode(pub NodeId);
+
+/// Indicates this Player is in the specified node
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct ForNode(pub NodeId);
 
 /// Indicates this Player is in the specified node
-#[derive(Component, Debug, Deref, DerefMut, Reflect)]
+#[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct InNode(pub Entity);
 
@@ -211,6 +221,13 @@ impl NodeId {
     pub fn num_flag(&self) -> u32 {
         1 << self.num
     }
+}
+
+#[derive(Component, Debug, Deserialize, Default, Reflect, Serialize)]
+pub enum NodeLoadStatus {
+    #[default]
+    Loading,
+    Loaded,
 }
 
 /// Indicates a piece that is loaded into a Node

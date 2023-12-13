@@ -31,14 +31,6 @@ use super::layout::StyleTty;
 use super::render::TerminalRendering;
 use crate::prelude::*;
 
-/// Event that tells us to show a specific Node entity
-/// Should likely be replaced with a gamecore Op
-#[derive(Debug, Event)]
-pub struct ShowNode {
-    pub player: Entity,
-    pub node: Entity,
-}
-
 #[derive(Component, Debug)]
 pub struct HasNodeUi;
 
@@ -76,7 +68,6 @@ impl Plugin for NodeUiPlugin {
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
             OpPlugin::<NodeUiOp>::default(),
         ))
-        .add_event::<ShowNode>()
         .add_systems(Update, setup::create_node_ui)
         .add_systems(
             PreUpdate,

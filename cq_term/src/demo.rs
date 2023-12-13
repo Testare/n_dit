@@ -9,10 +9,10 @@ use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, ForNode,
-    InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
-    NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor,
-    TeamPhase, TeamStatus, Teams, VictoryStatus,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, AiThread, Curio, CurrentTurn, EnteringNode,
+    ForNode, InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node,
+    NodeBattleIntelligence, NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards,
+    SimpleAiCurioOrder, Team, TeamColor, TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -25,7 +25,7 @@ use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
-use crate::node_ui::{NodeCursor, ShowNode};
+use crate::node_ui::NodeCursor;
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
 use crate::{KeyMap, Submap, TerminalWindow};
@@ -124,8 +124,6 @@ fn debug_key(
         ),
         With<Node>,
     >,
-
-    mut evw_show_node: EventWriter<ShowNode>,
 ) {
     for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
@@ -177,11 +175,6 @@ fn debug_key(
             } else {
                 res_terminal_window.set_render_target(res_demo_state.node_ui_id);
             }
-        } else if *code == KeyCode::Char('+') {
-            evw_show_node.send(ShowNode {
-                player: res_demo_state.player_id.unwrap(),
-                node: res_demo_state.node_id.unwrap(),
-            });
         }
     }
 }
@@ -193,7 +186,6 @@ fn demo_startup(
     mut res_demo_state: ResMut<DemoState>,
     mut res_terminal_window: ResMut<TerminalWindow>,
     mut commands: Commands,
-    mut load_node_writer: EventWriter<ShowNode>,
 ) {
     let player_team = commands
         .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
@@ -277,6 +269,7 @@ fn demo_startup(
         ),))
         .id();
     let demo_node_id = NodeId::new("node:demo", 0);
+    let demo_node_id_clone = demo_node_id.clone();
 
     let mut grid = EntityGridDef::with_shape("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==");
     // "CwAHAP///////////x8=" for the first level
@@ -415,7 +408,8 @@ fn demo_startup(
             quest_status,
             KeyMap::default(),
             OnTeam(player_team),
-            InNode(node),
+            EnteringNode(demo_node_id_clone),
+            // InNode(node),
             PlayedCards::default(),
             IsReadyToGo(false),
             Deck::new()
@@ -582,7 +576,6 @@ fn demo_startup(
     res_demo_state.board_ui_id = Some(board_ui_root);
     res_demo_state.node_id = Some(node);
     res_demo_state.player_id = Some(player);
-    load_node_writer.send(ShowNode { node, player });
 
     log::debug!("Demo startup executed");
 }
