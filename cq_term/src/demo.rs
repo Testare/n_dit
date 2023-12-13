@@ -6,13 +6,13 @@ use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
-use game_core::card::{Actions, Card, Deck, Description, MaximumSize, MovementSpeed};
+use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, EnteringNode, ForNode,
-    InNode, IsReadyToGo, IsTapped, Mon, MovesTaken, NoOpAction, Node, NodeBattleIntelligence,
-    NodeId, NodeOp, NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor,
-    TeamPhase, TeamStatus, Teams, VictoryStatus,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, CurrentTurn, EnteringNode, ForNode, InNode,
+    IsReadyToGo, LoadCurioFromCard, Mon, NoOpAction, Node, NodeBattleIntelligence, NodeId, NodeOp,
+    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase,
+    TeamStatus, Teams, VictoryStatus,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -192,7 +192,6 @@ fn demo_startup(
         .id();
     let root_bam = commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
     let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
-    let act_phaser = asset_server.load("nightfall/program.actions.json#Phaser");
     let hack = commands
         .spawn((Card::new(
             "Hack",
@@ -344,12 +343,7 @@ fn demo_startup(
 
             grid.add(
                 node.spawn((
-                    Actions(vec![act_phaser.clone(), (**no_op).clone()]),
-                    Curio::new("Shinigami"),
-                    IsTapped(false),
-                    MaximumSize(7),
-                    MovementSpeed(2),
-                    MovesTaken(0),
+                    LoadCurioFromCard::Path("nightfall/enemies.cards.json#Watchman".to_string()),
                     NodePiece::new("Attack Dog"),
                     SimpleAiCurioOrder(1),
                     OnTeam(enemy_team),
@@ -359,13 +353,8 @@ fn demo_startup(
             );
             grid.add(
                 node.spawn((
-                    Actions(vec![act_phaser.clone(), (**no_op).clone()]),
-                    Curio::new("Shinigami"),
-                    IsTapped(false),
-                    MaximumSize(7),
-                    MovementSpeed(2),
-                    MovesTaken(0),
-                    NodePiece::new("Attack Dog"),
+                    LoadCurioFromCard::Path("nightfall/enemies.cards.json#Warden+".to_string()),
+                    NodePiece::new("Enemy"),
                     SimpleAiCurioOrder(0),
                     OnTeam(enemy_team),
                 ))

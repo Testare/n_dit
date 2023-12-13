@@ -10,6 +10,7 @@ mod rule;
 pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
 use bevy::ecs::entity::MapEntities;
 use getset::CopyGetters;
+pub use node_loading::LoadCurioFromCard;
 pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
