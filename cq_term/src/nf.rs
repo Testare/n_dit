@@ -81,7 +81,6 @@ fn sys_apply_ui_to_node_nodes(
                 }
                 Some(())
             });
-            log::debug!("FOR PLAYER: {:?}", for_player);
         }
     }
 }

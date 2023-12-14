@@ -1,0 +1,213 @@
+(
+  resources: {},
+  entities: {
+    2: (
+      components: {
+        "game_core::node::Team": (),
+        "game_core::node::TeamColor": Blue,
+        "game_core::node::TeamPhase": Setup,
+      },
+    ),
+    3: (
+      components: {
+        "game_core::node::Team": (),
+        "game_core::node::TeamColor": Red,
+        "game_core::node::TeamPhase": Play,
+      },
+    ),
+    4: (
+      components: {
+        "game_core::node::Node": ((
+          set: "node:demo",
+          num: 0,
+        )),
+        "game_core::node::Teams": ([
+          2,
+          3,
+        ]),
+        "game_core::node::CurrentTurn": (2),
+        "game_core::node::rule::AccessPointLoadingRule": Staggered,
+        "game_core::node::TeamStatus": ({
+          2: Undecided,
+          3: Undecided,
+        }),
+        "game_core::node::ActiveCurio": (None),
+        "bevy_core::name::Name": (
+          hash: 16442562150909729670,
+          name: "Demo Node",
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+        ]),
+        "game_core::entity_grid::EntityGridDef": (
+          shape: "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
+          entities: {
+            8: [
+              (
+                x: 4,
+                y: 3,
+              ),
+            ],
+            9: [
+              (
+                x: 11,
+                y: 10,
+              ),
+            ],
+            10: [
+              (
+                x: 2,
+                y: 5,
+              ),
+            ],
+            6: [
+              (
+                x: 12,
+                y: 2,
+              ),
+            ],
+            11: [
+              (
+                x: 12,
+                y: 3,
+              ),
+              (
+                x: 13,
+                y: 3,
+              ),
+              (
+                x: 14,
+                y: 3,
+              ),
+              (
+                x: 15,
+                y: 3,
+              ),
+              (
+                x: 15,
+                y: 4,
+              ),
+              (
+                x: 15,
+                y: 5,
+              ),
+              (
+                x: 16,
+                y: 5,
+              ),
+            ],
+            7: [
+              (
+                x: 12,
+                y: 10,
+              ),
+            ],
+            5: [
+              (
+                x: 6,
+                y: 2,
+              ),
+            ],
+          },
+        ),
+      },
+    ),
+    5: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (2),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    6: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (2),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    7: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (2),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    8: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:card",
+        ),
+        "game_core::node::Pickup": Card(1),
+        "game_core::card::Description": ("A card! Get this card! It\'s a good card! A very good card!"),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    9: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((1000)),
+        "game_core::card::Description": ("Put food on the table, and cards in your deck"),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    10: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "Attack Dog",
+        ),
+        "game_core::node::OnTeam": (3),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Watchman"),
+        "game_core::node::ai::SimpleAiCurioOrder": (1),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    11: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "Enemy",
+        ),
+        "game_core::node::OnTeam": (3),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Warden"),
+        "game_core::node::ai::SimpleAiCurioOrder": (0),
+        "bevy_hierarchy::components::parent::Parent": (4),
+      },
+    ),
+    12: (
+      components: {
+        "bevy_core::name::Name": (
+          hash: 7551943587303600895,
+          name: "Jackson",
+        ),
+        "game_core::node::OnTeam": (3),
+        "game_core::player::Player": (),
+        "game_core::node::IsReadyToGo": (true),
+        "game_core::node::InNode": (4),
+        "game_core::node::ai::NodeBattleIntelligence": Simple,
+      },
+    ),
+  },
+)

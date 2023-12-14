@@ -1,5 +1,5 @@
 use crossterm::style::{ContentStyle, Stylize};
-use game_core::node::{InNode, Node};
+use game_core::node::{InNode, Node, NodeBattleIntelligence};
 use game_core::player::{ForPlayer, Player};
 use unicode_width::UnicodeWidthStr;
 
@@ -26,7 +26,10 @@ use crate::{KeyMap, Submap, TerminalWindow};
 
 pub fn create_node_ui(
     mut commands: Commands,
-    player_now_in_node: Query<(Entity, AsDeref<InNode>), (With<Player>, Added<InNode>)>,
+    player_now_in_node: Query<
+        (Entity, AsDeref<InNode>),
+        (With<Player>, Added<InNode>, Without<NodeBattleIntelligence>),
+    >,
     mut terminal_window: ResMut<TerminalWindow>,
     mut players: Query<&mut KeyMap>,
     node_qs: Query<(NodeUiQ, &Name), With<Node>>,
@@ -47,7 +50,7 @@ pub fn create_node_ui(
                         flex_direction: FlexDirection::Column,
                         ..default()
                     }),
-                    Name::new("Node UI Root"),
+                    Name::new(format!("Node UI Root - {player:?}")),
                     crate::layout::LayoutRoot,
                     TerminalRendering::default(),
                 ))
@@ -308,17 +311,20 @@ pub fn create_node_ui(
                 TerminalRendering::default(),
             ));
 
-            commands.entity(player).insert((
-                NodeCursor::default(),
-                CursorIsHidden::default(),
-                SelectedEntity(node_q.grid.item_at(default())),
-                SelectedAction(None),
-                TelegraphedAction(None),
-                AvailableActionTargets::default(),
-                UiFocusBundle::default(),
-                AvailableMoves::default(),
-                HasNodeUi,
-            ));
+            commands
+                .entity(player)
+                .insert((
+                    NodeCursor::default(),
+                    CursorIsHidden::default(),
+                    SelectedEntity(node_q.grid.item_at(default())),
+                    SelectedAction(None),
+                    TelegraphedAction(None),
+                    AvailableActionTargets::default(),
+                    UiFocusBundle::default(),
+                    AvailableMoves::default(),
+                    HasNodeUi,
+                ))
+                .log_components();
 
             terminal_window.set_render_target(Some(render_root));
         }

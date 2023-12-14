@@ -5,6 +5,7 @@ use std::iter::Rev;
 use std::vec::IntoIter;
 
 use bevy::ecs::entity::MapEntities;
+use bevy::ecs::reflect::ReflectMapEntities;
 use bevy::reflect::Reflect;
 use bitvec::slice::BitSlice;
 use bitvec::vec::BitVec;
@@ -32,7 +33,9 @@ pub struct EntityGridSupportPlugin;
 impl Plugin for EntityGridSupportPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EntityGridDef>()
-            .add_systems(Update, plugin::sys_create_entity_grid);
+            .register_type::<HashMap<Entity, Vec<UVec2>>>()
+            .register_type::<Vec<UVec2>>()
+            .add_systems(PostUpdate, plugin::sys_create_entity_grid);
     }
 }
 
@@ -85,7 +88,7 @@ pub struct EntityGrid {
 
 /// Simple representation
 #[derive(Component, Clone, Debug, Default, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct EntityGridDef {
     pub shape: String,
     pub entities: HashMap<Entity, Vec<UVec2>>,

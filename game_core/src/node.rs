@@ -1,4 +1,4 @@
-use crate::card::{Action, Deck};
+use crate::card::{Action, CardDefinition, Deck};
 use crate::op::OpPlugin;
 use crate::prelude::*;
 
@@ -9,8 +9,8 @@ mod rule;
 
 pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
 use bevy::ecs::entity::MapEntities;
+use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
-pub use node_loading::LoadCurioFromCard;
 pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
@@ -64,6 +64,10 @@ impl Plugin for NodePlugin {
             .register_type::<Teams>()
             .register_type::<VictoryStatus>()
             .register_type::<rule::AccessPointLoadingRule>()
+            // Internal collection types need to be registered too
+            .register_type::<Vec<Entity>>()
+            .register_type::<HashMap<Entity, VictoryStatus>>()
+            .register_type::<Option<Entity>>()
             .add_plugins((
                 ai::NodeAiPlugin,
                 node_loading::NodeLoadingPlugin,
@@ -74,7 +78,7 @@ impl Plugin for NodePlugin {
 
 /// Indicates a point a player can play cards
 #[derive(Component, CopyGetters, Debug, Default, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct AccessPoint {
     #[getset(get_copy = "pub")]
     card: Option<Entity>, // Display card data to load
@@ -95,7 +99,7 @@ pub struct ActiveCurio(pub Option<Entity>);
 
 /// Indicates a node piece capable of moving and performing actions
 #[derive(Component, Debug, Default, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct Curio {
     // owner: Entity, // Potential replacement for Team mechanism
     card: Option<Entity>,
@@ -132,12 +136,18 @@ impl MapEntities for Curio {
 
 /// Indicates the team whose turn it is
 #[derive(Component, Debug, Deref, DerefMut, Deserialize, Reflect, Serialize)]
-#[reflect(Component, Serialize, Deserialize)]
+#[reflect(Component, Serialize, Deserialize, MapEntities)]
 pub struct CurrentTurn(pub Entity);
 
 impl FromWorld for CurrentTurn {
     fn from_world(world: &mut World) -> Self {
         CurrentTurn(world.spawn_empty().id())
+    }
+}
+
+impl MapEntities for CurrentTurn {
+    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+        self.0 = entity_mapper.get_or_reserve(self.0)
     }
 }
 
@@ -153,7 +163,7 @@ pub struct ForNode(pub NodeId);
 
 /// Indicates this Player is in the specified node
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct InNode(pub Entity);
 
 impl FromWorld for InNode {
@@ -177,6 +187,14 @@ pub struct IsReadyToGo(pub bool);
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct IsTapped(pub bool);
+
+/// Indicates an entity to create a curio from, given a card
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
+pub enum CurioFromCard {
+    Path(String),
+    Handle(Handle<CardDefinition>),
+}
 
 /// A pickup of money. Is NOT a component
 #[derive(Debug, Default, Deserialize, Reflect, Serialize)]
@@ -265,7 +283,7 @@ impl FromWorld for NoOpAction {
 
 /// Indicates which team a node piece or player belongs to.
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Eq, PartialEq, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct OnTeam(pub Entity);
 
 impl FromWorld for OnTeam {
@@ -356,7 +374,7 @@ pub enum TeamPhase {
 /// Lists the victory status of each team in the node.
 /// TODO Should be changd to a component on Team entities
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct TeamStatus(pub HashMap<Entity, VictoryStatus>);
 
 impl MapEntities for TeamStatus {
@@ -371,7 +389,7 @@ impl MapEntities for TeamStatus {
 
 /// Node component, listing the teams that belong to it
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct Teams(pub Vec<Entity>);
 
 impl MapEntities for Teams {

@@ -3,22 +3,21 @@ use std::io::Write;
 
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
-use bevy::scene::DynamicSceneBuilder;
+use bevy::scene::{DynamicSceneBuilder, DynamicScene};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, CurrentTurn, EnteringNode, ForNode, InNode,
-    IsReadyToGo, LoadCurioFromCard, Mon, NoOpAction, Node, NodeBattleIntelligence, NodeId, NodeOp,
-    NodePiece, OnTeam, Pickup, PlayedCards, SimpleAiCurioOrder, Team, TeamColor, TeamPhase,
-    TeamStatus, Teams, VictoryStatus,
+    EnteringNode, ForNode,
+    IsReadyToGo, NoOpAction, Node, NodeId, NodeOp,
+    NodePiece, PlayedCards, Team,
+    TeamStatus, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
-use game_core::EntityGridDef;
 
 use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
@@ -187,11 +186,9 @@ fn demo_startup(
     mut res_terminal_window: ResMut<TerminalWindow>,
     mut commands: Commands,
 ) {
-    let player_team = commands
-        .spawn((Team, TeamColor::Blue, TeamPhase::Setup))
-        .id();
     let root_bam = commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
-    let enemy_team = commands.spawn((Team, TeamColor::Red, TeamPhase::Play)).id();
+    // Create things node still needs but can't load yet
+
     let hack = commands
         .spawn((Card::new(
             "Hack",
@@ -200,6 +197,17 @@ fn demo_startup(
             asset_server.load("nightfall/lvl1.cards.json#Hack"),
         ),))
         .id();
+
+    // Create node things
+    let demo_node_id = NodeId::new("node:demo", 0);
+    let demo_node_id_clone = demo_node_id.clone();
+
+    // "CwAHAP///////////x8=" for the first level
+
+    let node_asset_handle: Handle<DynamicScene> = asset_server.load("demo/demo.scn.ron");
+    commands.spawn(node_asset_handle);
+
+    // Create player things
     let card_0 = commands
         .spawn((Card::new(
             "Slingshot",
@@ -267,125 +275,13 @@ fn demo_startup(
             asset_server.load("nightfall/lvl3.cards.json#Fiddle"),
         ),))
         .id();
-    let demo_node_id = NodeId::new("node:demo", 0);
-    let demo_node_id_clone = demo_node_id.clone();
-
-    let mut grid = EntityGridDef::with_shape("EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==");
-    // "CwAHAP///////////x8=" for the first level
-
-    let node = commands
-        .spawn((
-            Node(demo_node_id.clone()),
-            Teams(vec![player_team, enemy_team]),
-            CurrentTurn(player_team),
-            AccessPointLoadingRule::Staggered,
-            TeamStatus(
-                [
-                    (player_team, VictoryStatus::Undecided),
-                    (enemy_team, VictoryStatus::Undecided),
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            ActiveCurio::default(),
-            Name::new("Demo Node"),
-        ))
-        .with_children(|node| {
-            let node_id = node.parent_entity();
-            grid.add(
-                node.spawn((
-                    NodePiece::new("env:access_point"),
-                    AccessPoint::default(),
-                    OnTeam(player_team),
-                ))
-                .id(),
-                vec![(6, 2)],
-            );
-
-            grid.add(
-                node.spawn((
-                    NodePiece::new("env:access_point"),
-                    AccessPoint::default(),
-                    OnTeam(player_team),
-                ))
-                .id(),
-                vec![(12, 2)],
-            );
-
-            grid.add(
-                node.spawn((
-                    NodePiece::new("env:access_point"),
-                    AccessPoint::default(),
-                    OnTeam(player_team),
-                ))
-                .id(),
-                vec![(12, 10)],
-            );
-
-            grid.add(
-                node.spawn((
-                    Pickup::Card(hack),
-                    NodePiece::new("pickup:card"),
-                    Description::new("A card! Get this card! It's a good card! A very good card!"),
-                ))
-                .id(),
-                vec![(4, 3)],
-            );
-            grid.add(
-                node.spawn((
-                    Pickup::Mon(Mon(1000)),
-                    NodePiece::new("pickup:mon"),
-                    Description::new("Put food on the table, and cards in your deck"),
-                ))
-                .id(),
-                vec![(11, 10)],
-            );
-
-            grid.add(
-                node.spawn((
-                    LoadCurioFromCard::Path("nightfall/enemies.cards.json#Watchman".to_string()),
-                    NodePiece::new("Attack Dog"),
-                    SimpleAiCurioOrder(1),
-                    OnTeam(enemy_team),
-                ))
-                .id(),
-                vec![(2, 5)],
-            );
-            grid.add(
-                node.spawn((
-                    LoadCurioFromCard::Path("nightfall/enemies.cards.json#Warden+".to_string()),
-                    NodePiece::new("Enemy"),
-                    SimpleAiCurioOrder(0),
-                    OnTeam(enemy_team),
-                ))
-                .id(),
-                vec![
-                    (12, 3),
-                    (13, 3),
-                    (14, 3),
-                    (15, 3),
-                    (15, 4),
-                    (15, 5),
-                    (16, 5),
-                ],
-            );
-        })
-        .insert(grid.clone())
-        .id();
-    commands.spawn((
-        PlayerBundle::default(),
-        IsReadyToGo(true),
-        InNode(node),
-        OnTeam(enemy_team),
-        NodeBattleIntelligence::Simple,
-        Name::new("Jackson"),
-    ));
 
     let mut quest_status = QuestStatus::default();
     // quest_status.record_node_done(&demo_node_id);
 
     let player = commands
         .spawn((
+            Name::new("Steve"),
             PlayerBundle::default(),
             PlayerConfiguration {
                 node: Some(NodeConfiguration {
@@ -422,6 +318,8 @@ fn demo_startup(
                 .with_card(card_bb),
         ))
         .id();
+
+    // World map things
 
     let board = commands
         .spawn((Board("Network Map".into()),))
@@ -558,8 +456,11 @@ fn demo_startup(
                 });
         })
         .id();
+
+    // Demo logic things
+
     res_demo_state.board_ui_id = Some(board_ui_root);
-    res_demo_state.node_id = Some(node);
+    res_demo_state.node_id = None;
     res_demo_state.player_id = Some(player);
 
     log::debug!("Demo startup executed");

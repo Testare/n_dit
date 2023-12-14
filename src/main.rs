@@ -2,6 +2,7 @@ use std::fs::File;
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy::scene::ScenePlugin;
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() {
@@ -13,6 +14,7 @@ fn main() {
             HierarchyPlugin,
             bevy::audio::AudioPlugin::default(),
             bevy::core::TaskPoolPlugin::default(),
+            ScenePlugin,
             TypeRegistrationPlugin,
             bevy::time::TimePlugin,
             bevy::app::ScheduleRunnerPlugin::run_loop(Duration::from_millis(25)),

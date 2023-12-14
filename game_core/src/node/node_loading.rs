@@ -2,7 +2,10 @@ use std::ops::Deref;
 
 use bevy::ecs::query::Has;
 
-use super::{Curio, EnteringNode, InNode, IsTapped, MovesTaken, Node, NodePiece, OnTeam, Teams};
+use super::{
+    Curio, CurioFromCard, EnteringNode, InNode, IsTapped, MovesTaken, Node, NodePiece, OnTeam,
+    Teams,
+};
 use crate::card::{Actions, CardDefinition, Description, MaximumSize, MovementSpeed};
 use crate::player::Player;
 use crate::prelude::*;
@@ -12,35 +15,28 @@ pub struct NodeLoadingPlugin;
 impl Plugin for NodeLoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostUpdate, (sys_enter_node_when_ready, sys_load_curios))
-            .register_type::<LoadCurioFromCard>();
+            .register_type::<CurioFromCard>();
     }
 }
 
-#[derive(Component, Debug, Reflect)]
-#[reflect(Component)]
-pub enum LoadCurioFromCard {
-    Path(String),
-    Handle(Handle<CardDefinition>),
-}
-
-impl LoadCurioFromCard {
+impl CurioFromCard {
     fn get_handle(&mut self, asset_server: &AssetServer) -> Handle<CardDefinition> {
-        if let LoadCurioFromCard::Path(card_name) = self.deref() {
-            *self = LoadCurioFromCard::Handle(asset_server.load(card_name));
+        if let CurioFromCard::Path(card_name) = self.deref() {
+            *self = CurioFromCard::Handle(asset_server.load(card_name));
         }
 
         match self {
-            LoadCurioFromCard::Handle(handle) => handle.clone(),
-            LoadCurioFromCard::Path(_) => {
+            CurioFromCard::Handle(handle) => handle.clone(),
+            CurioFromCard::Path(_) => {
                 unreachable!("LoadCurioFromCard should be transmuted to Handle by this point")
             },
         }
     }
 }
 
-impl Default for LoadCurioFromCard {
+impl Default for CurioFromCard {
     fn default() -> Self {
-        LoadCurioFromCard::Path(String::new())
+        CurioFromCard::Path(String::new())
     }
 }
 
@@ -69,7 +65,7 @@ fn sys_load_curios(
     mut commands: Commands,
     assets: Res<Assets<CardDefinition>>,
     asset_server: Res<AssetServer>,
-    mut curios_from_card: Query<(Entity, &mut LoadCurioFromCard)>,
+    mut curios_from_card: Query<(Entity, &mut CurioFromCard)>,
 ) {
     for (id, mut lcfc) in curios_from_card.iter_mut() {
         let handle = lcfc.get_handle(&asset_server);
@@ -86,7 +82,7 @@ fn sys_load_curios(
                     MovementSpeed(card_def.movement_speed()),
                     MovesTaken::default(),
                 ))
-                .remove::<LoadCurioFromCard>();
+                .remove::<CurioFromCard>();
         }
     }
 }
