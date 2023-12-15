@@ -382,7 +382,7 @@ impl MapEntities for TeamStatus {
         self.0 = self
             .0
             .iter()
-            .map(|(id, status)| (entity_mapper.get_or_reserve(*id), *status))
+            .filter_map(|(id, status)| Some((*entity_mapper.get_map().get(id)?, *status)))
             .collect();
     }
 }
@@ -397,7 +397,7 @@ impl MapEntities for Teams {
         self.0 = self
             .0
             .iter()
-            .map(|id| entity_mapper.get_or_reserve(*id))
+            .map(|id|entity_mapper.get_or_reserve(*id))
             .collect();
     }
 }

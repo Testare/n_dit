@@ -113,7 +113,6 @@ fn sys_tmp_display_victory_or_less_message(
     mut message_bar_ui: IndexedQuery<ForPlayer, &mut MessageBarUi>,
 ) {
     for (node_id, team_status) in nodes.iter() {
-        log::debug!("TEAM STATUS CHANGED");
         // There should be a way to know what teams have lost just now or lost before
         for (player_id, in_node, team) in players.iter() {
             if in_node != node_id {

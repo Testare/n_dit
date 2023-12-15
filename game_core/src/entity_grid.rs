@@ -53,7 +53,7 @@ mod plugin {
                     commands.entity(id).insert(new_grid);
                 },
                 Err(err) => {
-                    log::error!("Failed to create EntityGrid from EntityGridDef. Error[{err:?}] EnttiyGridDef[{new_grid_def:?}");
+                    log::error!("Failed to create EntityGrid from EntityGridDef. Error[{err:?}] EntityGridDef[{new_grid_def:?}");
                 },
             }
         }
@@ -99,7 +99,7 @@ impl MapEntities for EntityGridDef {
         self.entities = self
             .entities
             .drain()
-            .map(|(id, places)| (entity_mapper.get_or_reserve(id), places))
+            .filter_map(|(id, places)| Some((*entity_mapper.get_map().get(&id)?, places)))
             .collect();
     }
 }
