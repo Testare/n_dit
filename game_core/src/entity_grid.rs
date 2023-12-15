@@ -348,8 +348,11 @@ impl EntityGrid {
                 col.iter()
                     .enumerate()
                     .map(|(y, bit)| bit.then(|| Square::new((x as u32, y as u32).into())))
+                    .chain(std::iter::repeat(None))
+                    .take(height as usize)
                     .collect()
             })
+            .chain(std::iter::repeat_with(|| vec![None; height as usize]))
             .take(width as usize)
             .collect();
 

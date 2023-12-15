@@ -397,7 +397,7 @@ impl MapEntities for Teams {
         self.0 = self
             .0
             .iter()
-            .map(|id|entity_mapper.get_or_reserve(*id))
+            .map(|id| entity_mapper.get_or_reserve(*id))
             .collect();
     }
 }

@@ -1,0 +1,210 @@
+(
+  resources: {},
+  entities: {
+    0: ( // Node
+      components: {
+        "game_core::node::Node": ((
+          set: "node:tutorial",
+          num: 1,
+        )),
+        "game_core::node::Teams": ([
+          1,
+          2,
+        ]),
+        "game_core::node::CurrentTurn": (2),
+        "game_core::node::rule::AccessPointLoadingRule": Staggered,
+        "game_core::node::TeamStatus": ({
+          1: Undecided,
+          2: Undecided,
+        }),
+        "game_core::node::ActiveCurio": (None),
+        "bevy_core::name::Name": (
+          hash: 16442562150909729670,
+          name: "Demo Node",
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+        ]),
+        "game_core::entity_grid::EntityGridDef": (
+          shape: "DAAIAA5+fm7w/v7yZ/f39w==",
+          entities: {
+            4: [ // Mon Pickup
+              (
+                x: 2,
+                y: 2,
+              ),
+            ],
+            5: [ // Mon Pickup
+              (
+                x: 9,
+                y: 1,
+              ),
+            ],
+            6: [ // Mon Pickup
+              (
+                x: 10,
+                y: 5,
+              ),
+            ],
+            7: [ // AP
+              (
+                x: 5,
+                y: 6,
+              ),
+            ],
+            8: [ // AP
+              (
+                x: 6,
+                y: 5,
+              ),
+            ],
+            9: [ // Watchman
+              (
+                x: 1,
+                y: 2,
+              ),
+            ],
+            10: [ // Dog
+              (
+                x: 10,
+                y: 1,
+              ),
+            ],
+            11: [ // Sentinel
+              (
+                x: 10,
+                y: 6,
+              ),
+            ],
+          },
+        ),
+      },
+    ),
+    // TEAMS
+    1: (
+      components: {
+        "game_core::node::Team": (),
+        "game_core::node::TeamColor": Blue,
+        "game_core::node::TeamPhase": Setup,
+      },
+    ),
+    2: (
+      components: {
+        "game_core::node::Team": (),
+        "game_core::node::TeamColor": Red,
+        "game_core::node::TeamPhase": Play,
+      },
+    ),
+    // ENEMY PLAYER
+    3: (
+      components: {
+        "bevy_core::name::Name": (
+          hash: 7551943587303600895,
+          name: "Enemy",
+        ),
+        "game_core::node::OnTeam": (2),
+        "game_core::player::Player": (),
+        "game_core::node::IsReadyToGo": (true),
+        "game_core::node::InNode": (0),
+        "game_core::node::ai::NodeBattleIntelligence": Simple,
+      },
+    ),
+    // PICKUPS
+    4: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Moneeeeey"),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    5: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((1000)),
+        "game_core::card::Description": ("Put food on the table, and cards in your deck"),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    6: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((1000)),
+        "game_core::card::Description": ("Put food on the table, and cards in your deck"),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    // ACCESS POINTS
+    7: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (1),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    8: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (1),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    // ENEMY CURIOS
+    9: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "Enemy",
+        ),
+        "game_core::node::OnTeam": (2),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Watchman"),
+        "game_core::node::ai::SimpleAiCurioOrder": (0),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    10: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "Guard Dog",
+        ),
+        "game_core::node::OnTeam": (2),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Guard Pup"),
+        "game_core::node::ai::SimpleAiCurioOrder": (1),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+    11: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "Attack Dog",
+        ),
+        "game_core::node::OnTeam": (2),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Sentinel"),
+        "game_core::node::ai::SimpleAiCurioOrder": (1),
+        "bevy_hierarchy::components::parent::Parent": (0),
+      },
+    ),
+  },
+)

@@ -3,16 +3,14 @@ use std::io::Write;
 
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
-use bevy::scene::{DynamicSceneBuilder, DynamicScene};
+use bevy::scene::{DynamicScene, DynamicSceneBuilder};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    EnteringNode, ForNode,
-    IsReadyToGo, NoOpAction, Node, NodeId, NodeOp,
-    NodePiece, PlayedCards, Team,
-    TeamStatus, Teams,
+    EnteringNode, ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, NodePiece, PlayedCards,
+    Team, TeamStatus, Teams,
 };
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -199,12 +197,19 @@ fn demo_startup(
         .id();
 
     // Create node things
-    let demo_node_id = NodeId::new("node:demo", 0);
+    let demo_node_id = NodeId::new("node:tutorial", 1);
     let demo_node_id_clone = demo_node_id.clone();
 
-    // "CwAHAP///////////x8=" for the first level
-
     let node_asset_handle: Handle<DynamicScene> = asset_server.load("demo/demo.scn.ron");
+    commands.spawn(node_asset_handle);
+    let node_asset_handle: Handle<DynamicScene> =
+        asset_server.load("nightfall/nodes/tutorial.scn.ron");
+    commands.spawn(node_asset_handle);
+    let node_asset_handle: Handle<DynamicScene> =
+        asset_server.load("nightfall/nodes/node1.scn.ron");
+    commands.spawn(node_asset_handle);
+    let node_asset_handle: Handle<DynamicScene> =
+        asset_server.load("nightfall/nodes/node2.scn.ron");
     commands.spawn(node_asset_handle);
 
     // Create player things
