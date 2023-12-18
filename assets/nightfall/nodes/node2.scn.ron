@@ -28,32 +28,20 @@
             6,
             7,
         ]),
-        "game_core::entity_grid::EntityGridDef": (
+        "game_core::entity_grid::EntityGrid": (
           shape: "DAAJAIKOv///3527///fHxcE",
           entities: {
             4: [ // AP
-              (
-                x: 4,
-                y: 8,
-              ),
+              (4, 8),
             ],
             5: [ // AP
-              (
-                x: 7,
-                y: 8,
-              ),
+              (7, 8),
             ],
             6: [ // Sentinel
-              (
-                x: 3,
-                y: 1,
-              ),
+              (3, 1),
             ],
             7: [ // Sentinel
-              (
-                x: 8,
-                y: 1,
-              ),
+              (8, 1),
             ],
           },
         ),

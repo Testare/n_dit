@@ -32,56 +32,32 @@
           10,
           11,
         ]),
-        "game_core::entity_grid::EntityGridDef": (
+        "game_core::entity_grid::EntityGrid": (
           shape: "DAAIAA5+fm7w/v7yZ/f39w==",
           entities: {
             4: [ // Mon Pickup
-              (
-                x: 2,
-                y: 2,
-              ),
+              (2, 2),
             ],
             5: [ // Mon Pickup
-              (
-                x: 9,
-                y: 1,
-              ),
+              (9, 1),
             ],
             6: [ // Mon Pickup
-              (
-                x: 10,
-                y: 5,
-              ),
+              (10, 5),
             ],
             7: [ // AP
-              (
-                x: 5,
-                y: 6,
-              ),
+              (5, 6),
             ],
             8: [ // AP
-              (
-                x: 6,
-                y: 5,
-              ),
+              (6, 5),
             ],
             9: [ // Watchman
-              (
-                x: 1,
-                y: 2,
-              ),
+              (1, 2),
             ],
             10: [ // Dog
-              (
-                x: 10,
-                y: 1,
-              ),
+              (10, 1),
             ],
             11: [ // Sentinel
-              (
-                x: 10,
-                y: 6,
-              ),
+              (10, 6),
             ],
           },
         ),

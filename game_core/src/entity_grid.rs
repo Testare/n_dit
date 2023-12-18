@@ -32,31 +32,9 @@ pub struct EntityGridSupportPlugin;
 
 impl Plugin for EntityGridSupportPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<EntityGridDef>()
+        app.register_type::<EntityGrid>()
             .register_type::<HashMap<Entity, Vec<UVec2>>>()
-            .register_type::<Vec<UVec2>>()
-            .add_systems(PostUpdate, plugin::sys_create_entity_grid);
-    }
-}
-
-mod plugin {
-    use super::{EntityGrid, EntityGridDef};
-    use crate::prelude::*;
-
-    pub fn sys_create_entity_grid(
-        mut commands: Commands,
-        grids: Query<(Entity, &EntityGridDef), Changed<EntityGridDef>>,
-    ) {
-        for (id, new_grid_def) in grids.iter() {
-            match EntityGrid::try_from(new_grid_def) {
-                Ok(new_grid) => {
-                    commands.entity(id).insert(new_grid);
-                },
-                Err(err) => {
-                    log::error!("Failed to create EntityGrid from EntityGridDef. Error[{err:?}] EntityGridDef[{new_grid_def:?}");
-                },
-            }
-        }
+            .register_type::<Vec<UVec2>>();
     }
 }
 
@@ -78,7 +56,8 @@ pub struct Square {
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
 #[derive(Clone, Component, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Reflect)]
-#[reflect(Component)]
+#[reflect_value(Component, Deserialize, MapEntities, Serialize)]
+#[serde(try_from = "EntityGridSeDe", into = "EntityGridSeDe")]
 pub struct EntityGrid {
     width: u32,
     height: u32,
@@ -86,28 +65,33 @@ pub struct EntityGrid {
     grid: Vec<Vec<Option<Square>>>, // None = closed. No grid to be. At no point should a square be inserted here from outside
 }
 
-/// Simple representation
-#[derive(Component, Clone, Debug, Default, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct EntityGridDef {
+impl MapEntities for EntityGrid {
+    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+        self.entries = self
+            .entries
+            .drain()
+            .filter_map(|(id, places)| Some((*entity_mapper.get_map().get(&id)?, places))) // https://github.com/bevyengine/bevy/issues/10995
+            .collect();
+        for square in self.grid.iter_mut().flatten().flatten() {
+            if let Some(square_entity) = &mut square.item {
+                *square_entity = entity_mapper.get_or_reserve(*square_entity);
+            }
+        }
+    }
+}
+
+/// Simple representation for Se/De
+#[derive(Clone, Debug, Default, Deserialize, Reflect, Serialize)]
+#[reflect_value(Deserialize, Serialize)]
+struct EntityGridSeDe {
     pub shape: String,
     pub entities: HashMap<Entity, Vec<UVec2>>,
 }
 
-impl MapEntities for EntityGridDef {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
-        self.entities = self
-            .entities
-            .drain()
-            .filter_map(|(id, places)| Some((*entity_mapper.get_map().get(&id)?, places)))
-            .collect();
-    }
-}
-
-impl TryFrom<EntityGridDef> for EntityGrid {
+impl TryFrom<EntityGridSeDe> for EntityGrid {
     type Error = anyhow::Error;
 
-    fn try_from(value: EntityGridDef) -> Result<Self, Self::Error> {
+    fn try_from(value: EntityGridSeDe) -> Result<Self, Self::Error> {
         let mut grid = EntityGrid::from_shape_string(&value.shape)?;
         for (entity, places) in value.entities.into_iter() {
             let mut first = true;
@@ -130,10 +114,23 @@ impl TryFrom<EntityGridDef> for EntityGrid {
     }
 }
 
-impl TryFrom<&EntityGridDef> for EntityGrid {
+impl From<EntityGrid> for EntityGridSeDe {
+    fn from(value: EntityGrid) -> Self {
+        EntityGridSeDe {
+            shape: value.shape_string_base64(),
+            entities: value
+                .entities()
+                .into_iter()
+                .map(|id| (id, value.points(id)))
+                .collect(),
+        }
+    }
+}
+
+impl TryFrom<&EntityGridSeDe> for EntityGrid {
     type Error = anyhow::Error;
 
-    fn try_from(value: &EntityGridDef) -> Result<Self, Self::Error> {
+    fn try_from(value: &EntityGridSeDe) -> Result<Self, Self::Error> {
         let mut grid = EntityGrid::from_shape_string(&value.shape)?;
         for (entity, places) in value.entities.iter() {
             let mut first = true;
@@ -153,22 +150,6 @@ impl TryFrom<&EntityGridDef> for EntityGrid {
             }
         }
         Ok(grid)
-    }
-}
-
-impl EntityGridDef {
-    pub fn with_shape(shape: &str) -> Self {
-        EntityGridDef {
-            shape: shape.into(),
-            entities: HashMap::new(),
-        }
-    }
-
-    pub fn add(&mut self, id: Entity, locations: Vec<(u32, u32)>) {
-        self.entities.insert(
-            id,
-            locations.into_iter().map(|(x, y)| UVec2 { x, y }).collect(),
-        );
     }
 }
 
