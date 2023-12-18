@@ -24,6 +24,7 @@ pub fn help_msg() -> &'static CharacterMapImage {
             -> When you have choosen cards, click ready to play!
             -> Each card has two stats, size and speed
             -> You can move a piece a number of squares equal to speed
+               (Right click or use WASD to move pieces)
             -> Your piece grows as it moves up to its max size
             -> Attack to reduce size of enemy pieces, deleting squares
             equal to damage

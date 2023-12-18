@@ -3,12 +3,27 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
+use cq_term::demo::DemoNodeId;
+use game_core::node::NodeId;
 use simplelog::{LevelFilter, WriteLogger};
 
 fn main() {
     setup_logging();
+    let mut demo_node_id = DemoNodeId(None);
+    for arg in std::env::args() {
+        if arg == "n0" {
+            demo_node_id.0 = Some(NodeId::new("node:demo", 0));
+        } else if arg == "n1" {
+            demo_node_id.0 = Some(NodeId::new("node:tutorial", 0));
+        } else if arg == "n2" {
+            demo_node_id.0 = Some(NodeId::new("node:tutorial", 1));
+        } else if arg == "n3" {
+            demo_node_id.0 = Some(NodeId::new("node:tutorial", 2));
+        }
+    }
 
     App::new()
+        .insert_resource(demo_node_id)
         .add_plugins((
             AssetPlugin { ..default() },
             HierarchyPlugin,

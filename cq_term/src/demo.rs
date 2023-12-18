@@ -31,7 +31,10 @@ use crate::{KeyMap, Submap, TerminalWindow};
 #[derive(Debug)]
 pub struct DemoPlugin;
 
-#[derive(Component, Debug)]
+#[derive(Debug, Resource, Deref, DerefMut)]
+pub struct DemoNodeId(pub Option<NodeId>);
+
+#[derive(Clone, Component, Debug)]
 pub struct DebugEntityMarker;
 
 #[derive(Debug, Default, Resource)]
@@ -178,6 +181,7 @@ fn debug_key(
 
 #[allow(unused)] // While setting up map
 fn demo_startup(
+    res_demo_node_id: Res<DemoNodeId>,
     asset_server: Res<AssetServer>,
     no_op: Res<NoOpAction>,
     mut res_demo_state: ResMut<DemoState>,
@@ -197,7 +201,10 @@ fn demo_startup(
         .id();
 
     // Create node things
-    let demo_node_id = NodeId::new("node:tutorial", 1);
+
+    let demo_node_id = (*res_demo_node_id)
+        .clone()
+        .unwrap_or(NodeId::new("node:tutorial", 1));
     let demo_node_id_clone = demo_node_id.clone();
 
     let node_asset_handle: Handle<DynamicScene> = asset_server.load("demo/demo.scn.ron");
@@ -301,6 +308,7 @@ fn demo_startup(
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)
+                /*.with_card(hack)
                 .with_card(hack)
                 .with_card(hack)
                 .with_card(hack)
@@ -311,16 +319,14 @@ fn demo_startup(
                 .with_card(hack)
                 .with_card(hack)
                 .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(card_0)
+                .with_card(hack)*/
+                .with_card(card_0) // Slingshot
                 .with_card(card_1)
                 .with_card(card_2)
-                .with_card(card_3)
+                /*.with_card(card_3)
                 .with_card(card_4)
-                .with_card(card_5)
-                .with_card(card_fiddle)
-                .with_card(card_bb),
+                .with_card(card_5)*/
+                .with_card(card_fiddle), // .with_card(card_bb),
         ))
         .id();
 
