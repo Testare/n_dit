@@ -12,29 +12,24 @@ pub struct DrawConfiguration {
     half_char: char,
 }
 
+// TODO Each of these is complex object that contains no-hover and hover variants
 #[derive(Clone, CopyGetters, Debug)]
+#[get_copy = "pub"]
 pub struct ColorScheme {
-    #[get_copy = "pub"]
     access_point: ContentStyle,
-    #[get_copy = "pub"]
     attack_action: ContentStyle,
-    #[get_copy = "pub"]
-    grid_border_default: ContentStyle,
-    #[get_copy = "pub"]
+    attack_action_hover: ContentStyle,
+    grid_border: ContentStyle,
+    grid_border_hover: ContentStyle,
     possible_movement: ContentStyle,
-    #[get_copy = "pub"]
+    possible_movement_hover: ContentStyle,
     selected_square: ContentStyle,
-    #[get_copy = "pub"]
     selected_square_border: ContentStyle,
-    #[get_copy = "pub"]
+    selected_square_border_hover: ContentStyle,
     player_team_active: ContentStyle,
-    #[get_copy = "pub"]
     player_team_tapped: ContentStyle,
-    #[get_copy = "pub"]
     menu_hover: ContentStyle,
-    #[get_copy = "pub"]
     menu_title: ContentStyle,
-    #[get_copy = "pub"]
     menu_title_hover: ContentStyle,
 }
 
@@ -56,10 +51,14 @@ impl Default for ColorScheme {
                 Some(Attribute::Underlined),
             ),
             attack_action: style(Some(Color::White), Some(Color::Red), None),
+            attack_action_hover: style(Some(Color::DarkBlue), Some(Color::Red), None),
             selected_square: style(None, None, Some(Attribute::Reverse)),
             selected_square_border: style(Some(Color::White), Some(Color::DarkGrey), None),
-            grid_border_default: style(Some(Color::Green), None, None),
+            selected_square_border_hover: style(Some(Color::Blue), Some(Color::DarkGrey), None),
+            grid_border: style(Some(Color::Green), None, None),
+            grid_border_hover: style(Some(Color::Blue), None, None),
             possible_movement: style(Some(Color::White), Some(Color::DarkGrey), None),
+            possible_movement_hover: style(Some(Color::Blue), Some(Color::DarkGrey), None),
             player_team_active: style(
                 Some(Color::Black),
                 Some(Color::White),

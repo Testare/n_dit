@@ -58,12 +58,10 @@ impl BorderType {
     }
 }
 
+#[allow(clippy::collapsible_else_if)] // Visual symmetry for hover
 pub fn border_style_for(
-    // available_moves: &Option<HashSet<Point>>,
-    // available_moves_type: usize, // TODO something nicer
-    // node_cursor: &NodeCursor,
     player_q: &PlayerUiQItem,
-
+    hover_point: &Option<UVec2>,
     draw_config: &DrawConfiguration,
     x_range: &RangeInclusive<usize>, // TODO usize -> u32?
     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
@@ -77,22 +75,41 @@ pub fn border_style_for(
 
     let points_in_range = points_in_range(x_range, y_range);
 
-    // TODO optimized logic so we don't create a full set of points for every square
+    let under_hover = hover_point
+        .map(|pt| x_range.contains(&(pt.x as usize)) && y_range.contains(&(pt.y as usize)))
+        .unwrap_or(false);
+
     if !player_q.cursor_is_hidden
         && x_range.contains(&(*cursor_x as usize))
         && y_range.contains(&(*cursor_y as usize))
     {
-        color_scheme.selected_square_border()
+        if under_hover {
+            color_scheme.selected_square_border_hover()
+        } else {
+            color_scheme.selected_square_border()
+        }
     } else if !player_q.available_moves.is_empty()
         && !points_in_range.is_disjoint(player_q.available_moves)
     {
-        color_scheme.possible_movement()
+        if under_hover {
+            color_scheme.possible_movement_hover()
+        } else {
+            color_scheme.possible_movement()
+        }
     } else if !player_q.available_action_targets.is_empty()
         && !points_in_range.is_disjoint(player_q.available_action_targets)
     {
-        color_scheme.attack_action()
+        if under_hover {
+            color_scheme.attack_action_hover()
+        } else {
+            color_scheme.attack_action()
+        }
     } else {
-        color_scheme.grid_border_default()
+        if under_hover {
+            color_scheme.grid_border_hover()
+        } else {
+            color_scheme.grid_border()
+        }
     }
 }
 

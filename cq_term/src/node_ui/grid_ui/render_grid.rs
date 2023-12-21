@@ -12,6 +12,7 @@ use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
 use crate::animation::AnimationPlayer;
+use crate::base_ui::HoverPoint;
 use crate::configuration::DrawConfiguration;
 use crate::layout::CalculatedSizeTty;
 use crate::node_ui::node_glyph::NodeGlyph;
@@ -32,6 +33,7 @@ pub fn render_grid_system(
             &CalculatedSizeTty,
             &Scroll2d,
             &ForPlayer,
+            &HoverPoint,
             &mut TerminalRendering,
         ),
         With<GridUi>,
@@ -41,7 +43,7 @@ pub fn render_grid_system(
         (With<GridUiAnimation>, Without<GridUi>),
     >,
 ) {
-    for (size, scroll, ForPlayer(player), mut rendering) in render_grid_q.iter_mut() {
+    for (size, scroll, ForPlayer(player), hover_point, mut rendering) in render_grid_q.iter_mut() {
         if let Ok(player_ui_q) = players.get(*player) {
             if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
                 let grid_animation = grid_animation
@@ -54,6 +56,7 @@ pub fn render_grid_system(
                 let grid_rendering = render_grid(
                     size,
                     scroll,
+                    hover_point,
                     &player_ui_q,
                     grid,
                     active_curio,
@@ -72,6 +75,7 @@ pub fn render_grid_system(
 fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &Scroll2d,
+    hover_point: &HoverPoint,
     player_q: &PlayerUiQItem,
     grid: &EntityGrid,
     active_curio: &ActiveCurio,
@@ -84,6 +88,7 @@ fn render_grid(
 
     let default_style = ContentStyle::new();
 
+    let hover_point = hover_point.map(|UVec2 { x, y }| UVec2::new(x / 3, y / 2)); // TODO make this a helper function?
     let width = grid.width() as usize;
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
@@ -145,6 +150,7 @@ fn render_grid(
                     if include_border {
                         let pivot_format = border_style_for(
                             player_q,
+                            &hover_point,
                             draw_config,
                             &border_x_range,
                             &border_y_range,
@@ -157,8 +163,13 @@ fn render_grid(
                     }
                     if include_space {
                         // Add first vertical border
-                        let border_style =
-                            border_style_for(player_q, draw_config, &border_x_range, &(y..=y));
+                        let border_style = border_style_for(
+                            player_q,
+                            &hover_point,
+                            draw_config,
+                            &border_x_range,
+                            &(y..=y),
+                        );
                         space_line.add_styled_text(
                             border_style
                                 .apply(BorderType::of(left2, right2).vertical_border(draw_config)),
@@ -167,8 +178,13 @@ fn render_grid(
                 }
                 if render_half_space {
                     if include_border {
-                        let border_style =
-                            border_style_for(player_q, draw_config, &(x..=x), &border_y_range);
+                        let border_style = border_style_for(
+                            player_q,
+                            &hover_point,
+                            draw_config,
+                            &(x..=x),
+                            &border_y_range,
+                        );
                         border_line.add_styled_text(
                             border_style.apply(
                                 BorderType::of(right1, right2)
@@ -207,8 +223,13 @@ fn render_grid(
                     }
                 } else if render_full_space {
                     if include_border {
-                        let border_style =
-                            border_style_for(player_q, draw_config, &(x..=x), &border_y_range);
+                        let border_style = border_style_for(
+                            player_q,
+                            &hover_point,
+                            draw_config,
+                            &(x..=x),
+                            &border_y_range,
+                        );
                         border_line.add_styled_text(
                             border_style.apply(
                                 BorderType::of(right1, right2).horizontal_border(draw_config),
