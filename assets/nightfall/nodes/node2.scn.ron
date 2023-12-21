@@ -11,7 +11,7 @@
           1,
           2,
         ]),
-        "game_core::node::CurrentTurn": (2),
+        "game_core::node::CurrentTurn": (1),
         "game_core::node::rule::AccessPointLoadingRule": Staggered,
         "game_core::node::TeamStatus": ({
           1: Undecided,

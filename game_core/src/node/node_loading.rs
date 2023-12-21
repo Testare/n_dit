@@ -48,7 +48,7 @@ fn sys_enter_node_when_ready(
     // Note: Node loading kickoff should either happen here or in an op
     for (player_id, node_id) in players_entering.iter() {
         if let Some((_, node_entity, teams, node_is_ready)) =
-            nodes.iter().find(|(node, _, _, _)| node.0 == *node_id)
+            nodes.iter().find(|node_q| node_q.0 .0 == *node_id)
         {
             // TODO check that all curios are loaded first
             if node_is_ready {
