@@ -7,11 +7,11 @@ mod render_grid;
 mod render_square;
 mod scroll;
 
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::{Has, WorldQuery};
 use game_core::card::{Action, Actions, MovementSpeed};
 use game_core::node::{
-    self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, Node, NodeOp, NodePiece,
-    OnTeam,
+    self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, MovesTaken, Node, NodeOp,
+    NodePiece, OnTeam,
 };
 use game_core::op::OpResult;
 use game_core::player::Player;
@@ -35,9 +35,11 @@ pub struct GridUi;
 #[derive(WorldQuery)]
 pub struct NodePieceQ {
     piece: &'static NodePiece,
-    speed: Option<&'static MovementSpeed>,
+    speed: Option<AsDerefCopied<MovementSpeed>>,
+    moves_taken: Option<AsDerefCopied<MovesTaken>>,
     is_tapped: Option<&'static IsTapped>,
     access_point: Option<&'static AccessPoint>,
+    has_curio: Has<Curio>,
 }
 
 #[derive(WorldQuery)]

@@ -11,6 +11,8 @@ const INTERSECTION_CHAR: [char; 16] = [
     ' ', '?', '?', '└', '?', '│', '┌', '├', '?', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
+const ARROWS: [&str; 6] = ["↑↑", "→", "↓↓", "←", "↑", "↓"];
+
 #[derive(PartialEq, Eq)]
 pub enum BorderType {
     Borderless = 0,
@@ -62,6 +64,7 @@ impl BorderType {
 pub fn border_style_for(
     player_q: &PlayerUiQItem,
     hover_point: &Option<UVec2>,
+    action_hover: bool,
     draw_config: &DrawConfiguration,
     x_range: &RangeInclusive<usize>, // TODO usize -> u32?
     y_range: &RangeInclusive<usize>, // TODO include if this border space is empty
@@ -79,7 +82,9 @@ pub fn border_style_for(
         .map(|pt| x_range.contains(&(pt.x as usize)) && y_range.contains(&(pt.y as usize)))
         .unwrap_or(false);
 
-    if !player_q.cursor_is_hidden
+    if under_hover && action_hover {
+        color_scheme.immediate_movement()
+    } else if !player_q.cursor_is_hidden
         && x_range.contains(&(*cursor_x as usize))
         && y_range.contains(&(*cursor_y as usize))
     {
@@ -110,6 +115,17 @@ pub fn border_style_for(
         } else {
             color_scheme.grid_border()
         }
+    }
+}
+
+pub fn arrow_border(compass: Compass, half_border: bool) -> &'static str {
+    match compass {
+        Compass::North if half_border => ARROWS[4],
+        Compass::North => ARROWS[0],
+        Compass::East => ARROWS[1],
+        Compass::South if half_border => ARROWS[5],
+        Compass::South => ARROWS[2],
+        Compass::West => ARROWS[3],
     }
 }
 

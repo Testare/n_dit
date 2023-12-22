@@ -23,6 +23,7 @@ pub struct ColorScheme {
     grid_border_hover: ContentStyle,
     possible_movement: ContentStyle,
     possible_movement_hover: ContentStyle,
+    immediate_movement: ContentStyle,
     selected_square: ContentStyle,
     selected_square_border: ContentStyle,
     selected_square_border_hover: ContentStyle,
@@ -59,6 +60,7 @@ impl Default for ColorScheme {
             grid_border_hover: style(Some(Color::Blue), None, None),
             possible_movement: style(Some(Color::White), Some(Color::DarkGrey), None),
             possible_movement_hover: style(Some(Color::Blue), Some(Color::DarkGrey), None),
+            immediate_movement: style(Some(Color::Yellow), Some(Color::DarkGrey), None),
             player_team_active: style(
                 Some(Color::Black),
                 Some(Color::White),

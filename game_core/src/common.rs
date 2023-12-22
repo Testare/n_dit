@@ -53,6 +53,13 @@ impl Compass {
             Compass::East | Compass::West => false,
         }
     }
+
+    pub fn is_horizontal(&self) -> bool {
+        match self {
+            Compass::North | Compass::South => false,
+            Compass::East | Compass::West => true,
+        }
+    }
 }
 
 impl std::ops::Add<Compass> for UVec2 {

@@ -7,7 +7,7 @@ use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
 use itertools::Itertools;
 
-use super::borders::{border_style_for, intersection_for_pivot, BorderType};
+use super::borders::{arrow_border, border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
 use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
@@ -88,7 +88,8 @@ fn render_grid(
 
     let default_style = ContentStyle::new();
 
-    let hover_point = hover_point.map(|UVec2 { x, y }| UVec2::new(x / 3, y / 2)); // TODO make this a helper function?
+    let hover_point =
+        hover_point.map(|UVec2 { x, y }| UVec2::new((x + scroll.x) / 3, (y + scroll.y) / 2)); // TODO make this a helper function?
     let width = grid.width() as usize;
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
@@ -108,6 +109,43 @@ fn render_grid(
     let y_end = cmp::min(height, (scroll.y + size.height32() / 2) as usize);
     let skip_y = (scroll.y % 2) as usize;
     let keep_last_space = skip_y + size.height() % 2 == 0;
+    let draw_arrow_border = active_curio.and_then(|active_curio_id| {
+        let active_curio_q = node_pieces.get(active_curio_id).ok()?;
+        if active_curio_q.speed.is_none()
+            || active_curio_q.moves_taken.is_none()
+            || active_curio_q.speed == active_curio_q.moves_taken
+        {
+            // If it has no speed, or it has already taken all of its moves
+            return None;
+        }
+
+        let hover_point = hover_point?;
+        if grid.square_is_closed(hover_point) {
+            return None;
+        }
+        let curio_head = grid.head(active_curio_id)?;
+        if hover_point.manhattan_distance(&curio_head) != 1 {
+            return None;
+        }
+        if let Some(hover_entity) = grid.item_at(hover_point) {
+            if hover_entity != active_curio_id {
+                let entity_under_hover = node_pieces.get(hover_entity).ok()?;
+                if entity_under_hover.has_curio {
+                    // A curio that is not the active curio means you can't move there
+                    return None;
+                }
+            }
+        }
+        let dir = curio_head.dirs_to(&hover_point)[0]
+            .expect("we should always have one direction to a point 1 manhattan distance away");
+        Some((
+            match dir {
+                Compass::North | Compass::West => curio_head,
+                Compass::East | Compass::South => hover_point,
+            },
+            dir,
+        ))
+    });
 
     let (border_lines, mut space_lines): (Vec<CharmieRow>, Vec<CharmieRow>) = (y_start..=y_end)
         .map(|y| {
@@ -151,6 +189,7 @@ fn render_grid(
                         let pivot_format = border_style_for(
                             player_q,
                             &hover_point,
+                            draw_arrow_border.is_some(),
                             draw_config,
                             &border_x_range,
                             &border_y_range,
@@ -166,14 +205,23 @@ fn render_grid(
                         let border_style = border_style_for(
                             player_q,
                             &hover_point,
+                            draw_arrow_border.is_some(),
                             draw_config,
                             &border_x_range,
                             &(y..=y),
                         );
-                        space_line.add_styled_text(
-                            border_style
-                                .apply(BorderType::of(left2, right2).vertical_border(draw_config)),
-                        );
+
+                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                            x == pt.x as usize && y == pt.y as usize && dir.is_horizontal()
+                        }) {
+                            space_line.add_text(arrow_border(dir, false), &border_style);
+                        } else {
+                            space_line.add_styled_text(
+                                border_style.apply(
+                                    BorderType::of(left2, right2).vertical_border(draw_config),
+                                ),
+                            );
+                        };
                     }
                 }
                 if render_half_space {
@@ -181,19 +229,27 @@ fn render_grid(
                         let border_style = border_style_for(
                             player_q,
                             &hover_point,
+                            draw_arrow_border.is_some(),
                             draw_config,
                             &(x..=x),
                             &border_y_range,
                         );
-                        border_line.add_styled_text(
-                            border_style.apply(
-                                BorderType::of(right1, right2)
-                                    .horizontal_border(draw_config)
-                                    .chars()
-                                    .next()
-                                    .unwrap(),
-                            ),
-                        );
+
+                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                            x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
+                        }) {
+                            border_line.add_text(arrow_border(dir, true), &border_style);
+                        } else {
+                            border_line.add_styled_text(
+                                border_style.apply(
+                                    BorderType::of(right1, right2)
+                                        .horizontal_border(draw_config)
+                                        .chars()
+                                        .next()
+                                        .unwrap(),
+                                ),
+                            );
+                        };
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, player_q, draw_config);
@@ -226,15 +282,21 @@ fn render_grid(
                         let border_style = border_style_for(
                             player_q,
                             &hover_point,
+                            draw_arrow_border.is_some(),
                             draw_config,
                             &(x..=x),
                             &border_y_range,
                         );
-                        border_line.add_styled_text(
-                            border_style.apply(
+
+                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                            x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
+                        }) {
+                            border_line.add_text(arrow_border(dir, false), &border_style);
+                        } else {
+                            border_line.add_styled_text(border_style.apply(
                                 BorderType::of(right1, right2).horizontal_border(draw_config),
-                            ),
-                        );
+                            ));
+                        }
                     }
                     if include_space {
                         let space_style = space_style_for(x, y, player_q, draw_config);
@@ -262,6 +324,7 @@ fn render_grid(
         .skip(skip_y)
         .take(size.height())
         .collect();
+
     if grid_animation.0.is_playing() {
         let clipped_attack = grid_animation.1.charmie().clip(
             scroll.x,
