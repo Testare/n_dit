@@ -5,7 +5,7 @@ use game_core::player::Player;
 use super::super::{AvailableMoves, SelectedEntity};
 use super::GridUi;
 use crate::layout::UiFocus;
-use crate::node_ui::{CursorIsHidden, SelectedAction};
+use crate::node_ui::{CursorIsHidden, SelectedAction, TelegraphedAction};
 use crate::prelude::*;
 
 pub fn sys_adjust_available_moves(
@@ -16,6 +16,7 @@ pub fn sys_adjust_available_moves(
             AsDerefCopied<SelectedEntity>,
             &InNode,
             AsDerefCopiedOrDefault<CursorIsHidden>,
+            &TelegraphedAction,
             &mut AvailableMoves,
         ),
         (With<Player>,),
@@ -39,6 +40,7 @@ pub fn sys_adjust_available_moves(
         selected_entity,
         node_id,
         cursor_is_hidden,
+        telegraphed_action,
         mut available_moves,
     ) in players.iter_mut()
     {
@@ -46,6 +48,9 @@ pub fn sys_adjust_available_moves(
             .get(**node_id)
             .ok()
             .and_then(|(grid, active_curio)| {
+                if telegraphed_action.is_some() {
+                    return None;
+                }
                 let curio_id = (!cursor_is_hidden)
                     .then_some(())
                     .and(selected_entity)
