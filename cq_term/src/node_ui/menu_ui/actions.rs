@@ -306,7 +306,7 @@ impl NodeUi for MenuUiActions {
         (
             MouseEventListener,
             HoverPoint::default(),
-            Tooltip::new("Select action"),
+            Tooltip::new("Select action (Double click to use during turn)"),
         )
     }
 }

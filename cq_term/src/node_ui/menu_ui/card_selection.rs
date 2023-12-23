@@ -275,7 +275,7 @@ impl MenuUiCardSelection {
                 style.max_size.height = Dimension::Points(max_height);
                 style.min_size.height = Dimension::Points(min_height);
                 style.display = if max_height == 0.0 {
-                    taffy::style::Display::None
+                    taffy::style::Display::None // TODO use VisibilityTty instead
                 } else {
                     taffy::style::Display::Flex
                 };

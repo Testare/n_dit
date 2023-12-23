@@ -81,6 +81,21 @@ impl std::ops::Add<Compass> for UVec2 {
     }
 }
 
+impl std::fmt::Display for Compass {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::North => "north",
+                Self::East => "east",
+                Self::South => "south",
+                Self::West => "west",
+            }
+        )
+    }
+}
+
 pub trait GridPoints {
     fn manhattan_distance(&self, rhs: &Self) -> u32;
 

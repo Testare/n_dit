@@ -2,6 +2,7 @@ mod available_moves;
 mod borders;
 mod grid_animation;
 mod grid_inputs;
+mod grid_tooltip;
 mod range_of_action;
 mod render_grid;
 mod render_square;
@@ -11,7 +12,7 @@ use bevy::ecs::query::{Has, WorldQuery};
 use game_core::card::{Action, Actions, MovementSpeed};
 use game_core::node::{
     self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, MovesTaken, Node, NodeOp,
-    NodePiece, OnTeam,
+    NodePiece, OnTeam, Pickup,
 };
 use game_core::op::OpResult;
 use game_core::player::Player;
@@ -23,7 +24,7 @@ use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
     NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity, TelegraphedAction,
 };
-use crate::base_ui::{HoverPoint, Scroll2d};
+use crate::base_ui::{HoverPoint, Scroll2d, Tooltip};
 use crate::input_event::MouseEventListener;
 use crate::layout::{StyleTty, UiFocusOnClick};
 use crate::prelude::*;
@@ -37,9 +38,13 @@ pub struct NodePieceQ {
     piece: &'static NodePiece,
     speed: Option<AsDerefCopied<MovementSpeed>>,
     moves_taken: Option<AsDerefCopied<MovesTaken>>,
-    is_tapped: Option<&'static IsTapped>,
+    is_tapped: Option<AsDerefCopied<IsTapped>>,
+    pickup: Option<&'static Pickup>,
     access_point: Option<&'static AccessPoint>,
+    curio: Option<&'static Curio>,
     has_curio: Has<Curio>,
+    actions: Option<AsDeref<Actions>>,
+    team: Option<AsDerefCopied<OnTeam>>,
 }
 
 #[derive(WorldQuery)]
@@ -69,6 +74,7 @@ impl Plugin for GridUi {
                 (
                     available_moves::sys_adjust_available_moves,
                     range_of_action::get_range_of_action,
+                    grid_tooltip::sys_grid_ui_tooltip,
                 )
                     .chain()
                     .after(super::node_ui_op::sys_adjust_selected_entity)
@@ -87,7 +93,13 @@ impl Plugin for GridUi {
 
 impl NodeUi for GridUi {
     const NAME: &'static str = "Grid UI";
-    type UiBundleExtras = (Scroll2d, MouseEventListener, UiFocusOnClick, HoverPoint);
+    type UiBundleExtras = (
+        Scroll2d,
+        MouseEventListener,
+        UiFocusOnClick,
+        HoverPoint,
+        Tooltip,
+    );
     type UiPlugin = Self;
 
     fn initial_style(node_q: &NodeUiQItem) -> StyleTty {
@@ -117,6 +129,7 @@ impl NodeUi for GridUi {
             MouseEventListener,
             UiFocusOnClick,
             HoverPoint::default(),
+            Tooltip::default(),
         )
     }
 }

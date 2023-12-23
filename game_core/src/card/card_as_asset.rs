@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use bevy::asset::io::Reader;
-use bevy::asset::{AssetLoader, AssetPath, LoadContext};
+use bevy::asset::{AssetLoader, LoadContext};
 use bevy::reflect::TypeUuid;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
@@ -145,18 +145,14 @@ impl AssetLoader for CardAssetLoader {
             let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(&bytes[..])?;
             for (id, def) in asset_map.into_iter() {
                 load_context.labeled_asset_scope(id.clone(), |lc| {
-                    let mut action_assets = Vec::new();
                     let mut actions = Vec::new();
                     for action_path in def.actions.into_iter() {
                         actions.push(lc.load(action_path.to_string()));
-                        if !action_path.starts_with('#') {
-                            action_assets.push(AssetPath::from(action_path));
-                        }
                     }
                     CardDefinition {
                         id: id.clone(),
                         actions,
-                        short_name: def.short_name.unwrap_or_else(|| id.clone()),
+                        short_name: def.short_name.unwrap_or(id),
                         description: def.description,
                         max_size: def.max_size,
                         movement_speed: def.speed,

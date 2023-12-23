@@ -50,7 +50,7 @@ pub struct HoverPoint(Option<UVec2>);
 #[derive(Component, Debug, Default)]
 pub struct TooltipBar;
 
-#[derive(Clone, Component, Debug, Deref, DerefMut)]
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut)]
 pub struct Tooltip(Cow<'static, str>);
 
 #[derive(Bundle, Debug)]
@@ -206,7 +206,7 @@ pub fn sys_tooltip_on_hover(
 ) {
     let tooltip = tooltips
         .iter()
-        .find_map(|(tooltip, is_under_hover)| is_under_hover.map(|_| tooltip.clone().into_owned()));
+        .find_map(|(tooltip, hover_point)| hover_point.map(|_| tooltip.clone().into_owned()));
     for tooltip_bar_text_ui in tooltip_bars.iter_mut() {
         tooltip_bar_text_ui
             .map_unchanged(|ui| &mut ui.text)
@@ -217,8 +217,15 @@ pub fn sys_tooltip_on_hover(
 pub fn sys_apply_hover(
     mut evr_mouse_tty: EventReader<MouseEventTty>,
     changed_visibility: Query<
-        (Entity, AsDerefCopied<VisibilityTty>),
-        (Changed<VisibilityTty>, With<HoverPoint>),
+        (
+            Entity,
+            OrBool<AsDerefCopied<VisibilityTty>, true>,
+            AsDeref<CalculatedSizeTty>,
+        ),
+        (
+            Or<(Changed<VisibilityTty>, Changed<CalculatedSizeTty>)>,
+            With<HoverPoint>,
+        ),
     >,
     new_disabled: Query<Entity, (With<HoverPoint>, Added<MouseEventTtyDisabled>)>,
     mut hoverable_ui: Query<(AsDerefMut<HoverPoint>,)>,
@@ -238,8 +245,8 @@ pub fn sys_apply_hover(
             _ => {},
         }
     }
-    for (id, is_visible) in changed_visibility.iter() {
-        if !is_visible {
+    for (id, is_visible, size) in changed_visibility.iter() {
+        if !is_visible || size.x == 0 || size.y == 0 {
             if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
                 hover_point.set_if_neq(None);
             }
