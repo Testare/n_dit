@@ -30,6 +30,22 @@ text="[&&]"
 fg="bbbb"
 bg="yyyy"
 
+[[a.node_c.f]]
+timing=1.0
+text="[=)]"
+fg="wGGw"
+
+[[a.node_c.f]]
+timing=1.0
+text="[=)]"
+fg="gggg"
+
+[[a.node_c.f]]
+timing=1.0
+text="[=)]"
+fg="bbbb"
+bg="GGGG"
+
 [[a.node_warez.f]]
 timing=2.0
 text="[$$]"
@@ -47,3 +63,4 @@ y="yellow"
 w="white"
 b="black"
 B="blue"
+G="green"

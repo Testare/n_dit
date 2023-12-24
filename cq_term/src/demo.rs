@@ -337,7 +337,7 @@ fn demo_startup(
         .with_children(|board| {
             board.spawn((
                 NFNode,
-                ForNode(demo_node_id.clone()),
+                ForNode(NodeId::new("node:demo", 0)),
                 TerminalRendering::default(),
                 BoardPosition(UVec2 { x: 0, y: 0 }),
                 BoardPiece("Demo Node".to_owned()),
@@ -347,7 +347,7 @@ fn demo_startup(
             board.spawn((
                 NFNode,
                 ForNode(NodeId::new("node:demo", 1)),
-                RequiredNodes(vec![demo_node_id.clone()]),
+                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Next Demo Node".to_owned()),
                 BoardPosition(UVec2 { x: 6, y: 4 }),
@@ -356,7 +356,7 @@ fn demo_startup(
             ));
             board.spawn((
                 NFNode,
-                RequiredNodes(vec![demo_node_id.clone()]),
+                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Shop Node".to_owned()),
                 BoardPosition(UVec2 { x: 0, y: 4 }),
@@ -370,6 +370,16 @@ fn demo_startup(
                 TerminalRendering::default(),
                 BoardPiece("Demo Node".to_owned()),
                 BoardPosition(UVec2 { x: 14, y: 4 }),
+                BoardSize(UVec2 { x: 4, y: 1 }),
+                Name::new("Board piece 2"),
+            ));
+            board.spawn((
+                NFNode,
+                ForNode(NodeId::new("node:demo", 3)),
+                RequiredNodes(vec![NodeId::new("node:demo", 1)]),
+                TerminalRendering::default(),
+                BoardPiece("Demo Node 3".to_owned()),
+                BoardPosition(UVec2 { x: 10, y: 0 }),
                 BoardSize(UVec2 { x: 4, y: 1 }),
                 Name::new("Board piece 2"),
             ));
