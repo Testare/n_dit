@@ -83,6 +83,7 @@ impl Op for NodeOp {
     }
 
     fn system_index(&self) -> usize {
+        log::debug!("NodeOp: {self:?}");
         match self {
             Self::MoveActiveCurio { .. } => 0,
             Self::PerformCurioAction { .. } => 1,

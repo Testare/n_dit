@@ -1,4 +1,4 @@
-use game_core::node::{CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
+use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
 use game_core::op::{Op, OpError, OpErrorUtils, OpExecutor, OpImplResult};
 use game_core::player::{ForPlayer, Player};
 
@@ -43,6 +43,7 @@ impl Op for NodeUiOp {
     }
 
     fn system_index(&self) -> usize {
+        log::debug!("Processing NodeUiOp: {self:?}");
         match self {
             Self::ChangeFocus(_) => 0,
             Self::MoveNodeCursor(_) => 1,
@@ -102,7 +103,7 @@ pub fn opsys_nodeui_move_cursor(
         let next_pt = grid
             .index_bounds()
             .min(compass_or_point.point_from(*cursor));
-        cursor.set_if_neq(next_pt);
+        *cursor = next_pt; // Specifically not using set_if_neq so we can detect when cursor is adjusted
         cursor_is_hidden.set_if_neq(false);
         Ok(default())
     } else {
@@ -136,13 +137,15 @@ pub fn sys_adjust_selected_entity(
             Or<(Changed<NodeCursor>, Changed<SelectedAction>)>,
         ),
     >,
-    nodes: Query<(&EntityGrid, &CurrentTurn), With<Node>>,
+    nodes: Query<(&EntityGrid, &CurrentTurn, AsDerefCopied<ActiveCurio>), With<Node>>,
     teams: Query<(&TeamPhase,), With<Team>>,
 ) {
     for (in_node, on_team, cursor, mut selected_action, mut selected_entity) in players.iter_mut() {
-        get_assert!(**in_node, nodes, |(grid, current_turn)| {
+        get_assert!(**in_node, nodes, |(grid, current_turn, active_curio)| {
             let (team_phase,) = get_assert!(**on_team, teams)?;
-            if selected_action.is_none() {
+            if selected_action.is_some() && selected_entity.is_none() {
+                **selected_entity = active_curio;
+            } else if selected_action.is_none() {
                 **selected_entity = grid.item_at(**cursor);
             } else if **on_team != **current_turn || *team_phase != TeamPhase::Play {
                 let entity_at_cursor = grid.item_at(**cursor);
