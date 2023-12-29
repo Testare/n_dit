@@ -1,4 +1,4 @@
-use charmi::{CharacterMapImage, CharmieRow};
+use charmi::{CharacterMapImage, CharmieString};
 use crossterm::style::Stylize;
 use game_core::card::{Card, Deck};
 use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
@@ -320,7 +320,7 @@ impl MenuUiCardSelection {
                 .and_then(|(player_deck, selected_entity, played_cards, focus)| {
                     let access_point = selected_entity.of(&access_points)?;
 
-                    let cards: Vec<CharmieRow> = player_deck
+                    let cards: Vec<CharmieString> = player_deck
                         .cards_with_count()
                         .enumerate()
                         .map(|(num, (id, _))| {
@@ -332,7 +332,7 @@ impl MenuUiCardSelection {
                                 .get(id)
                                 .map(|card| card.short_name_or_nickname())
                                 .unwrap_or("NotACard");
-                            let mut row = CharmieRow::new();
+                            let mut row = CharmieString::new();
                             if is_hover {
                                 row.add_styled_text("▷".green());
                             } else if is_selected {
@@ -371,7 +371,7 @@ impl MenuUiCardSelection {
                     .min((player_deck.different_cards_len() + 1 + padding).saturating_sub(height));
                     let no_scroll_bar_needed = height > cards.len();
                     let scroll_bar = (0..height).map(|i| {
-                        CharmieRow::of_plain_text(if no_scroll_bar_needed {
+                        CharmieString::of_plain_text(if no_scroll_bar_needed {
                             " "
                         } else if i <= 1 {
                             "↑"
@@ -388,7 +388,7 @@ impl MenuUiCardSelection {
                     } else {
                         res_draw_config.color_scheme().menu_title()
                     };
-                    let title_bar = CharmieRow::of_text(
+                    let title_bar = CharmieString::of_text(
                         format!("{0:═<1$}", "═Cards", size.width()).as_str(),
                         &title_style,
                     );

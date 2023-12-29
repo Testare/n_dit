@@ -30,7 +30,7 @@ pub enum ColorSupportLevel {
 #[derive(Asset, Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
 #[uuid = "a58d71d0-9e0f-4c6d-a078-c5621756579c"]
 pub struct CharacterMapImage {
-    rows: Vec<CharmieRow>,
+    rows: Vec<CharmieString>,
     repr: OnceLock<Vec<String>>,
 }
 
@@ -69,7 +69,7 @@ impl CharacterMapImage {
         if result.rows.len() < (y + map.rows.len()) {
             result
                 .rows
-                .resize(y + map.rows.len(), CharmieRow::default());
+                .resize(y + map.rows.len(), CharmieString::default());
         }
         for (row_index, row) in map.rows.iter().enumerate() {
             let row_index = row_index + y;
@@ -107,7 +107,7 @@ impl CharacterMapImage {
         }
     }
 
-    pub fn push_row(&mut self, row: CharmieRow) -> &mut Self {
+    pub fn push_row(&mut self, row: CharmieString) -> &mut Self {
         self.repr.take();
         self.rows.push(row);
         self
@@ -115,19 +115,19 @@ impl CharacterMapImage {
 
     pub fn with_blank_row(mut self) -> Self {
         self.repr.take();
-        self.rows.push(CharmieRow::default());
+        self.rows.push(CharmieString::default());
         self
     }
 
-    pub fn with_row<B: FnOnce(CharmieRow) -> CharmieRow>(mut self, builder: B) -> Self {
+    pub fn with_row<B: FnOnce(CharmieString) -> CharmieString>(mut self, builder: B) -> Self {
         self.repr.take();
-        self.rows.push(builder(CharmieRow::default()));
+        self.rows.push(builder(CharmieString::default()));
         self
     }
 
-    pub fn new_row(&mut self) -> &mut CharmieRow {
+    pub fn new_row(&mut self) -> &mut CharmieString {
         self.repr.take();
-        self.rows.push(CharmieRow::default());
+        self.rows.push(CharmieString::default());
         self.rows.last_mut().unwrap()
     }
 }
@@ -147,7 +147,7 @@ impl From<Vec<String>> for CharacterMapImage {
     }
 }
 
-impl<T: Into<CharmieRow>> FromIterator<T> for CharacterMapImage {
+impl<T: Into<CharmieString>> FromIterator<T> for CharacterMapImage {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         CharacterMapImage {
             rows: iter.into_iter().map(|row| row.into()).collect(),
@@ -158,14 +158,133 @@ impl<T: Into<CharmieRow>> FromIterator<T> for CharacterMapImage {
 
 /// Represents a single row of a charmie image
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct CharmieRow {
+pub struct CharmieString {
     segments: Vec<CharmieSegment>,
     // cache: OnceCell<String>, Cow?
 }
 
-impl CharmieRow {
+impl CharmieString {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    // TODO test this
+    pub fn wrap(&self, width: u32) -> CharacterMapImage {
+        let mut image = CharacterMapImage::new();
+        let mut row = CharmieString::new();
+        let mut row_len = 0;
+        for segment in self.segments.iter() {
+            let seg_len = segment.len();
+            let added_len = row_len + seg_len;
+            if added_len < width {
+                row += segment;
+                row_len = added_len;
+                if row_len == width {
+                    image.push_row(row);
+                    row_len = 0;
+                    row = CharmieString::new();
+                }
+            } else {
+                let next_len = width - row_len;
+                let mut remaining_len = seg_len - next_len;
+                match segment {
+                    CharmieSegment::HalfChar { .. } => {
+                        unreachable!("Half char with a len of 1 should not be able to reach here")
+                    },
+                    CharmieSegment::Empty { len } => {
+                        row.add_gap(len - next_len);
+                        image.push_row(row);
+                        row = CharmieString::new();
+                        while remaining_len >= width {
+                            image.new_row().add_gap(width);
+                            remaining_len -= width;
+                        }
+                        if remaining_len > 0 {
+                            row.add_gap(remaining_len);
+                        }
+                        row_len = remaining_len;
+                    },
+                    CharmieSegment::Effect { len, style } => {
+                        row.add_effect(len - next_len, style);
+                        image.push_row(row);
+                        row = CharmieString::new();
+                        while remaining_len >= width {
+                            image.new_row().add_effect(width, style);
+                            remaining_len -= width;
+                        }
+                        if remaining_len > 0 {
+                            row.add_effect(remaining_len, style);
+                        }
+                        row_len = remaining_len;
+                    },
+                    CharmieSegment::Textual { text, style } => {
+                        // Break down into break-apartable parts
+                        // Should I just use textwrap crate? Just add a prefix of the row that already exists then textwrap, then remove the prefix?
+                        let section_regex = regex::Regex::new(r"(\s+|\S+)").unwrap();
+                        let whitespace_regex = regex::Regex::new(r"\s.*").unwrap();
+
+                        for text_segment in section_regex.find_iter(text) {
+                            let text_seg_len = text_segment.as_str().width() as u32;
+                            let is_whitespace = whitespace_regex.is_match(text_segment.as_str());
+                            let added_len = row_len + text_seg_len;
+
+                            if added_len <= width {
+                                row.add_text(text_segment.as_str(), style);
+                                row_len = added_len;
+                                if row_len == width {
+                                    image.push_row(row);
+                                    row_len = 0;
+                                    row = CharmieString::new();
+                                }
+                            } else if is_whitespace || text_seg_len > width {
+                                // Text segment is too long or it is whitespace. Split it.
+                                let should_hyphenate = !is_whitespace && width > 2;
+                                let target_width = if should_hyphenate { width - 1 } else { width };
+                                for ch in text_segment.as_str().chars() {
+                                    let ch_len = ch.width().unwrap_or(0) as u32;
+                                    if row_len + ch_len <= target_width {
+                                        row_len += ch_len;
+                                        row.add_char(ch, style);
+                                        if row_len == target_width {
+                                            if should_hyphenate {
+                                                row.add_char('-', style);
+                                            }
+                                            image.push_row(row);
+                                            row_len = 0;
+                                            row = CharmieString::new();
+                                        }
+                                    } else {
+                                        if should_hyphenate {
+                                            row_len += 1;
+                                            row.add_char('-', style);
+                                        }
+                                        let fill_str: String =
+                                            " ".repeat((width - row_len) as usize);
+                                        row.add_text(fill_str, style); // TODO should fill_char have a style?
+                                        image.push_row(row);
+                                        row = CharmieString::new().with_char(ch, style);
+                                        row_len = ch_len;
+                                    }
+                                }
+                            } else {
+                                // Put word on next row
+                                let fill_str: String = " ".repeat((width - row_len) as usize);
+                                row.add_text(fill_str, style); // TODO should fill_char have a style?
+                                image.push_row(row);
+                                row = CharmieString::new().with_text(text_segment.as_str(), style);
+                                row_len = text_seg_len;
+                            }
+                        }
+                    },
+                }
+            }
+        }
+        if row_len > 0 {
+            // Should I fill the row?
+            image.push_row(row);
+        }
+
+        image
     }
 
     pub fn trim_end(&mut self) -> u32 {
@@ -342,27 +461,27 @@ impl CharmieRow {
     }
 
     pub fn of_char(ch: char, style: &ContentStyle) -> Self {
-        CharmieRow::new().with_char(ch, style)
+        CharmieString::new().with_char(ch, style)
     }
 
     pub fn of_effect(len: u32, style: &ContentStyle) -> Self {
-        CharmieRow::new().with_effect(len, style)
+        CharmieString::new().with_effect(len, style)
     }
 
     pub fn of_gap(len: u32) -> Self {
-        CharmieRow::new().with_gap(len)
+        CharmieString::new().with_gap(len)
     }
 
     pub fn of_plain_text<S: Borrow<str>>(text: S) -> Self {
-        CharmieRow::new().with_plain_text(text)
+        CharmieString::new().with_plain_text(text)
     }
 
     pub fn of_styled_text<D: Display>(styled_content: StyledContent<D>) -> Self {
-        CharmieRow::new().with_styled_text(styled_content)
+        CharmieString::new().with_styled_text(styled_content)
     }
 
     pub fn of_text<S: Borrow<str>>(text: S, style: &ContentStyle) -> Self {
-        CharmieRow::new().with_text(text, style)
+        CharmieString::new().with_text(text, style)
     }
 
     pub fn with_char(mut self, ch: char, style: &ContentStyle) -> Self {
@@ -425,11 +544,11 @@ impl CharmieRow {
         self
     }
 
-    pub fn draw(&self, row: &CharmieRow, x: u32, bcfb: Option<char>) -> Self {
+    pub fn draw(&self, row: &CharmieString, x: u32, bcfb: Option<char>) -> Self {
         let mut result = if x > 0 {
             self.clip(0, x, bcfb)
         } else {
-            CharmieRow::default()
+            CharmieString::default()
         };
         let self_len = self.len();
         if self_len < x {
@@ -484,7 +603,7 @@ impl CharmieRow {
         self.segments
             .iter()
             .fold(
-                (0, CharmieRow::default()),
+                (0, CharmieString::default()),
                 |(seg_start, mut row), segment| {
                     let seg_end = seg_start + segment.len();
                     if seg_start < clip_end && clip_start < seg_end {
@@ -557,7 +676,7 @@ impl CharmieRow {
     }
 }
 
-impl Display for CharmieRow {
+impl Display for CharmieString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for segment in self.segments.iter() {
             write!(f, "{}", segment)?;
@@ -566,69 +685,69 @@ impl Display for CharmieRow {
     }
 }
 
-impl<D: Display> From<StyledContent<D>> for CharmieRow {
+impl<D: Display> From<StyledContent<D>> for CharmieString {
     fn from(value: StyledContent<D>) -> Self {
-        CharmieRow {
+        CharmieString {
             segments: vec![value.into()],
         }
     }
 }
 
 /// Should NOT contain newline characters
-impl From<String> for CharmieRow {
+impl From<String> for CharmieString {
     fn from(value: String) -> Self {
-        CharmieRow {
+        CharmieString {
             segments: vec![value.into()],
         }
     }
 }
 
 /// Should NOT contain newline characters
-impl From<&String> for CharmieRow {
+impl From<&String> for CharmieString {
     fn from(value: &String) -> Self {
-        CharmieRow {
+        CharmieString {
             segments: vec![value.clone().into()],
         }
     }
 }
 
-impl From<&str> for CharmieRow {
+impl From<&str> for CharmieString {
     fn from(value: &str) -> Self {
-        CharmieRow {
+        CharmieString {
             segments: vec![value.into()],
         }
     }
 }
 
-impl AddAssign<&str> for CharmieRow {
+impl AddAssign<&str> for CharmieString {
     fn add_assign(&mut self, rhs: &str) {
         self.add_text(rhs, &Default::default());
     }
 }
 
-impl<D: Display> AddAssign<StyledContent<D>> for CharmieRow {
+impl<D: Display> AddAssign<StyledContent<D>> for CharmieString {
     fn add_assign(&mut self, rhs: StyledContent<D>) {
         self.add_styled_text(rhs);
     }
 }
 
-impl AddAssign<&CharmieRow> for CharmieRow {
-    fn add_assign(&mut self, rhs: &CharmieRow) {
+impl AddAssign<&CharmieString> for CharmieString {
+    fn add_assign(&mut self, rhs: &CharmieString) {
         for segment in rhs.segments.iter() {
             *self += segment;
         }
     }
 }
 
-impl AddAssign<CharmieRow> for CharmieRow {
-    fn add_assign(&mut self, rhs: CharmieRow) {
+impl AddAssign<CharmieString> for CharmieString {
+    fn add_assign(&mut self, rhs: CharmieString) {
         for segment in rhs.segments.iter() {
             *self += segment;
         }
     }
 }
 
-impl AddAssign<&CharmieSegment> for CharmieRow {
+impl AddAssign<&CharmieSegment> for CharmieString {
     fn add_assign(&mut self, rhs: &CharmieSegment) {
         match rhs {
             CharmieSegment::Effect { len, style } => self.add_effect(*len, style),
@@ -647,7 +766,7 @@ impl AddAssign<&CharmieSegment> for CharmieRow {
     }
 }
 
-impl AddAssign<CharmieSegment> for CharmieRow {
+impl AddAssign<CharmieSegment> for CharmieString {
     fn add_assign(&mut self, rhs: CharmieSegment) {
         match rhs {
             CharmieSegment::Effect { len, style } => self.add_effect(len, &style),
@@ -804,8 +923,8 @@ mod tests {
 
     #[test]
     fn merging_clipped_sides_of_fullwidth_characters() {
-        let row = CharmieRow::of_plain_text("世Hello界world");
-        let effect = CharmieRow::of_effect(2, &ContentStyle::new().red());
+        let row = CharmieString::of_plain_text("世Hello界world");
+        let effect = CharmieString::of_effect(2, &ContentStyle::new().red());
 
         let affected = row.draw(&effect, 1, Some('_'));
         let expected = format! {"{}ello界world", "世H".red()};
@@ -815,22 +934,22 @@ mod tests {
         let expected = format! {"世Hell{}world", "o界".red()};
         assert_eq!(expected, affected.to_string());
 
-        let drawing = row.draw(&CharmieRow::of_gap(1), 0, Some('_'));
+        let drawing = row.draw(&CharmieString::of_gap(1), 0, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(&CharmieRow::of_gap(1), 7, Some('_'));
+        let drawing = row.draw(&CharmieString::of_gap(1), 7, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(&CharmieRow::of_gap(2), 1, Some('_'));
+        let drawing = row.draw(&CharmieString::of_gap(2), 1, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
 
-        let drawing = row.draw(&CharmieRow::of_gap(2), 6, Some('_'));
+        let drawing = row.draw(&CharmieString::of_gap(2), 6, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
     }
 
     #[test]
-    fn test_clipping_charmie_row_with_fullwidth_characters() {
-        let row = CharmieRow::of_plain_text("世Hello界world");
+    fn clipping_charmie_row_with_fullwidth_characters() {
+        let row = CharmieString::of_plain_text("世Hello界world");
 
         let clipped = row.clip(0, 9, None);
         assert_eq!(clipped.to_string(), "世Hello界");
@@ -843,27 +962,27 @@ mod tests {
     }
 
     #[test]
-    fn test_clipping_charmie_row_with_two_segments() {
-        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+    fn clipping_charmie_row_with_two_segments() {
+        let row = CharmieString::from("Hello".green()).with_plain_text("There!");
         let mut expected = "Hello".green().to_string();
         expected.push_str("There!");
         assert_eq!(row.to_string(), expected);
 
-        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+        let row = CharmieString::from("Hello".green()).with_plain_text("There!");
         let clipped = row.clip(0, 10, None);
         let mut expected = "Hello".green().to_string();
         expected.push_str("There");
         assert_eq!(clipped.to_string(), expected);
 
-        let row = CharmieRow::from("Hello".green()).with_plain_text("There!");
+        let row = CharmieString::from("Hello".green()).with_plain_text("There!");
         let clipped = row.clip(6, 4, None);
         assert_eq!(clipped.to_string(), "here");
     }
 
     #[test]
-    fn test_draw_effect() {
-        let row = CharmieRow::of_plain_text("世Hello界world");
-        let effect = CharmieRow::new().with_effect(2, &ContentStyle::new().red());
+    fn draw_effect() {
+        let row = CharmieString::of_plain_text("世Hello界world");
+        let effect = CharmieString::new().with_effect(2, &ContentStyle::new().red());
 
         let affected = row.draw(&effect, 0, Some('_'));
         let expected = format! {"{}Hello界world", "世".red()};
@@ -879,11 +998,11 @@ mod tests {
     }
 
     #[test]
-    fn test_draw_charmie_row() {
+    fn draw_charmie_row() {
         let bcr = Some('_');
-        let row = CharmieRow::of_plain_text("世Hello界world");
-        let draw_row = CharmieRow::of_plain_text("Mimsy");
-        let gap_draw_row = CharmieRow::of_plain_text("[")
+        let row = CharmieString::of_plain_text("世Hello界world");
+        let draw_row = CharmieString::of_plain_text("Mimsy");
+        let gap_draw_row = CharmieString::of_plain_text("[")
             .with_gap(2)
             .with_plain_text("]");
 
@@ -918,7 +1037,31 @@ mod tests {
         let drawing = row.draw(&gap_draw_row, 16, bcr);
         assert_eq!(drawing.to_string(), "世Hello界world  [  ]");
 
-        let drawing = row.draw(&CharmieRow::of_gap(2), 0, Some('_'));
+        let drawing = row.draw(&CharmieString::of_gap(2), 0, Some('_'));
         assert_eq!(drawing.to_string(), "世Hello界world");
+    }
+
+    #[test]
+    fn wrap() {
+        let blue = ContentStyle::new().blue();
+        let yellow = ContentStyle::new().yellow();
+        let unwrapped_chstr = CharmieString::of_text("What happens when you eat a ", &blue)
+            .with_text("beagel", &yellow)
+            .with_text("? Does it change your deoxyriboneucleic acid?", &blue);
+        let wrapped_chstr = unwrapped_chstr.wrap(14);
+        let mut expected_img = CharacterMapImage::new();
+        expected_img.new_row().add_text("What happens  ", &blue);
+        expected_img.new_row().add_text("when you eat a", &blue);
+        expected_img
+            .new_row()
+            .add_char(' ', &blue)
+            .add_text("beagel", &yellow)
+            .add_text("? Does ", &blue);
+        expected_img.new_row().add_text("it change your", &blue);
+        expected_img.new_row().add_text(" deoxyriboneu-", &blue);
+        expected_img.new_row().add_text("cleic acid?", &blue);
+
+        println!("{wrapped_chstr:?}");
+        assert_eq!(expected_img, wrapped_chstr);
     }
 }

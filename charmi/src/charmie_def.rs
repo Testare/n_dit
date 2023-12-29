@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use unicode_width::UnicodeWidthChar;
 
 use super::charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
-use super::{CharacterMapImage, CharmieRow, CharmieSegment};
+use super::{CharacterMapImage, CharmieSegment, CharmieString};
 
 static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
 
@@ -431,7 +431,7 @@ impl From<CharmieDef> for CharacterMapImage {
         let mut charmi = CharacterMapImage::new();
         let mut style_row_iter = styles.into_iter();
         for y in 0..height {
-            let mut row = CharmieRow::new();
+            let mut row = CharmieString::new();
             let mut x = 0;
 
             let mut style_iter = style_row_iter
@@ -673,19 +673,19 @@ mod test {
                 b: 255,
             };
             charmi.push_row(
-                CharmieRow::of_gap(2)
+                CharmieString::of_gap(2)
                     .with_char('y', &ContentStyle::new().yellow().on_blue())
                     .with_char('g', &ContentStyle::new().on_green())
                     .with_char('b', &ContentStyle::new().blue().on_yellow()),
             );
             charmi.push_row(
-                CharmieRow::of_gap(1)
+                CharmieString::of_gap(1)
                     .with_styled_text("o".stylize().with(orange).on_dark_blue())
                     .with_gap(3)
                     .with_styled_text("i".stylize().dark_blue().on(orange)),
             );
             charmi.push_row(
-                CharmieRow::of_char('r', &ContentStyle::new().red().on_dark_magenta())
+                CharmieString::of_char('r', &ContentStyle::new().red().on_dark_magenta())
                     .with_gap(1)
                     .with_plain_text("=")
                     .with_styled_text("0".stylize().black().on(white))

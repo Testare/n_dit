@@ -1,6 +1,6 @@
 use std::cmp;
 
-use charmi::{CharacterMapImage, CharmieRow};
+use charmi::{CharacterMapImage, CharmieString};
 use crossterm::style::ContentStyle;
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
@@ -147,10 +147,11 @@ fn render_grid(
         ))
     });
 
-    let (border_lines, mut space_lines): (Vec<CharmieRow>, Vec<CharmieRow>) = (y_start..=y_end)
+    let (border_lines, mut space_lines): (Vec<CharmieString>, Vec<CharmieString>) = (y_start
+        ..=y_end)
         .map(|y| {
-            let mut border_line = CharmieRow::new();
-            let mut space_line = CharmieRow::new(); //String::with_capacity(str_width);
+            let mut border_line = CharmieString::new();
+            let mut space_line = CharmieString::new(); //String::with_capacity(str_width);
             let include_border = y != y_start || skip_y != 1;
             let include_space = y != height && (y != y_end || keep_last_space);
             for x in x_start..=x_end {

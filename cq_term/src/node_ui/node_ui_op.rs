@@ -43,7 +43,7 @@ impl Op for NodeUiOp {
     }
 
     fn system_index(&self) -> usize {
-        log::debug!("Processing NodeUiOp: {self:?}");
+        log::debug!("NodeUiOp: {self:?}");
         match self {
             Self::ChangeFocus(_) => 0,
             Self::MoveNodeCursor(_) => 1,
