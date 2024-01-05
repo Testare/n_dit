@@ -78,11 +78,12 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
     let type_registry = world.resource::<AppTypeRegistry>().clone();
     let entities: Vec<Entity> = world
         .query_filtered::<Entity, Or<(
-            With<Node>,
-            With<NodePiece>,
-            With<Team>,
+            // With<Node>,
+            // With<NodePiece>,
+            // With<Team>,
+            With<StyleTty>,
             // With<Card>,
-            With<Player>,
+            // With<Player>,
         )>>()
         .iter(world)
         .collect();

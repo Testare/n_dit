@@ -42,7 +42,8 @@ pub struct Action {
     pub(crate) description: String,
 }
 
-#[derive(Clone, Component, Debug, Deref, Reflect)]
+#[derive(Clone, Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
 pub struct Actions(pub Vec<Handle<Action>>);
 
 #[derive(Copy, Clone, Component, Debug, Reflect)]

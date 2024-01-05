@@ -19,12 +19,16 @@ struct Taffy(taffy::Taffy);
 struct NodeTty(taffy::node::Node);
 
 /// Root of a layout. Is fitted to terminal
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct LayoutRoot;
 
 /// Indicates a UI element that should be focused on
 /// when clicked on.
-#[derive(Component, Debug)]
+///
+/// Not sure if this is still being used
+#[derive(Component, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct UiFocusOnClick;
 
 /// Indicates the UI element that is being focused on for
@@ -32,35 +36,35 @@ pub struct UiFocusOnClick;
 /// If it is empty, default controls can be defined.
 /// Does not have to have a [UiFocusOnClick] component, but
 /// should have a [StyleTty] component.
-#[derive(Component, Debug, Default, Deref, DerefMut)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
 pub struct UiFocus(pub Option<Entity>);
 
 #[derive(Bundle, Debug, Default)]
 pub struct UiFocusBundle {
     ui_focus: UiFocus,
-    ui_focus_next: UiFocusNext,
 }
 
-/// When focus shifts from one UI element to the next, we set it here first so
-/// that we don't have inputs counted multiple times
-#[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct UiFocusNext(pub Option<Entity>);
-
-#[derive(Component, Debug, Deref, DerefMut)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
 pub struct UiFocusCycleOrder(pub u32);
 
 /// Part of a layout, defines the style
-#[derive(Component, Debug, Default, Deref, DerefMut, Serialize, Deserialize)]
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Serialize, Deserialize, Reflect)]
+#[reflect_value(Component, Serialize, Deserialize)]
 pub struct StyleTty(pub taffy::prelude::Style);
 
 // Actually these components probably should be part of render
-#[derive(Clone, Component, Copy, Debug, Default, Deref)]
+#[derive(Clone, Component, Copy, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
 pub struct GlobalTranslationTty(pub UVec2);
 
-#[derive(Clone, Component, Copy, Debug, Default, Deref)]
+#[derive(Clone, Component, Copy, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
 pub struct CalculatedSizeTty(pub UVec2);
 
-#[derive(Clone, Component, Copy, Debug, Deref, DerefMut)]
+#[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
 pub struct VisibilityTty(pub bool);
 
 type IsVisibleTty = AsDerefOrBool<VisibilityTty, true>;
@@ -125,6 +129,14 @@ impl StyleTty {
 impl Plugin for TaffyTuiLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Taffy>()
+            .register_type::<CalculatedSizeTty>()
+            .register_type::<GlobalTranslationTty>()
+            .register_type::<LayoutRoot>()
+            .register_type::<StyleTty>()
+            .register_type::<UiFocus>()
+            .register_type::<UiFocusCycleOrder>()
+            .register_type::<UiFocusOnClick>()
+            .register_type::<VisibilityTty>()
             .add_systems(Last, remove_ui_focus_if_not_displayed)
             .add_systems(
                 RENDER_TTY_SCHEDULE,
@@ -147,12 +159,12 @@ impl Plugin for TaffyTuiLayoutPlugin {
 }
 
 fn remove_ui_focus_if_not_displayed(
-    mut ui_foci: Query<&mut UiFocusNext>,
+    mut ui_foci: Query<&mut UiFocus>,
     styles: Query<(&StyleTty, Option<&VisibilityTty>)>,
 ) {
-    for mut next_focus in ui_foci.iter_mut() {
-        if next_focus.is_some() {
-            let not_focusable = next_focus
+    for mut focus in ui_foci.iter_mut() {
+        if focus.is_some() {
+            let not_focusable = focus
                 .and_then(|focus| {
                     let (style, visibility) = styles.get(focus).ok()?;
                     Some(
@@ -162,7 +174,7 @@ fn remove_ui_focus_if_not_displayed(
                 })
                 .unwrap_or(true);
             if not_focusable {
-                **next_focus = None;
+                **focus = None;
             }
         }
     }
