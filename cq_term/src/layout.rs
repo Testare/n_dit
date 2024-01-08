@@ -52,6 +52,7 @@ pub struct UiFocusCycleOrder(pub u32);
 /// Part of a layout, defines the style
 #[derive(Clone, Component, Debug, Default, Deref, DerefMut, Serialize, Deserialize, Reflect)]
 #[reflect_value(Component, Serialize, Deserialize)]
+#[serde(default, transparent)]
 pub struct StyleTty(pub taffy::prelude::Style);
 
 // Actually these components probably should be part of render

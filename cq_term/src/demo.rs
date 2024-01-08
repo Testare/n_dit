@@ -9,11 +9,11 @@ use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    EnteringNode, ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, NodePiece, PlayedCards,
-    Team, TeamStatus, Teams,
+    EnteringNode, ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, PlayedCards, TeamStatus,
+    Teams,
 };
 use game_core::op::OpResult;
-use game_core::player::{ForPlayer, Player, PlayerBundle};
+use game_core::player::{ForPlayer, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 
@@ -77,14 +77,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
     let type_registry = world.resource::<AppTypeRegistry>().clone();
     let entities: Vec<Entity> = world
-        .query_filtered::<Entity, Or<(
-            // With<Node>,
-            // With<NodePiece>,
-            // With<Team>,
-            With<StyleTty>,
-            // With<Card>,
-            // With<Player>,
-        )>>()
+        .query_filtered::<Entity, Or<(With<Node>, With<StyleTty>)>>()
         .iter(world)
         .collect();
     let scene = DynamicSceneBuilder::from_world(world)

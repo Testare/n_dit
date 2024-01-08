@@ -35,12 +35,6 @@ use prelude::*;
 
 use self::configuration::DrawConfiguration;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
-enum TerminalFocusMode {
-    #[default]
-    Node,
-}
-
 #[derive(Debug)]
 pub struct CharmiePlugin;
 
@@ -203,7 +197,6 @@ impl Plugin for CharmiePlugin {
             .init_asset::<CharmieAnimation>()
             .init_asset::<CharmieActor>()
             .init_asset::<CharacterMapImage>()
-            .add_state::<TerminalFocusMode>()
             .init_asset_loader::<CharmiaLoader>()
             .init_asset_loader::<CharmiLoader>()
             .add_plugins((

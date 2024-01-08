@@ -2,6 +2,7 @@ use bevy::prelude::HierarchyQueryExt;
 pub use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
 use game_core::prelude::*;
 use getset::{CopyGetters, Getters};
+use serde::{Deserialize, Serialize};
 
 use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::TerminalWindow;
@@ -12,7 +13,8 @@ pub struct CrosstermEvent(pub crossterm::event::Event);
 #[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
 pub struct MouseEvent(pub crossterm::event::MouseEvent);
 
-#[derive(Clone, Copy, Debug, Event, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Event, PartialEq, Reflect, Serialize)]
+#[reflect_value(Deserialize, Serialize)]
 pub struct KeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,

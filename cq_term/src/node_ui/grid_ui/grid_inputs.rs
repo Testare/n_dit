@@ -239,7 +239,7 @@ pub fn kb_grid(
                                                 );
                                             },
                                             Some((1, actions)) => {
-                                                if let Some(action) = ast_actions.get(actions.0.get(0).expect("if the len is 1, there should be an action at 0")) {
+                                                if let Some(action) = ast_actions.get(actions.0.first().expect("if the len is 1, there should be an action at 0")) {
                                                     if action.range().is_none() {
                                                         res_core_ops.request(
                                                             player,

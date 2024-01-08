@@ -13,7 +13,7 @@ workspace = true
 bevy = {workspace = true, features = ["wav"]}
 bevy_query_ext = "0.2"
 charmi = { path = "../charmi" }
-crossterm = { version = "0.20.0", features = ["event-stream"] }
+crossterm = { version = "0.20.0", features = ["event-stream", "serde"] }
 game_core = { path = "../game_core" }
 getset = "0.1.1"
 indoc = "2.0.4"
