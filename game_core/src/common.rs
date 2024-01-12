@@ -123,7 +123,7 @@ impl GridPoints for UVec2 {
         if self.x > rhs.x {
             dirs.push(Compass::West);
         }
-        [dirs.get(0).copied(), dirs.get(1).copied()]
+        [dirs.first().copied(), dirs.get(1).copied()]
     }
 
     fn dist_to_pt_along_compass(&self, rhs: &Self, dir: Compass) -> i32 {

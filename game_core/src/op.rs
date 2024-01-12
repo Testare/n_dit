@@ -146,7 +146,7 @@ pub trait Op: std::fmt::Debug + Sync + Send + Reflect + 'static {
     where
         Self: Sized + TypePath + FromReflect;
 
-    fn to_request<E>(self, source: Entity) -> OpRequest
+    fn to_request(self, source: Entity) -> OpRequest
     where
         Self: Sized,
     {

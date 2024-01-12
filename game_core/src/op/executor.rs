@@ -69,12 +69,15 @@ impl Default for OpExecutor {
 
 impl OpExecutor {
     pub fn request<O: Op>(&mut self, source: Entity, op: O) {
+        self.accept_request(OpRequest::new(source, op))
+    }
+
+    pub fn accept_request(&mut self, op_request: OpRequest) {
         match self {
-            Self::Local(ref mut queue) => queue.push(OpRequest::new(source, op)),
+            Self::Local(ref mut queue) => queue.push(op_request),
             Self::Network => todo!("TODO network support"),
         }
     }
-
     pub fn accept_requests<E: Iterator<Item = OpRequest>>(&mut self, events: E) {
         match self {
             Self::Local(ref mut queue) => {

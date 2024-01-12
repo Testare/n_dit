@@ -1,11 +1,12 @@
 use crossterm::style::{ContentStyle, Stylize};
-use game_core::node::{InNode, Node, NodeBattleIntelligence};
+use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
+use game_core::op::{CoreOps, Op as _};
 use game_core::player::{ForPlayer, Player};
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, OnLeftClick, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::node_ui::button_ui::{
@@ -124,6 +125,7 @@ pub fn create_node_ui(
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         MouseEventTtyDisabled,
+                                        OnLeftClick::when_player_clicks::<CoreOps>(move |_|NodeOp::ReadyToGo.to_request(player)),
                                         VisibilityTty(true),
                                         Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));

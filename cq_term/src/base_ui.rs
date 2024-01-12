@@ -6,13 +6,15 @@ use std::borrow::{Borrow, Cow};
 use bevy::ecs::query::Has;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
+use game_core::op::{CoreOps, OpExecutor, OpRequest};
+use game_core::player::ForPlayer;
 use pad::PadStr;
 use taffy::prelude::Size;
 use taffy::style::Dimension;
 
 pub use self::popup::*;
 use crate::input_event::{
-    MouseEventListener, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind,
+    MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind,
 };
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
@@ -41,7 +43,8 @@ impl Plugin for BaseUiPlugin {
                 popup::sys_render_popup_menu.in_set(RenderTtySet::RenderLayouts),
                 sys_tooltip_on_hover,
             ),
-        );
+        )
+        .add_systems(PreUpdate, (sys_ui_onclick::<CoreOps>,));
     }
 }
 
@@ -256,6 +259,46 @@ pub fn sys_apply_hover(
     for id in new_disabled.iter() {
         if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
             hover_point.set_if_neq(None);
+        }
+    }
+}
+
+// Should this live in base-ui?
+#[derive(Component)]
+pub struct OnLeftClick(Box<dyn Fn(Entity) -> OpRequest + Send + Sync>);
+
+impl OnLeftClick {
+    pub fn when_player_clicks<
+        R: Resource + std::ops::Deref<Target = OpExecutor> + std::ops::DerefMut,
+    >(
+        k: impl Fn(Entity) -> OpRequest + Send + Sync + 'static,
+    ) -> Self {
+        Self(Box::new(k))
+    }
+}
+
+impl std::fmt::Debug for OnLeftClick {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "OnLeftClick")
+    }
+}
+
+fn sys_ui_onclick<R: Resource + std::ops::Deref<Target = OpExecutor> + std::ops::DerefMut>(
+    mut res_op_executors: ResMut<R>,
+    mut evr_mouse: EventReader<MouseEventTty>,
+    on_left_click_q: Query<(&OnLeftClick, AsDerefCopied<ForPlayer>)>,
+) {
+    for mouse_event in evr_mouse.read() {
+        if !matches!(
+            mouse_event.event_kind(),
+            MouseEventTtyKind::Down(MouseButton::Left)
+        ) {
+            continue;
+        }
+
+        if let Ok((left_click, for_player)) = on_left_click_q.get(mouse_event.entity()) {
+            let op = left_click.0(for_player);
+            res_op_executors.accept_request(op);
         }
     }
 }
