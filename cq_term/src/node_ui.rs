@@ -68,6 +68,7 @@ impl Plugin for NodeUiPlugin {
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
             OpPlugin::<NodeUiOp>::default(),
         ))
+        .init_resource::<setup::ButtonContextActions>()
         .add_systems(Update, setup::create_node_ui)
         .add_systems(
             PreUpdate,

@@ -1,12 +1,14 @@
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
-use game_core::op::{CoreOps, Op as _};
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
+use getset::CopyGetters;
 use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, OnLeftClick, PopupMenu, Tooltip, TooltipBar};
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::node_ui::button_ui::{
@@ -25,8 +27,36 @@ use crate::prelude::*;
 use crate::render::TerminalRendering;
 use crate::{KeyMap, Submap, TerminalWindow};
 
+#[derive(Debug, Resource, CopyGetters)]
+pub struct ButtonContextActions {
+    #[getset(get = "pub")]
+    pub start: Entity,
+}
+
+impl FromWorld for ButtonContextActions {
+    fn from_world(world: &mut World) -> Self {
+        let start = world
+            .spawn(ContextAction::new(
+                "Start battle".to_string(),
+                move |id, world| {
+                    // TODO make a factory method for this closure
+                    let for_player = world.get::<ForPlayer>(id).copied();
+                    if let Some(ForPlayer(player_id)) = for_player {
+                        world
+                            .get_resource_mut::<CoreOps>()
+                            .expect("should have CoreOps initialized")
+                            .request(player_id, NodeOp::ReadyToGo);
+                    }
+                },
+            ))
+            .id();
+        ButtonContextActions { start }
+    }
+}
+
 pub fn create_node_ui(
     mut commands: Commands,
+    res_button_context_actions: Res<ButtonContextActions>,
     player_now_in_node: Query<
         (Entity, AsDeref<InNode>),
         (With<Player>, Added<InNode>, Without<NodeBattleIntelligence>),
@@ -41,6 +71,7 @@ pub fn create_node_ui(
             if let Ok(mut key_map) = players.get_mut(player) {
                 key_map.activate_submap(Submap::Node);
             }
+
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
@@ -120,16 +151,16 @@ pub fn create_node_ui(
                                         }),
                                     ));
 
+
                                     title_bar_right.spawn((
                                         ForPlayer(player),
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         MouseEventTtyDisabled,
-                                        OnLeftClick::when_player_clicks::<CoreOps>(move |_|NodeOp::ReadyToGo.to_request(player)),
+                                        ContextActions::new(player, vec![res_button_context_actions.start]),
                                         VisibilityTty(true),
                                         Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));
-
                                     title_bar_right.spawn((
                                         ForPlayer(player),
                                         EndTurnButton,
