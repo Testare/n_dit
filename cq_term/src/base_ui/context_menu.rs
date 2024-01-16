@@ -46,7 +46,7 @@ impl ContextMenuSettings {
 
 #[derive(Component, Debug)]
 pub struct ContextActions {
-    settings_source: Entity,
+    settings_source: Entity, // Potentially make separate component?
     actions: Vec<Entity>,
 }
 

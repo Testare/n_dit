@@ -1,3 +1,4 @@
+use bevy::app::AppExit;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
 use game_core::op::CoreOps;
@@ -29,8 +30,10 @@ use crate::{KeyMap, Submap, TerminalWindow};
 
 #[derive(Debug, Resource, CopyGetters)]
 pub struct ButtonContextActions {
-    #[getset(get = "pub")]
-    pub start: Entity,
+    #[getset(get_copy = "pub")]
+    start: Entity,
+    #[getset(get_copy = "pub")]
+    quit: Entity,
 }
 
 impl FromWorld for ButtonContextActions {
@@ -38,7 +41,7 @@ impl FromWorld for ButtonContextActions {
         let start = world
             .spawn(ContextAction::new(
                 "Start battle".to_string(),
-                move |id, world| {
+                |id, world| {
                     // TODO make a factory method for this closure
                     let for_player = world.get::<ForPlayer>(id).copied();
                     if let Some(ForPlayer(player_id)) = for_player {
@@ -50,7 +53,12 @@ impl FromWorld for ButtonContextActions {
                 },
             ))
             .id();
-        ButtonContextActions { start }
+        let quit = world
+            .spawn(ContextAction::new("Quit game".to_string(), |_, world| {
+                world.send_event(AppExit);
+            }))
+            .id();
+        ButtonContextActions { start, quit }
     }
 }
 
@@ -157,7 +165,7 @@ pub fn create_node_ui(
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         MouseEventTtyDisabled,
-                                        ContextActions::new(player, vec![res_button_context_actions.start]),
+                                        ContextActions::new(player, vec![res_button_context_actions.start()]),
                                         VisibilityTty(true),
                                         Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));
@@ -198,6 +206,7 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Quit", ContentStyle::new().red()),
+                                        ContextActions::new(player, vec![res_button_context_actions.quit()]),
                                         QuitButton,
                                         Tooltip::new("[q] Click to exit")
                                     ));
