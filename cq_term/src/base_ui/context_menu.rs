@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
+use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{Command, SystemId};
+use charmi::CharacterMapImage;
+use crossterm::style::{ContentStyle, Stylize};
 
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
-use crate::layout::StyleTty;
+use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -63,7 +66,7 @@ impl ContextActions {
 }
 
 /// The component for the UI that displays the context actions
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct ContextMenu {
     /// The entity whose context actions ought to be displayed
     position: UVec2,
@@ -99,9 +102,11 @@ impl ContextMenuPane {
                         ..default()
                     }),
                     TerminalRendering::new(vec![
-                        "[I AM IN YOUR CORNERS]".to_string(),
-                        "[Eating your cheese]".to_string(),
+                        "[You should not be]".to_string(),
+                        "[reading this.    ]".to_string(),
                     ]),
+                    VisibilityTty(false),
+                    ContextMenu::default(),
                 ));
             })
             .id()
@@ -203,6 +208,8 @@ pub fn sys_context_actions(
             let settings = source_settings
                 .get(context_actions.settings_source)
                 .expect("should default");
+
+            let mouse_pos = mouse_event.absolute_pos();
             let action = match settings.determine_action(mb, context_actions.actions.len())? {
                 MouseButtonAction::PerformContextAction(n) => {
                     let context_action =
@@ -213,9 +220,17 @@ pub fn sys_context_actions(
                 MouseButtonAction::CycleContextAction => Arc::new(|_, _: &'_ mut World| {
                     log::error!("TODO Cycling context actions not implemented yet");
                 }),
-                MouseButtonAction::DisplayContextMenu => Arc::new(|_, _: &'_ mut World| {
-                    log::error!("TODO Displaying context menu not implemented yet");
-                }),
+                MouseButtonAction::DisplayContextMenu => {
+                    Arc::new(move |id, world: &'_ mut World| {
+                        for mut context_menu in world.query::<&mut ContextMenu>().iter_mut(world) {
+                            // TODO what if there are multiple???
+                            context_menu.actions_context = Some(id);
+                            context_menu.position = mouse_pos;
+                        }
+                        let display_system = world.resource::<SystemIdDisplayContextMenu>().0;
+                        world.run_system(display_system).unwrap();
+                    })
+                },
             };
             commands.add(move |w: &'_ mut World| action(id, w));
             Some(())
@@ -223,4 +238,107 @@ pub fn sys_context_actions(
     }
 }
 
-fn sys_display_context_menu() {}
+fn sys_display_context_menu(
+    mut commands: Commands,
+    mut context_menu_q: Query<(
+        &ContextMenu,
+        AsDerefCopied<Parent>,
+        AsDerefMut<VisibilityTty>,
+        &mut TerminalRendering,
+    )>,
+    mut context_menu_pane: Query<
+        (AsDerefMut<StyleTty>, AsDerefCopied<CalculatedSizeTty>),
+        With<ContextMenuPane>,
+    >,
+    context_actions_q: Query<&ContextActions>,
+    context_action_q: Query<&ContextAction>,
+) {
+    for (context_menu, parent_id, mut is_visible, mut rendering) in context_menu_q.iter_mut() {
+        if context_menu.actions_context.is_none() {
+            is_visible.set_if_neq(false);
+            continue;
+        }
+        let context_actions_id = context_menu
+            .actions_context
+            .expect("should have been checked before this step");
+        let context_menu_pane = context_menu_pane.get_mut(parent_id);
+        if context_menu_pane.is_err() {
+            log::error!("Entity [{parent_id:?} is parent of ContextMenu, but does not have required components.");
+            continue;
+        }
+        let (mut pane_style, pane_size) =
+            context_menu_pane.expect("Should have been checked previously");
+
+        let context_menu_actions: Vec<&String> = context_actions_q.get(context_actions_id).map(|context_actions|
+            context_actions.actions.iter().copied().filter_map(|context_action_id| {
+                match context_action_q.get(context_action_id) {
+                    Ok(context_action) => Some(&context_action.action_name),
+                    Err(e) => {
+                        match e {
+                            QueryEntityError::NoSuchEntity(id) => {
+                                log::error!("Couldn't find context action, no entity: [Entity: {id:?}]");
+                            },
+                            QueryEntityError::QueryDoesNotMatch(id) => {
+                                log::error!("Couldn't find context action, not a match: [Entity: {id:?}], logging components");
+                                commands.entity(context_action_id).log_components();
+                            },
+                            QueryEntityError::AliasedMutability(_) => unreachable!("Should not be a possible result")
+                        }
+                        None
+                    }
+                }
+            }).collect()
+        ).unwrap_or_default();
+
+        if context_menu_actions.is_empty() {
+            is_visible.set_if_neq(false);
+            continue;
+        }
+        let target_height = context_menu_actions.len() as u32 + 2;
+        let target_width = context_menu_actions
+            .iter()
+            .map(|ca_name| ca_name.len())
+            .max()
+            .expect("should not be empty") as u32
+            + 2;
+        // target_pos Needs testing
+        let target_pos_x = if pane_size.x >= context_menu.position.x + target_width {
+            context_menu.position.x
+        } else {
+            context_menu.position.x.saturating_sub(target_width - 1)
+        };
+
+        let target_pos_y = if pane_size.y >= context_menu.position.y + target_height {
+            context_menu.position.y
+        } else {
+            context_menu.position.y.saturating_sub(target_height - 1)
+        };
+
+        // TODO Perhaps the rendering should be a different system
+        let mut charmi = CharacterMapImage::new();
+        // TODO customizable context menu styles
+        let border_style = ContentStyle::new().cyan();
+        let content_style = ContentStyle::new().yellow();
+        charmi
+            .new_row()
+            .add_text("-".repeat(target_width as usize), &border_style);
+        for ca_name in context_menu_actions.into_iter() {
+            charmi
+                .new_row()
+                .add_char('/', &border_style)
+                .add_text(ca_name.as_str(), &content_style)
+                .add_char('/', &border_style);
+        }
+        charmi
+            .new_row()
+            .add_text("-".repeat(target_width as usize), &border_style);
+        rendering.update_charmie(charmi);
+
+        use taffy::prelude::points;
+        pane_style.grid_template_rows =
+            vec![points(target_pos_y as f32), points(target_height as f32)];
+        pane_style.grid_template_columns =
+            vec![points(target_pos_x as f32), points(target_width as f32)];
+        is_visible.set_if_neq(true);
+    }
+}
