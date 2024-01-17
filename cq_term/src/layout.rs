@@ -297,7 +297,7 @@ fn calculate_layouts(
 /// of that node, or be earlier in the sibling hierarchy (e.g., if node A has children `[B, C]`, B
 /// will be drawn over C, which will be drawn over A)
 ///
-/// Nodes without GlobalTranslationTty or TerminalRendering components can still be valid in the 
+/// Nodes without GlobalTranslationTty or TerminalRendering components can still be valid in the
 /// heirarchy for rendering, but will not be rendered themselves. Be cautious though with the way
 /// that'll affect other StyleTty/layout systems.
 ///

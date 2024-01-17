@@ -79,20 +79,31 @@ impl ContextMenuPane {
         use taffy::prelude::*;
         commands
             .spawn((
+                Name::new("Context Menu pane"),
+                ContextMenuPane,
                 StyleTty(Style {
                     grid_row: line(1),
                     grid_column: line(1),
-                    size: Size {
-                        width: Dimension::Points(100.),
-                        height: Dimension::Points(100.),
-                    },
+                    display: Display::Grid,
+                    grid_template_rows: vec![points(4.0), points(2.0)],
+                    grid_template_columns: vec![points(10.0), points(22.0)],
                     ..default()
                 }),
-                TerminalRendering::new(vec![
-                    "[I AM IN YOUR CORNERS]".to_string(),
-                    "[Eating your cheese]".to_string(),
-                ]),
             ))
+            .with_children(|content_menu_pane| {
+                content_menu_pane.spawn((
+                    Name::new("Context Menu node"),
+                    StyleTty(Style {
+                        grid_row: line(2),
+                        grid_column: line(2),
+                        ..default()
+                    }),
+                    TerminalRendering::new(vec![
+                        "[I AM IN YOUR CORNERS]".to_string(),
+                        "[Eating your cheese]".to_string(),
+                    ]),
+                ));
+            })
             .id()
     }
 }

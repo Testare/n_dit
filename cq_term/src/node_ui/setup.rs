@@ -84,11 +84,12 @@ pub fn create_node_ui(
                 .spawn((
                     StyleTty(taffy::prelude::Style {
                         size: Size {
-                            width: Dimension::Percent(100.),
-                            height: Dimension::Percent(100.),
+                            width: Dimension::Percent(1.),
+                            height: Dimension::Percent(1.),
                         },
                         display: taffy::prelude::Display::Grid,
-                        grid_template_rows: vec![TaffyMaxContent::MAX_CONTENT],
+                        grid_template_rows: vec![percent(1.)],
+                        grid_template_columns: vec![percent(1.)],
                         ..default()
                     }),
                     Name::new(format!("Pane Root - {player:?}")),
@@ -104,10 +105,6 @@ pub fn create_node_ui(
                     StyleTty(taffy::prelude::Style {
                         grid_row: line(1),
                         grid_column: line(1),
-                        size: Size {
-                            width: Dimension::Points(100.),
-                            height: Dimension::Points(100.),
-                        },
                         flex_direction: FlexDirection::Column,
                         ..default()
                     }),
