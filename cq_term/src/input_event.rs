@@ -85,6 +85,9 @@ pub enum MouseButton {
     Middle,
 }
 
+#[derive(Resource, Debug, Default, Deref)]
+pub struct MouseLastPositionTty(UVec2);
+
 pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
     res_terminal_window: Res<TerminalWindow>,
@@ -95,7 +98,7 @@ pub fn sys_mouse_tty(
     >,
     mut evw_mouse_tty: EventWriter<MouseEventTty>,
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
-    mut last_position: Local<Option<UVec2>>,
+    mut last_position: ResMut<MouseLastPositionTty>,
 ) {
     for event @ MouseEvent(crossterm::event::MouseEvent {
         kind,
@@ -154,20 +157,10 @@ pub fn sys_mouse_tty(
                         event_kind,
                         double_click,
                     })
-                } else if last_position
-                    .as_ref()
-                    .map(
-                        |UVec2 {
-                             x: last_x,
-                             y: last_y,
-                         }| {
-                            translation.x <= *last_x
-                                && *last_x < (translation.x + size.width32())
-                                && translation.y <= *last_y
-                                && *last_y < (translation.y + size.height32())
-                        },
-                    )
-                    .unwrap_or(false)
+                } else if translation.x <= last_position.x
+                    && last_position.x < (translation.x + size.width32())
+                    && translation.y <= last_position.y
+                    && last_position.y < (translation.y + size.height32())
                 {
                     evw_mouse_tty.send(MouseEventTty {
                         entity,
@@ -186,10 +179,10 @@ pub fn sys_mouse_tty(
                 last_click.replace((std::time::Instant::now(), *event));
             },
             MouseEventKind::Moved | MouseEventKind::Drag(_) => {
-                last_position.replace(UVec2 {
+                last_position.0 = UVec2 {
                     x: event_x,
                     y: event_y,
-                });
+                };
             },
             _ => {},
         }

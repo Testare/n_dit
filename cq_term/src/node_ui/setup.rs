@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
-use crate::base_ui::context_menu::{ContextAction, ContextActions};
+use crate::base_ui::context_menu::{ContextAction, ContextActions, ContextMenuPane};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
@@ -80,9 +80,30 @@ pub fn create_node_ui(
                 key_map.activate_submap(Submap::Node);
             }
 
+            let paned_root = commands
+                .spawn((
+                    StyleTty(taffy::prelude::Style {
+                        size: Size {
+                            width: Dimension::Percent(100.),
+                            height: Dimension::Percent(100.),
+                        },
+                        display: taffy::prelude::Display::Grid,
+                        grid_template_rows: vec![TaffyMaxContent::MAX_CONTENT],
+                        ..default()
+                    }),
+                    Name::new(format!("Pane Root - {player:?}")),
+                    crate::layout::LayoutRoot,
+                    TerminalRendering::default(),
+                ))
+                .id();
+
+            let context_menu_pane = ContextMenuPane::spawn(&mut commands);
+
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
+                        grid_row: line(1),
+                        grid_column: line(1),
                         size: Size {
                             width: Dimension::Points(100.),
                             height: Dimension::Points(100.),
@@ -91,7 +112,7 @@ pub fn create_node_ui(
                         ..default()
                     }),
                     Name::new(format!("Node UI Root - {player:?}")),
-                    crate::layout::LayoutRoot,
+                    // crate::layout::LayoutRoot,
                     TerminalRendering::default(),
                 ))
                 .with_children(|root| {
@@ -368,7 +389,13 @@ pub fn create_node_ui(
                 ))
                 .log_components();
 
-            terminal_window.set_render_target(Some(render_root));
+            commands
+                .entity(paned_root)
+                .add_child(context_menu_pane)
+                .add_child(render_root)
+                .log_components();
+
+            terminal_window.set_render_target(Some(paned_root));
         }
     }
 }

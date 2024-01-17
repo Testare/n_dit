@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
-use bevy::ecs::system::Command;
+use bevy::ecs::system::{Command, SystemId};
 
 use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
+use crate::layout::StyleTty;
 use crate::prelude::*;
+use crate::render::TerminalRendering;
 
 #[derive(Debug)]
 pub struct ContextMenuPlugin;
 
 impl Plugin for ContextMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, sys_context_actions);
+        app.add_systems(PreUpdate, sys_context_actions)
+            .init_resource::<SystemIdDisplayContextMenu>();
     }
 }
 
@@ -56,6 +59,41 @@ impl ContextActions {
             settings_source: source,
             actions,
         }
+    }
+}
+
+/// The component for the UI that displays the context actions
+#[derive(Component, Debug)]
+pub struct ContextMenu {
+    /// The entity whose context actions ought to be displayed
+    position: UVec2,
+    actions_context: Option<Entity>,
+}
+
+/// To indicate a context menu pane, where the context menu will be rendered.
+#[derive(Component, Debug)]
+pub struct ContextMenuPane;
+
+impl ContextMenuPane {
+    pub fn spawn(commands: &mut Commands) -> Entity {
+        use taffy::prelude::*;
+        commands
+            .spawn((
+                StyleTty(Style {
+                    grid_row: line(1),
+                    grid_column: line(1),
+                    size: Size {
+                        width: Dimension::Points(100.),
+                        height: Dimension::Points(100.),
+                    },
+                    ..default()
+                }),
+                TerminalRendering::new(vec![
+                    "[I AM IN YOUR CORNERS]".to_string(),
+                    "[Eating your cheese]".to_string(),
+                ]),
+            ))
+            .id()
     }
 }
 
@@ -126,6 +164,15 @@ pub enum MouseButtonAction {
     CycleContextAction,
 }
 
+#[derive(Debug, Resource)]
+pub struct SystemIdDisplayContextMenu(SystemId);
+
+impl FromWorld for SystemIdDisplayContextMenu {
+    fn from_world(world: &mut World) -> Self {
+        Self(world.register_system(sys_display_context_menu))
+    }
+}
+
 // Perform ContextMenu related actions on mouse click
 pub fn sys_context_actions(
     mut evr_mouse: EventReader<MouseEventTty>,
@@ -164,3 +211,5 @@ pub fn sys_context_actions(
         });
     }
 }
+
+fn sys_display_context_menu() {}

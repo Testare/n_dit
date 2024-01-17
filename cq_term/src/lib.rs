@@ -30,7 +30,7 @@ use std::time::Duration;
 
 use charmi::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
-use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty};
+use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty, MouseLastPositionTty};
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
@@ -194,6 +194,7 @@ impl Plugin for CharmiePlugin {
             .init_resource::<TerminalWindow>()
             .init_resource::<fx::Fx>()
             .init_resource::<DrawConfiguration>()
+            .init_resource::<MouseLastPositionTty>()
             .init_asset::<CharmieAnimation>()
             .init_asset::<CharmieActor>()
             .init_asset::<CharacterMapImage>()
