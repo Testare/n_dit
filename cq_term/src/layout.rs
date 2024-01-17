@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use charmi::CharacterMapImage;
 use game_core::player::ForPlayer;
 use pad::PadStr;
@@ -284,9 +286,27 @@ fn calculate_layouts(
     }
 }
 
+/// System creates terminal rendering for nodes with LayoutRoot. It compiles all descendant node
+/// renderings to the root node. So long as each node along the chain is visible and does not have
+/// a LayoutRoot component (Though this may change in the future).
+///
+/// A node is considered visible if it either does NOT have a `VisibilityTty`` component, or that
+/// VisibilityTty component is set to `true`.` Elements are drawn as they are visited, starting
+/// from the root itself and going depth first, with later siblings drawn first. This means if you
+/// want something to be drawn over another thing in the same space, it must be either a descendant
+/// of that node, or be earlier in the sibling hierarchy (e.g., if node A has children `[B, C]`, B
+/// will be drawn over C, which will be drawn over A)
+///
+/// Nodes without GlobalTranslationTty or TerminalRendering components can still be valid in the 
+/// heirarchy for rendering, but will not be rendered themselves. Be cautious though with the way
+/// that'll affect other StyleTty/layout systems.
+///
 /// TODO consider moving this to render.rs and change "LayoutRoot" to "RenderRoot", as it doesn't
 /// need layout specific logic.
-/// First you'll need to make a "VisibilityTty" thing that equates to taffy's Stlye Display:None
+///
+/// TODO consider allowing RenderRoot children as intermediate steps of rendering? Could implement
+/// by switching render target when a render root is encountered, and keeping
+/// track of which have already been rendered so you don't render it again.
 pub fn render_layouts(
     mut render_layouts: Query<
         (
@@ -301,23 +321,19 @@ pub fn render_layouts(
     child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
-        let mut children: Vec<Entity> = Vec::from(root_children);
+        let mut children: VecDeque<Entity> = VecDeque::from_iter(root_children.iter().copied());
 
         let mut charmie = CharacterMapImage::new();
-        while !children.is_empty() {
-            let mut next_children: Vec<Entity> = default();
-            for id in children.into_iter() {
-                if matches!(visibility.get(id), Ok(false)) {
-                    continue;
-                }
-                if let Ok(my_children) = q_children.get(id) {
-                    next_children.extend(&**my_children);
-                }
-                if let Ok((rendering, pos)) = child_renderings.get(id) {
-                    charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
-                }
+        while let Some(id) = children.pop_back() {
+            if matches!(visibility.get(id), Ok(false)) {
+                continue;
             }
-            children = next_children;
+            if let Ok(my_children) = q_children.get(id) {
+                children.extend(&**my_children);
+            }
+            if let Ok((rendering, pos)) = child_renderings.get(id) {
+                charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
+            }
         }
 
         charmie.fit_to_size(root_size.width32(), root_size.height32());
