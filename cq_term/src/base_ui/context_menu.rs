@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{Command, SystemId};
+use bevy::hierarchy::DespawnRecursiveExt;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 
@@ -95,10 +96,16 @@ impl ContextMenuPane {
             ))
             .with_children(|content_menu_pane| {
                 content_menu_pane.spawn((
-                    Name::new("Context Menu node"),
+                    Name::new("Context Menu"),
                     StyleTty(Style {
+                        display: Display::Grid,
                         grid_row: line(2),
                         grid_column: line(2),
+                        grid_template_rows: vec![repeat(
+                            GridTrackRepetition::AutoFill,
+                            vec![points(1.0)],
+                        )],
+                        grid_template_columns: vec![points(1.), fr(1.), points(1.)],
                         ..default()
                     }),
                     TerminalRendering::new(vec![
@@ -241,7 +248,9 @@ pub fn sys_context_actions(
 fn sys_display_context_menu(
     mut commands: Commands,
     mut context_menu_q: Query<(
+        Entity,
         &ContextMenu,
+        Option<&Children>,
         AsDerefCopied<Parent>,
         AsDerefMut<VisibilityTty>,
         &mut TerminalRendering,
@@ -253,7 +262,9 @@ fn sys_display_context_menu(
     context_actions_q: Query<&ContextActions>,
     context_action_q: Query<&ContextAction>,
 ) {
-    for (context_menu, parent_id, mut is_visible, mut rendering) in context_menu_q.iter_mut() {
+    for (cm_id, context_menu, children, parent_id, mut is_visible, mut rendering) in
+        context_menu_q.iter_mut()
+    {
         if context_menu.actions_context.is_none() {
             is_visible.set_if_neq(false);
             continue;
@@ -322,13 +333,35 @@ fn sys_display_context_menu(
         charmi
             .new_row()
             .add_text("-".repeat(target_width as usize), &border_style);
-        for ca_name in context_menu_actions.into_iter() {
-            charmi
-                .new_row()
-                .add_char('/', &border_style)
-                .add_text(ca_name.as_str(), &content_style)
-                .add_char('/', &border_style);
+        if let Some(children) = children {
+            for child in children.iter().copied() {
+                // Using despawn_recursive so that it will be removed from the parent's Children component
+                commands.entity(child).despawn_recursive();
+            }
         }
+        commands.entity(cm_id).with_children(|cm_commands| {
+            use taffy::prelude::*;
+
+            for (ca_name, row) in context_menu_actions.into_iter().zip(2..) {
+                charmi
+                    .new_row()
+                    .add_char('/', &border_style)
+                    // Not adding a gap - don't want this see-through
+                    // If I ever add merging effects to charmi, might do some slightly opaque
+                    .add_text(" ".repeat((target_width - 2) as usize), &content_style)
+                    // .add_text(ca_name.as_str(), &content_style)
+                    .add_char('/', &border_style);
+                cm_commands.spawn((
+                    StyleTty(Style {
+                        grid_row: line(row),
+                        grid_column: line(2),
+                        ..default()
+                    }),
+                    Name::new(format!("Context Menu Item [{}]", ca_name)),
+                    TerminalRendering::new(vec![ca_name.to_string()]),
+                ));
+            }
+        });
         charmi
             .new_row()
             .add_text("-".repeat(target_width as usize), &border_style);
