@@ -1,15 +1,22 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{Command, SystemId};
 use bevy::hierarchy::DespawnRecursiveExt;
+use bevy::time::{Time, Timer, TimerMode};
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 
-use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyKind};
+use super::HoverPoint;
+use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
-use crate::render::TerminalRendering;
+use crate::render::{RenderTtySet, TerminalRendering};
+
+/// The amount of time the context menu will stay open if the mouse moves off of it
+/// This is the default value, but it can be changed through configuration
+const CONTEXT_MENU_OPEN_DURATION_DEFAULT: Duration = Duration::from_millis(1000);
 
 #[derive(Debug)]
 pub struct ContextMenuPlugin;
@@ -17,6 +24,10 @@ pub struct ContextMenuPlugin;
 impl Plugin for ContextMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, sys_context_actions)
+            .add_systems(
+                Update,
+                sys_context_menu_fade.in_set(RenderTtySet::PreCalculateLayout),
+            )
             .init_resource::<SystemIdDisplayContextMenu>();
     }
 }
@@ -74,6 +85,18 @@ pub struct ContextMenu {
     actions_context: Option<Entity>,
 }
 
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct ContextMenuTimer(Timer);
+
+impl Default for ContextMenuTimer {
+    fn default() -> Self {
+        Self(Timer::new(
+            CONTEXT_MENU_OPEN_DURATION_DEFAULT,
+            TimerMode::Once,
+        ))
+    }
+}
+
 /// To indicate a context menu pane, where the context menu will be rendered.
 #[derive(Component, Debug)]
 pub struct ContextMenuPane;
@@ -114,6 +137,9 @@ impl ContextMenuPane {
                     ]),
                     VisibilityTty(false),
                     ContextMenu::default(),
+                    ContextMenuTimer::default(),
+                    HoverPoint::default(),
+                    MouseEventListener,
                 ));
             })
             .id()
@@ -250,7 +276,6 @@ fn sys_display_context_menu(
     mut context_menu_q: Query<(
         Entity,
         &ContextMenu,
-        Option<&Children>,
         AsDerefCopied<Parent>,
         AsDerefMut<VisibilityTty>,
         &mut TerminalRendering,
@@ -262,8 +287,7 @@ fn sys_display_context_menu(
     context_actions_q: Query<&ContextActions>,
     context_action_q: Query<&ContextAction>,
 ) {
-    for (cm_id, context_menu, children, parent_id, mut is_visible, mut rendering) in
-        context_menu_q.iter_mut()
+    for (cm_id, context_menu, parent_id, mut is_visible, mut rendering) in context_menu_q.iter_mut()
     {
         if context_menu.actions_context.is_none() {
             is_visible.set_if_neq(false);
@@ -333,35 +357,38 @@ fn sys_display_context_menu(
         charmi
             .new_row()
             .add_text("-".repeat(target_width as usize), &border_style);
-        if let Some(children) = children {
+        /*if let Some(children) = children {
             for child in children.iter().copied() {
                 // Using despawn_recursive so that it will be removed from the parent's Children component
                 commands.entity(child).despawn_recursive();
             }
-        }
-        commands.entity(cm_id).with_children(|cm_commands| {
-            use taffy::prelude::*;
+        }*/
+        commands
+            .entity(cm_id)
+            .despawn_descendants()
+            .with_children(|cm_commands| {
+                use taffy::prelude::*;
 
-            for (ca_name, row) in context_menu_actions.into_iter().zip(2..) {
-                charmi
-                    .new_row()
-                    .add_char('/', &border_style)
-                    // Not adding a gap - don't want this see-through
-                    // If I ever add merging effects to charmi, might do some slightly opaque
-                    .add_text(" ".repeat((target_width - 2) as usize), &content_style)
-                    // .add_text(ca_name.as_str(), &content_style)
-                    .add_char('/', &border_style);
-                cm_commands.spawn((
-                    StyleTty(Style {
-                        grid_row: line(row),
-                        grid_column: line(2),
-                        ..default()
-                    }),
-                    Name::new(format!("Context Menu Item [{}]", ca_name)),
-                    TerminalRendering::new(vec![ca_name.to_string()]),
-                ));
-            }
-        });
+                for (ca_name, row) in context_menu_actions.into_iter().zip(2..) {
+                    charmi
+                        .new_row()
+                        .add_char('/', &border_style)
+                        // Not adding a gap - don't want this see-through
+                        // If I ever add merging effects to charmi, might do some slightly opaque
+                        .add_text(" ".repeat((target_width - 2) as usize), &content_style)
+                        // .add_text(ca_name.as_str(), &content_style)
+                        .add_char('/', &border_style);
+                    cm_commands.spawn((
+                        StyleTty(Style {
+                            grid_row: line(row),
+                            grid_column: line(2),
+                            ..default()
+                        }),
+                        Name::new(format!("Context Menu Item [{}]", ca_name)),
+                        TerminalRendering::new(vec![ca_name.to_string()]),
+                    ));
+                }
+            });
         charmi
             .new_row()
             .add_text("-".repeat(target_width as usize), &border_style);
@@ -373,5 +400,39 @@ fn sys_display_context_menu(
         pane_style.grid_template_columns =
             vec![points(target_pos_x as f32), points(target_width as f32)];
         is_visible.set_if_neq(true);
+    }
+}
+
+fn sys_context_menu_fade(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            AsDerefMut<ContextMenuTimer>,
+            AsDeref<HoverPoint>,
+            AsDerefMut<VisibilityTty>,
+        ),
+        With<ContextMenu>,
+    >,
+) {
+    for (cm_id, mut cm_timer, hover_point, mut is_visible) in query.iter_mut() {
+        if *is_visible {
+            cm_timer.tick(time.delta());
+
+            if hover_point.is_some() {
+                if !cm_timer.paused() {
+                    cm_timer.pause();
+                    cm_timer.reset();
+                }
+            } else if cm_timer.paused() {
+                cm_timer.unpause()
+            } else if cm_timer.finished() {
+                *is_visible = false;
+                cm_timer.pause();
+                cm_timer.reset();
+                commands.entity(cm_id).despawn_descendants();
+            }
+        }
     }
 }

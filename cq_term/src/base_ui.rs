@@ -16,8 +16,9 @@ use self::context_menu::ContextMenuPlugin;
 pub use self::popup::*;
 use crate::input_event::{
     MouseEventListener, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind,
+    MouseLastPositionTty,
 };
-use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -220,12 +221,14 @@ pub fn sys_tooltip_on_hover(
 }
 
 pub fn sys_apply_hover(
+    res_mouse_last_pos: Res<MouseLastPositionTty>,
     mut evr_mouse_tty: EventReader<MouseEventTty>,
     changed_visibility: Query<
         (
             Entity,
             OrBool<AsDerefCopied<VisibilityTty>, true>,
             AsDeref<CalculatedSizeTty>,
+            AsDeref<GlobalTranslationTty>,
         ),
         (
             Or<(Changed<VisibilityTty>, Changed<CalculatedSizeTty>)>,
@@ -250,10 +253,24 @@ pub fn sys_apply_hover(
             _ => {},
         }
     }
-    for (id, is_visible, size) in changed_visibility.iter() {
+    for (id, is_visible, size, global_translation) in changed_visibility.iter() {
         if !is_visible || size.x == 0 || size.y == 0 {
             if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
                 hover_point.set_if_neq(None);
+            }
+        } else {
+            let relative_pos_x = res_mouse_last_pos
+                .x
+                .checked_sub(global_translation.x)
+                .filter(|x| *x <= size.x);
+            let relative_pos_y = res_mouse_last_pos
+                .y
+                .checked_sub(global_translation.y)
+                .filter(|y| *y <= size.y);
+            if let Some((x, y)) = relative_pos_x.zip(relative_pos_y) {
+                if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
+                    hover_point.set_if_neq(Some(UVec2 { x, y }));
+                }
             }
         }
     }
