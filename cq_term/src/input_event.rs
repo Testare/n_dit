@@ -37,6 +37,8 @@ impl From<crossterm::event::KeyEvent> for KeyEvent {
     }
 }
 
+/// Indicates an entity that interacts with mouse events
+/// TODO might want to subdivide different mouse event type listeners (Movement, click, etc.)
 #[derive(Component, Debug)]
 pub struct MouseEventListener;
 

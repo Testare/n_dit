@@ -23,12 +23,15 @@ pub struct ContextMenuPlugin;
 
 impl Plugin for ContextMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, sys_context_actions)
-            .add_systems(
-                Update,
-                sys_context_menu_fade.in_set(RenderTtySet::PreCalculateLayout),
-            )
-            .init_resource::<SystemIdDisplayContextMenu>();
+        app.add_systems(
+            PreUpdate,
+            (sys_context_actions, sys_context_menu_item_click),
+        )
+        .add_systems(
+            Update,
+            sys_context_menu_fade.in_set(RenderTtySet::PreCalculateLayout),
+        )
+        .init_resource::<SystemIdDisplayContextMenu>();
     }
 }
 
@@ -80,10 +83,13 @@ impl ContextActions {
 /// The component for the UI that displays the context actions
 #[derive(Component, Debug, Default)]
 pub struct ContextMenu {
-    /// The entity whose context actions ought to be displayed
     position: UVec2,
+    /// The entity whose context actions ought to be displayed
     actions_context: Option<Entity>,
 }
+
+#[derive(Component, Debug, Deref)]
+pub struct ContextMenuItem(Entity);
 
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct ContextMenuTimer(Timer);
@@ -304,10 +310,10 @@ fn sys_display_context_menu(
         let (mut pane_style, pane_size) =
             context_menu_pane.expect("Should have been checked previously");
 
-        let context_menu_actions: Vec<&String> = context_actions_q.get(context_actions_id).map(|context_actions|
+        let context_menu_actions: Vec<(&String, Entity)> = context_actions_q.get(context_actions_id).map(|context_actions|
             context_actions.actions.iter().copied().filter_map(|context_action_id| {
                 match context_action_q.get(context_action_id) {
-                    Ok(context_action) => Some(&context_action.action_name),
+                    Ok(context_action) => Some((&context_action.action_name, context_action_id)),
                     Err(e) => {
                         match e {
                             QueryEntityError::NoSuchEntity(id) => {
@@ -332,7 +338,7 @@ fn sys_display_context_menu(
         let target_height = context_menu_actions.len() as u32 + 2;
         let target_width = context_menu_actions
             .iter()
-            .map(|ca_name| ca_name.len())
+            .map(|ca| ca.0.len())
             .max()
             .expect("should not be empty") as u32
             + 2;
@@ -369,7 +375,7 @@ fn sys_display_context_menu(
             .with_children(|cm_commands| {
                 use taffy::prelude::*;
 
-                for (ca_name, row) in context_menu_actions.into_iter().zip(2..) {
+                for (ca, row) in context_menu_actions.into_iter().zip(2..) {
                     charmi
                         .new_row()
                         .add_char('/', &border_style)
@@ -384,8 +390,10 @@ fn sys_display_context_menu(
                             grid_column: line(2),
                             ..default()
                         }),
-                        Name::new(format!("Context Menu Item [{}]", ca_name)),
-                        TerminalRendering::new(vec![ca_name.to_string()]),
+                        ContextMenuItem(ca.1),
+                        MouseEventListener,
+                        Name::new(format!("Context Menu Item [{}]", ca.0)),
+                        TerminalRendering::new(vec![ca.0.to_string()]), // Style to come later
                     ));
                 }
             });
@@ -434,5 +442,32 @@ fn sys_context_menu_fade(
                 commands.entity(cm_id).despawn_descendants();
             }
         }
+    }
+}
+
+pub fn sys_context_menu_item_click(
+    mut commands: Commands,
+    mut evr_mouse: EventReader<MouseEventTty>,
+    context_menu: Query<&ContextMenu>,
+    context_menu_item: Query<(AsDerefCopied<ContextMenuItem>, AsDerefCopied<Parent>)>,
+    context_action_q: Query<&ContextAction>, // TODO w/o disabled
+) {
+    for mouse_event in evr_mouse.read() {
+        if !matches!(
+            mouse_event.event_kind(),
+            MouseEventTtyKind::Down(MouseButton::Left)
+        ) {
+            continue;
+        }
+        context_menu_item
+            .get(mouse_event.entity())
+            .ok()
+            .and_then(|(ca_id, cm_id)| {
+                let action = context_action_q.get(ca_id).ok()?.action_op.clone();
+                let context_menu = context_menu.get(cm_id).ok()?;
+                let id = context_menu.actions_context?;
+                commands.add(move |w: &'_ mut World| action(id, w));
+                Some(())
+            });
     }
 }
