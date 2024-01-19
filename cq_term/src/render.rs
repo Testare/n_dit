@@ -32,6 +32,18 @@ pub struct TerminalRendering {
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct RenderPause(Option<Instant>);
 
+/// A component that hints at the what order entities are rendered in. Systems
+/// (like layout) can generate these components to help input_events and other
+/// systems know when components overlap, which is is on top.
+///
+/// **Mutating this field does NOT change the render order**, just makes other
+/// systems think the render order is different. Unless you are making an
+/// alternative to the [`crate::layout`] module, you probably should not be
+/// mutating it
+#[derive(Clone, Component, Copy, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
+pub struct RenderOrder(pub(crate) u32);
+
 #[derive(Default)]
 pub struct RenderTtyPlugin;
 

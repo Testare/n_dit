@@ -9,6 +9,7 @@ use taffy::prelude::{Display, Style};
 use super::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use super::TerminalWindow;
 use crate::prelude::*;
+use crate::render::RenderOrder;
 
 #[derive(Debug, Default)]
 pub struct TaffyTuiLayoutPlugin;
@@ -68,7 +69,7 @@ pub struct StyleTty(pub taffy::prelude::Style);
 // Actually these components probably should be part of render
 #[derive(Clone, Component, Copy, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
-pub struct GlobalTranslationTty(pub UVec2);
+pub struct GlobalTranslationTty(#[deref] pub UVec2, pub u32);
 
 #[derive(Clone, Component, Copy, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
@@ -199,6 +200,7 @@ fn taffy_new_style_components(
     for (id, style, vis) in new_styles.iter() {
         commands.get_entity(id).unwrap().insert((
             NodeTty::new(&mut taffy, style.taffy_style(vis)),
+            RenderOrder::default(),
             CalculatedSizeTty::default(),
             GlobalTranslationTty::default(),
         ));
@@ -238,12 +240,13 @@ fn taffy_apply_hierarchy_updates(
 fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
     window: Res<TerminalWindow>,
-    roots: Query<(Entity, &NodeTty), Without<Parent>>,
+    roots: Query<(Entity, &NodeTty, DebugName), Without<Parent>>,
     children: Query<&Children>,
     mut tui_nodes: Query<(
         &NodeTty,
         &mut CalculatedSizeTty,
         &mut GlobalTranslationTty,
+        &mut RenderOrder,
         Option<&Name>,
     )>,
 ) {
@@ -256,7 +259,7 @@ fn calculate_layouts(
         width: Dimension::Points(window.width() as f32),
         height: Dimension::Points(window.height() as f32),
     };
-    for (root_id, root) in roots.iter() {
+    for (root_id, root, root_debug_name) in roots.iter() {
         let root_style = taffy.style(**root).cloned().unwrap();
         let size_changed = root_style.size != window_size;
 
@@ -273,23 +276,37 @@ fn calculate_layouts(
         }
         if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
             taffy.compute_layout(**root, space).unwrap();
-            log::debug!("Recalculated Layouts");
+            let mut render_order: u32 = 0;
+            log::debug!("Recalculated Layouts [{root_debug_name:?}]");
             update_layout_traversal(root_id, &children, UVec2::default(), &mut |id, offset| {
-                if let Ok((node, mut size, mut translation, name_opt)) = tui_nodes.get_mut(id) {
+                if let Ok((node, size, translation, render_order_component, name_opt)) =
+                    tui_nodes.get_mut(id)
+                {
                     let layout = taffy.layout(**node).unwrap();
                     if let Some(name) = name_opt {
                         log::trace!("{}[{id:?}] layout: {:?}", name.as_str(), layout);
                     }
-                    translation.0.x = layout.location.x as u32 + offset.x;
-                    translation.0.y = layout.location.y as u32 + offset.y;
-                    size.0.x = layout.size.width as u32;
-                    size.0.y = layout.size.height as u32;
-                    translation.0
+                    let mut translation = translation.map_unchanged(|t| &mut t.0);
+                    let mut size = size.map_unchanged(|s| &mut s.0);
+                    let mut render_order_component =
+                        render_order_component.map_unchanged(|ro| &mut ro.0);
+
+                    translation.set_if_neq(UVec2 {
+                        x: layout.location.x as u32 + offset.x,
+                        y: layout.location.y as u32 + offset.y,
+                    });
+                    size.set_if_neq(UVec2 {
+                        x: layout.size.width as u32,
+                        y: layout.size.height as u32,
+                    });
+                    render_order_component.set_if_neq(render_order);
+                    render_order += 1;
+                    *translation
                 } else {
                     log::warn!("Child of TUI component without all TUI components, possible weird behavior: {:?}", id);
                     offset
                 }
-            })
+            });
         }
     }
 }
@@ -326,7 +343,13 @@ pub fn render_layouts(
     >,
     visibility: Query<AsDeref<VisibilityTty>>,
     q_children: Query<&Children, Without<LayoutRoot>>,
-    child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
+    child_renderings: Query<
+        (
+            &TerminalRendering,
+            &GlobalTranslationTty,
+        ),
+        Without<LayoutRoot>,
+    >,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
         let mut children: VecDeque<Entity> = VecDeque::from_iter(root_children.iter().copied());
@@ -433,7 +456,7 @@ fn update_layout_traversal<F: FnMut(Entity, UVec2) -> UVec2>(
 ) {
     let new_offset = update_fn(current, accumulated_offset);
     if let Ok(children) = children_query.get(current) {
-        for child in children.into_iter() {
+        for child in children.iter().rev() {
             update_layout_traversal(*child, children_query, new_offset, update_fn);
         }
     }
