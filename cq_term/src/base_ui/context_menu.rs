@@ -130,10 +130,7 @@ impl ContextMenuPane {
                         display: Display::Grid,
                         grid_row: line(2),
                         grid_column: line(2),
-                        grid_template_rows: vec![repeat(
-                            GridTrackRepetition::AutoFill,
-                            vec![points(1.0)],
-                        )],
+                        grid_auto_rows: vec![points(1.0)],
                         grid_template_columns: vec![points(1.), fr(1.), points(1.)],
                         ..default()
                     }),
@@ -386,6 +383,10 @@ fn sys_display_context_menu(
                         .add_char('/', &border_style);
                     cm_commands.spawn((
                         StyleTty(Style {
+                            max_size: Size {
+                                width: auto(),
+                                height: points(1.),
+                            },
                             grid_row: line(row),
                             grid_column: line(2),
                             ..default()

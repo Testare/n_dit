@@ -13,8 +13,16 @@ use crate::prelude::*;
 #[derive(Debug, Default)]
 pub struct TaffyTuiLayoutPlugin;
 
-#[derive(Default, Deref, DerefMut, Resource)]
+#[derive(Deref, DerefMut, Resource)]
 struct Taffy(taffy::Taffy);
+
+impl Default for Taffy {
+    fn default() -> Self {
+        let mut taffy = taffy::Taffy::default();
+        taffy.disable_rounding();
+        Taffy(taffy)
+    }
+}
 
 /// Hidden component, ties Entity to Taffy Node
 #[derive(Component, Debug, Deref, DerefMut)]
