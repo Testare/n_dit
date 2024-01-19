@@ -343,13 +343,7 @@ pub fn render_layouts(
     >,
     visibility: Query<AsDeref<VisibilityTty>>,
     q_children: Query<&Children, Without<LayoutRoot>>,
-    child_renderings: Query<
-        (
-            &TerminalRendering,
-            &GlobalTranslationTty,
-        ),
-        Without<LayoutRoot>,
-    >,
+    child_renderings: Query<(&TerminalRendering, &GlobalTranslationTty), Without<LayoutRoot>>,
 ) {
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
         let mut children: VecDeque<Entity> = VecDeque::from_iter(root_children.iter().copied());

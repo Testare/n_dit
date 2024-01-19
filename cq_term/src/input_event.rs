@@ -5,6 +5,7 @@ use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::render::RenderOrder;
 use crate::TerminalWindow;
 
 #[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
@@ -59,6 +60,18 @@ pub struct MouseEventTty {
     event_kind: MouseEventTtyKind,
     #[getset(get_copy = "pub")]
     double_click: bool,
+    /// The entity that is rendered highest at current mouse position
+    /// Not set for exit events
+    #[getset(get_copy = "pub")]
+    top_entity: Option<Entity>,
+    #[getset(get_copy = "pub")]
+    is_top_entity_or_ancestor: bool,
+}
+
+impl MouseEventTty {
+    pub fn is_top_entity(&self) -> bool {
+        self.top_entity == Some(self.entity)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -94,8 +107,14 @@ pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
     res_terminal_window: Res<TerminalWindow>,
     children: Query<&Children>,
+    parent_q: Query<&Parent>,
     layout_elements: Query<
-        (Entity, &CalculatedSizeTty, &GlobalTranslationTty),
+        (
+            Entity,
+            &CalculatedSizeTty,
+            &GlobalTranslationTty,
+            AsDerefCopied<RenderOrder>,
+        ),
         (With<MouseEventListener>, Without<MouseEventTtyDisabled>),
     >,
     mut evw_mouse_tty: EventWriter<MouseEventTty>,
@@ -141,38 +160,62 @@ pub fn sys_mouse_tty(
                 .iter_descendants(render_target)
                 .filter_map(|e| layout_elements.get(e).ok());
 
-            for (entity, size, translation) in layout_elements {
-                if translation.x <= event_x
-                    && event_x < (translation.x + size.width32())
-                    && translation.y <= event_y
-                    && event_y < (translation.y + size.height32())
-                {
-                    let relative_pos = UVec2 {
-                        x: event_x - translation.x,
-                        y: event_y - translation.y,
-                    };
-                    evw_mouse_tty.send(MouseEventTty {
-                        entity,
-                        relative_pos,
-                        absolute_pos,
-                        modifiers: *modifiers,
-                        event_kind,
-                        double_click,
-                    })
-                } else if translation.x <= last_position.x
-                    && last_position.x < (translation.x + size.width32())
-                    && translation.y <= last_position.y
-                    && last_position.y < (translation.y + size.height32())
-                {
-                    evw_mouse_tty.send(MouseEventTty {
-                        entity,
-                        absolute_pos,
-                        relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
-                        modifiers: *modifiers,
-                        event_kind: MouseEventTtyKind::Exit,
-                        double_click,
-                    });
-                }
+            let mut highest_order: u32 = 0;
+            let mut top_entity: Option<Entity> = None;
+            let mut exit_events = Vec::<Entity>::default();
+            let event_entities: Vec<_> = layout_elements
+                .filter_map(|(entity, size, translation, render_order)| {
+                    if translation.x <= event_x
+                        && event_x < (translation.x + size.width32())
+                        && translation.y <= event_y
+                        && event_y < (translation.y + size.height32())
+                    {
+                        if render_order > highest_order {
+                            highest_order = render_order;
+                            top_entity = Some(entity);
+                        }
+                        let relative_pos = UVec2 {
+                            x: event_x - translation.x,
+                            y: event_y - translation.y,
+                        };
+                        Some((entity, relative_pos, render_order))
+                    } else if translation.x <= last_position.x
+                        && last_position.x < (translation.x + size.width32())
+                        && translation.y <= last_position.y
+                        && last_position.y < (translation.y + size.height32())
+                    {
+                        evw_mouse_tty.send(MouseEventTty {
+                            entity,
+                            absolute_pos,
+                            relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
+                            modifiers: *modifiers,
+                            event_kind: MouseEventTtyKind::Exit,
+                            double_click,
+                            top_entity: None, // This one is a little more dubious. This still might be helpful information
+                            is_top_entity_or_ancestor: false,
+                        });
+                        None
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let ancestors: Vec<Entity> = top_entity
+                .map(|top_entity| parent_q.iter_ancestors(top_entity).collect())
+                .unwrap_or_default();
+            // TODO store top_entity and ancestors in some sort of resource?
+            for (entity, relative_pos, render_order) in event_entities {
+                evw_mouse_tty.send(MouseEventTty {
+                    entity,
+                    relative_pos,
+                    absolute_pos,
+                    modifiers: *modifiers,
+                    event_kind,
+                    double_click,
+                    top_entity,
+                    is_top_entity_or_ancestor: top_entity == Some(entity)
+                        || ancestors.contains(&entity),
+                });
             }
         }
 

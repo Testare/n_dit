@@ -239,18 +239,12 @@ pub fn sys_apply_hover(
     mut hoverable_ui: Query<(AsDerefMut<HoverPoint>,)>,
 ) {
     for event in evr_mouse_tty.read() {
-        match event.event_kind() {
-            MouseEventTtyKind::Moved => {
-                if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
-                    hover_point.set_if_neq(Some(event.relative_pos()));
-                }
-            },
-            MouseEventTtyKind::Exit => {
-                if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
-                    hover_point.set_if_neq(None);
-                }
-            },
-            _ => {},
+        if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
+            if !event.is_top_entity_or_ancestor() {
+                hover_point.set_if_neq(None);
+            } else if matches!(event.event_kind(), MouseEventTtyKind::Moved) {
+                hover_point.set_if_neq(Some(event.relative_pos()));
+            }
         }
     }
     for (id, is_visible, size, global_translation) in changed_visibility.iter() {
@@ -259,6 +253,7 @@ pub fn sys_apply_hover(
                 hover_point.set_if_neq(None);
             }
         } else {
+            // TODO adjust this to take render order into account
             let relative_pos_x = res_mouse_last_pos
                 .x
                 .checked_sub(global_translation.x)

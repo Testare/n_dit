@@ -238,7 +238,7 @@ pub fn sys_context_actions(
         context_actions.get(id).ok().and_then(|context_actions| {
             let mb = match mouse_event.event_kind() {
                 // Should we swap this with up to enable draggable things too?
-                MouseEventTtyKind::Down(mousebutton) => *mousebutton,
+                MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => *mousebutton,
                 _ => return None,
             };
             let settings = source_settings
