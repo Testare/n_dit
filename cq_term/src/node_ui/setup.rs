@@ -1,7 +1,8 @@
 use bevy::app::AppExit;
 use crossterm::style::{ContentStyle, Stylize};
+use game_core::card::NO_OP_ACTION_ID;
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
-use game_core::op::CoreOps;
+use game_core::op::{CoreOps, Op};
 use game_core::player::{ForPlayer, Player};
 use getset::CopyGetters;
 use unicode_width::UnicodeWidthStr;
@@ -34,31 +35,74 @@ pub struct ButtonContextActions {
     start: Entity,
     #[getset(get_copy = "pub")]
     quit: Entity,
+    #[getset(get_copy = "pub")]
+    end_turn: Entity,
+}
+
+impl ButtonContextActions {
+    fn context_action_from_op<O: Op + Clone>(name: &str, op: O) -> ContextAction {
+        ContextAction::new(name.to_string(), move |id, world| {
+            // TODO make a factory method for this closure
+            let for_player = world.get::<ForPlayer>(id).copied();
+            if let Some(ForPlayer(player_id)) = for_player {
+                world
+                    .get_resource_mut::<CoreOps>()
+                    .expect("should have CoreOps initialized")
+                    .request(player_id, op.clone());
+            }
+        })
+    }
 }
 
 impl FromWorld for ButtonContextActions {
     fn from_world(world: &mut World) -> Self {
         let start = world
-            .spawn(ContextAction::new(
-                "Start battle".to_string(),
-                |id, world| {
-                    // TODO make a factory method for this closure
-                    let for_player = world.get::<ForPlayer>(id).copied();
-                    if let Some(ForPlayer(player_id)) = for_player {
-                        world
-                            .get_resource_mut::<CoreOps>()
-                            .expect("should have CoreOps initialized")
-                            .request(player_id, NodeOp::ReadyToGo);
-                    }
+            .spawn(Self::context_action_from_op(
+                "Start battle",
+                NodeOp::ReadyToGo,
+            ))
+            .id();
+        let end_turn = world
+            .spawn(Self::context_action_from_op(
+                "End Player Phase",
+                NodeOp::EndTurn,
+            ))
+            .id();
+        let _no_op = world
+            .spawn(Self::context_action_from_op(
+                "End Turn",
+                NodeOp::PerformCurioAction {
+                    action_id: NO_OP_ACTION_ID,
+                    curio: None,
+                    target: default(),
                 },
             ))
             .id();
+        /*let start = world
+        .spawn(ContextAction::new(
+            "Start battle".to_string(),
+            |id, world| {
+                // TODO make a factory method for this closure
+                let for_player = world.get::<ForPlayer>(id).copied();
+                if let Some(ForPlayer(player_id)) = for_player {
+                    world
+                        .get_resource_mut::<CoreOps>()
+                        .expect("should have CoreOps initialized")
+                        .request(player_id, NodeOp::ReadyToGo);
+                }
+            },
+        ))
+        .id();*/
         let quit = world
             .spawn(ContextAction::new("Quit game".to_string(), |_, world| {
                 world.send_event(AppExit);
             }))
             .id();
-        ButtonContextActions { start, quit }
+        ButtonContextActions {
+            end_turn,
+            start,
+            quit,
+        }
     }
 }
 
@@ -191,6 +235,7 @@ pub fn create_node_ui(
                                         ForPlayer(player),
                                         EndTurnButton,
                                         ButtonUiBundle::new("End Turn", ContentStyle::new().blue()),
+                                        ContextActions::new(player, vec![res_button_context_actions.end_turn()]),
                                         VisibilityTty::invisible(),
                                         Tooltip::new("[-] End your turn and let the next player go")
                                     ));

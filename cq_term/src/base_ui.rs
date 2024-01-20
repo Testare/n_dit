@@ -238,6 +238,7 @@ pub fn sys_apply_hover(
     new_disabled: Query<Entity, (With<HoverPoint>, Added<MouseEventTtyDisabled>)>,
     mut hoverable_ui: Query<(AsDerefMut<HoverPoint>,)>,
 ) {
+    // TODO handle disable turning on and off
     for event in evr_mouse_tty.read() {
         if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
             if !event.is_top_entity_or_ancestor() {
