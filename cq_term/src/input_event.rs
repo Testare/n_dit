@@ -162,7 +162,6 @@ pub fn sys_mouse_tty(
 
             let mut highest_order: u32 = 0;
             let mut top_entity: Option<Entity> = None;
-            let mut exit_events = Vec::<Entity>::default();
             let event_entities: Vec<_> = layout_elements
                 .filter_map(|(entity, size, translation, render_order)| {
                     if translation.x <= event_x
@@ -178,7 +177,7 @@ pub fn sys_mouse_tty(
                             x: event_x - translation.x,
                             y: event_y - translation.y,
                         };
-                        Some((entity, relative_pos, render_order))
+                        Some((entity, relative_pos))
                     } else if translation.x <= last_position.x
                         && last_position.x < (translation.x + size.width32())
                         && translation.y <= last_position.y
@@ -204,7 +203,7 @@ pub fn sys_mouse_tty(
                 .map(|top_entity| parent_q.iter_ancestors(top_entity).collect())
                 .unwrap_or_default();
             // TODO store top_entity and ancestors in some sort of resource?
-            for (entity, relative_pos, render_order) in event_entities {
+            for (entity, relative_pos) in event_entities {
                 evw_mouse_tty.send(MouseEventTty {
                     entity,
                     relative_pos,

@@ -6,16 +6,15 @@ use bevy::ecs::system::{Command, SystemId};
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::time::{Time, Timer, TimerMode};
 use charmi::CharacterMapImage;
-use crossterm::style::{ContentStyle, Stylize};
 
 use super::HoverPoint;
+use crate::configuration::DrawConfiguration;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering};
 
 /// The amount of time the context menu will stay open if the mouse moves off of it
-/// This is the default value, but it can be changed through configuration
 const CONTEXT_MENU_OPEN_DURATION_DEFAULT: Duration = Duration::from_millis(1000);
 
 #[derive(Debug)]
@@ -29,7 +28,10 @@ impl Plugin for ContextMenuPlugin {
         )
         .add_systems(
             Update,
-            sys_context_menu_fade.in_set(RenderTtySet::PreCalculateLayout),
+            (
+                sys_context_menu_fade.in_set(RenderTtySet::PreCalculateLayout),
+                sys_render_context_items.in_set(RenderTtySet::RenderLayouts),
+            ),
         )
         .init_resource::<SystemIdDisplayContextMenu>();
     }
@@ -101,7 +103,7 @@ pub struct ContextMenu {
 }
 
 #[derive(Component, Debug, Deref)]
-pub struct ContextMenuItem(Entity);
+pub struct ContextMenuItem(String, #[deref] Entity);
 
 #[derive(Component, Debug, Deref, DerefMut)]
 pub struct ContextMenuTimer(Timer);
@@ -299,6 +301,7 @@ pub fn sys_context_actions(
 
 fn sys_display_context_menu(
     mut commands: Commands,
+    res_draw_config: Res<DrawConfiguration>,
     mut context_menu_q: Query<(
         Entity,
         &ContextMenu,
@@ -330,10 +333,10 @@ fn sys_display_context_menu(
         let (mut pane_style, pane_size) =
             context_menu_pane.expect("Should have been checked previously");
 
-        let context_menu_actions: Vec<(&String, Entity)> = context_actions_q.get(context_actions_id).map(|context_actions|
+        let context_menu_actions: Vec<_> = context_actions_q.get(context_actions_id).map(|context_actions|
             context_actions.actions.iter().copied().filter_map(|context_action_id| {
                 match context_action_q.get(context_action_id) {
-                    Ok(context_action) => Some((&context_action.action_name, context_action_id)),
+                    Ok(context_action) => Some(ContextMenuItem(context_action.action_name.clone(), context_action_id)),
                     Err(e) => {
                         match e {
                             QueryEntityError::NoSuchEntity(id) => {
@@ -362,7 +365,6 @@ fn sys_display_context_menu(
             .max()
             .expect("should not be empty") as u32
             + 2;
-        // target_pos Needs testing
         let target_pos_x = if pane_size.x >= context_menu.position.x + target_width {
             context_menu.position.x
         } else {
@@ -375,35 +377,27 @@ fn sys_display_context_menu(
             context_menu.position.y.saturating_sub(target_height - 1)
         };
 
-        // TODO Perhaps the rendering should be a different system
         let mut charmi = CharacterMapImage::new();
-        // TODO customizable context menu styles
-        let border_style = ContentStyle::new().cyan();
-        let content_style = ContentStyle::new().yellow();
+        let cm_style = res_draw_config.color_scheme().context_menu();
         charmi
             .new_row()
-            .add_text("-".repeat(target_width as usize), &border_style);
-        /*if let Some(children) = children {
-            for child in children.iter().copied() {
-                // Using despawn_recursive so that it will be removed from the parent's Children component
-                commands.entity(child).despawn_recursive();
-            }
-        }*/
+            .add_char('┍', &cm_style)
+            .add_text("━".repeat((target_width - 2) as usize), &cm_style)
+            .add_char('┑', &cm_style);
         commands
             .entity(cm_id)
             .despawn_descendants()
             .with_children(|cm_commands| {
                 use taffy::prelude::*;
 
-                for (ca, row) in context_menu_actions.into_iter().zip(2..) {
+                for (context_menu_item, row) in context_menu_actions.into_iter().zip(2..) {
                     charmi
                         .new_row()
-                        .add_char('/', &border_style)
+                        .add_char('│', &cm_style)
                         // Not adding a gap - don't want this see-through
                         // If I ever add merging effects to charmi, might do some slightly opaque
-                        .add_text(" ".repeat((target_width - 2) as usize), &content_style)
-                        // .add_text(ca_name.as_str(), &content_style)
-                        .add_char('/', &border_style);
+                        .add_text(" ".repeat((target_width - 2) as usize), &cm_style)
+                        .add_char('│', &cm_style);
                     cm_commands.spawn((
                         StyleTty(Style {
                             max_size: Size {
@@ -414,16 +408,19 @@ fn sys_display_context_menu(
                             grid_column: line(2),
                             ..default()
                         }),
-                        ContextMenuItem(ca.1),
                         MouseEventListener,
-                        Name::new(format!("Context Menu Item [{}]", ca.0)),
-                        TerminalRendering::new(vec![ca.0.to_string()]), // Style to come later
+                        Name::new(format!("Context Menu Item [{}]", &context_menu_item.0)),
+                        TerminalRendering::new(vec![context_menu_item.0.to_string()]), // Style to come later
+                        HoverPoint::default(),
+                        context_menu_item,
                     ));
                 }
             });
         charmi
             .new_row()
-            .add_text("-".repeat(target_width as usize), &border_style);
+            .add_char('└', &cm_style)
+            .add_text("─".repeat((target_width - 2) as usize), &cm_style)
+            .add_char('┘', &cm_style);
         rendering.update_charmie(charmi);
 
         use taffy::prelude::points;
@@ -499,5 +496,22 @@ pub fn sys_context_menu_item_click(
                 });
                 Some(())
             });
+    }
+}
+
+fn sys_render_context_items(
+    res_draw_config: Res<DrawConfiguration>,
+    mut cmi_q: Query<(&ContextMenuItem, &HoverPoint, &mut TerminalRendering)>,
+) {
+    for (context_menu_item, hover_point, mut rendering) in cmi_q.iter_mut() {
+        let mut charmi: CharacterMapImage = CharacterMapImage::new();
+        let charmi_row = charmi.new_row();
+        let style = if hover_point.is_some() {
+            res_draw_config.color_scheme().context_menu_item_hover()
+        } else {
+            res_draw_config.color_scheme().context_menu_item()
+        };
+        charmi_row.add_text(context_menu_item.0.as_str(), &style);
+        rendering.update_charmie(charmi);
     }
 }
