@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bevy::ecs::query::QueryEntityError;
+use bevy::ecs::query::{Has, QueryEntityError};
 use bevy::ecs::system::{Command, SystemId};
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::time::{Time, Timer, TimerMode};
@@ -48,9 +48,16 @@ impl ContextMenuSettings {
         &self,
         mb: MouseButton,
         context_menu_size: usize,
+        no_default_flag: bool,
     ) -> Option<MouseButtonAction> {
         match mb {
-            MouseButton::Left => Some(MouseButtonAction::PerformContextAction(0)),
+            MouseButton::Left => {
+                if no_default_flag {
+                    Some(MouseButtonAction::DisplayContextMenu)
+                } else {
+                    Some(MouseButtonAction::PerformContextAction(0))
+                }
+            },
             MouseButton::Middle => None, //(context_menu_size > 1).then_some(MouseButtonAction::CycleContextAction),
             MouseButton::Right => {
                 if self.single_action_context_menu && context_menu_size == 1 {
@@ -64,6 +71,11 @@ impl ContextMenuSettings {
         }
     }
 }
+
+/// Used to indicate that left-click should not perform the default (first)
+/// action but instead open the context menu.
+#[derive(Component, Debug)]
+pub struct ContextActionsNoDefault;
 
 #[derive(Component, Debug)]
 pub struct ContextActions {
@@ -229,48 +241,59 @@ impl FromWorld for SystemIdDisplayContextMenu {
 pub fn sys_context_actions(
     mut evr_mouse: EventReader<MouseEventTty>,
     mut commands: Commands,
-    context_actions: Query<&ContextActions>,
+    context_actions: Query<(&ContextActions, Has<ContextActionsNoDefault>)>,
     source_settings: Query<CopiedOrDefault<ContextMenuSettings>>,
     context_action: Query<&ContextAction>,
 ) {
     for mouse_event in evr_mouse.read() {
         let id = mouse_event.entity();
-        context_actions.get(id).ok().and_then(|context_actions| {
-            let mb = match mouse_event.event_kind() {
-                // Should we swap this with up to enable draggable things too?
-                MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => *mousebutton,
-                _ => return None,
-            };
-            let settings = source_settings
-                .get(context_actions.settings_source)
-                .expect("should default");
+        context_actions
+            .get(id)
+            .ok()
+            .and_then(|(context_actions, no_default)| {
+                let mb = match mouse_event.event_kind() {
+                    // Should we swap this with up to enable draggable things too?
+                    MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => {
+                        *mousebutton
+                    },
+                    _ => return None,
+                };
+                let settings = source_settings
+                    .get(context_actions.settings_source)
+                    .expect("should default");
 
-            let mouse_pos = mouse_event.absolute_pos();
-            let action = match settings.determine_action(mb, context_actions.actions.len())? {
-                MouseButtonAction::PerformContextAction(n) => {
-                    let context_action =
-                        context_action.get(*context_actions.actions.get(n)?).ok()?;
-                    log::trace!("Performing context action: {}", context_action.action_name);
-                    context_action.action_op.clone()
-                },
-                MouseButtonAction::CycleContextAction => Arc::new(|_, _: &'_ mut World| {
-                    log::error!("TODO Cycling context actions not implemented yet");
-                }),
-                MouseButtonAction::DisplayContextMenu => {
-                    Arc::new(move |id, world: &'_ mut World| {
-                        for mut context_menu in world.query::<&mut ContextMenu>().iter_mut(world) {
-                            // TODO what if there are multiple???
-                            context_menu.actions_context = Some(id);
-                            context_menu.position = mouse_pos;
-                        }
-                        let display_system = world.resource::<SystemIdDisplayContextMenu>().0;
-                        world.run_system(display_system).unwrap();
-                    })
-                },
-            };
-            commands.add(move |w: &'_ mut World| action(id, w));
-            Some(())
-        });
+                let mouse_pos = mouse_event.absolute_pos();
+                let action = match settings.determine_action(
+                    mb,
+                    context_actions.actions.len(),
+                    no_default,
+                )? {
+                    MouseButtonAction::PerformContextAction(n) => {
+                        let context_action =
+                            context_action.get(*context_actions.actions.get(n)?).ok()?;
+                        log::trace!("Performing context action: {}", context_action.action_name);
+                        context_action.action_op.clone()
+                    },
+                    MouseButtonAction::CycleContextAction => Arc::new(|_, _: &'_ mut World| {
+                        log::error!("TODO Cycling context actions not implemented yet");
+                    }),
+                    MouseButtonAction::DisplayContextMenu => {
+                        Arc::new(move |id, world: &'_ mut World| {
+                            for mut context_menu in
+                                world.query::<&mut ContextMenu>().iter_mut(world)
+                            {
+                                // TODO what if there are multiple???
+                                context_menu.actions_context = Some(id);
+                                context_menu.position = mouse_pos;
+                            }
+                            let display_system = world.resource::<SystemIdDisplayContextMenu>().0;
+                            world.run_system(display_system).unwrap();
+                        })
+                    },
+                };
+                commands.add(move |w: &'_ mut World| action(id, w));
+                Some(())
+            });
     }
 }
 
@@ -428,19 +451,18 @@ fn sys_context_menu_fade(
     for (cm_id, mut cm_timer, hover_point, mut is_visible) in query.iter_mut() {
         if *is_visible {
             cm_timer.tick(time.delta());
-
-            if hover_point.is_some() {
+            if cm_timer.finished() {
+                *is_visible = false;
+                cm_timer.pause();
+                cm_timer.reset();
+                commands.entity(cm_id).despawn_descendants();
+            } else if hover_point.is_some() {
                 if !cm_timer.paused() {
                     cm_timer.pause();
                     cm_timer.reset();
                 }
             } else if cm_timer.paused() {
                 cm_timer.unpause()
-            } else if cm_timer.finished() {
-                *is_visible = false;
-                cm_timer.pause();
-                cm_timer.reset();
-                commands.entity(cm_id).despawn_descendants();
             }
         }
     }
@@ -467,7 +489,14 @@ pub fn sys_context_menu_item_click(
                 let action = context_action_q.get(ca_id).ok()?.action_op.clone();
                 let context_menu = context_menu.get(cm_id).ok()?;
                 let id = context_menu.actions_context?;
-                commands.add(move |w: &'_ mut World| action(id, w));
+                commands.add(move |w: &'_ mut World| {
+                    if let Some(mut timer) = w.get_mut::<ContextMenuTimer>(cm_id) {
+                        timer.unpause();
+                        let duration = timer.duration();
+                        timer.tick(duration);
+                    }
+                    action(id, w)
+                });
                 Some(())
             });
     }

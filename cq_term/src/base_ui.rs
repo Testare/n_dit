@@ -253,15 +253,17 @@ pub fn sys_apply_hover(
                 hover_point.set_if_neq(None);
             }
         } else {
-            // TODO adjust this to take render order into account
+            // TODO adjust this to take render order into account, otherwise if an item
+            // that changes size underneath another could get its own duplicate hoverpoint,
+            // even without being a parent entity
             let relative_pos_x = res_mouse_last_pos
                 .x
                 .checked_sub(global_translation.x)
-                .filter(|x| *x <= size.x);
+                .filter(|x| *x < size.x);
             let relative_pos_y = res_mouse_last_pos
                 .y
                 .checked_sub(global_translation.y)
-                .filter(|y| *y <= size.y);
+                .filter(|y| *y < size.y);
             if let Some((x, y)) = relative_pos_x.zip(relative_pos_y) {
                 if let Ok((mut hover_point,)) = hoverable_ui.get_mut(id) {
                     hover_point.set_if_neq(Some(UVec2 { x, y }));
