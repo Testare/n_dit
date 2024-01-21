@@ -175,14 +175,14 @@ impl std::fmt::Debug for ContextAction {
     }
 }
 impl ContextAction {
-    pub fn new<F: Fn(Entity, &mut World) + Send + Sync + 'static>(
-        action_name: String,
+    pub fn new<S: ToString, F: Fn(Entity, &mut World) + Send + Sync + 'static>(
+        action_name: S,
         action_op: F,
     ) -> Self {
         let action_op = Arc::new(action_op);
 
         ContextAction {
-            action_name,
+            action_name: action_name.to_string(),
             action_op,
         }
     }

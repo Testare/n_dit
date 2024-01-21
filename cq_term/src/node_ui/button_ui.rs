@@ -3,8 +3,7 @@ use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece,
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 
-use super::node_popups::{HelpMenu, OptionsMenu};
-use crate::input_event::{MouseButton, MouseEventTty, MouseEventTtyDisabled, MouseEventTtyKind};
+use crate::input_event::MouseEventTtyDisabled;
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
@@ -22,46 +21,6 @@ pub struct HelpButton;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct QuitButton;
-
-pub fn mouse_button_menu(
-    mut evr_mouse: EventReader<MouseEventTty>,
-    options_button: Query<AsDerefCopied<ForPlayer>, With<OptionsButton>>,
-    help_button: Query<AsDerefCopied<ForPlayer>, With<HelpButton>>,
-    mut options_menu: IndexedQuery<
-        ForPlayer,
-        AsDerefMut<VisibilityTty>,
-        (With<OptionsMenu>, Without<HelpMenu>),
-    >,
-    mut help_menu: IndexedQuery<
-        ForPlayer,
-        AsDerefMut<VisibilityTty>,
-        (With<HelpMenu>, Without<OptionsMenu>),
-    >,
-) {
-    for mouse_event in evr_mouse.read() {
-        if !matches!(
-            mouse_event.event_kind(),
-            MouseEventTtyKind::Down(MouseButton::Left)
-        ) {
-            continue;
-        }
-        if let Ok(for_player) = options_button.get(mouse_event.entity()) {
-            if let Ok(mut options_vis) = options_menu.get_for_mut(for_player) {
-                *options_vis = !*options_vis;
-            }
-            if let Ok(mut help_vis) = help_menu.get_for_mut(for_player) {
-                help_vis.set_if_neq(false);
-            }
-        } else if let Ok(for_player) = help_button.get(mouse_event.entity()) {
-            if let Ok(mut help_vis) = help_menu.get_for_mut(for_player) {
-                *help_vis = !*help_vis;
-            }
-            if let Ok(mut options_vis) = options_menu.get_for_mut(for_player) {
-                options_vis.set_if_neq(false);
-            }
-        }
-    }
-}
 
 pub fn sys_ready_button_disable(
     mut commands: Commands,

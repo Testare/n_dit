@@ -1,4 +1,5 @@
 use bevy::app::AppExit;
+use bevy::ecs::system::RunSystemOnce;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::NO_OP_ACTION_ID;
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
@@ -32,11 +33,15 @@ use crate::{KeyMap, Submap, TerminalWindow};
 #[derive(Debug, Resource, CopyGetters)]
 pub struct ButtonContextActions {
     #[getset(get_copy = "pub")]
-    start: Entity,
+    end_turn: Entity,
     #[getset(get_copy = "pub")]
     quit: Entity,
     #[getset(get_copy = "pub")]
-    end_turn: Entity,
+    start: Entity,
+    #[getset(get_copy = "pub")]
+    toggle_help: Entity,
+    #[getset(get_copy = "pub")]
+    toggle_options: Entity,
 }
 
 impl ButtonContextActions {
@@ -78,21 +83,70 @@ impl FromWorld for ButtonContextActions {
                 },
             ))
             .id();
-        /*let start = world
-        .spawn(ContextAction::new(
-            "Start battle".to_string(),
-            |id, world| {
-                // TODO make a factory method for this closure
-                let for_player = world.get::<ForPlayer>(id).copied();
-                if let Some(ForPlayer(player_id)) = for_player {
-                    world
-                        .get_resource_mut::<CoreOps>()
-                        .expect("should have CoreOps initialized")
-                        .request(player_id, NodeOp::ReadyToGo);
-                }
-            },
-        ))
-        .id();*/
+        let toggle_options = world
+            .spawn((ContextAction::new(
+                "Toggle Options menu",
+                |id, world: &mut World| {
+                    if let Some(&ForPlayer(player_id)) = world.get::<ForPlayer>(id) {
+                        world.run_system_once(
+                            move |mut help_menu_q: Query<
+                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                (With<HelpMenu>, Without<OptionsMenu>),
+                            >,
+                                  mut options_menu_q: Query<
+                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                (With<OptionsMenu>, Without<HelpMenu>),
+                            >| {
+                                if let Some((_, mut help_vis)) = help_menu_q
+                                    .iter_mut()
+                                    .find(|(for_player, _)| *for_player == player_id)
+                                {
+                                    help_vis.set_if_neq(false);
+                                }
+                                if let Some((_, mut options_vis)) = options_menu_q
+                                    .iter_mut()
+                                    .find(|(for_player, _)| *for_player == player_id)
+                                {
+                                    *options_vis = !*options_vis;
+                                }
+                            },
+                        );
+                    }
+                },
+            ),))
+            .id();
+        let toggle_help = world
+            .spawn((ContextAction::new(
+                "Toggle Help",
+                |id, world: &mut World| {
+                    if let Some(&ForPlayer(player_id)) = world.get::<ForPlayer>(id) {
+                        world.run_system_once(
+                            move |mut help_menu_q: Query<
+                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                (With<HelpMenu>, Without<OptionsMenu>),
+                            >,
+                                  mut options_menu_q: Query<
+                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                (With<OptionsMenu>, Without<HelpMenu>),
+                            >| {
+                                if let Some((_, mut help_vis)) = help_menu_q
+                                    .iter_mut()
+                                    .find(|(for_player, _)| *for_player == player_id)
+                                {
+                                    *help_vis = !*help_vis;
+                                }
+                                if let Some((_, mut options_vis)) = options_menu_q
+                                    .iter_mut()
+                                    .find(|(for_player, _)| *for_player == player_id)
+                                {
+                                    options_vis.set_if_neq(false);
+                                }
+                            },
+                        );
+                    }
+                },
+            ),))
+            .id();
         let quit = world
             .spawn(ContextAction::new("Quit game".to_string(), |_, world| {
                 world.send_event(AppExit);
@@ -100,8 +154,10 @@ impl FromWorld for ButtonContextActions {
             .id();
         ButtonContextActions {
             end_turn,
-            start,
             quit,
+            start,
+            toggle_help,
+            toggle_options,
         }
     }
 }
@@ -205,6 +261,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Options", ContentStyle::new().green()),
                                         ForPlayer(player),
                                         OptionsButton,
+                                        ContextActions::new(player, vec![res_button_context_actions.toggle_options()]),
                                         Tooltip::new("[Esc] Opens menu for options"),
                                     ));
 
@@ -254,6 +311,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
                                         ForPlayer(player),
                                         HelpButton,
+                                        ContextActions::new(player, vec![res_button_context_actions.toggle_help()]),
                                         Tooltip::new("[?] Open guide to the game"),
                                     ));
 

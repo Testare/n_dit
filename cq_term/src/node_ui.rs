@@ -72,12 +72,7 @@ impl Plugin for NodeUiPlugin {
         .add_systems(Update, setup::create_node_ui)
         .add_systems(
             PreUpdate,
-            (
-                inputs::kb_ready,
-                inputs::kb_skirm_focus,
-                button_ui::mouse_button_menu,
-            )
-                .in_set(NDitCoreSet::ProcessInputs),
+            (inputs::kb_ready, inputs::kb_skirm_focus).in_set(NDitCoreSet::ProcessInputs),
         )
         .add_systems(
             Update,
