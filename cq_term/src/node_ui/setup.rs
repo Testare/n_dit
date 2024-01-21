@@ -347,6 +347,7 @@ pub fn create_node_ui(
                                 width: Dimension::Auto,
                                 height: Dimension::Points(2.0),
                             },
+                            flex_shrink: 0.0,
                             flex_grow: 0.0,
                             ..default()
                         }),
