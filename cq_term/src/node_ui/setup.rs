@@ -3,7 +3,7 @@ use bevy::ecs::system::RunSystemOnce;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::NO_OP_ACTION_ID;
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
-use game_core::op::{CoreOps, Op};
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use getset::CopyGetters;
 use unicode_width::UnicodeWidthStr;
@@ -14,6 +14,7 @@ use crate::base_ui::context_menu::{ContextAction, ContextActions, ContextMenuPan
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
+use crate::linkage::base_ui_game_core;
 use crate::node_ui::button_ui::{
     EndTurnButton, HelpButton, OptionsButton, QuitButton, ReadyButton,
 };
@@ -44,37 +45,22 @@ pub struct ButtonContextActions {
     toggle_options: Entity,
 }
 
-impl ButtonContextActions {
-    fn context_action_from_op<O: Op + Clone>(name: &str, op: O) -> ContextAction {
-        ContextAction::new(name.to_string(), move |id, world| {
-            // TODO make a factory method for this closure
-            let for_player = world.get::<ForPlayer>(id).copied();
-            if let Some(ForPlayer(player_id)) = for_player {
-                world
-                    .get_resource_mut::<CoreOps>()
-                    .expect("should have CoreOps initialized")
-                    .request(player_id, op.clone());
-            }
-        })
-    }
-}
-
 impl FromWorld for ButtonContextActions {
     fn from_world(world: &mut World) -> Self {
         let start = world
-            .spawn(Self::context_action_from_op(
+            .spawn(base_ui_game_core::context_action_from_op::<CoreOps, _>(
                 "Start battle",
                 NodeOp::ReadyToGo,
             ))
             .id();
         let end_turn = world
-            .spawn(Self::context_action_from_op(
+            .spawn(base_ui_game_core::context_action_from_op::<CoreOps, _>(
                 "End Player Phase",
                 NodeOp::EndTurn,
             ))
             .id();
         let _no_op = world
-            .spawn(Self::context_action_from_op(
+            .spawn(base_ui_game_core::context_action_from_op::<CoreOps, _>(
                 "End Turn",
                 NodeOp::PerformCurioAction {
                     action_id: NO_OP_ACTION_ID,
@@ -385,6 +371,7 @@ pub fn create_node_ui(
                                     .spawn((
                                         MenuUiCardSelection::bundle(player, &node_q),
                                         UiFocusCycleOrder(2),
+                                        ContextActions::new(player, vec![])
                                     ));
                                 menu_bar.spawn(MenuUiStats::bundle(player, &node_q));
                                 menu_bar

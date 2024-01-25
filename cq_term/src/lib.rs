@@ -8,6 +8,7 @@ mod fx;
 pub mod input_event;
 mod key_map;
 pub mod layout;
+pub mod linkage;
 pub mod nf; // This should become a plugin in n_dit later once we no longer depend on demo for scene setup.
 pub mod node_ui;
 mod render;

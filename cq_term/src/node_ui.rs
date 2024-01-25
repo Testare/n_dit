@@ -3,6 +3,7 @@ mod grid_ui;
 mod inputs;
 mod menu_ui;
 mod messagebar_ui;
+mod node_context_actions;
 mod node_glyph;
 mod node_popups;
 mod node_ui_op;
@@ -30,36 +31,9 @@ use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
 use crate::prelude::*;
-
-#[derive(Component, Debug)]
-pub struct HasNodeUi;
-
 /// Plugin for NodeUI
 #[derive(Debug, Default)]
 pub struct NodeUiPlugin;
-
-/// Component that tells the UI which entity the node cursor is over
-#[derive(Component, Resource, Debug, Deref, DerefMut)]
-pub struct SelectedEntity(pub Option<Entity>);
-
-#[derive(Component, Debug, Deref, DerefMut)]
-pub struct SelectedAction(Option<usize>);
-
-#[derive(Component, Debug, Deref, DerefMut)]
-pub struct TelegraphedAction(Option<Handle<Action>>);
-
-#[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct AvailableMoves(HashSet<UVec2>);
-
-#[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct AvailableActionTargets(HashSet<UVec2>);
-
-/// Cursor that the user controls to select pieces in the node
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-pub struct NodeCursor(pub UVec2);
-
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-pub struct CursorIsHidden(pub bool);
 
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
@@ -69,6 +43,7 @@ impl Plugin for NodeUiPlugin {
             OpPlugin::<NodeUiOp>::default(),
         ))
         .init_resource::<setup::ButtonContextActions>()
+        .init_resource::<node_context_actions::NodeContextActions>()
         .add_systems(Update, setup::create_node_ui)
         .add_systems(
             PreUpdate,
@@ -96,6 +71,32 @@ impl Plugin for NodeUiPlugin {
         ));
     }
 }
+
+#[derive(Component, Debug)]
+pub struct HasNodeUi;
+
+/// Component that tells the UI which entity the node cursor is over
+#[derive(Component, Resource, Debug, Deref, DerefMut)]
+pub struct SelectedEntity(pub Option<Entity>);
+
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct SelectedAction(Option<usize>);
+
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct TelegraphedAction(Option<Handle<Action>>);
+
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct AvailableMoves(HashSet<UVec2>);
+
+#[derive(Component, Debug, Default, Deref, DerefMut)]
+pub struct AvailableActionTargets(HashSet<UVec2>);
+
+/// Cursor that the user controls to select pieces in the node
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+pub struct NodeCursor(pub UVec2);
+
+#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+pub struct CursorIsHidden(pub bool);
 
 impl SelectedEntity {
     pub fn of<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(

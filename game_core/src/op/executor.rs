@@ -8,6 +8,19 @@ use crate::prelude::*;
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct UnspecifiedSystemSet;
 
+/// Trait that encompasses resources that dereference mutably into `OpExecutor`
+///
+/// Used to simplify function definitions
+pub trait OpExecutorResource:
+    Resource + std::ops::Deref<Target = OpExecutor> + std::ops::DerefMut
+{
+}
+
+impl<R: Resource + std::ops::Deref<Target = OpExecutor> + std::ops::DerefMut> OpExecutorResource
+    for R
+{
+}
+
 #[derive(Debug)]
 pub struct OpExecutorPlugin<E, S = UnspecifiedSystemSet, L: ScheduleLabel + Clone = Update> {
     phantom_data: PhantomData<(E, S)>,

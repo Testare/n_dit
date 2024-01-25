@@ -1,22 +1,56 @@
 use charmi::{CharacterMapImage, CharmieString};
 use crossterm::style::Stylize;
 use game_core::card::{Card, Deck};
-use game_core::node::{AccessPoint, NodeOp, NodePiece, PlayedCards};
+use game_core::node::{AccessPoint, NodeOp, PlayedCards};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{HoverPoint, Tooltip};
 use crate::configuration::DrawConfiguration;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
-use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
+use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, VisibilityTty};
+use crate::node_ui::node_context_actions::NodeContextActions;
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
+
+#[derive(Default)]
+pub struct MenuUiCardSelectionPlugin;
+
+impl Plugin for MenuUiCardSelectionPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            PreUpdate,
+            (
+                MenuUiCardSelection::kb_card_selection.in_set(NDitCoreSet::ProcessInputs),
+                MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
+            ),
+        )
+        .add_systems(
+            RENDER_TTY_SCHEDULE,
+            (
+                MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::AdjustLayoutStyle),
+                MenuUiCardSelection::card_selection_focus_status_change
+                    .in_set(RenderTtySet::PreCalculateLayout),
+                MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                sys_create_load_context_items, // TODO consider scheduling for this
+                sys_card_selection_adjust_ca_on_hover, // Should probably be done after rendering
+            )
+                .chain(),
+        );
+    }
+}
 
 #[derive(Component, Debug, Default)]
 pub struct MenuUiCardSelection {
@@ -30,13 +64,12 @@ pub struct SelectedItem(Option<usize>);
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct IsPadded(bool);
 
-#[derive(Default)]
-pub struct MenuUiCardSelectionPlugin;
+#[derive(Component, Debug, Deref)]
+pub struct LoadCardContextAction(Entity);
 
 impl MenuUiCardSelection {
     pub fn handle_layout_events(
         mut evr_mouse: EventReader<MouseEventTty>,
-        mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ui: Query<(
             &mut Self,
@@ -45,20 +78,14 @@ impl MenuUiCardSelection {
             &mut SelectedItem,
             &IsPadded,
         )>,
-        cards: Query<&Card>,
-        mut players: Query<
-            (&Deck, &SelectedEntity, &mut SelectedAction, &PlayedCards),
-            With<Player>,
-        >,
-        access_points: Query<&AccessPoint, With<NodePiece>>,
+        mut players: Query<(&Deck, &mut SelectedAction), With<Player>>,
     ) {
+        // Mostly handles scrolling now
         for layout_event in evr_mouse.read() {
             if let Ok((mut card_selection, size, ForPlayer(player), mut selected_item, is_padded)) =
                 ui.get_mut(layout_event.entity())
             {
-                if let Ok((deck, selected_entity, mut selected_action, played_cards)) =
-                    players.get_mut(*player)
-                {
+                if let Ok((deck, mut selected_action)) = players.get_mut(*player) {
                     let max_scroll = (deck.different_cards_len() + 1).saturating_sub(size.height());
                     match layout_event.event_kind() {
                         MouseEventTtyKind::ScrollDown => {
@@ -68,6 +95,9 @@ impl MenuUiCardSelection {
                             card_selection.scroll = card_selection.scroll.saturating_sub(1);
                         },
                         MouseEventTtyKind::Down(MouseButton::Left) => {
+                            if !layout_event.is_top_entity() {
+                                continue;
+                            }
                             res_ui_ops
                                 .request(*player, NodeUiOp::ChangeFocus(FocusTarget::CardMenu));
                             let height = size.height32();
@@ -88,38 +118,9 @@ impl MenuUiCardSelection {
                                     _ => {},
                                 }
                             } else if y > 0 && y < height - padding {
-                                let index = card_selection.scroll + y as usize - 1;
-                                if let Some((card_id, count)) = deck.cards_with_count().nth(index) {
-                                    log::debug!(
-                                        "Clicked on card: {:?} \"{}\", which we have {}/{} of.",
-                                        card_id,
-                                        cards.get(card_id).unwrap().name_or_nickname(),
-                                        played_cards.remaining_count(deck, card_id),
-                                        count,
-                                    );
-                                    // Selected
-
-                                    let access_point_id = selected_entity.0.unwrap();
-                                    let access_point = selected_entity.of(&access_points).unwrap();
-
-                                    **selected_action = None;
-                                    **selected_item = Some(index);
-
-                                    if access_point.card() == Some(card_id) {
-                                        res_core_ops.request(
-                                            *player,
-                                            NodeOp::UnloadAccessPoint { access_point_id },
-                                        );
-                                    } else if played_cards.can_be_played(deck, card_id) {
-                                        res_core_ops.request(
-                                            *player,
-                                            NodeOp::LoadAccessPoint {
-                                                access_point_id,
-                                                card_id,
-                                            },
-                                        );
-                                    }
-                                }
+                                // TODO Should this be a NodeUiOp?
+                                **selected_action = None;
+                                **selected_item = Some(card_selection.scroll + y as usize - 1);
                             }
                         },
                         _ => {},
@@ -259,9 +260,9 @@ impl MenuUiCardSelection {
     fn style_card_selection(
         access_points: Query<(), With<AccessPoint>>,
         player_info: Query<(&Deck, &SelectedEntity), With<Player>>,
-        mut ui: Query<(&mut StyleTty, &ForPlayer), With<Self>>,
+        mut ui: Query<(&mut StyleTty, &ForPlayer, AsDerefMut<VisibilityTty>), With<Self>>,
     ) {
-        for (mut style, ForPlayer(player)) in ui.iter_mut() {
+        for (mut style, ForPlayer(player), mut is_visible) in ui.iter_mut() {
             let (min_height, max_height) = player_info
                 .get(*player)
                 .ok()
@@ -274,11 +275,7 @@ impl MenuUiCardSelection {
             if Dimension::Points(max_height) != style.max_size.height {
                 style.max_size.height = Dimension::Points(max_height);
                 style.min_size.height = Dimension::Points(min_height);
-                style.display = if max_height == 0.0 {
-                    taffy::style::Display::None // TODO use VisibilityTty instead
-                } else {
-                    taffy::style::Display::Flex
-                };
+                is_visible.set_if_neq(max_height != 0.0);
             }
         }
     }
@@ -293,6 +290,7 @@ impl MenuUiCardSelection {
             Entity,
             &mut Self,
             &mut IsPadded,
+            AsDerefCopied<VisibilityTty>,
             Ref<CalculatedSizeTty>,
             &ForPlayer,
             Ref<SelectedItem>,
@@ -304,6 +302,7 @@ impl MenuUiCardSelection {
             id,
             mut card_selection,
             mut is_padded,
+            is_visible,
             size,
             ForPlayer(player),
             selected_item,
@@ -311,9 +310,13 @@ impl MenuUiCardSelection {
             mut tr,
         ) in ui.iter_mut()
         {
+            if !is_visible {
+                continue;
+            }
             let mouse_hover_index = hover_point
                 .as_ref()
-                .and_then(|pt| (pt.y as usize).checked_sub(1));
+                .filter(|pt| pt.x > 0)
+                .and_then(|pt| (card_selection.scroll + pt.y as usize).checked_sub(1));
             let mut rendering = players
                 .get(*player)
                 .ok()
@@ -413,27 +416,6 @@ impl MenuUiCardSelection {
     }
 }
 
-impl Plugin for MenuUiCardSelectionPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            PreUpdate,
-            (
-                MenuUiCardSelection::kb_card_selection.in_set(NDitCoreSet::ProcessInputs),
-                MenuUiCardSelection::handle_layout_events.in_set(NDitCoreSet::ProcessInputs),
-            ),
-        )
-        .add_systems(
-            RENDER_TTY_SCHEDULE,
-            (
-                MenuUiCardSelection::style_card_selection.in_set(RenderTtySet::AdjustLayoutStyle),
-                MenuUiCardSelection::card_selection_focus_status_change
-                    .in_set(RenderTtySet::PreCalculateLayout),
-                MenuUiCardSelection::render_system.in_set(RenderTtySet::PostCalculateLayout),
-            ),
-        );
-    }
-}
-
 impl NodeUi for MenuUiCardSelection {
     const NAME: &'static str = "Menu Card Selection";
     type UiBundleExtras = (
@@ -442,6 +424,7 @@ impl NodeUi for MenuUiCardSelection {
         SelectedItem,
         IsPadded,
         Tooltip,
+        VisibilityTty,
     );
     type UiPlugin = MenuUiCardSelectionPlugin;
 
@@ -449,7 +432,7 @@ impl NodeUi for MenuUiCardSelection {
         use taffy::prelude::*;
 
         StyleTty(Style {
-            display: Display::None,
+            display: Display::Flex,
             min_size: Size {
                 width: Dimension::Auto,
                 height: Dimension::Points(0.0),
@@ -459,6 +442,7 @@ impl NodeUi for MenuUiCardSelection {
         })
     }
 
+    // TODO refactor to accept player_id and add ContextActions here
     fn ui_bundle_extras() -> Self::UiBundleExtras {
         (
             MouseEventListener,
@@ -466,6 +450,114 @@ impl NodeUi for MenuUiCardSelection {
             SelectedItem::default(),
             IsPadded::default(),
             Tooltip::new("Select card to play"),
+            VisibilityTty(false),
         )
+    }
+}
+
+pub fn sys_create_load_context_items(
+    mut commands: Commands,
+    q_players_with_csm: Query<
+        (AsDerefCopied<ForPlayer>, Ref<MenuUiCardSelection>),
+        With<MenuUiCardSelection>,
+    >,
+    q_player_decks: Query<Ref<Deck>>,
+    q_load_card_ca: Query<(), (With<LoadCardContextAction>, With<Card>)>,
+    q_card: Query<&Card>,
+) {
+    for (player, csm_ref) in q_players_with_csm.iter() {
+        if let Ok(deck) = q_player_decks.get(player) {
+            if !csm_ref.is_added() && !deck.is_changed() {
+                continue;
+            }
+            for card_id in deck.cards_iter() {
+                if !q_load_card_ca.contains(card_id) {
+                    if let Ok(card) = q_card.get(card_id) {
+                        let card_name = card.card_name();
+                        let ca_name = format!("Load {card_name} to access point");
+                        let load_card_ca = commands.spawn((
+                            Name::new(ca_name.clone()),
+                            ContextAction::new(ca_name, move |id, world: &mut World| {
+                                if let Some(&ForPlayer(player_id)) = world.get(id) {
+                                    if let Some(deck) = world.get::<Deck>(player_id) {
+                                        let pos = deck.cards_iter().position(|id|id == card_id).expect("deck should contain card played");
+                                        if let Some(mut selected_item) = world.get_mut::<SelectedItem>(id) {
+                                            **selected_item = Some(pos);
+                                        }
+                                    }
+                                    if let Some(&SelectedEntity(Some(access_point_id))) = world.get(player_id) {
+                                        world.get_resource_mut::<CoreOps>()
+                                            .expect("CoreOps should be initialized")
+                                            .request(player_id, NodeOp::LoadAccessPoint { access_point_id, card_id});
+                                    } else {
+                                        log::warn!("Player [{player_id:?}] does not have a selected entity to load card into")
+                                    }
+                                } else {
+                                    log::warn!("ContextAction performed for [{id:?}] does not hae ForPlayer component")
+                                }
+                            })
+                        )).id();
+                        commands
+                            .entity(card_id)
+                            .insert(LoadCardContextAction(load_card_ca))
+                            .add_child(load_card_ca);
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn sys_card_selection_adjust_ca_on_hover(
+    res_node_ca: Res<NodeContextActions>,
+    mut q_csm_ui: Query<
+        (
+            &ForPlayer,
+            AsDerefCopied<HoverPoint>,
+            &MenuUiCardSelection,
+            &mut ContextActions,
+        ),
+        Or<(Changed<HoverPoint>, Changed<MenuUiCardSelection>)>,
+    >,
+    q_player: Query<(&Deck, AsDerefCopied<SelectedEntity>), With<Player>>,
+    q_access_point: Query<Ref<AccessPoint>>,
+    q_load_card_ca: Query<AsDerefCopied<LoadCardContextAction>, With<Card>>,
+) {
+    for (&ForPlayer(for_player), hover_point, card_selection, mut context_actions) in
+        q_csm_ui.iter_mut()
+    {
+        get_assert!(for_player, q_player, |(deck, selected_entity)| {
+            // TODO Do not perform actions for scrolling
+            // Must have a selected access point for these to make sense
+            // Question: Should I make sure to unload the actions if this is not the case?
+            let access_point = q_access_point.get(selected_entity?).ok()?;
+
+            // No context actions while hovering over the scroll bar
+            if hover_point.as_ref().filter(|hp| hp.x != 0).is_none() {
+                *context_actions.actions_mut() = vec![];
+                return None;
+            }
+
+            let load_ca_action = hover_point.as_ref().and_then(|hover_point| {
+                let mouse_hover_index =
+                    (hover_point.y as usize + card_selection.scroll).checked_sub(1)?; // If this is nothing, why bother updating it?
+
+                let card_id = deck.cards_iter().nth(mouse_hover_index);
+                if access_point.card() == card_id {
+                    None
+                } else {
+                    // Expect: We should have been populated in `sys_create_load_context_items` prior to this.
+                    get_assert!(card_id?, q_load_card_ca)
+                }
+            });
+
+            let unload_ca_action = access_point
+                .card()
+                .map(|_| res_node_ca.unload_selected_access_point());
+
+            *context_actions.actions_mut() =
+                load_ca_action.into_iter().chain(unload_ca_action).collect();
+            Some(())
+        });
     }
 }

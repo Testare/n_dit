@@ -302,25 +302,15 @@ fn demo_startup(
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)
-                /*.with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)
-                .with_card(hack)*/
-                .with_card(card_0) // Slingshot
+                .with_card(card_0)
                 .with_card(card_1)
                 .with_card(card_2)
-                /*.with_card(card_3)
+                .with_card(card_fiddle)
+                // Comment the following out when demonstrating to others
+                .with_card(card_bb)
+                .with_card(card_3)
                 .with_card(card_4)
-                .with_card(card_5)*/
-                .with_card(card_fiddle), // .with_card(card_bb),
+                .with_card(card_5),
         ))
         .id();
 

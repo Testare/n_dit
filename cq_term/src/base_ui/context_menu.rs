@@ -92,6 +92,11 @@ impl ContextActions {
             actions,
         }
     }
+
+    // TODO better API for changing context actions at runtime
+    pub fn actions_mut(&mut self) -> &mut Vec<Entity> {
+        &mut self.actions
+    }
 }
 
 /// The component for the UI that displays the context actions

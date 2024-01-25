@@ -39,7 +39,9 @@ pub fn handle_layout_events(
 ) {
     for event in ev_mouse.read() {
         if let Ok((ForPlayer(player), scroll)) = ui.get(event.entity()) {
-            if let MouseEventTtyKind::Down(button) = event.event_kind() {
+            if let (MouseEventTtyKind::Down(button), true) =
+                (event.event_kind(), event.is_top_entity())
+            {
                 log::trace!("Clicked on the grid");
                 res_ui_ops.request(*player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                 get_assert!(*player, players, |(

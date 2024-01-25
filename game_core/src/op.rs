@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use bevy::ecs::system::{StaticSystemParam, SystemId};
 use bevy::reflect::TypePath;
-pub use executor::{OpExecutor, OpExecutorPlugin};
+pub use executor::{OpExecutor, OpExecutorPlugin, OpExecutorResource};
 use thiserror::Error;
 
 use crate::prelude::*;
