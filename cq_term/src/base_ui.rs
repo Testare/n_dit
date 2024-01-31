@@ -1,7 +1,6 @@
 pub mod context_menu;
 mod input_actions;
 mod popup;
-mod select_menu;
 
 use std::borrow::{Borrow, Cow};
 

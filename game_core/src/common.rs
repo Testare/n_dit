@@ -1,3 +1,4 @@
+pub mod daddy;
 pub mod metadata;
 pub mod sord;
 

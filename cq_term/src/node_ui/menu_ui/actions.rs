@@ -1,17 +1,23 @@
+use std::borrow::Cow;
+use std::ops::Deref;
+
 use charmi::CharacterMapImage;
-use crossterm::event::KeyModifiers;
-use game_core::card::{Action, Actions};
-use game_core::node::{IsTapped, NodeOp, NodePiece};
+use game_core::card::{Action, ActionTarget, Actions};
+use game_core::common::daddy::Daddy;
+use game_core::node::{IsTapped, NodeOp, NodePiece, OnTeam, Team, TeamPhase};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 use taffy::style::Dimension;
 
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{HoverPoint, Tooltip};
 use crate::configuration::DrawConfiguration;
-use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
+use crate::input_event::{MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
+use crate::linkage::base_ui_game_core;
+use crate::node_ui::node_context_actions::NodeContextActions;
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
 use crate::prelude::*;
@@ -20,6 +26,33 @@ use crate::{KeyMap, Submap};
 
 #[derive(Component, Default, Debug)]
 pub struct MenuUiActions;
+
+impl Plugin for MenuUiActions {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Daddy<MenuUiActionsCA>>()
+            .add_systems(
+                PreUpdate,
+                (
+                    Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
+                    Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
+                ),
+            )
+            .add_systems(
+                RENDER_TTY_SCHEDULE,
+                (
+                    Self::sys_adjust_style_action_menu.in_set(RenderTtySet::AdjustLayoutStyle),
+                    Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
+                ),
+            )
+            .add_systems(
+                Update,
+                (sys_create_action_ca, sys_actions_menu_adjust_ca_hover).chain(),
+            );
+    }
+}
+
+#[derive(Component, Default, Debug, Deref, Reflect)]
+pub struct MenuUiActionsCA(Vec<Entity>);
 
 impl MenuUiActions {
     pub fn kb_action_menu(
@@ -96,89 +129,21 @@ impl MenuUiActions {
     }
 
     pub fn mouse_action_menu(
-        ast_actions: Res<Assets<Action>>,
-        mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
         mut ev_mouse: EventReader<MouseEventTty>,
-        node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
-        players: Query<(&SelectedEntity, AsDerefCopied<SelectedAction>), With<Player>>,
         ui_actions: Query<&ForPlayer, With<MenuUiActions>>,
     ) {
         for layout_event in ev_mouse.read() {
-            ui_actions
-                .get(layout_event.entity())
-                .ok()
-                .and_then(|ForPlayer(player_id)| {
-                    let (selected_entity, selected_action) = get_assert!(*player_id, players)?;
-                    let (actions, is_tapped) = selected_entity.of(&node_pieces)?;
-
-                    // TODO If curio is active and that action has no range, do it immediately. Perhaps if the button is "right", just show it
-                    match layout_event.event_kind() {
-                        MouseEventTtyKind::Down(MouseButton::Left)
-                        | MouseEventTtyKind::DoubleClick => {
-                            let clicked_action = if layout_event.relative_pos().y > 0
-                                && layout_event.relative_pos().y <= actions.len() as u32
-                            {
-                                Some((layout_event.relative_pos().y - 1) as usize)
-                            } else {
-                                None
-                            };
-                            let double_click = layout_event.double_click()
-                                || !layout_event
-                                    .modifiers()
-                                    .intersection(KeyModifiers::SHIFT | KeyModifiers::ALT)
-                                    .is_empty();
-
-                            let same_action_clicked = clicked_action == selected_action;
-
-                            if clicked_action.is_none() {
-                                res_ui_ops.request(
-                                    *player_id,
-                                    NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
-                                );
-                            } else if double_click {
-                                res_ui_ops
-                                    .request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                                let action = ast_actions.get(
-                                    &actions[clicked_action
-                                        .expect("clicked_action should be checked by this point")],
-                                )?;
-                                if matches!(is_tapped, Some(IsTapped(false))) // Should only match if the game has started
-                                    && action.range().is_none()
-                                {
-                                    res_core_ops.request(
-                                        *player_id,
-                                        NodeOp::PerformCurioAction {
-                                            action_id: action.id_cow(),
-                                            curio: **selected_entity,
-                                            target: default(),
-                                        },
-                                    );
-                                } else {
-                                    res_ui_ops.request(
-                                        *player_id,
-                                        NodeUiOp::SetSelectedAction(clicked_action),
-                                    );
-                                }
-                            } else if same_action_clicked {
-                                res_ui_ops
-                                    .request(*player_id, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                                res_ui_ops.request(*player_id, NodeUiOp::SetSelectedAction(None));
-                            } else {
-                                res_ui_ops.request(
-                                    *player_id,
-                                    NodeUiOp::ChangeFocus(FocusTarget::ActionMenu),
-                                );
-                                res_ui_ops.request(
-                                    *player_id,
-                                    NodeUiOp::SetSelectedAction(clicked_action),
-                                );
-                            }
-                        },
-                        _ => {},
-                    }
-                    Some(())
-                });
+            if !matches!(layout_event.event_kind(), MouseEventTtyKind::Down(_)) {
+                continue;
+            }
+            if let Some(&ForPlayer(player_id)) = layout_event
+                .top_entity()
+                .and_then(|top_entity| ui_actions.get(top_entity).ok())
+            {
+                // TODO Perhaps add guardrails to do this only if selected actions is something
+                res_ui_ops.request(player_id, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
+            };
         }
     }
 
@@ -265,28 +230,9 @@ impl MenuUiActions {
     }
 }
 
-impl Plugin for MenuUiActions {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            PreUpdate,
-            (
-                Self::kb_action_menu.in_set(NDitCoreSet::ProcessInputs),
-                Self::mouse_action_menu.in_set(NDitCoreSet::ProcessInputs),
-            ),
-        )
-        .add_systems(
-            RENDER_TTY_SCHEDULE,
-            (
-                Self::sys_adjust_style_action_menu.in_set(RenderTtySet::AdjustLayoutStyle),
-                Self::sys_render_action_menu.in_set(RenderTtySet::PostCalculateLayout),
-            ),
-        );
-    }
-}
-
 impl NodeUi for MenuUiActions {
     const NAME: &'static str = "Actions Menu";
-    type UiBundleExtras = (MouseEventListener, HoverPoint, Tooltip);
+    type UiBundleExtras = (MouseEventListener, HoverPoint, Tooltip, MenuUiActionsCA);
     type UiPlugin = Self;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
@@ -307,6 +253,143 @@ impl NodeUi for MenuUiActions {
             MouseEventListener,
             HoverPoint::default(),
             Tooltip::new("Select action (Double click to use during turn)"),
+            MenuUiActionsCA::default(),
         )
+    }
+}
+
+fn sys_create_action_ca(
+    res_daddy: Res<Daddy<MenuUiActionsCA>>,
+    mut commands: Commands,
+    res_ast_actions: Res<Assets<Action>>,
+    q_node_piece: Query<(Ref<Actions>, AsDerefCopied<OnTeam>), With<NodePiece>>,
+    mut q_actions_ui: Query<(&ForPlayer, &mut MenuUiActionsCA), With<MenuUiActions>>,
+    q_players: Query<(Ref<SelectedEntity>, &OnTeam), With<Player>>,
+    q_team: Query<&TeamPhase, With<Team>>,
+) {
+    for (&ForPlayer(player_id), mut actions_menu_ca) in q_actions_ui.iter_mut() {
+        get_assert!(player_id, q_players, |(
+            selected_entity,
+            &OnTeam(team_id),
+        )| {
+            let selected_entity_changed = selected_entity.is_changed();
+            if let Some((actions, piece_team_id)) =
+                selected_entity.and_then(|id| q_node_piece.get(id).ok())
+            {
+                if !actions.is_changed() && !selected_entity_changed {
+                    return None;
+                }
+                // We don't need to check team_phase for change since actions always change during phase change
+                let team_phase = get_assert!(team_id, q_team)?;
+                for id in actions_menu_ca.0.drain(..) {
+                    commands.entity(id).despawn();
+                }
+                commands.entity(**res_daddy).with_children(|daddy| {
+                    for (i, action) in actions.iter().enumerate() {
+                        let action_asset_id = action.id();
+                        if let Some(action) = res_ast_actions.get(action_asset_id) {
+                            let action_id = action.id();
+                            let is_targetted_action = *action.target() != ActionTarget::None;
+                            let ca_name =
+                                if team_id == piece_team_id && *team_phase == TeamPhase::Play {
+                                    format!("Perform [{action_id}]")
+                                } else {
+                                    format!("Display [{action_id}]")
+                                };
+                            let context_action = if is_targetted_action {
+                                base_ui_game_core::context_action_from_op::<UiOps, _>(
+                                    ca_name.as_str(),
+                                    NodeUiOp::SetSelectedAction(Some(i)),
+                                )
+                            } else {
+                                base_ui_game_core::context_action_from_op::<CoreOps, _>(
+                                    ca_name.as_str(),
+                                    NodeOp::PerformCurioAction {
+                                        curio: **selected_entity,
+                                        action_id: Cow::from(action_id.to_string()),
+                                        target: default(),
+                                    },
+                                )
+                            };
+                            let id = daddy
+                                .spawn((
+                                    Name::new(format!(
+                                        "Actions Menu CA[{i:2}]: [{action_id}] {}",
+                                        if is_targetted_action {
+                                            "(Target)"
+                                        } else {
+                                            "(NoTarget)"
+                                        }
+                                    )),
+                                    context_action,
+                                ))
+                                .id();
+                            actions_menu_ca.0.push(id);
+                        } else {
+                            log::error!("Error: Unloaded action [{action_asset_id}]");
+                            let id = daddy.spawn((
+                                Name::new("Error loading action CA"),
+                                ContextAction::new("<LOG ERROR>", move |_id, _world| {
+                                    log::error!("LOG ERROR CA: Action was not pre-loaded for node [{action_asset_id}]");
+                                }),
+                            )).id();
+                            actions_menu_ca.0.push(id);
+                        }
+                    }
+                });
+            }
+            Some(())
+        });
+    }
+}
+
+fn sys_actions_menu_adjust_ca_hover(
+    res_node_ca: Res<NodeContextActions>,
+    q_player: Query<Ref<SelectedAction>, With<Player>>,
+    mut q_actions_ui: Query<
+        (
+            &ForPlayer,
+            AsDeref<MenuUiActionsCA>,
+            AsDerefCopied<HoverPoint>,
+            Or<(Changed<MenuUiActionsCA>, Changed<HoverPoint>)>,
+            &mut ContextActions,
+        ),
+        (With<MenuUiActions>,),
+    >,
+) {
+    for (
+        &ForPlayer(player_id),
+        menu_ui_actions_ca,
+        hover_point,
+        ui_changed,
+        mut menu_ui_context_actions,
+    ) in q_actions_ui.iter_mut()
+    {
+        let selected_action = get_assert!(player_id, q_player);
+        let changes_occurred = ui_changed
+            || selected_action
+                .as_ref()
+                .map(|sa| sa.is_changed())
+                .unwrap_or(false);
+        if !changes_occurred {
+            continue;
+        }
+        let selected_action = selected_action.and_then(|sa| *sa.deref().deref());
+        let deselect_ca = selected_action.and_then(|_| {
+            let hover_y = hover_point?.y;
+            if hover_y == 0 || hover_y as usize > menu_ui_actions_ca.len() {
+                return None;
+            }
+            Some(res_node_ca.clear_selected_action())
+        });
+        let select_ca = hover_point.and_then(|pt| {
+            let index = pt.y.checked_sub(1)? as usize;
+            if Some(index) == selected_action {
+                return None;
+            }
+            let ca = *menu_ui_actions_ca.get(index)?;
+            Some(ca)
+        });
+        *menu_ui_context_actions.actions_mut() = select_ca.into_iter().chain(deselect_ca).collect();
     }
 }

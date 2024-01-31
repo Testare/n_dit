@@ -378,6 +378,7 @@ pub fn create_node_ui(
                                     .spawn((
                                         MenuUiActions::bundle(player, &node_q),
                                         UiFocusCycleOrder(1),
+                                        ContextActions::new(player, vec![]),
                                     ));
                                 menu_bar.spawn(MenuUiDescription::bundle(player, &node_q));
                             });

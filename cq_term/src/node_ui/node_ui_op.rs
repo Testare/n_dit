@@ -129,8 +129,8 @@ pub fn sys_adjust_selected_entity(
             &InNode,
             &OnTeam,
             &NodeCursor,
-            &mut SelectedAction,
-            &mut SelectedEntity,
+            AsDerefMut<SelectedAction>,
+            AsDerefMut<SelectedEntity>,
         ),
         (
             With<Player>,
@@ -144,14 +144,14 @@ pub fn sys_adjust_selected_entity(
         get_assert!(**in_node, nodes, |(grid, current_turn, active_curio)| {
             let (team_phase,) = get_assert!(**on_team, teams)?;
             if selected_action.is_some() && selected_entity.is_none() {
-                **selected_entity = active_curio;
+                selected_entity.set_if_neq(active_curio);
             } else if selected_action.is_none() {
-                **selected_entity = grid.item_at(**cursor);
+                selected_entity.set_if_neq(grid.item_at(**cursor));
             } else if **on_team != **current_turn || *team_phase != TeamPhase::Play {
                 let entity_at_cursor = grid.item_at(**cursor);
-                if **selected_entity != entity_at_cursor {
-                    **selected_entity = grid.item_at(**cursor);
-                    **selected_action = None;
+                if *selected_entity != entity_at_cursor {
+                    *selected_entity = entity_at_cursor;
+                    selected_action.set_if_neq(None);
                 }
             }
             Some(())

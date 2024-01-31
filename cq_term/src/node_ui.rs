@@ -76,10 +76,10 @@ impl Plugin for NodeUiPlugin {
 pub struct HasNodeUi;
 
 /// Component that tells the UI which entity the node cursor is over
-#[derive(Component, Resource, Debug, Deref, DerefMut)]
+#[derive(Component, Resource, Debug, Deref, DerefMut, PartialEq)]
 pub struct SelectedEntity(pub Option<Entity>);
 
-#[derive(Component, Debug, Deref, DerefMut)]
+#[derive(Component, Debug, Deref, DerefMut, PartialEq)]
 pub struct SelectedAction(Option<usize>);
 
 #[derive(Component, Debug, Deref, DerefMut)]
