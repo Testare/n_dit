@@ -63,6 +63,18 @@ impl Compass {
     }
 }
 
+impl std::ops::Neg for Compass {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        match self {
+            Self::North => Self::South,
+            Self::East => Self::West,
+            Self::South => Self::North,
+            Self::West => Self::East,
+        }
+    }
+}
+
 impl std::ops::Add<Compass> for UVec2 {
     type Output = UVec2;
     fn add(self, rhs: Compass) -> Self::Output {

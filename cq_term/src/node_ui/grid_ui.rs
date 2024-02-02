@@ -1,9 +1,8 @@
-mod available_moves;
+mod calculate_ui_components;
 mod borders;
 mod grid_animation;
 mod grid_inputs;
 mod grid_tooltip;
-mod range_of_action;
 mod render_grid;
 mod render_square;
 mod scroll;
@@ -33,33 +32,6 @@ use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 #[derive(Component, Default)]
 pub struct GridUi;
 
-#[derive(WorldQuery)]
-pub struct NodePieceQ {
-    piece: &'static NodePiece,
-    speed: Option<AsDerefCopied<MovementSpeed>>,
-    moves_taken: Option<AsDerefCopied<MovesTaken>>,
-    is_tapped: Option<AsDerefCopied<IsTapped>>,
-    pickup: Option<&'static Pickup>,
-    access_point: Option<&'static AccessPoint>,
-    curio: Option<&'static Curio>,
-    has_curio: Has<Curio>,
-    actions: Option<AsDeref<Actions>>,
-    team: Option<AsDerefCopied<OnTeam>>,
-}
-
-#[derive(WorldQuery)]
-pub struct PlayerUiQ {
-    entity: Entity,
-    selected_entity: &'static SelectedEntity,
-    selected_action: &'static SelectedAction,
-    telegraphed_action: &'static TelegraphedAction,
-    node_cursor: &'static NodeCursor,
-    cursor_is_hidden: AsDerefCopied<CursorIsHidden>,
-    available_moves: &'static AvailableMoves,
-    available_action_targets: &'static AvailableActionTargets,
-    in_node: &'static InNode,
-}
-
 impl Plugin for GridUi {
     fn build(&self, app: &mut App) {
         app.add_systems(
@@ -71,15 +43,23 @@ impl Plugin for GridUi {
             Update,
             (
                 sys_react_to_node_op.in_set(NDitCoreSet::PostProcessCommands),
+                grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
+                calculate_ui_components::sys_hover_grid_point.in_set(NDitCoreSet::PostProcessUiOps),
                 (
-                    available_moves::sys_adjust_available_moves,
-                    range_of_action::get_range_of_action,
-                    grid_tooltip::sys_grid_ui_tooltip,
+                    calculate_ui_components::sys_adjust_available_moves,
+                    (
+                        calculate_ui_components::sys_path_under_hover
+                            .after(calculate_ui_components::sys_hover_grid_point),
+                        (
+                            calculate_ui_components::sys_get_range_of_action,
+                            grid_tooltip::sys_grid_ui_tooltip,
+                        )
+                            .chain(),
+                    ),
                 )
                     .chain()
                     .after(super::node_ui_op::sys_adjust_selected_entity)
                     .in_set(NDitCoreSet::PostProcessUiOps),
-                grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
             ),
         )
         .add_systems(
@@ -98,6 +78,8 @@ impl NodeUi for GridUi {
         MouseEventListener,
         UiFocusOnClick,
         HoverPoint,
+        GridHoverPoint,
+        PathToGridPoint,
         Tooltip,
     );
     type UiPlugin = Self;
@@ -129,6 +111,8 @@ impl NodeUi for GridUi {
             MouseEventListener,
             UiFocusOnClick,
             HoverPoint::default(),
+            GridHoverPoint::default(),
+            PathToGridPoint::default(),
             Tooltip::default(),
         )
     }
@@ -240,4 +224,37 @@ fn sys_react_to_node_op(
             }
         }
     }
+}
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct GridHoverPoint(Option<UVec2>);
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct PathToGridPoint(Vec<(UVec2, Compass)>);
+
+#[derive(WorldQuery)]
+pub struct NodePieceQ {
+    piece: &'static NodePiece,
+    speed: Option<AsDerefCopied<MovementSpeed>>,
+    moves_taken: Option<AsDerefCopied<MovesTaken>>,
+    is_tapped: Option<AsDerefCopied<IsTapped>>,
+    pickup: Option<&'static Pickup>,
+    access_point: Option<&'static AccessPoint>,
+    curio: Option<&'static Curio>,
+    has_curio: Has<Curio>,
+    actions: Option<AsDeref<Actions>>,
+    team: Option<AsDerefCopied<OnTeam>>,
+}
+
+#[derive(WorldQuery)]
+pub struct PlayerUiQ {
+    entity: Entity,
+    selected_entity: &'static SelectedEntity,
+    selected_action: &'static SelectedAction,
+    telegraphed_action: &'static TelegraphedAction,
+    node_cursor: &'static NodeCursor,
+    cursor_is_hidden: AsDerefCopied<CursorIsHidden>,
+    available_moves: &'static AvailableMoves,
+    available_action_targets: &'static AvailableActionTargets,
+    in_node: &'static InNode,
 }

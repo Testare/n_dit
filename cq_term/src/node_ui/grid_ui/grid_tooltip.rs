@@ -82,7 +82,7 @@ pub fn sys_grid_ui_tooltip(
                     active_curio_id.expect("We should have just checked that active_curio is SOME");
                 let node_piece_q = node_pieces.get(active_curio_id).ok()?; // TODO debug assert here
                 let curio_head = grid.head(active_curio_id)?;
-                if available_moves.contains(&hover_point)
+                if available_moves.contains_key(&hover_point)
                     && curio_head.manhattan_distance(&hover_point) == 1
                 {
                     let name = node_piece_q_name(&node_piece_q);

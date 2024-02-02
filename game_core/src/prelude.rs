@@ -17,3 +17,6 @@ pub use crate::common::*;
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};
 pub use crate::entity_grid::EntityGrid;
 pub use crate::{get_assert, get_assert_mut};
+
+
+pub use std::ops::Deref as _; // I use this so much

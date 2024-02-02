@@ -94,7 +94,9 @@ pub fn border_style_for(
             color_scheme.selected_square_border()
         }
     } else if !player_q.available_moves.is_empty()
-        && !points_in_range.is_disjoint(player_q.available_moves)
+        && points_in_range
+            .iter()
+            .any(|pt| player_q.available_moves.contains_key(pt))
     {
         if under_hover {
             color_scheme.possible_movement_hover()

@@ -10,9 +10,8 @@ use itertools::Itertools;
 use super::borders::{arrow_border, border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
-use super::{GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
+use super::{GridHoverPoint, GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
 use crate::animation::AnimationPlayer;
-use crate::base_ui::HoverPoint;
 use crate::configuration::DrawConfiguration;
 use crate::layout::CalculatedSizeTty;
 use crate::node_ui::node_glyph::NodeGlyph;
@@ -33,7 +32,7 @@ pub fn render_grid_system(
             &CalculatedSizeTty,
             &Scroll2d,
             &ForPlayer,
-            &HoverPoint,
+            &GridHoverPoint,
             &mut TerminalRendering,
         ),
         With<GridUi>,
@@ -75,7 +74,7 @@ pub fn render_grid_system(
 fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &Scroll2d,
-    hover_point: &HoverPoint,
+    &GridHoverPoint(hover_point): &GridHoverPoint,
     player_q: &PlayerUiQItem,
     grid: &EntityGrid,
     active_curio: &ActiveCurio,
@@ -88,8 +87,6 @@ fn render_grid(
 
     let default_style = ContentStyle::new();
 
-    let hover_point =
-        hover_point.map(|UVec2 { x, y }| UVec2::new((x + scroll.x) / 3, (y + scroll.y) / 2)); // TODO make this a helper function?
     let width = grid.width() as usize;
     let height = grid.height() as usize;
     let grid_map = grid.number_map();

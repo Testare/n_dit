@@ -86,7 +86,7 @@ pub struct SelectedAction(Option<usize>);
 pub struct TelegraphedAction(Option<Handle<Action>>);
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct AvailableMoves(HashSet<UVec2>);
+pub struct AvailableMoves(HashMap<UVec2, Option<Compass>>);
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct AvailableActionTargets(HashSet<UVec2>);
