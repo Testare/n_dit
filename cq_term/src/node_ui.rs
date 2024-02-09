@@ -12,7 +12,6 @@ mod titlebar_ui;
 
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
-use bevy::utils::HashSet;
 use game_core::card::Action;
 use game_core::op::{OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
@@ -89,7 +88,7 @@ pub struct TelegraphedAction(Option<Handle<Action>>);
 pub struct AvailableMoves(HashMap<UVec2, Option<Compass>>);
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct AvailableActionTargets(HashSet<UVec2>);
+pub struct AvailableActionTargets(HashMap<UVec2, bool>);
 
 /// Cursor that the user controls to select pieces in the node
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]

@@ -104,7 +104,10 @@ pub fn border_style_for(
             color_scheme.possible_movement()
         }
     } else if !player_q.available_action_targets.is_empty()
-        && !points_in_range.is_disjoint(player_q.available_action_targets)
+        && points_in_range
+            .iter()
+            .any(|pt| player_q.available_action_targets.contains_key(pt))
+    // is_disjoint(player_q.available_action_targets.keys().copied().collect())
     {
         if under_hover {
             color_scheme.attack_action_hover()
@@ -122,6 +125,10 @@ pub fn border_style_for(
 
 pub fn arrow_border(compass: Compass, half_border: bool) -> &'static str {
     match compass {
+        /*Compass::North | Compass::South if half_border => "█",
+        Compass::North | Compass::South => "██",
+        Compass::West | Compass::East => "█"
+        */
         Compass::North if half_border => ARROWS[4],
         Compass::North => ARROWS[0],
         Compass::East => ARROWS[1],

@@ -1,10 +1,12 @@
-
 use game_core::card::{Action, Actions, MovementSpeed};
-use game_core::node::{AccessPoint, ActiveCurio, InNode, IsTapped, MovesTaken, Node, NodePiece, Pickup};
+use game_core::node::{
+    AccessPoint, ActiveCurio, CurrentTurn, InNode, IsTapped, MovesTaken, Node, NodePiece, OnTeam,
+    Pickup, Team, TeamPhase,
+};
 use game_core::player::{ForPlayer, Player};
 
 use super::super::{AvailableMoves, SelectedEntity};
-use super::{GridHoverPoint, GridUi, PathToGridPoint, PlayerUiQ};
+use super::{GridHoverPoint, GridUi, LastGridHoverPoint, PathToGridPoint, PlayerUiQ};
 use crate::base_ui::{HoverPoint, Scroll2d};
 use crate::layout::UiFocus;
 use crate::node_ui::{AvailableActionTargets, CursorIsHidden, SelectedAction, TelegraphedAction};
@@ -127,19 +129,37 @@ pub fn sys_hover_grid_point(
             AsDerefCopied<HoverPoint>,
             AsDerefCopied<Scroll2d>,
             AsDerefMut<GridHoverPoint>,
+            AsDerefMut<LastGridHoverPoint>,
         ),
         (With<GridUi>, Changed<HoverPoint>),
     >,
 ) {
-    for (hover_point, scroll, mut grid_hover_point) in q_grid_ui.iter_mut() {
-        grid_hover_point.set_if_neq(
-            hover_point.map(|UVec2 { x, y }| UVec2::new((x + scroll.x) / 3, (y + scroll.y) / 2)),
-        );
+    for (hover_point, scroll, mut grid_hover_point, mut last_grid_hover_point) in
+        q_grid_ui.iter_mut()
+    {
+        let hover_point = hover_point.map(|pt| calculate_grid_pt(pt, scroll));
+        grid_hover_point.set_if_neq(hover_point);
+        if let Some(hover_point) = hover_point {
+            last_grid_hover_point.set_if_neq(hover_point);
+        }
     }
 }
 
+pub fn calculate_grid_pt(UVec2 { x, y }: UVec2, scroll: UVec2) -> UVec2 {
+    UVec2::new((x + scroll.x) / 3, (y + scroll.y) / 2)
+}
+
 pub fn sys_path_under_hover(
-    q_player: Query<(Entity, Ref<AvailableMoves>), With<Player>>,
+    q_player: Query<
+        (
+            Entity,
+            Ref<AvailableMoves>,
+            AsDerefCopied<SelectedEntity>,
+            &OnTeam,
+            &InNode,
+        ),
+        With<Player>,
+    >,
     mut grid_uis: Query<
         (
             AsDerefCopied<ForPlayer>,
@@ -148,18 +168,41 @@ pub fn sys_path_under_hover(
         ),
         With<GridUi>,
     >,
+    q_node: Query<&CurrentTurn, With<Node>>,
+    q_node_piece: Query<&OnTeam, With<NodePiece>>,
+    q_team: Query<&TeamPhase, With<Team>>,
 ) {
-    for (player_id, available_moves) in q_player.iter() {
+    for (player_id, available_moves, selected_entity, &OnTeam(player_team_id), &InNode(node_id)) in
+        q_player.iter()
+    {
         for (for_player, grid_hover_point, mut path_to_grid_point) in grid_uis.iter_mut() {
             if (!available_moves.is_changed() && !grid_hover_point.is_changed())
                 || for_player != player_id
             {
                 continue;
             }
+            let selected_is_team_during_play = selected_entity
+                .and_then(|selected_entity| {
+                    let &OnTeam(selected_team_id) = q_node_piece.get(selected_entity).ok()?;
+                    if selected_team_id != player_team_id {
+                        return Some(false);
+                    }
+                    let &CurrentTurn(node_current_turn) = get_assert!(node_id, q_node)?;
+                    if node_current_turn != selected_team_id {
+                        return Some(false);
+                    }
+                    let team_phase = get_assert!(selected_team_id, q_team)?;
+                    Some(*team_phase == TeamPhase::Play)
+                })
+                .unwrap_or(false);
+            if !selected_is_team_during_play {
+                path_to_grid_point.set_if_neq(Vec::default());
+                continue;
+            }
             let start =
                 grid_hover_point.and_then(|pt| Some((pt, available_moves.get(&pt).copied()??)));
             let iter = std::iter::successors(start, |&(prev_pt, prev_dir)| {
-                let next_pt = prev_pt + -prev_dir;
+                let next_pt = prev_pt - prev_dir;
                 Some(next_pt).zip(available_moves.get(&next_pt).copied().flatten())
             });
             let mut path: Vec<_> = iter.collect();
@@ -175,6 +218,7 @@ pub fn sys_get_range_of_action(
         Query<PlayerUiQ>,
         Query<(Entity, &mut AvailableActionTargets)>,
     )>,
+    q_team: Query<AsDerefCopied<OnTeam>, With<NodePiece>>,
     changed_player: Query<
         (),
         (
@@ -205,12 +249,13 @@ pub fn sys_get_range_of_action(
         })
         .collect();
 
-    let mut action_target_updates: HashMap<Entity, HashSet<UVec2>> = players
+    let mut action_target_updates: HashMap<Entity, HashMap<UVec2, bool>> = players
         .p0()
         .iter_many(&players_to_update)
         .filter_map(|player_q| {
             // Note: Will probably have to change this logic so that when the player is
             // actually trying to perform the action, it only shows up
+            let selected_piece = (*player_q.selected_entity.deref())?;
 
             let (curio_actions, is_tapped) = player_q.selected_entity.of(&node_pieces)?;
             if is_tapped.map(|is_tapped| **is_tapped).unwrap_or(false) {
@@ -225,35 +270,42 @@ pub fn sys_get_range_of_action(
                     (**player_q.selected_entity)?,
                 ),
             };
-            let range = ast_actions.get(action_id)?.range()?; // Not all actions have a range
+            let action_def = ast_actions.get(action_id)?;
+            let target = action_def.target();
+            let range = action_def.range()?; // Not all actions have a range
             let available_moves = player_q.available_moves.deref();
             let UVec2 {
                 x: width,
                 y: height,
             } = grid.bounds();
 
-            let pts: HashSet<UVec2> = (0..width)
+            let team_check = |id| q_team.get(id).ok();
+
+            let pts: HashMap<UVec2, bool> = (0..width)
                 .flat_map(|x| {
                     (0..height).filter_map(move |y| {
                         let pt = UVec2 { x, y };
+                        let valid_target =
+                            target.valid_target(grid, selected_piece, pt, team_check);
                         // Will need to change this logic for Packman moves
-                        if grid.square_is_closed(pt) {
+                        if !valid_target && grid.square_is_closed(pt) {
                             return None;
                         }
                         // Will have to remove when I create actions that can target self
-                        if grid.item_at(pt) == Some(entity) {
+                        if !valid_target && grid.item_at(pt) == Some(entity) {
                             return None;
                         }
+                        // Maybe in the future we'll allow them to overlap so that you can attack things in range, but for now let's not
                         if available_moves.contains_key(&pt) {
                             return None;
                         }
                         if range.in_range_of(grid, entity, pt) {
-                            return Some(pt);
+                            return Some((pt, valid_target));
                         }
 
                         // TODO only run this if the player has selected to perform an action
                         if range.in_range_of_pts(available_moves.keys(), pt) {
-                            return Some(pt);
+                            return Some((pt, false));
                         }
 
                         None

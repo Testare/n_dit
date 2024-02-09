@@ -1,5 +1,5 @@
-mod calculate_ui_components;
 mod borders;
+mod calculate_ui_components;
 mod grid_animation;
 mod grid_inputs;
 mod grid_tooltip;
@@ -18,6 +18,7 @@ use game_core::player::Player;
 use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
 
+use self::grid_inputs::GridContextActions;
 use super::node_ui_op::{FocusTarget, UiOps};
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
@@ -34,40 +35,44 @@ pub struct GridUi;
 
 impl Plugin for GridUi {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            PreUpdate,
-            (grid_inputs::handle_layout_events, grid_inputs::kb_grid)
-                .in_set(NDitCoreSet::ProcessInputs),
-        )
-        .add_systems(
-            Update,
-            (
-                sys_react_to_node_op.in_set(NDitCoreSet::PostProcessCommands),
-                grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
-                calculate_ui_components::sys_hover_grid_point.in_set(NDitCoreSet::PostProcessUiOps),
+        app.init_resource::<GridContextActions>()
+            .add_systems(
+                PreUpdate,
+                (grid_inputs::handle_layout_events, grid_inputs::kb_grid)
+                    .in_set(NDitCoreSet::ProcessInputs),
+            )
+            .add_systems(
+                Update,
                 (
-                    calculate_ui_components::sys_adjust_available_moves,
+                    sys_react_to_node_op.in_set(NDitCoreSet::PostProcessCommands),
+                    grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
+                    calculate_ui_components::sys_hover_grid_point
+                        .in_set(NDitCoreSet::PostProcessUiOps),
+                    grid_inputs::sys_grid_context_actions
+                        .after(calculate_ui_components::sys_hover_grid_point),
                     (
-                        calculate_ui_components::sys_path_under_hover
-                            .after(calculate_ui_components::sys_hover_grid_point),
+                        calculate_ui_components::sys_adjust_available_moves,
                         (
-                            calculate_ui_components::sys_get_range_of_action,
-                            grid_tooltip::sys_grid_ui_tooltip,
-                        )
-                            .chain(),
-                    ),
-                )
+                            calculate_ui_components::sys_path_under_hover
+                                .after(calculate_ui_components::sys_hover_grid_point),
+                            (
+                                calculate_ui_components::sys_get_range_of_action,
+                                grid_tooltip::sys_grid_ui_tooltip,
+                            )
+                                .chain(),
+                        ),
+                    )
+                        .chain()
+                        .after(super::node_ui_op::sys_adjust_selected_entity)
+                        .in_set(NDitCoreSet::PostProcessUiOps),
+                ),
+            )
+            .add_systems(
+                RENDER_TTY_SCHEDULE,
+                (scroll::adjust_scroll, render_grid::render_grid_system)
                     .chain()
-                    .after(super::node_ui_op::sys_adjust_selected_entity)
-                    .in_set(NDitCoreSet::PostProcessUiOps),
-            ),
-        )
-        .add_systems(
-            RENDER_TTY_SCHEDULE,
-            (scroll::adjust_scroll, render_grid::render_grid_system)
-                .chain()
-                .in_set(RenderTtySet::PostCalculateLayout),
-        );
+                    .in_set(RenderTtySet::PostCalculateLayout),
+            );
     }
 }
 
@@ -79,6 +84,7 @@ impl NodeUi for GridUi {
         UiFocusOnClick,
         HoverPoint,
         GridHoverPoint,
+        LastGridHoverPoint,
         PathToGridPoint,
         Tooltip,
     );
@@ -112,6 +118,7 @@ impl NodeUi for GridUi {
             UiFocusOnClick,
             HoverPoint::default(),
             GridHoverPoint::default(),
+            LastGridHoverPoint::default(),
             PathToGridPoint::default(),
             Tooltip::default(),
         )
@@ -228,6 +235,9 @@ fn sys_react_to_node_op(
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct GridHoverPoint(Option<UVec2>);
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct LastGridHoverPoint(UVec2);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct PathToGridPoint(Vec<(UVec2, Compass)>);

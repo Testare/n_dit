@@ -385,6 +385,7 @@ pub fn create_node_ui(
                         content_pane
                             .spawn((
                                 GridUi::bundle(player, &node_q),
+                                ContextActions::new(player, vec![]),
                                 UiFocusCycleOrder(0),
                             ))
                             .with_children(|grid_ui| {

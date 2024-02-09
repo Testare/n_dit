@@ -1,7 +1,7 @@
 use std::cmp;
 
 use charmi::{CharacterMapImage, CharmieString};
-use crossterm::style::ContentStyle;
+use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
@@ -10,7 +10,9 @@ use itertools::Itertools;
 use super::borders::{arrow_border, border_style_for, intersection_for_pivot, BorderType};
 use super::grid_animation::GridUiAnimation;
 use super::render_square::render_square;
-use super::{GridHoverPoint, GridUi, NodePieceQ, PlayerUiQ, PlayerUiQItem, Scroll2d};
+use super::{
+    GridHoverPoint, GridUi, NodePieceQ, PathToGridPoint, PlayerUiQ, PlayerUiQItem, Scroll2d,
+};
 use crate::animation::AnimationPlayer;
 use crate::configuration::DrawConfiguration;
 use crate::layout::CalculatedSizeTty;
@@ -33,6 +35,7 @@ pub fn render_grid_system(
             &Scroll2d,
             &ForPlayer,
             &GridHoverPoint,
+            Ref<PathToGridPoint>,
             &mut TerminalRendering,
         ),
         With<GridUi>,
@@ -42,7 +45,9 @@ pub fn render_grid_system(
         (With<GridUiAnimation>, Without<GridUi>),
     >,
 ) {
-    for (size, scroll, ForPlayer(player), hover_point, mut rendering) in render_grid_q.iter_mut() {
+    for (size, scroll, ForPlayer(player), hover_point, path_to_grid_point, mut rendering) in
+        render_grid_q.iter_mut()
+    {
         if let Ok(player_ui_q) = players.get(*player) {
             if let Ok((grid, active_curio)) = node_data.get(**player_ui_q.in_node) {
                 let grid_animation = grid_animation
@@ -56,6 +61,7 @@ pub fn render_grid_system(
                     size,
                     scroll,
                     hover_point,
+                    path_to_grid_point,
                     &player_ui_q,
                     grid,
                     active_curio,
@@ -74,7 +80,8 @@ pub fn render_grid_system(
 fn render_grid(
     size: &CalculatedSizeTty,
     scroll: &Scroll2d,
-    &GridHoverPoint(hover_point): &GridHoverPoint,
+    hover_point: &GridHoverPoint,
+    path_to_grid_point: Ref<PathToGridPoint>,
     player_q: &PlayerUiQItem,
     grid: &EntityGrid,
     active_curio: &ActiveCurio,
@@ -91,7 +98,8 @@ fn render_grid(
     let height = grid.height() as usize;
     let grid_map = grid.number_map();
 
-    let sprite_map = grid.point_map(|i, sprite| {
+    // Use Cow instead of String?
+    let mut sprite_map = grid.point_map(|i, sprite| {
         render_square(i, sprite, active_curio, node_pieces, reg_glyph, draw_config)
     });
 
@@ -116,7 +124,7 @@ fn render_grid(
             return None;
         }
 
-        let hover_point = hover_point?;
+        let hover_point = (*hover_point.deref())?;
         if grid.square_is_closed(hover_point) {
             return None;
         }
@@ -143,6 +151,46 @@ fn render_grid(
             dir,
         ))
     });
+
+    for (i, &(to_pt, dir)) in path_to_grid_point.iter().enumerate() {
+        let arrow = match dir {
+            Compass::North => "🡅 ",
+            Compass::East => "🡆 ",
+            Compass::South => "🡇 ",
+            Compass::West => "🡄 ",
+        }
+        .to_string();
+        if i != 0 {
+            let from_pt = to_pt - dir;
+            // Other ideas: "██", if we replace the arrow borders with █ too
+            sprite_map
+                .entry(from_pt)
+                .and_modify(|(_, s)| *s = arrow.clone())
+                .or_insert((ContentStyle::default().blue().on_dark_grey(), arrow.clone()));
+        }
+        if i == path_to_grid_point.len() - 1 {
+            // Other ideas: "⟪⟫"  "⧒ " "⧑ "  "⮛ "  ⧨ ⧩ 🮶🮶  "🭦🭛"  "\" 🮝🮜  "⟪⟫"  "✖ "
+            sprite_map
+                .entry(to_pt)
+                .and_modify(|(_, s)| *s = arrow.clone())
+                .or_insert((ContentStyle::default().blue().on_black(), arrow.clone()));
+        }
+    }
+
+    // Since we draw the WEST and NORTH borders of each cell together, need to adjust point
+    // so that the border drawing occurs on the correct cell. Then create a HashMap.
+    // We also can sometimes have both horizontal and vertical borders for the same
+    // cell, so it is also keyed on a bool where HORIZONTAL = true, VERTICAL = false
+    let draw_path_borders: HashMap<(UVec2, bool), Compass> = path_to_grid_point
+        .iter()
+        .map(|&(to_pt, dir)| {
+            let draw_cell = match dir {
+                Compass::North | Compass::West => to_pt - dir,
+                _ => to_pt,
+            };
+            ((draw_cell, dir.is_horizontal()), dir)
+        })
+        .collect();
 
     let (border_lines, mut space_lines): (Vec<CharmieString>, Vec<CharmieString>) = (y_start
         ..=y_end)
@@ -186,7 +234,7 @@ fn render_grid(
                     if include_border {
                         let pivot_format = border_style_for(
                             player_q,
-                            &hover_point,
+                            hover_point,
                             draw_arrow_border.is_some(),
                             draw_config,
                             &border_x_range,
@@ -202,14 +250,16 @@ fn render_grid(
                         // Add first vertical border
                         let border_style = border_style_for(
                             player_q,
-                            &hover_point,
+                            hover_point,
                             draw_arrow_border.is_some(),
                             draw_config,
                             &border_x_range,
                             &(y..=y),
                         );
 
-                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                        if let Some(dir) = draw_path_borders.get(&(pt, true)) {
+                            space_line.add_text(arrow_border(*dir, false), &border_style);
+                        } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_horizontal()
                         }) {
                             space_line.add_text(arrow_border(dir, false), &border_style);
@@ -226,14 +276,16 @@ fn render_grid(
                     if include_border {
                         let border_style = border_style_for(
                             player_q,
-                            &hover_point,
+                            hover_point,
                             draw_arrow_border.is_some(),
                             draw_config,
                             &(x..=x),
                             &border_y_range,
                         );
 
-                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                        if let Some(dir) = draw_path_borders.get(&(pt, false)) {
+                            border_line.add_text(arrow_border(*dir, true), &border_style);
+                        } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
                         }) {
                             border_line.add_text(arrow_border(dir, true), &border_style);
@@ -279,14 +331,16 @@ fn render_grid(
                     if include_border {
                         let border_style = border_style_for(
                             player_q,
-                            &hover_point,
+                            hover_point,
                             draw_arrow_border.is_some(),
                             draw_config,
                             &(x..=x),
                             &border_y_range,
                         );
 
-                        if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
+                        if let Some(dir) = draw_path_borders.get(&(pt, false)) {
+                            border_line.add_text(arrow_border(*dir, false), &border_style);
+                        } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
                         }) {
                             border_line.add_text(arrow_border(dir, false), &border_style);

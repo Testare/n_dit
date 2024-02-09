@@ -6,6 +6,7 @@ use bevy::ecs::system::{Command, SystemId};
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::time::{Time, Timer, TimerMode};
 use charmi::CharacterMapImage;
+use getset::CopyGetters;
 
 use super::HoverPoint;
 use crate::configuration::DrawConfiguration;
@@ -100,10 +101,14 @@ impl ContextActions {
 }
 
 /// The component for the UI that displays the context actions
-#[derive(Component, Debug, Default)]
+#[derive(Component, Debug, Default, CopyGetters)]
 pub struct ContextMenu {
+    #[getset(get_copy = "pub")]
     position: UVec2,
+    #[getset(get_copy = "pub")]
+    mouse_event: Option<MouseEventTty>,
     /// The entity whose context actions ought to be displayed
+    #[getset(get_copy = "pub")]
     actions_context: Option<Entity>,
 }
 
@@ -171,7 +176,7 @@ impl ContextMenuPane {
 #[derive(Component)]
 pub struct ContextAction {
     action_name: String,
-    action_op: Arc<dyn Fn(Entity, &mut World) + Send + Sync>,
+    action_op: Arc<dyn Fn(Entity, MouseEventTty, &mut World) + Send + Sync>,
 }
 
 impl std::fmt::Debug for ContextAction {
@@ -184,6 +189,19 @@ impl ContextAction {
         action_name: S,
         action_op: F,
     ) -> Self {
+        ContextAction {
+            action_name: action_name.to_string(),
+            action_op: Arc::new(move |id, _mouse, world| action_op(id, world)),
+        }
+    }
+
+    pub fn new_with_mouse_event<
+        S: ToString,
+        F: Fn(Entity, MouseEventTty, &mut World) + Send + Sync + 'static,
+    >(
+        action_name: S,
+        action_op: F,
+    ) -> Self {
         let action_op = Arc::new(action_op);
 
         ContextAction {
@@ -192,7 +210,7 @@ impl ContextAction {
         }
     }
     pub fn from_command_default<C: Command + Default>(action_name: String) -> Self {
-        let action_op = Arc::new(|_, world: &'_ mut World| {
+        let action_op = Arc::new(|_, _, world: &'_ mut World| {
             C::default().apply(world);
         });
 
@@ -202,7 +220,7 @@ impl ContextAction {
         }
     }
     pub fn from_command_clone<C: Command + Sync + Clone>(action_name: String, command: C) -> Self {
-        let action_op = Arc::new(move |_, world: &'_ mut World| {
+        let action_op = Arc::new(move |_, _, world: &'_ mut World| {
             command.clone().apply(world);
         });
 
@@ -216,7 +234,7 @@ impl ContextAction {
         action_name: String,
         command_gen: F,
     ) -> Self {
-        let action_op = Arc::new(move |_, world: &'_ mut World| {
+        let action_op = Arc::new(move |_, _, world: &'_ mut World| {
             command_gen().apply(world);
         });
 
@@ -269,7 +287,7 @@ pub fn sys_context_actions(
                     .get(context_actions.settings_source)
                     .expect("should default");
 
-                let mouse_pos = mouse_event.absolute_pos();
+                let mouse_event = *mouse_event;
                 let action = match settings.determine_action(
                     mb,
                     context_actions.actions.len(),
@@ -281,24 +299,28 @@ pub fn sys_context_actions(
                         log::trace!("Performing context action: {}", context_action.action_name);
                         context_action.action_op.clone()
                     },
-                    MouseButtonAction::CycleContextAction => Arc::new(|_, _: &'_ mut World| {
+                    MouseButtonAction::CycleContextAction => Arc::new(|_, _, _: &'_ mut World| {
                         log::error!("TODO Cycling context actions not implemented yet");
                     }),
                     MouseButtonAction::DisplayContextMenu => {
-                        Arc::new(move |id, world: &'_ mut World| {
-                            for mut context_menu in
-                                world.query::<&mut ContextMenu>().iter_mut(world)
-                            {
-                                // TODO what if there are multiple???
-                                context_menu.actions_context = Some(id);
-                                context_menu.position = mouse_pos;
-                            }
-                            let display_system = world.resource::<SystemIdDisplayContextMenu>().0;
-                            world.run_system(display_system).unwrap();
-                        })
+                        Arc::new(
+                            move |id, mouse_event: MouseEventTty, world: &'_ mut World| {
+                                for mut context_menu in
+                                    world.query::<&mut ContextMenu>().iter_mut(world)
+                                {
+                                    // TODO what if there are multiple???
+                                    context_menu.actions_context = Some(id);
+                                    context_menu.position = mouse_event.absolute_pos();
+                                    context_menu.mouse_event = Some(mouse_event);
+                                }
+                                let display_system =
+                                    world.resource::<SystemIdDisplayContextMenu>().0;
+                                world.run_system(display_system).unwrap();
+                            },
+                        )
                     },
                 };
-                commands.add(move |w: &'_ mut World| action(id, w));
+                commands.add(move |w: &'_ mut World| action(id, mouse_event, w));
                 Some(())
             });
     }
@@ -490,6 +512,9 @@ pub fn sys_context_menu_item_click(
             .and_then(|(ca_id, cm_id)| {
                 let action = context_action_q.get(ca_id).ok()?.action_op.clone();
                 let context_menu = context_menu.get(cm_id).ok()?;
+                let mouse_event = context_menu
+                    .mouse_event()
+                    .expect("Should have a source mouse event if context menu is displayed");
                 let id = context_menu.actions_context?;
                 commands.add(move |w: &'_ mut World| {
                     if let Some(mut timer) = w.get_mut::<ContextMenuTimer>(cm_id) {
@@ -497,7 +522,7 @@ pub fn sys_context_menu_item_click(
                         let duration = timer.duration();
                         timer.tick(duration);
                     }
-                    action(id, w)
+                    action(id, mouse_event, w)
                 });
                 Some(())
             });

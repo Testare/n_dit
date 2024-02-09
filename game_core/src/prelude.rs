@@ -1,3 +1,5 @@
+pub use std::ops::Deref as _;
+
 pub use bevy::asset::AsyncReadExt;
 pub use bevy::prelude::{
     apply_deferred, default, AddChild, Added, App, Asset, AssetApp, AssetEvent, AssetServer,
@@ -16,7 +18,4 @@ pub use bevy_query_ext::prelude::*;
 pub use crate::common::*;
 pub use crate::entity_grid::commands::{AddToGrid, AddToGridCommand};
 pub use crate::entity_grid::EntityGrid;
-pub use crate::{get_assert, get_assert_mut};
-
-
-pub use std::ops::Deref as _; // I use this so much
+pub use crate::{get_assert, get_assert_mut}; // I use this so much

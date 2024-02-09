@@ -94,6 +94,25 @@ impl std::ops::Add<Compass> for UVec2 {
     }
 }
 
+impl std::ops::Sub<Compass> for UVec2 {
+    type Output = UVec2;
+    fn sub(self, rhs: Compass) -> Self::Output {
+        let UVec2 { x, y } = self;
+        match rhs {
+            Compass::North => UVec2 { x, y: y + 1 },
+            Compass::East => UVec2 {
+                x: x.saturating_sub(1),
+                y,
+            },
+            Compass::South => UVec2 {
+                x,
+                y: y.saturating_sub(1),
+            },
+            Compass::West => UVec2 { x: x + 1, y },
+        }
+    }
+}
+
 impl std::fmt::Display for Compass {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -209,6 +228,25 @@ where
             self.1.get_mut(id)
         } else {
             Err(QueryEntityError::NoSuchEntity(index))
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use bevy::math::UVec2;
+
+    use crate::Compass;
+
+    #[test]
+    fn point_minus_compass_equals_points_plus_minus_compass() {
+        let pt = UVec2 { x: 3, y: 3 };
+        for dir in Compass::ALL_DIRECTIONS {
+            assert_eq!(
+                pt - dir,
+                pt + -dir,
+                "{pt:?} - {dir:?} should be the same as adding the inverse"
+            );
         }
     }
 }

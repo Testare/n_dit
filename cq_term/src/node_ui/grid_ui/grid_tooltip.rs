@@ -105,7 +105,10 @@ pub fn sys_grid_ui_tooltip(
                     }
                 } else if available_moves.is_empty()
                     && selected_action.is_some()
-                    && available_action_targets.contains(&hover_point)
+                    && available_action_targets
+                        .get(&hover_point)
+                        .copied()
+                        .unwrap_or_default()
                 {
                     let selected_action =
                         selected_action.expect("Selected action should be checked as some");
