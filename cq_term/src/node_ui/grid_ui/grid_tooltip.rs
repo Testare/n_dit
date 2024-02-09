@@ -8,7 +8,7 @@ use game_core::player::{ForPlayer, Player};
 
 use super::{GridUi, NodePieceQ, NodePieceQItem};
 use crate::base_ui::{HoverPoint, Scroll2d, Tooltip};
-use crate::node_ui::{AvailableActionTargets, AvailableMoves, SelectedAction, SelectedEntity};
+use crate::node_ui::{AvailableActionTargets, AvailableMoves, SelectedAction, SelectedNodePiece};
 use crate::prelude::*;
 
 const EMPTY_TOOLTIP: &str = "";
@@ -28,7 +28,7 @@ pub fn sys_grid_ui_tooltip(
         (
             AsDerefCopied<InNode>,
             AsDerefCopied<OnTeam>,
-            AsDerefCopied<SelectedEntity>,
+            AsDerefCopied<SelectedNodePiece>,
             AsDeref<AvailableMoves>,
             AsDeref<AvailableActionTargets>,
             AsDerefCopied<SelectedAction>,

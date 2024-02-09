@@ -4,7 +4,7 @@ use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
 use taffy::style::Dimension;
 
-use super::{NodePieceQ, NodeUi, SelectedAction, SelectedEntity};
+use super::{NodePieceQ, NodeUi, SelectedAction, SelectedNodePiece};
 use crate::layout::{CalculatedSizeTty, FitToSize, StyleTty};
 use crate::node_ui::NodeUiQItem;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
@@ -16,7 +16,7 @@ impl MenuUiDescription {
     fn style_update_system(
         ast_actions: Res<Assets<Action>>,
         node_pieces: Query<(Option<&Description>, Option<&Actions>), With<NodePiece>>,
-        players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
+        players: Query<(&SelectedNodePiece, &SelectedAction), With<Player>>,
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
         mut last_nonzero_width: Local<usize>,
     ) {
@@ -55,7 +55,7 @@ impl MenuUiDescription {
     fn render_system(
         ast_actions: Res<Assets<Action>>,
         node_pieces: Query<NodePieceQ>,
-        players: Query<(&SelectedEntity, &SelectedAction), With<Player>>,
+        players: Query<(&SelectedNodePiece, &SelectedAction), With<Player>>,
         mut ui: Query<
             (&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering),
             With<MenuUiDescription>,

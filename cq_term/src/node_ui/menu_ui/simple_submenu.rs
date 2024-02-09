@@ -4,7 +4,7 @@ use bevy::ecs::system::StaticSystemParam;
 use game_core::player::{ForPlayer, Player};
 use taffy::style::Dimension;
 
-use super::{NodePieceQ, NodeUi, SelectedEntity, SimpleSubmenu};
+use super::{NodePieceQ, NodeUi, SelectedNodePiece, SimpleSubmenu};
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::node_ui::NodeUiQItem;
 use crate::prelude::*;
@@ -52,7 +52,7 @@ impl<S> Default for SimpleSubMenuPlugin<S> {
 /// System for adjusting the height of a simple submenu
 fn style_simple_submenu<T: SimpleSubmenu + Component>(
     node_pieces: Query<NodePieceQ>,
-    players: Query<&SelectedEntity, With<Player>>,
+    players: Query<&SelectedNodePiece, With<Player>>,
     mut ui: Query<(&mut StyleTty, &ForPlayer), With<T>>,
 ) {
     for (mut style, ForPlayer(player)) in ui.iter_mut() {
@@ -80,7 +80,7 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
 /// System for rendering a simple submenu
 fn render_simple_submenu<T: SimpleSubmenu + Component>(
     node_pieces: Query<NodePieceQ>,
-    players: Query<&SelectedEntity, With<Player>>,
+    players: Query<&SelectedNodePiece, With<Player>>,
     mut uis: Query<(&CalculatedSizeTty, &ForPlayer, &mut TerminalRendering), With<T>>,
     render_param: StaticSystemParam<T::RenderSystemParam>,
 ) {

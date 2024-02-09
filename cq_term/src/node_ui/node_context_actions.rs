@@ -6,7 +6,7 @@ use game_core::player::ForPlayer;
 use getset::CopyGetters;
 
 use super::node_ui_op::UiOps;
-use super::{NodeUiOp, SelectedEntity};
+use super::{NodeUiOp, SelectedNodePiece};
 use crate::base_ui::context_menu::ContextAction;
 use crate::linkage::base_ui_game_core;
 use crate::prelude::*;
@@ -26,7 +26,7 @@ impl FromWorld for NodeContextActions {
                 Name::new("Unload access point CA"),
                 ContextAction::new("Unload access point", |id, world| {
                     world.get(id).copied().and_then(|ForPlayer(player)| {
-                        let access_point_id = (*world.get::<SelectedEntity>(player)?.deref())?;
+                        let access_point_id = (*world.get::<SelectedNodePiece>(player)?.deref())?;
                         let node_op = NodeOp::UnloadAccessPoint { access_point_id };
                         world.resource_mut::<CoreOps>().request(player, node_op);
                         Some(())

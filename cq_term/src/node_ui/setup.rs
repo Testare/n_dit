@@ -25,7 +25,7 @@ use crate::node_ui::menu_ui::{
 use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu};
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, SelectedAction,
-    SelectedEntity, TelegraphedAction,
+    SelectedNodePiece, TelegraphedAction,
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -469,7 +469,7 @@ pub fn create_node_ui(
                 .insert((
                     NodeCursor::default(),
                     CursorIsHidden::default(),
-                    SelectedEntity(node_q.grid.item_at(default())),
+                    SelectedNodePiece(node_q.grid.item_at(default())),
                     SelectedAction(None),
                     TelegraphedAction(None),
                     AvailableActionTargets::default(),

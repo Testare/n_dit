@@ -22,7 +22,7 @@ use self::grid_inputs::GridContextActions;
 use super::node_ui_op::{FocusTarget, UiOps};
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
-    NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity, TelegraphedAction,
+    NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece, TelegraphedAction,
 };
 use crate::base_ui::{HoverPoint, Scroll2d, Tooltip};
 use crate::input_event::MouseEventListener;
@@ -259,7 +259,7 @@ pub struct NodePieceQ {
 #[derive(WorldQuery)]
 pub struct PlayerUiQ {
     entity: Entity,
-    selected_entity: &'static SelectedEntity,
+    selected_entity: &'static SelectedNodePiece,
     selected_action: &'static SelectedAction,
     telegraphed_action: &'static TelegraphedAction,
     node_cursor: &'static NodeCursor,

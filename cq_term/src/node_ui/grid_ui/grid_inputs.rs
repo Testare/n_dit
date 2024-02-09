@@ -14,7 +14,7 @@ use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
 use crate::node_ui::{
-    AvailableActionTargets, AvailableMoves, NodeCursor, NodeUiOp, SelectedAction, SelectedEntity,
+    AvailableActionTargets, AvailableMoves, NodeCursor, NodeUiOp, SelectedAction, SelectedNodePiece,
 };
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
@@ -35,12 +35,12 @@ impl FromWorld for GridContextActions {
                 world.run_system_once(move |
                     mut res_core_ops: ResMut<CoreOps>,
                     q_grid_ui: Query<(AsDerefCopied<ForPlayer>, AsDerefCopied<Scroll2d>), With<GridUi>>,
-                    q_player: Query<(&InNode, &SelectedEntity, &AvailableMoves), With<Player>>,
+                    q_player: Query<(&InNode, &SelectedNodePiece, &AvailableMoves), With<Player>>,
                     q_node: Query<&ActiveCurio, With<Node>>,
                     | {
                         (||{ // try
                             let (player_id, scroll) = get_assert!(grid_id, q_grid_ui)?;
-                            let (&InNode(node_id), &SelectedEntity(selected_piece), available_moves,) = get_assert!(player_id, q_player)?;
+                            let (&InNode(node_id), &SelectedNodePiece(selected_piece), available_moves,) = get_assert!(player_id, q_player)?;
                             let &ActiveCurio(active_curio) = get_assert!(node_id, q_node)?;
 
                             let mut path = Vec::new();
@@ -69,20 +69,21 @@ impl FromWorld for GridContextActions {
                 );
             })
         )).id();
-        let perform_action = world
-            .spawn((
-                Name::new("Perform action CA"),
-                ContextAction::new("Perform action", |grid_id, world| {
-                    // Once we can run systems with input we make this a bit easier
-                    world.run_system_once(
+        let perform_action =
+            world
+                .spawn((
+                    Name::new("Perform action CA"),
+                    ContextAction::new("Perform action", |grid_id, world| {
+                        // Once we can run systems with input we make this a bit easier
+                        world.run_system_once(
                         move |ast_action: Res<Assets<Action>>,
                               mut res_core_ops: ResMut<CoreOps>,
                               q_grid_ui: Query<(&ForPlayer, &LastGridHoverPoint), With<GridUi>>,
-                              q_player: Query<(&SelectedAction, &SelectedEntity), With<Player>>,
+                              q_player: Query<(&SelectedAction, &SelectedNodePiece), With<Player>>,
                               q_curio: Query<&Actions, With<Curio>>| {
                             get_assert!(grid_id, q_grid_ui).and_then(
                                 |(&ForPlayer(player_id), &LastGridHoverPoint(target))| {
-                                    let (&SelectedAction(action_index), &SelectedEntity(curio)) =
+                                    let (&SelectedAction(action_index), &SelectedNodePiece(curio)) =
                                         get_assert!(player_id, q_player)?;
                                     let actions = q_curio.get(curio?).ok()?;
                                     let action_handle = actions.get(action_index?)?;
@@ -99,9 +100,9 @@ impl FromWorld for GridContextActions {
                             );
                         },
                     )
-                }),
-            ))
-            .id();
+                    }),
+                ))
+                .id();
         let select_piece = world
             .spawn((
                 Name::new("Select piece CA"),
@@ -149,7 +150,7 @@ pub fn sys_grid_context_actions(
         (
             &AvailableMoves,
             &AvailableActionTargets,
-            &SelectedEntity,
+            &SelectedNodePiece,
             &InNode,
             &OnTeam,
             &NodeCursor,
@@ -175,7 +176,7 @@ pub fn sys_grid_context_actions(
                 let (
                     available_moves,
                     available_action_targets,
-                    &SelectedEntity(selected_piece),
+                    &SelectedNodePiece(selected_piece),
                     &InNode(node_id),
                     &OnTeam(team_id),
                     &NodeCursor(node_cursor),
@@ -263,7 +264,7 @@ pub fn kb_grid(
             &UiFocus,
             &KeyMap,
             &NodeCursor,
-            &SelectedEntity,
+            &SelectedNodePiece,
             &SelectedAction,
         ),
         With<Player>,

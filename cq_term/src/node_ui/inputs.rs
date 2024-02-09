@@ -8,7 +8,7 @@ use game_core::player::Player;
 use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
 use super::node_ui_op::{FocusTarget, UiOps};
-use super::{NodeUiOp, SelectedAction, SelectedEntity};
+use super::{NodeUiOp, SelectedAction, SelectedNodePiece};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
 use crate::prelude::*;
@@ -41,7 +41,7 @@ pub fn kb_skirm_focus(
             &OnTeam,
             &UiFocus,
             &KeyMap,
-            &SelectedEntity,
+            &SelectedNodePiece,
             &SelectedAction,
         ),
         With<Player>,

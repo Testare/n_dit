@@ -19,7 +19,7 @@ use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus};
 use crate::linkage::base_ui_game_core;
 use crate::node_ui::node_context_actions::NodeContextActions;
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
-use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
+use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
@@ -60,7 +60,16 @@ impl MenuUiActions {
         ast_actions: Res<Assets<Action>>,
         mut res_core_ops: ResMut<CoreOps>,
         mut res_ui_ops: ResMut<UiOps>,
-        players: Query<(Entity, &UiFocus, &KeyMap, &SelectedEntity, &SelectedAction), With<Player>>,
+        players: Query<
+            (
+                Entity,
+                &UiFocus,
+                &KeyMap,
+                &SelectedNodePiece,
+                &SelectedAction,
+            ),
+            With<Player>,
+        >,
         node_pieces: Query<(&Actions, Option<&IsTapped>), With<NodePiece>>,
         action_menu_uis: Query<(), With<MenuUiActions>>,
     ) {
@@ -149,7 +158,7 @@ impl MenuUiActions {
 
     fn sys_adjust_style_action_menu(
         node_pieces: Query<&Actions, With<NodePiece>>,
-        players: Query<&SelectedEntity, With<Player>>,
+        players: Query<&SelectedNodePiece, With<Player>>,
         mut ui: Query<(&mut StyleTty, &ForPlayer), With<MenuUiActions>>,
     ) {
         for (mut style, ForPlayer(player)) in ui.iter_mut() {
@@ -178,7 +187,7 @@ impl MenuUiActions {
         res_draw_config: Res<DrawConfiguration>,
         ast_actions: Res<Assets<Action>>,
         node_pieces: Query<&Actions, With<NodePiece>>,
-        players: Query<(&SelectedEntity, &SelectedAction, &UiFocus), With<Player>>,
+        players: Query<(&SelectedNodePiece, &SelectedAction, &UiFocus), With<Player>>,
         mut ui: Query<
             (
                 Entity,
@@ -264,7 +273,7 @@ fn sys_create_action_ca(
     res_ast_actions: Res<Assets<Action>>,
     q_node_piece: Query<(Ref<Actions>, AsDerefCopied<OnTeam>), With<NodePiece>>,
     mut q_actions_ui: Query<(&ForPlayer, &mut MenuUiActionsCA), With<MenuUiActions>>,
-    q_players: Query<(Ref<SelectedEntity>, &OnTeam), With<Player>>,
+    q_players: Query<(Ref<SelectedNodePiece>, &OnTeam), With<Player>>,
     q_team: Query<&TeamPhase, With<Team>>,
 ) {
     for (&ForPlayer(player_id), mut actions_menu_ca) in q_actions_ui.iter_mut() {

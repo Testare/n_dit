@@ -15,7 +15,7 @@ use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, VisibilityTty};
 use crate::node_ui::node_context_actions::NodeContextActions;
 use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
-use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedEntity};
+use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
@@ -132,7 +132,7 @@ impl MenuUiCardSelection {
 
     pub fn card_selection_focus_status_change(
         players: Query<
-            (Entity, &UiFocus, &Deck, &SelectedEntity),
+            (Entity, &UiFocus, &Deck, &SelectedNodePiece),
             (Changed<UiFocus>, With<Player>),
         >,
         mut card_selection_menus: IndexedQuery<
@@ -167,7 +167,7 @@ impl MenuUiCardSelection {
                 Entity,
                 &KeyMap,
                 &Deck,
-                &SelectedEntity,
+                &SelectedNodePiece,
                 &UiFocus,
                 &PlayedCards,
             ),
@@ -259,7 +259,7 @@ impl MenuUiCardSelection {
 
     fn style_card_selection(
         access_points: Query<(), With<AccessPoint>>,
-        player_info: Query<(&Deck, &SelectedEntity), With<Player>>,
+        player_info: Query<(&Deck, &SelectedNodePiece), With<Player>>,
         mut ui: Query<(&mut StyleTty, &ForPlayer, AsDerefMut<VisibilityTty>), With<Self>>,
     ) {
         for (mut style, ForPlayer(player), mut is_visible) in ui.iter_mut() {
@@ -285,7 +285,7 @@ impl MenuUiCardSelection {
         res_draw_config: Res<DrawConfiguration>,
         access_points: Query<Ref<AccessPoint>>,
         cards: Query<&Card>,
-        players: Query<(&Deck, &SelectedEntity, &PlayedCards, &UiFocus), With<Player>>,
+        players: Query<(&Deck, &SelectedNodePiece, &PlayedCards, &UiFocus), With<Player>>,
         mut ui: Query<(
             Entity,
             &mut Self,
@@ -485,7 +485,7 @@ pub fn sys_create_load_context_items(
                                             **selected_item = Some(pos);
                                         }
                                     }
-                                    if let Some(&SelectedEntity(Some(access_point_id))) = world.get(player_id) {
+                                    if let Some(&SelectedNodePiece(Some(access_point_id))) = world.get(player_id) {
                                         world.get_resource_mut::<CoreOps>()
                                             .expect("CoreOps should be initialized")
                                             .request(player_id, NodeOp::LoadAccessPoint { access_point_id, card_id});
@@ -519,7 +519,7 @@ pub fn sys_card_selection_adjust_ca_on_hover(
         ),
         Or<(Changed<HoverPoint>, Changed<MenuUiCardSelection>)>,
     >,
-    q_player: Query<(&Deck, AsDerefCopied<SelectedEntity>), With<Player>>,
+    q_player: Query<(&Deck, AsDerefCopied<SelectedNodePiece>), With<Player>>,
     q_access_point: Query<Ref<AccessPoint>>,
     q_load_card_ca: Query<AsDerefCopied<LoadCardContextAction>, With<Card>>,
 ) {

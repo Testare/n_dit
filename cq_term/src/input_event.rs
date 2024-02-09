@@ -66,6 +66,7 @@ pub struct MouseEventTty {
     top_entity: Option<Entity>,
     #[getset(get_copy = "pub")]
     is_top_entity_or_ancestor: bool,
+    // TODO store frame number here?
 }
 
 impl MouseEventTty {

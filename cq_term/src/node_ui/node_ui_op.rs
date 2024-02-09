@@ -4,7 +4,7 @@ use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
-use super::{CursorIsHidden, NodeCursor, SelectedAction, SelectedEntity};
+use super::{CursorIsHidden, NodeCursor, SelectedAction, SelectedNodePiece};
 use crate::layout::{
     ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder,
 };
@@ -130,7 +130,7 @@ pub fn sys_adjust_selected_entity(
             &OnTeam,
             &NodeCursor,
             AsDerefMut<SelectedAction>,
-            AsDerefMut<SelectedEntity>,
+            AsDerefMut<SelectedNodePiece>,
         ),
         (
             With<Player>,

@@ -17,7 +17,7 @@ use game_core::prelude::*;
 pub use label::MenuUiLabel;
 pub use stats::MenuUiStats;
 
-use super::{NodeUi, SelectedAction, SelectedEntity};
+use super::{NodeUi, SelectedAction, SelectedNodePiece};
 use crate::layout::{CalculatedSizeTty, StyleTty};
 
 pub trait SimpleSubmenu {

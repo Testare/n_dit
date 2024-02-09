@@ -5,7 +5,7 @@ use game_core::node::{
 };
 use game_core::player::{ForPlayer, Player};
 
-use super::super::{AvailableMoves, SelectedEntity};
+use super::super::{AvailableMoves, SelectedNodePiece};
 use super::{GridHoverPoint, GridUi, LastGridHoverPoint, PathToGridPoint, PlayerUiQ};
 use crate::base_ui::{HoverPoint, Scroll2d};
 use crate::layout::UiFocus;
@@ -17,7 +17,7 @@ pub fn sys_adjust_available_moves(
         (
             Ref<UiFocus>,
             &SelectedAction,
-            AsDerefCopied<SelectedEntity>,
+            AsDerefCopied<SelectedNodePiece>,
             &InNode,
             AsDerefCopiedOrDefault<CursorIsHidden>,
             &TelegraphedAction,
@@ -154,7 +154,7 @@ pub fn sys_path_under_hover(
         (
             Entity,
             Ref<AvailableMoves>,
-            AsDerefCopied<SelectedEntity>,
+            AsDerefCopied<SelectedNodePiece>,
             &OnTeam,
             &InNode,
         ),
@@ -225,7 +225,7 @@ pub fn sys_get_range_of_action(
             With<Player>,
             Or<(
                 Changed<SelectedAction>,
-                Changed<SelectedEntity>,
+                Changed<SelectedNodePiece>,
                 Changed<AvailableMoves>,
                 Changed<TelegraphedAction>,
             )>,

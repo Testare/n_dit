@@ -74,9 +74,9 @@ impl Plugin for NodeUiPlugin {
 #[derive(Component, Debug)]
 pub struct HasNodeUi;
 
-/// Component that tells the UI which entity the node cursor is over
+/// Component that tells the UI which node piece the node cursor is over
 #[derive(Component, Resource, Debug, Deref, DerefMut, PartialEq)]
-pub struct SelectedEntity(pub Option<Entity>);
+pub struct SelectedNodePiece(pub Option<Entity>);
 
 #[derive(Component, Debug, Deref, DerefMut, PartialEq)]
 pub struct SelectedAction(Option<usize>);
@@ -97,7 +97,7 @@ pub struct NodeCursor(pub UVec2);
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct CursorIsHidden(pub bool);
 
-impl SelectedEntity {
+impl SelectedNodePiece {
     pub fn of<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(
         &self,
         query: &'a Query<Q, R>,
