@@ -9,14 +9,24 @@ use super::{
 use crate::card::{Actions, CardDefinition, Description, MaximumSize, MovementSpeed};
 use crate::player::Player;
 use crate::prelude::*;
+use crate::registry::{Reg, Registry};
 
 pub struct NodeLoadingPlugin;
 
 impl Plugin for NodeLoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostUpdate, (sys_enter_node_when_ready, sys_load_curios))
+            .add_plugins(Reg::<NodeScene>::default())
             .register_type::<CurioFromCard>();
     }
+}
+
+#[derive(Debug)]
+pub struct NodeScene;
+
+impl Registry for NodeScene {
+    const REGISTRY_NAME: &'static str = "core:node_scenes";
+    type Value = String;
 }
 
 impl CurioFromCard {

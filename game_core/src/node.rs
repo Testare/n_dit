@@ -11,9 +11,12 @@ pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
 use bevy::ecs::entity::MapEntities;
 use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
+pub use node_loading::NodeScene;
 pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
+
+use self::daddy::Daddy;
 
 pub mod key {
     use typed_key::{typed_key, Key};
@@ -41,6 +44,7 @@ pub struct NodePlugin;
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NoOpAction>()
+            .init_resource::<Daddy<Node>>()
             .register_type::<AccessPoint>()
             .register_type::<ActiveCurio>()
             .register_type::<Curio>()
@@ -217,6 +221,12 @@ pub struct NodeId {
     set: String,
     /// Number of node in series,
     num: u32,
+}
+
+impl std::fmt::Display for NodeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.set.as_str(), self.num)
+    }
 }
 
 impl NodeId {

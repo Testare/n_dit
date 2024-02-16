@@ -13,8 +13,9 @@ mod titlebar_ui;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::reflect::Reflect;
 use game_core::card::Action;
-use game_core::op::{OpExecutorPlugin, OpPlugin};
-use game_core::player::ForPlayer;
+use game_core::node::EnteringNode;
+use game_core::op::OpPlugin;
+use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
 use game_core::NDitCoreSet;
 
@@ -25,56 +26,57 @@ use self::menu_ui::{
 pub use self::messagebar_ui::MessageBarUi;
 pub use self::node_glyph::NodeGlyph;
 pub use self::node_ui_op::NodeUiOp;
-use self::node_ui_op::UiOps;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
 use crate::prelude::*;
+use crate::TerminalWindow;
 /// Plugin for NodeUI
 #[derive(Debug, Default)]
 pub struct NodeUiPlugin;
 
 impl Plugin for NodeUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            Reg::<NodeGlyph>::default(),
-            OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
-            OpPlugin::<NodeUiOp>::default(),
-        ))
-        .init_resource::<setup::ButtonContextActions>()
-        .init_resource::<node_context_actions::NodeContextActions>()
-        .add_systems(Update, setup::create_node_ui)
-        .add_systems(
-            PreUpdate,
-            (inputs::kb_ready, inputs::kb_skirm_focus).in_set(NDitCoreSet::ProcessInputs),
-        )
-        .add_systems(
-            Update,
-            ((
-                node_ui_op::sys_adjust_selected_action,
-                node_ui_op::sys_adjust_selected_entity,
-                button_ui::sys_ready_button_disable,
+        app.add_plugins((Reg::<NodeGlyph>::default(), OpPlugin::<NodeUiOp>::default()))
+            .init_resource::<setup::ButtonContextActions>()
+            .init_resource::<node_context_actions::NodeContextActions>()
+            .add_systems(Update, (setup::create_node_ui, sys_switch_screens_on_enter))
+            .add_systems(
+                PreUpdate,
+                (inputs::kb_ready, inputs::kb_skirm_focus).in_set(NDitCoreSet::ProcessInputs),
             )
-                .chain()
-                .in_set(NDitCoreSet::PostProcessUiOps),),
-        )
-        .add_plugins((
-            MenuUiCardSelection::plugin(),
-            MenuUiStats::plugin(),
-            MenuUiLabel::plugin(),
-            MenuUiActions::plugin(),
-            MenuUiDescription::plugin(),
-            GridUi::plugin(),
-            MessageBarUi::plugin(),
-            TitleBarUi::plugin(),
-        ));
+            .add_systems(
+                Update,
+                ((
+                    node_ui_op::sys_adjust_selected_action,
+                    node_ui_op::sys_adjust_selected_entity,
+                    button_ui::sys_ready_button_disable,
+                )
+                    .chain()
+                    .in_set(NDitCoreSet::PostProcessUiOps),),
+            )
+            .add_plugins((
+                MenuUiCardSelection::plugin(),
+                MenuUiStats::plugin(),
+                MenuUiLabel::plugin(),
+                MenuUiActions::plugin(),
+                MenuUiDescription::plugin(),
+                GridUi::plugin(),
+                MessageBarUi::plugin(),
+                TitleBarUi::plugin(),
+            ));
     }
 }
+
+#[derive(Component, Debug, Default)]
+pub struct NodeUiScreen;
 
 #[derive(Component, Debug)]
 pub struct HasNodeUi;
 
 /// Component that tells the UI which node piece the node cursor is over
+///
+/// Stored on Player entity
 #[derive(Component, Resource, Debug, Deref, DerefMut, PartialEq)]
 pub struct SelectedNodePiece(pub Option<Entity>);
 
@@ -149,5 +151,22 @@ pub trait NodeUi: Component + Default {
 
     fn plugin() -> Self::UiPlugin {
         Self::UiPlugin::default()
+    }
+}
+
+pub fn sys_switch_screens_on_enter(
+    mut terminal_window: ResMut<TerminalWindow>,
+    mut q_removed_entering_node: RemovedComponents<EnteringNode>,
+    q_player: Query<(), (With<HasNodeUi>, With<Player>)>,
+    q_node_ui_screen: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
+) {
+    for player_id in q_removed_entering_node.read() {
+        if q_player.contains(player_id) {
+            for (node_ui_screen_id, &ForPlayer(nui_player_id)) in q_node_ui_screen.iter() {
+                if nui_player_id == player_id {
+                    terminal_window.set_render_target(Some(node_ui_screen_id));
+                }
+            }
+        }
     }
 }

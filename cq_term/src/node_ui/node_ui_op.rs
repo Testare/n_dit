@@ -1,5 +1,5 @@
 use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
-use game_core::op::{Op, OpError, OpErrorUtils, OpExecutor, OpImplResult};
+use game_core::op::{Op, OpError, OpErrorUtils, OpImplResult};
 use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
@@ -9,9 +9,6 @@ use crate::layout::{
     ui_focus_cycle_next, ui_focus_cycle_prev, StyleTty, UiFocus, UiFocusCycleOrder,
 };
 use crate::prelude::*;
-
-#[derive(Debug, Default, Deref, DerefMut, Resource)]
-pub struct UiOps(OpExecutor);
 
 #[derive(Clone, Debug, Reflect)]
 pub enum NodeUiOp {

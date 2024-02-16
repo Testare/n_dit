@@ -3,16 +3,15 @@ use std::io::Write;
 
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
-use bevy::scene::{DynamicScene, DynamicSceneBuilder};
+use bevy::scene::DynamicSceneBuilder;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{
-    EnteringNode, ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, PlayedCards, TeamStatus,
-    Teams,
+    ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, PlayedCards, TeamStatus, Teams,
 };
-use game_core::op::OpResult;
+use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
@@ -21,6 +20,7 @@ use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
+use crate::main_ui::{UiOp, UiOps};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeCursor;
 use crate::prelude::KeyEvent;
@@ -41,7 +41,6 @@ pub struct DebugEntityMarker;
 pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
-    node_id: Option<Entity>,
     player_id: Option<Entity>,
 }
 
@@ -101,8 +100,9 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
 fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
-    mut res_terminal_window: ResMut<TerminalWindow>,
+    res_terminal_window: ResMut<TerminalWindow>,
     mut res_demo_state: ResMut<DemoState>,
+    mut res_ui_ops: ResMut<UiOps>,
     asset_server: Res<AssetServer>,
     fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
@@ -125,10 +125,16 @@ fn debug_key(
     for KeyEvent { code, .. } in ev_keys.read() {
         if *code == KeyCode::Char('/') {
             for mut quest_status in quest_status.iter_mut() {
-                if let Some(n) =
-                    (0..32).find(|i| !quest_status.is_node_done(&NodeId::new("node:demo", *i)))
+                if let Some(nid) = [
+                    NodeId::new("node:demo", 0),
+                    NodeId::new("node:tutorial", 0),
+                    NodeId::new("node:area1", 0),
+                    NodeId::new("node:area1", 1),
+                ]
+                .iter()
+                .find(|&nid| !quest_status.is_node_done(nid))
                 {
-                    quest_status.record_node_done(&NodeId::new("node:demo", n));
+                    quest_status.record_node_done(nid);
                 }
             }
             log::debug!("Debug event occured");
@@ -157,17 +163,26 @@ fn debug_key(
             std::process::Command::new("aseprite").spawn().unwrap();
         } else if *code == KeyCode::Char('m') {
             let current_render_target = res_terminal_window.render_target();
+            // TODO Better keymap logic
             for mut key_map in key_maps.iter_mut() {
                 key_map.toggle_submap(Submap::Node);
             }
 
-            if res_demo_state.node_ui_id.is_none() {
+            if res_demo_state.node_ui_id.is_none()
+                && res_demo_state.board_ui_id != current_render_target
+            {
                 res_demo_state.node_ui_id = current_render_target;
             }
             if current_render_target == res_demo_state.node_ui_id {
-                res_terminal_window.set_render_target(res_demo_state.board_ui_id);
+                res_ui_ops.request(
+                    res_demo_state.player_id.expect("Uh-oh"),
+                    UiOp::SwitchScreen(res_demo_state.board_ui_id.expect("Spaghetti-o")),
+                );
             } else {
-                res_terminal_window.set_render_target(res_demo_state.node_ui_id);
+                res_ui_ops.request(
+                    res_demo_state.player_id.expect("Uh-Oh"),
+                    UiOp::SwitchScreen(res_demo_state.node_ui_id.expect("Spaghetti-O")),
+                );
             }
         }
     }
@@ -175,7 +190,7 @@ fn debug_key(
 
 #[allow(unused)] // While setting up map
 fn demo_startup(
-    res_demo_node_id: Res<DemoNodeId>,
+    mut res_core_ops: ResMut<CoreOps>,
     asset_server: Res<AssetServer>,
     no_op: Res<NoOpAction>,
     mut res_demo_state: ResMut<DemoState>,
@@ -193,25 +208,6 @@ fn demo_startup(
             asset_server.load("nightfall/lvl1.cards.json#Hack"),
         ),))
         .id();
-
-    // Create node things
-
-    let demo_node_id = (*res_demo_node_id)
-        .clone()
-        .unwrap_or(NodeId::new("node:tutorial", 1));
-    let demo_node_id_clone = demo_node_id.clone();
-
-    let node_asset_handle: Handle<DynamicScene> = asset_server.load("demo/demo.scn.ron");
-    commands.spawn(node_asset_handle);
-    let node_asset_handle: Handle<DynamicScene> =
-        asset_server.load("nightfall/nodes/tutorial.scn.ron");
-    commands.spawn(node_asset_handle);
-    let node_asset_handle: Handle<DynamicScene> =
-        asset_server.load("nightfall/nodes/node1.scn.ron");
-    commands.spawn(node_asset_handle);
-    let node_asset_handle: Handle<DynamicScene> =
-        asset_server.load("nightfall/nodes/node2.scn.ron");
-    commands.spawn(node_asset_handle);
 
     // Create player things
     let card_0 = commands
@@ -283,7 +279,6 @@ fn demo_startup(
         .id();
 
     let mut quest_status = QuestStatus::default();
-    // quest_status.record_node_done(&demo_node_id);
 
     let player = commands
         .spawn((
@@ -296,7 +291,6 @@ fn demo_startup(
             },
             quest_status,
             KeyMap::default(),
-            EnteringNode(demo_node_id_clone),
             PlayedCards::default(),
             IsReadyToGo(false),
             Deck::new()
@@ -323,19 +317,19 @@ fn demo_startup(
                 NFNode,
                 ForNode(NodeId::new("node:demo", 0)),
                 TerminalRendering::default(),
-                BoardPosition(UVec2 { x: 0, y: 0 }),
+                BoardPosition(Vec2 { x: 0.0, y: 0.0 }),
                 BoardPiece("Demo Node".to_owned()),
-                BoardSize(UVec2 { x: 4, y: 1 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 1"),
             ));
             board.spawn((
                 NFNode,
-                ForNode(NodeId::new("node:demo", 1)),
+                ForNode(NodeId::new("node:tutorial", 0)),
                 RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Next Demo Node".to_owned()),
-                BoardPosition(UVec2 { x: 6, y: 4 }),
-                BoardSize(UVec2 { x: 4, y: 1 }),
+                BoardPosition(Vec2 { x: 6.0, y: 4.0 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 2"),
             ));
             board.spawn((
@@ -343,28 +337,28 @@ fn demo_startup(
                 RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Shop Node".to_owned()),
-                BoardPosition(UVec2 { x: 0, y: 4 }),
-                BoardSize(UVec2 { x: 4, y: 1 }),
+                BoardPosition(Vec2 { x: 0.0, y: 4.0 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 2"),
             ));
             board.spawn((
                 NFNode,
-                ForNode(NodeId::new("node:demo", 2)),
-                RequiredNodes(vec![NodeId::new("node:demo", 1)]),
+                ForNode(NodeId::new("node:area1", 0)),
+                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Demo Node".to_owned()),
-                BoardPosition(UVec2 { x: 14, y: 4 }),
-                BoardSize(UVec2 { x: 4, y: 1 }),
+                BoardPosition(Vec2 { x: 14.0, y: 4.0 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 2"),
             ));
             board.spawn((
                 NFNode,
-                ForNode(NodeId::new("node:demo", 3)),
-                RequiredNodes(vec![NodeId::new("node:demo", 1)]),
+                ForNode(NodeId::new("node:area1", 1)),
+                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Demo Node 3".to_owned()),
-                BoardPosition(UVec2 { x: 10, y: 0 }),
-                BoardSize(UVec2 { x: 4, y: 1 }),
+                BoardPosition(Vec2 { x: 10.0, y: 0.0 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 2"),
             ));
         })
@@ -463,10 +457,9 @@ fn demo_startup(
         .id();
 
     // Demo logic things
-
     res_demo_state.board_ui_id = Some(board_ui_root);
-    res_demo_state.node_id = None;
     res_demo_state.player_id = Some(player);
+    res_terminal_window.set_render_target(Some(board_ui_root));
 
     log::debug!("Demo startup executed");
 }

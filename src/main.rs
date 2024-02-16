@@ -30,8 +30,8 @@ impl Plugin for CqCliPlugin {
         let demo_node_id = DemoNodeId(self.node.and_then(|node_num| match node_num {
             0 => Some(NodeId::new("node:demo", 0)),
             1 => Some(NodeId::new("node:tutorial", 0)),
-            2 => Some(NodeId::new("node:tutorial", 1)),
-            3 => Some(NodeId::new("node:tutorial", 2)),
+            2 => Some(NodeId::new("node:area1", 0)),
+            3 => Some(NodeId::new("node:area1", 1)),
             _ => None,
         }));
         app.insert_resource(demo_node_id);

@@ -17,15 +17,15 @@ pub struct BoardPiece(pub String);
 
 #[derive(Clone, Component, Copy, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
-pub struct BoardPosition(pub UVec2);
+pub struct BoardPosition(pub Vec2);
 
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
-pub struct BoardSize(pub UVec2);
+pub struct BoardSize(pub Vec2);
 
 impl Default for BoardSize {
     fn default() -> Self {
-        BoardSize(UVec2 { x: 1, y: 1 })
+        BoardSize(Vec2 { x: 1.0, y: 1.0 })
     }
 }
 
@@ -40,6 +40,3 @@ pub enum BoardShape {
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct InteractionPoint;
-
-#[derive(Event)]
-struct Interact;

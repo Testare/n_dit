@@ -12,7 +12,8 @@ use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::input_event::{MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
-use crate::node_ui::node_ui_op::{FocusTarget, UiOps};
+use crate::main_ui::UiOps;
+use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, NodeCursor, NodeUiOp, SelectedAction, SelectedNodePiece,
 };

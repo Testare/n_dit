@@ -1,9 +1,11 @@
 use game_core::board::BoardPiece;
-use game_core::node::{ForNode, NodeId};
+use game_core::node::{ForNode, NodeId, NodeOp};
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::quest::QuestStatus;
 
 use crate::animation::AnimationPlayer;
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::board_ui::BoardPieceUi;
 use crate::input_event::{self, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::layout::VisibilityTty;
@@ -17,7 +19,8 @@ impl Plugin for NfPlugin {
         // Might need to tweak scheduling to make sure it is added same frame.
         // I mean, rendering should be in/oafter PostUpdate anyways.
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
-        app.add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
+        app.init_resource::<NfContextActions>()
+            .add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
             .add_systems(
                 Update,
                 (
@@ -25,6 +28,46 @@ impl Plugin for NfPlugin {
                     mouse_network_map_nodes,
                 ),
             );
+    }
+}
+
+#[derive(Debug, Resource)]
+pub struct NfContextActions {
+    enter_node: Entity,
+    show_dialogue: Entity,
+}
+
+impl FromWorld for NfContextActions {
+    fn from_world(world: &mut World) -> Self {
+        let show_dialogue = world
+            .spawn((
+                Name::new("Show/Hide Dialogue for [{for_node:?}] CA"),
+                ContextAction::new("Show/Hide Dialogue", |_id, _world| {
+                    log::debug!("Coming much later: Dialogue for nodes!")
+                }),
+            ))
+            .id();
+        let enter_node = world
+            .spawn((
+                Name::new("Enter Node CA"),
+                ContextAction::new("Enter Node", |id, world| {
+                    (|| {
+                        // try
+                        let &ForPlayer(player_id) = world.get(id)?;
+                        let &BoardPieceUi(bp_id) = world.get(id)?;
+                        let node_sid: NodeId = world.get::<ForNode>(bp_id)?.0.clone();
+                        world
+                            .resource_mut::<CoreOps>()
+                            .request(player_id, NodeOp::EnterNode(node_sid));
+                        Some(())
+                    })();
+                }),
+            ))
+            .id();
+        Self {
+            show_dialogue,
+            enter_node,
+        }
     }
 }
 
@@ -41,6 +84,7 @@ struct NFNodeUi;
 // Check new board_uis if they point to a node
 fn sys_apply_ui_to_node_nodes(
     mut commands: Commands,
+    res_nf_ca: Res<NfContextActions>,
     board_pieces: Query<
         (Option<AsDeref<ForNode>>, Option<AsDeref<RequiredNodes>>),
         (With<BoardPiece>, With<NFNode>),
@@ -66,11 +110,22 @@ fn sys_apply_ui_to_node_nodes(
                             .all(|node_id| quest_status.is_node_done(node_id))
                     })
                     .unwrap_or(true);
-                commands.entity(bp_ui_id).insert((
+                let mut entity_commands = commands.entity(bp_ui_id);
+                entity_commands.insert((
                     VisibilityTty(met_requirements),
                     NFNodeUi,
                     MouseEventListener,
                 ));
+                if for_node.is_some() {
+                    // TODO show dialogue first once content pane is set up
+                    entity_commands
+                        .insert(ContextActions::new(for_player, vec![res_nf_ca.enter_node]));
+                } else {
+                    entity_commands.insert(ContextActions::new(
+                        for_player,
+                        vec![res_nf_ca.show_dialogue],
+                    ));
+                }
                 if for_node
                     .map(|for_node| quest_status.is_node_done(for_node))
                     .unwrap_or(false)
@@ -85,6 +140,7 @@ fn sys_apply_ui_to_node_nodes(
     }
 }
 
+// TODO should combine this system with `sys_apply_ui_to_node_nodes`
 fn sys_adjust_nf_ui_when_quest_status_updates(
     players: Query<(Entity, &QuestStatus), Changed<QuestStatus>>,
     nf_nodes: Query<(Option<AsDeref<RequiredNodes>>, Option<AsDeref<ForNode>>), With<NFNode>>,

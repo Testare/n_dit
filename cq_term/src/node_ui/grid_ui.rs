@@ -19,7 +19,7 @@ use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
 
 use self::grid_inputs::GridContextActions;
-use super::node_ui_op::{FocusTarget, UiOps};
+use super::node_ui_op::FocusTarget;
 use super::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
     NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece, TelegraphedAction,
@@ -27,6 +27,7 @@ use super::{
 use crate::base_ui::{HoverPoint, Scroll2d, Tooltip};
 use crate::input_event::MouseEventListener;
 use crate::layout::{StyleTty, UiFocusOnClick};
+use crate::main_ui::UiOps;
 use crate::prelude::*;
 use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 
@@ -154,6 +155,9 @@ fn sys_react_to_node_op(
     for op_result in ev_op_result.read() {
         // Reactions to ops from other players in node
         if op_result.result().is_ok() {
+            if matches!(op_result.op(), NodeOp::EnterNode(_)) {
+                continue;
+            }
             get_assert!(op_result.source(), player_nodes, |node| {
                 match op_result.op() {
                     NodeOp::EndTurn => {

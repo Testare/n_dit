@@ -2,7 +2,10 @@ use std::borrow::Cow;
 
 use bevy::ecs::query::WorldQuery;
 use bevy::reflect::TypePath;
+use bevy::scene::DynamicScene;
 
+use self::daddy::Daddy;
+use super::{EnteringNode, NodeId, NodeScene};
 use crate::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -15,6 +18,7 @@ use crate::node::{
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
+use crate::registry::Reg;
 
 #[derive(Clone, Debug, Reflect)]
 pub enum NodeOp {
@@ -41,6 +45,7 @@ pub enum NodeOp {
     TelegraphAction {
         action_id: Cow<'static, str>,
     },
+    EnterNode(NodeId),
 }
 
 #[derive(Debug, WorldQuery)]
@@ -79,7 +84,8 @@ impl Op for NodeOp {
             .register_op(opsys_node_access_point)
             .register_op(opsys_node_ready)
             .register_op(opsys_node_end_turn)
-            .register_op(opsys_telegraph_action);
+            .register_op(opsys_telegraph_action)
+            .register_op(opsys_enter_battle);
     }
 
     fn system_index(&self) -> usize {
@@ -93,6 +99,7 @@ impl Op for NodeOp {
             Self::ReadyToGo { .. } => 4,
             Self::EndTurn => 5,
             Self::TelegraphAction { .. } => 6,
+            Self::EnterNode(_) => 7,
         }
     }
 }
@@ -632,6 +639,36 @@ fn opsys_telegraph_action(In((_, op)): In<(Entity, NodeOp)>) -> OpImplResult {
     if let NodeOp::TelegraphAction { .. } = op {
         let metadata = Metadata::new();
         Ok(metadata)
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
+}
+
+fn opsys_enter_battle(
+    In((player_id, board_op)): In<(Entity, NodeOp)>,
+    mut commands: Commands,
+    res_asset_server: Res<AssetServer>,
+    res_daddy_node: Res<Daddy<Node>>,
+    res_reg_nodes: Res<Reg<NodeScene>>,
+    q_nodes: Query<&Node>,
+) -> OpImplResult {
+    if let NodeOp::EnterNode(node_sid) = board_op {
+        let node_already_open = q_nodes.iter().any(|Node(sid)| *sid == node_sid);
+        // TODO check if player is already in a node. Cleanup?
+        // Add ability to configure node behavior: Autoclose when last player leaves, or leave it open.
+        // Also configurable: If a player leaves and node is not closed, should I restart the node?
+        // Should I prompt player upon leaving a node if they would like to save their progress?
+        if !node_already_open {
+            if let Some(path) = res_reg_nodes.get(node_sid.to_string().as_str()) {
+                let node_asset_handle: Handle<DynamicScene> = res_asset_server.load(path);
+                let node_id = commands.spawn(node_asset_handle).id();
+                commands.entity(**res_daddy_node).add_child(node_id);
+            } else {
+                log::error!("Unable to find scene file for [{node_sid}] in the registry ")
+            }
+        }
+        commands.entity(player_id).insert(EnteringNode(node_sid));
+        Ok(default())
     } else {
         Err(OpError::MismatchedOpSystem)
     }

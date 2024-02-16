@@ -1,0 +1,7 @@
+registry="core:node_scenes"
+
+[values]
+"node:demo:0"       = "demo/demo.scn.ron"
+"node:tutorial:0"   = "nightfall/nodes/tutorial.scn.ron"
+"node:area1:0"      = "nightfall/nodes/node1.scn.ron"
+"node:area1:1"      = "nightfall/nodes/node2.scn.ron"

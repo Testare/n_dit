@@ -31,6 +31,10 @@ use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 pub struct Scroll2d(pub UVec2);
 
+/// Root layout
+#[derive(Debug, Default)]
+pub struct PaneRoot;
+
 #[derive(Debug, Default)]
 pub struct BaseUiPlugin;
 

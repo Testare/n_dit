@@ -5,10 +5,10 @@ use game_core::op::CoreOps;
 use game_core::player::ForPlayer;
 use getset::CopyGetters;
 
-use super::node_ui_op::UiOps;
 use super::{NodeUiOp, SelectedNodePiece};
 use crate::base_ui::context_menu::ContextAction;
 use crate::linkage::base_ui_game_core;
+use crate::main_ui::UiOps;
 use crate::prelude::*;
 
 #[derive(Resource, CopyGetters)]

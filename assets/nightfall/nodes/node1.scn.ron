@@ -4,8 +4,8 @@
     0: ( // Node
       components: {
         "game_core::node::Node": ((
-          set: "node:tutorial",
-          num: 1,
+          set: "node:area1",
+          num: 0,
         )),
         "game_core::node::Teams": ([
           1,

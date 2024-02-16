@@ -9,6 +9,7 @@ pub mod input_event;
 mod key_map;
 pub mod layout;
 pub mod linkage;
+pub mod main_ui;
 pub mod nf; // This should become a plugin in n_dit later once we no longer depend on demo for scene setup.
 pub mod node_ui;
 mod render;
@@ -38,6 +39,41 @@ use self::configuration::DrawConfiguration;
 
 #[derive(Debug)]
 pub struct CharmiePlugin;
+
+impl Plugin for CharmiePlugin {
+    fn build(&self, app: &mut App) {
+        // TODO atty check
+        app.init_resource::<TermConfig>()
+            .init_resource::<TermEventListener>()
+            .init_resource::<TerminalWindow>()
+            .init_resource::<fx::Fx>()
+            .init_resource::<DrawConfiguration>()
+            .init_resource::<MouseLastPositionTty>()
+            .init_asset::<CharmieAnimation>()
+            .init_asset::<CharmieActor>()
+            .init_asset::<CharacterMapImage>()
+            .init_asset_loader::<CharmiaLoader>()
+            .init_asset_loader::<CharmiLoader>()
+            .add_plugins((
+                base_ui::BaseUiPlugin,
+                layout::TaffyTuiLayoutPlugin,
+                node_ui::NodeUiPlugin,
+                render::RenderTtyPlugin,
+                board_ui::BoardUiPlugin,
+                animation::AnimationPlugin,
+                main_ui::MainUiPlugin,
+            ))
+            .add_event::<CrosstermEvent>()
+            .add_event::<KeyEvent>()
+            .add_event::<MouseEvent>()
+            .add_event::<MouseEventTty>()
+            .add_systems(PreUpdate, sys_mouse_tty)
+            .add_systems(Startup, fx::sys_init_fx)
+            .add_systems(First, term_event_listener.in_set(NDitCoreSet::RawInputs))
+            .add_systems(Update, terminal_size_adjustment)
+            .add_systems(Last, exit_key);
+    }
+}
 
 #[derive(Debug, Resource, getset::Setters, getset::Getters, getset::CopyGetters)]
 pub struct TerminalWindow {
@@ -184,40 +220,6 @@ impl Drop for TerminalWindow {
                 log::error!("Failure resetting terminal from Drop: {:#?}", e)
             },
         }
-    }
-}
-
-impl Plugin for CharmiePlugin {
-    fn build(&self, app: &mut App) {
-        // TODO atty check
-        app.init_resource::<TermConfig>()
-            .init_resource::<TermEventListener>()
-            .init_resource::<TerminalWindow>()
-            .init_resource::<fx::Fx>()
-            .init_resource::<DrawConfiguration>()
-            .init_resource::<MouseLastPositionTty>()
-            .init_asset::<CharmieAnimation>()
-            .init_asset::<CharmieActor>()
-            .init_asset::<CharacterMapImage>()
-            .init_asset_loader::<CharmiaLoader>()
-            .init_asset_loader::<CharmiLoader>()
-            .add_plugins((
-                base_ui::BaseUiPlugin,
-                layout::TaffyTuiLayoutPlugin,
-                node_ui::NodeUiPlugin,
-                render::RenderTtyPlugin,
-                board_ui::BoardUiPlugin,
-                animation::AnimationPlugin,
-            ))
-            .add_event::<CrosstermEvent>()
-            .add_event::<KeyEvent>()
-            .add_event::<MouseEvent>()
-            .add_event::<MouseEventTty>()
-            .add_systems(PreUpdate, sys_mouse_tty)
-            .add_systems(Startup, fx::sys_init_fx)
-            .add_systems(First, term_event_listener.in_set(NDitCoreSet::RawInputs))
-            .add_systems(Update, terminal_size_adjustment)
-            .add_systems(Last, exit_key);
     }
 }
 

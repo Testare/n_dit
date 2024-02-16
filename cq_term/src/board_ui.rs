@@ -168,7 +168,7 @@ fn sys_board_piece_lifetimes(
     mut removed_pieces: RemovedComponents<BoardPiece>,
     board_ui_pieces: Query<(Entity, AsDerefCopied<BoardPieceUi>)>,
 ) {
-    // STRANGE BEHAVIOR: If an entity removes the BoardPiece component and then adds it back.
+    // WARNING STRANGE BEHAVIOR: If an entity removes the BoardPiece component and then adds it back. TODO
     let mut new_uis: HashSet<(Entity, Entity, Option<Entity>)> = HashSet::new();
     for (board_ui_id, board_id, for_player) in created_board_uis.iter() {
         if let Some(board_pieces) = get_assert!(board_id, boards).flatten() {

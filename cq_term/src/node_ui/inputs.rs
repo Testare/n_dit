@@ -7,10 +7,11 @@ use game_core::player::Player;
 
 use super::grid_ui::GridUi;
 use super::menu_ui::{MenuUiActions, MenuUiCardSelection};
-use super::node_ui_op::{FocusTarget, UiOps};
+use super::node_ui_op::FocusTarget;
 use super::{NodeUiOp, SelectedAction, SelectedNodePiece};
 use crate::key_map::NamedInput;
 use crate::layout::UiFocus;
+use crate::main_ui::UiOps;
 use crate::prelude::*;
 use crate::{KeyMap, Submap};
 

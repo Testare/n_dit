@@ -24,8 +24,8 @@ use crate::node_ui::menu_ui::{
 };
 use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu};
 use crate::node_ui::{
-    AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, SelectedAction,
-    SelectedNodePiece, TelegraphedAction,
+    AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, NodeUiScreen,
+    SelectedAction, SelectedNodePiece, TelegraphedAction,
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -151,11 +151,11 @@ impl FromWorld for ButtonContextActions {
 pub fn create_node_ui(
     mut commands: Commands,
     res_button_context_actions: Res<ButtonContextActions>,
+    mut terminal_window: ResMut<TerminalWindow>,
     player_now_in_node: Query<
         (Entity, AsDeref<InNode>),
         (With<Player>, Added<InNode>, Without<NodeBattleIntelligence>),
     >,
-    mut terminal_window: ResMut<TerminalWindow>,
     mut players: Query<&mut KeyMap>,
     node_qs: Query<(NodeUiQ, &Name), With<Node>>,
 ) {
@@ -178,8 +178,10 @@ pub fn create_node_ui(
                         grid_template_columns: vec![percent(1.)],
                         ..default()
                     }),
+                    NodeUiScreen, // TODO move this out of the pane root later
                     Name::new(format!("Pane Root - {player:?}")),
                     crate::layout::LayoutRoot,
+                    ForPlayer(player),
                     TerminalRendering::default(),
                 ))
                 .id();
