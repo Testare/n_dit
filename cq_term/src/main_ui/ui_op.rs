@@ -4,11 +4,11 @@ use crate::prelude::*;
 use crate::TerminalWindow;
 
 #[derive(Clone, Debug, Reflect)]
-pub enum UiOp {
+pub enum MainUiOp {
     SwitchScreen(Entity),
 }
 
-impl Op for UiOp {
+impl Op for MainUiOp {
     fn register_systems(mut registrar: OpRegistrar<Self>) {
         registrar.register_op(opsys_switch_screen);
     }
@@ -19,10 +19,10 @@ impl Op for UiOp {
 }
 
 fn opsys_switch_screen(
-    In((_id, op)): In<(Entity, UiOp)>,
+    In((_id, op)): In<(Entity, MainUiOp)>,
     mut res_terminal_window: ResMut<TerminalWindow>,
 ) -> OpImplResult {
-    let UiOp::SwitchScreen(id) = op;
+    let MainUiOp::SwitchScreen(id) = op;
     res_terminal_window.set_render_target(Some(id));
     Ok(Metadata::default())
 }

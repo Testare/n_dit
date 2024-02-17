@@ -20,7 +20,7 @@ use crate::board_ui::{BoardBackground, BoardUi};
 use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
-use crate::main_ui::{UiOp, UiOps};
+use crate::main_ui::{MainUiOp, UiOps};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeCursor;
 use crate::prelude::KeyEvent;
@@ -180,7 +180,10 @@ fn debug_key(
                 res_demo_state.node_ui_id
             };
             switch_screen.and_then(|next_screen| {
-                res_ui_ops.request(res_demo_state.player_id?, UiOp::SwitchScreen(next_screen));
+                res_ui_ops.request(
+                    res_demo_state.player_id?,
+                    MainUiOp::SwitchScreen(next_screen),
+                );
                 Some(())
             });
         }

@@ -2,7 +2,7 @@ mod ui_op;
 
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::NDitCoreSet;
-pub use ui_op::UiOp;
+pub use ui_op::MainUiOp;
 
 use crate::prelude::*;
 
@@ -16,7 +16,7 @@ impl Plugin for MainUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
-            OpPlugin::<UiOp>::default(),
+            OpPlugin::<MainUiOp>::default(),
         ));
     }
 }
