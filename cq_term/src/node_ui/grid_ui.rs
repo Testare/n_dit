@@ -14,7 +14,7 @@ use game_core::node::{
     NodePiece, OnTeam, Pickup,
 };
 use game_core::op::OpResult;
-use game_core::player::Player;
+use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
 
@@ -70,9 +70,12 @@ impl Plugin for GridUi {
             )
             .add_systems(
                 RENDER_TTY_SCHEDULE,
-                (scroll::adjust_scroll, render_grid::render_grid_system)
-                    .chain()
-                    .in_set(RenderTtySet::PostCalculateLayout),
+                (
+                    (scroll::adjust_scroll, render_grid::render_grid_system)
+                        .chain()
+                        .in_set(RenderTtySet::PostCalculateLayout),
+                    sys_react_to_changed_node.in_set(RenderTtySet::PreCalculateLayout),
+                ),
             );
     }
 }
@@ -123,6 +126,28 @@ impl NodeUi for GridUi {
             PathToGridPoint::default(),
             Tooltip::default(),
         )
+    }
+}
+
+fn sys_react_to_changed_node(
+    q_player_changed: Query<(Entity, &InNode), (Changed<InNode>, With<Player>)>,
+    mut q_grid_ui: Query<(&ForPlayer, AsDerefMut<StyleTty>), With<GridUi>>,
+    q_node: Query<&EntityGrid, With<Node>>,
+) {
+    for (player_id, &InNode(node_id)) in q_player_changed.iter() {
+        for (&ForPlayer(for_player), mut style) in q_grid_ui.iter_mut() {
+            if player_id != for_player {
+                continue;
+            }
+            get_assert!(node_id, q_node, |grid| {
+                use taffy::prelude::*;
+                style.max_size = Size {
+                    width: Dimension::Points((grid.width() * 3 + 1) as f32),
+                    height: Dimension::Points((grid.height() * 2 + 1) as f32),
+                };
+                Some(())
+            });
+        }
     }
 }
 

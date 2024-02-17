@@ -173,17 +173,16 @@ fn debug_key(
             {
                 res_demo_state.node_ui_id = current_render_target;
             }
-            if current_render_target == res_demo_state.node_ui_id {
-                res_ui_ops.request(
-                    res_demo_state.player_id.expect("Uh-oh"),
-                    UiOp::SwitchScreen(res_demo_state.board_ui_id.expect("Spaghetti-o")),
-                );
+
+            let switch_screen = if current_render_target == res_demo_state.node_ui_id {
+                res_demo_state.board_ui_id
             } else {
-                res_ui_ops.request(
-                    res_demo_state.player_id.expect("Uh-Oh"),
-                    UiOp::SwitchScreen(res_demo_state.node_ui_id.expect("Spaghetti-O")),
-                );
-            }
+                res_demo_state.node_ui_id
+            };
+            switch_screen.and_then(|next_screen| {
+                res_ui_ops.request(res_demo_state.player_id?, UiOp::SwitchScreen(next_screen));
+                Some(())
+            });
         }
     }
 }
