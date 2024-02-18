@@ -10,11 +10,12 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
-use crate::base_ui::context_menu::{ContextAction, ContextActions, ContextMenuPane};
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::linkage::base_ui_game_core;
+use crate::main_ui::{MainUiOp, UiOps};
 use crate::node_ui::button_ui::{
     EndTurnButton, HelpButton, OptionsButton, QuitButton, ReadyButton,
 };
@@ -29,7 +30,7 @@ use crate::node_ui::{
 };
 use crate::prelude::*;
 use crate::render::TerminalRendering;
-use crate::{KeyMap, Submap, TerminalWindow};
+use crate::{KeyMap, Submap};
 
 #[derive(Debug, Resource, CopyGetters)]
 pub struct ButtonContextActions {
@@ -151,7 +152,7 @@ impl FromWorld for ButtonContextActions {
 pub fn create_node_ui(
     mut commands: Commands,
     res_button_context_actions: Res<ButtonContextActions>,
-    mut terminal_window: ResMut<TerminalWindow>,
+    mut res_ui_ops: ResMut<UiOps>,
     player_now_in_node: Query<
         (Entity, AsDeref<InNode>),
         (With<Player>, Added<InNode>, Without<NodeBattleIntelligence>),
@@ -166,28 +167,6 @@ pub fn create_node_ui(
                 key_map.activate_submap(Submap::Node);
             }
 
-            let paned_root = commands
-                .spawn((
-                    StyleTty(taffy::prelude::Style {
-                        size: Size {
-                            width: Dimension::Percent(1.),
-                            height: Dimension::Percent(1.),
-                        },
-                        display: taffy::prelude::Display::Grid,
-                        grid_template_rows: vec![percent(1.)],
-                        grid_template_columns: vec![percent(1.)],
-                        ..default()
-                    }),
-                    NodeUiScreen, // TODO move this out of the pane root later
-                    Name::new(format!("Pane Root - {player:?}")),
-                    crate::layout::LayoutRoot,
-                    ForPlayer(player),
-                    TerminalRendering::default(),
-                ))
-                .id();
-
-            let context_menu_pane = ContextMenuPane::spawn(&mut commands);
-
             let render_root = commands
                 .spawn((
                     StyleTty(taffy::prelude::Style {
@@ -197,7 +176,8 @@ pub fn create_node_ui(
                         ..default()
                     }),
                     Name::new(format!("Node UI Root - {player:?}")),
-                    // crate::layout::LayoutRoot,
+                    NodeUiScreen,
+                    ForPlayer(player),
                     TerminalRendering::default(),
                 ))
                 .with_children(|root| {
@@ -481,13 +461,7 @@ pub fn create_node_ui(
                 ))
                 .log_components();
 
-            commands
-                .entity(paned_root)
-                .add_child(context_menu_pane)
-                .add_child(render_root)
-                .log_components();
-
-            terminal_window.set_render_target(Some(paned_root));
+            res_ui_ops.request(player, MainUiOp::SwitchScreen(render_root));
         }
     }
 }

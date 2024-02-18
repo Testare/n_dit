@@ -29,8 +29,8 @@ pub use self::node_ui_op::NodeUiOp;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
+use crate::main_ui::{MainUiOp, UiOps};
 use crate::prelude::*;
-use crate::TerminalWindow;
 /// Plugin for NodeUI
 #[derive(Debug, Default)]
 pub struct NodeUiPlugin;
@@ -155,7 +155,7 @@ pub trait NodeUi: Component + Default {
 }
 
 pub fn sys_switch_screens_on_enter(
-    mut terminal_window: ResMut<TerminalWindow>,
+    mut res_ui_ops: ResMut<UiOps>,
     mut q_removed_entering_node: RemovedComponents<EnteringNode>,
     q_player: Query<(), (With<HasNodeUi>, With<Player>)>,
     q_node_ui_screen: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
@@ -164,7 +164,7 @@ pub fn sys_switch_screens_on_enter(
         if q_player.contains(player_id) {
             for (node_ui_screen_id, &ForPlayer(nui_player_id)) in q_node_ui_screen.iter() {
                 if nui_player_id == player_id {
-                    terminal_window.set_render_target(Some(node_ui_screen_id));
+                    res_ui_ops.request(player_id, MainUiOp::SwitchScreen(node_ui_screen_id));
                 }
             }
         }

@@ -117,9 +117,11 @@ fn sys_apply_ui_to_node_nodes(
                     MouseEventListener,
                 ));
                 if for_node.is_some() {
-                    // TODO show dialogue first once content pane is set up
-                    entity_commands
-                        .insert(ContextActions::new(for_player, vec![res_nf_ca.enter_node]));
+                    // TODO when show_dialogue is implemented, swap these
+                    entity_commands.insert(ContextActions::new(
+                        for_player,
+                        vec![res_nf_ca.enter_node, res_nf_ca.show_dialogue],
+                    ));
                 } else {
                     entity_commands.insert(ContextActions::new(
                         for_player,

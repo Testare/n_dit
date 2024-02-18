@@ -8,24 +8,21 @@ use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
-use game_core::node::{
-    ForNode, IsReadyToGo, NoOpAction, Node, NodeId, NodeOp, PlayedCards, TeamStatus, Teams,
-};
-use game_core::op::{CoreOps, OpResult};
+use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
+use game_core::op::OpResult;
 use game_core::player::{ForPlayer, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 
 use crate::board_ui::{BoardBackground, BoardUi};
-use crate::fx::Fx;
 use crate::input_event::{KeyCode, MouseEventTty};
-use crate::layout::{CalculatedSizeTty, LayoutRoot, StyleTty};
-use crate::main_ui::{MainUiOp, UiOps};
+use crate::layout::{CalculatedSizeTty, StyleTty};
+use crate::main_ui::{self, MainUi, MainUiOp, UiOps};
 use crate::nf::{NFNode, NfPlugin, RequiredNodes};
-use crate::node_ui::NodeCursor;
+use crate::node_ui::NodeUiScreen;
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
-use crate::{KeyMap, Submap, TerminalWindow};
+use crate::{KeyMap, Submap};
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 #[derive(Debug)]
@@ -48,7 +45,10 @@ impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DemoState>()
             .add_plugins(NfPlugin)
-            .add_systems(Startup, demo_startup)
+            .add_systems(
+                Startup,
+                demo_startup.after(main_ui::sys_startup_create_main_ui),
+            )
             .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
     }
 }
@@ -100,24 +100,13 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
 fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
-    res_terminal_window: ResMut<TerminalWindow>,
     mut res_demo_state: ResMut<DemoState>,
     mut res_ui_ops: ResMut<UiOps>,
-    asset_server: Res<AssetServer>,
-    fx: Res<Fx>,
     mut ev_keys: EventReader<KeyEvent>,
     mut quest_status: Query<&mut QuestStatus>,
     mut key_maps: Query<&mut KeyMap>,
-    nodes: Query<
-        (
-            Entity,
-            &EntityGrid,
-            Option<&NodeCursor>,
-            &Teams,
-            &TeamStatus,
-        ),
-        With<Node>,
-    >,
+    q_player_node_ui: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
+    q_main_ui: Query<&MainUi>,
 ) {
     for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
@@ -137,49 +126,30 @@ fn debug_key(
                     quest_status.record_node_done(nid);
                 }
             }
-            log::debug!("Debug event occured");
-            log::debug!(
-                "Pickup sound load state: {:?}",
-                asset_server.get_load_state(fx.pickup_sound.clone())
-            );
-            log::debug!(
-                "Animation load state: {:?}",
-                asset_server.get_load_state(fx.charmia.clone())
-            );
-
-            for (_, entity_grid, cursor, teams, team_status) in nodes.iter() {
-                log::debug!(
-                    "# Node ({:?}) - Teams ({:?}) - Team Status ({:?})",
-                    cursor,
-                    teams,
-                    team_status
-                );
-                for entry in entity_grid.entities() {
-                    log::debug!("Entity: {:?}", entry);
-                }
-            }
+        } else if *code == KeyCode::Char('o') {
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
         } else if *code == KeyCode::Char('m') {
-            let current_render_target = res_terminal_window.render_target();
             // TODO Better keymap logic
             for mut key_map in key_maps.iter_mut() {
                 key_map.toggle_submap(Submap::Node);
             }
 
-            if res_demo_state.node_ui_id.is_none()
-                && res_demo_state.board_ui_id != current_render_target
-            {
-                res_demo_state.node_ui_id = current_render_target;
-            }
+            q_main_ui.get_single().ok().and_then(|main_ui| {
+                if res_demo_state.node_ui_id.is_none() {
+                    for (node_ui_id, &ForPlayer(player_id)) in q_player_node_ui.iter() {
+                        if Some(player_id) == res_demo_state.player_id {
+                            res_demo_state.node_ui_id = Some(node_ui_id);
+                        }
+                    }
+                }
+                let next_screen = if **main_ui == res_demo_state.node_ui_id {
+                    res_demo_state.board_ui_id
+                } else {
+                    res_demo_state.node_ui_id
+                }?;
 
-            let switch_screen = if current_render_target == res_demo_state.node_ui_id {
-                res_demo_state.board_ui_id
-            } else {
-                res_demo_state.node_ui_id
-            };
-            switch_screen.and_then(|next_screen| {
                 res_ui_ops.request(
                     res_demo_state.player_id?,
                     MainUiOp::SwitchScreen(next_screen),
@@ -190,16 +160,13 @@ fn debug_key(
     }
 }
 
-#[allow(unused)] // While setting up map
 fn demo_startup(
-    mut res_core_ops: ResMut<CoreOps>,
+    mut res_ui_ops: ResMut<UiOps>,
     asset_server: Res<AssetServer>,
-    no_op: Res<NoOpAction>,
     mut res_demo_state: ResMut<DemoState>,
-    mut res_terminal_window: ResMut<TerminalWindow>,
     mut commands: Commands,
 ) {
-    let root_bam = commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
+    commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
     // Create things node still needs but can't load yet
 
     let hack = commands
@@ -280,7 +247,7 @@ fn demo_startup(
         ),))
         .id();
 
-    let mut quest_status = QuestStatus::default();
+    let quest_status = QuestStatus::default();
 
     let player = commands
         .spawn((
@@ -372,10 +339,11 @@ fn demo_startup(
             TerminalRendering::new(Vec::new()),
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
             StyleTty(taffy::style::Style {
+                grid_row: taffy::prelude::line(1),
+                grid_column: taffy::prelude::line(1),
                 flex_direction: taffy::style::FlexDirection::Column,
                 ..default()
             }),
-            LayoutRoot,
         ))
         .with_children(|board_ui_root| {
             use taffy::prelude::*;
@@ -461,7 +429,5 @@ fn demo_startup(
     // Demo logic things
     res_demo_state.board_ui_id = Some(board_ui_root);
     res_demo_state.player_id = Some(player);
-    res_terminal_window.set_render_target(Some(board_ui_root));
-
-    log::debug!("Demo startup executed");
+    res_ui_ops.request(player, MainUiOp::SwitchScreen(board_ui_root));
 }
