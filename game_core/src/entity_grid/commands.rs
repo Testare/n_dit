@@ -13,7 +13,7 @@ pub struct AddToGridCommand {
     points: Vec<UVec2>,
 }
 
-impl<'w, 's, 'a> AddToGrid for EntityCommands<'w, 's, 'a> {
+impl<'a> AddToGrid for EntityCommands<'a> {
     fn add_to_grid<P: Into<UVec2>>(&mut self, grid_entity: Entity, points: Vec<P>) -> &mut Self {
         if points.is_empty() {
             panic!("cannot add to grid when there are no points");

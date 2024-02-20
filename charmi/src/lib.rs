@@ -9,7 +9,7 @@ use std::ops::AddAssign;
 use std::sync::OnceLock;
 
 use bevy::prelude::Asset;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 pub use charmie_def::{
     CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef, ColorDef,
@@ -27,8 +27,7 @@ pub enum ColorSupportLevel {
     Plain,
 }
 
-#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
-#[uuid = "a58d71d0-9e0f-4c6d-a078-c5621756579c"]
+#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath)]
 pub struct CharacterMapImage {
     rows: Vec<CharmieString>,
     repr: OnceLock<Vec<String>>,

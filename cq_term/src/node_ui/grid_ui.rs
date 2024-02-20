@@ -7,7 +7,7 @@ mod render_grid;
 mod render_square;
 mod scroll;
 
-use bevy::ecs::query::{Has, WorldQuery};
+use bevy::ecs::query::{Has, QueryData};
 use game_core::card::{Action, Actions, MovementSpeed};
 use game_core::node::{
     self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, MovesTaken, Node, NodeOp,
@@ -271,7 +271,7 @@ pub struct LastGridHoverPoint(UVec2);
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct PathToGridPoint(Vec<(UVec2, Compass)>);
 
-#[derive(WorldQuery)]
+#[derive(QueryData)]
 pub struct NodePieceQ {
     piece: &'static NodePiece,
     speed: Option<AsDerefCopied<MovementSpeed>>,
@@ -285,7 +285,7 @@ pub struct NodePieceQ {
     team: Option<AsDerefCopied<OnTeam>>,
 }
 
-#[derive(WorldQuery)]
+#[derive(QueryData)]
 pub struct PlayerUiQ {
     entity: Entity,
     selected_entity: &'static SelectedNodePiece,

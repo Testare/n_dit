@@ -10,7 +10,7 @@ mod node_ui_op;
 mod setup;
 mod titlebar_ui;
 
-use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
+use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
 use bevy::reflect::Reflect;
 use game_core::card::Action;
 use game_core::node::EnteringNode;
@@ -100,14 +100,14 @@ pub struct NodeCursor(pub UVec2);
 pub struct CursorIsHidden(pub bool);
 
 impl SelectedNodePiece {
-    pub fn of<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+    pub fn of<'a, Q: QueryData, R: QueryFilter>(
         &self,
         query: &'a Query<Q, R>,
-    ) -> Option<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>> {
+    ) -> Option<<<Q as QueryData>::ReadOnly as WorldQuery>::Item<'a>> {
         query.get(self.0?).ok()
     }
 
-    pub fn of_mut<'a, Q: WorldQuery, R: ReadOnlyWorldQuery>(
+    pub fn of_mut<'a, Q: QueryData, R: QueryFilter>(
         &self,
         query: &'a mut Query<Q, R>,
     ) -> Option<<Q as WorldQuery>::Item<'a>> {
@@ -115,7 +115,7 @@ impl SelectedNodePiece {
     }
 }
 
-#[derive(Debug, WorldQuery)]
+#[derive(Debug, QueryData)]
 pub struct NodeUiQ {
     grid: &'static EntityGrid,
 }

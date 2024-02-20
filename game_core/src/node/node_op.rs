@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::QueryData;
 use bevy::reflect::TypePath;
 use bevy::scene::DynamicScene;
 
@@ -48,7 +48,7 @@ pub enum NodeOp {
     EnterNode(NodeId),
 }
 
-#[derive(Debug, WorldQuery)]
+#[derive(Debug, QueryData)]
 pub struct CardInfo {
     card: &'static Card,
     description: Option<&'static Description>,
@@ -57,8 +57,8 @@ pub struct CardInfo {
     actions: Option<&'static Actions>,
 }
 
-#[derive(Debug, WorldQuery)]
-#[world_query(mutable)]
+#[derive(Debug, QueryData)]
+#[query_data(mutable)]
 pub struct CurioQ {
     id: Entity,
     in_node: AsDerefCopied<Parent>,

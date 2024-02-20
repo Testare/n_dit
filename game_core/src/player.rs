@@ -15,8 +15,8 @@ impl Plugin for PlayerPlugin {
 pub struct ForPlayer(pub Entity);
 
 impl MapEntities for ForPlayer {
-    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
-        self.0 = entity_mapper.get_or_reserve(self.0);
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0);
     }
 }
 

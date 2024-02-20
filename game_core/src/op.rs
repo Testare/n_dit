@@ -254,35 +254,38 @@ mod test {
                 matches!(
                     results[0],
                     OpResult {
-                        source: Entity::PLACEHOLDER,
+                        source: _,
                         op: ExampleOp::ExampleOne,
                         result: Ok(_)
                     }
                 ),
                 "Result one should match"
             );
+            assert_eq!(Entity::PLACEHOLDER, results[0].source());
             assert!(
                 matches!(
                     results[1],
                     OpResult {
-                        source: Entity::PLACEHOLDER,
+                        source: _,
                         op: ExampleOp::ExampleTwo,
                         result: Ok(_)
                     }
                 ),
                 "Result two should match"
             );
+            assert_eq!(Entity::PLACEHOLDER, results[1].source());
             assert!(
                 matches!(
                     results[2],
                     OpResult {
-                        source: Entity::PLACEHOLDER,
+                        source: _,
                         op: ExampleOp::ExampleTwo,
                         result: Err(OpError::InvalidOp(_))
                     }
                 ),
                 "Result three should match"
             );
+            assert_eq!(Entity::PLACEHOLDER, results[2].source());
             assert_eq!(
                 results[2].result().as_ref().unwrap_err().to_string(),
                 "Invalid op: Bad luck, getting an even number"
@@ -291,13 +294,14 @@ mod test {
                 matches!(
                     results[3],
                     OpResult {
-                        source: Entity::PLACEHOLDER,
+                        source: _,
                         op: ExampleOp::ExampleTwo,
                         result: Ok(_)
                     }
                 ),
                 "Result four should match"
             );
+            assert_eq!(Entity::PLACEHOLDER, results[3].source());
         });
         app.update();
     }

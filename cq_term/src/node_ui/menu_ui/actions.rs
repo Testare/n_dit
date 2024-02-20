@@ -358,24 +358,32 @@ fn sys_actions_menu_adjust_ca_hover(
     q_player: Query<Ref<SelectedAction>, With<Player>>,
     mut q_actions_ui: Query<
         (
+            Entity,
             &ForPlayer,
             AsDeref<MenuUiActionsCA>,
             AsDerefCopied<HoverPoint>,
-            Or<(Changed<MenuUiActionsCA>, Changed<HoverPoint>)>,
             &mut ContextActions,
         ),
         (With<MenuUiActions>,),
     >,
+    q_actions_ui_changed: Query<
+        (),
+        (
+            Or<(Changed<MenuUiActionsCA>, Changed<HoverPoint>)>,
+            With<MenuUiActions>,
+        ),
+    >,
 ) {
     for (
+        ui_id,
         &ForPlayer(player_id),
         menu_ui_actions_ca,
         hover_point,
-        ui_changed,
         mut menu_ui_context_actions,
     ) in q_actions_ui.iter_mut()
     {
         let selected_action = get_assert!(player_id, q_player);
+        let ui_changed = q_actions_ui_changed.contains(ui_id);
         let changes_occurred = ui_changed
             || selected_action
                 .as_ref()

@@ -4,7 +4,7 @@
 use std::iter::Rev;
 use std::vec::IntoIter;
 
-use bevy::ecs::entity::MapEntities;
+use bevy::ecs::entity::{EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use bevy::reflect::Reflect;
 use bitvec::slice::BitSlice;
@@ -66,15 +66,15 @@ pub struct EntityGrid {
 }
 
 impl MapEntities for EntityGrid {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.entries = self
             .entries
             .drain()
-            .filter_map(|(id, places)| Some((*entity_mapper.get_map().get(&id)?, places))) // https://github.com/bevyengine/bevy/issues/10995
+            .map(|(id, places)| (entity_mapper.map_entity(id), places))
             .collect();
         for square in self.grid.iter_mut().flatten().flatten() {
             if let Some(square_entity) = &mut square.item {
-                *square_entity = entity_mapper.get_or_reserve(*square_entity);
+                *square_entity = entity_mapper.map_entity(*square_entity);
             }
         }
     }

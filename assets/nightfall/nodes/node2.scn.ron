@@ -1,21 +1,21 @@
 (
   resources: {},
   entities: {
-    0: ( // Node
+    010000000000: ( // Node
       components: {
         "game_core::node::Node": ((
           set: "node:area1",
           num: 1,
         )),
         "game_core::node::Teams": ([
-          1,
-          2,
+          110000000000,
+          210000000000,
         ]),
-        "game_core::node::CurrentTurn": (1),
+        "game_core::node::CurrentTurn": (110000000000),
         "game_core::node::rule::AccessPointLoadingRule": Staggered,
         "game_core::node::TeamStatus": ({
-          1: Undecided,
-          2: Undecided,
+          110000000000: Undecided,
+          210000000000: Undecided,
         }),
         "game_core::node::ActiveCurio": (None),
         "bevy_core::name::Name": (
@@ -23,24 +23,24 @@
           name: "Demo Node",
         ),
         "bevy_hierarchy::components::children::Children": ([
-            4,
-            5,
-            6,
-            7,
+            410000000000,
+            510000000000,
+            610000000000,
+            710000000000,
         ]),
         "game_core::entity_grid::EntityGrid": (
           shape: "DAAJAIKOv///3527///fHxcE",
           entities: {
-            4: [ // AP
+            410000000000: [ // AP
               (4, 8),
             ],
-            5: [ // AP
+            510000000000: [ // AP
               (7, 8),
             ],
-            6: [ // Sentinel
+            610000000000: [ // Sentinel
               (3, 1),
             ],
-            7: [ // Sentinel
+            710000000000: [ // Sentinel
               (8, 1),
             ],
           },
@@ -48,14 +48,14 @@
       },
     ),
     // TEAMS
-    1: (
+    110000000000: (
       components: {
         "game_core::node::Team": (),
         "game_core::node::TeamColor": Blue,
         "game_core::node::TeamPhase": Setup,
       },
     ),
-    2: (
+    210000000000: (
       components: {
         "game_core::node::Team": (),
         "game_core::node::TeamColor": Red,
@@ -63,22 +63,22 @@
       },
     ),
     // ENEMY PLAYER
-    3: (
+    310000000000: (
       components: {
         "bevy_core::name::Name": (
           hash: 7551943587303600895,
           name: "Enemy",
         ),
-        "game_core::node::OnTeam": (2),
+        "game_core::node::OnTeam": (210000000000),
         "game_core::player::Player": (),
         "game_core::node::IsReadyToGo": (true),
-        "game_core::node::InNode": (0),
+        "game_core::node::InNode": (010000000000),
         "game_core::node::ai::NodeBattleIntelligence": Simple,
       },
     ),
     // PICKUPS
     // ACCESS POINTS
-    4: (
+    410000000000: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "env:access_point",
@@ -86,11 +86,11 @@
         "game_core::node::AccessPoint": (
           card: None,
         ),
-        "game_core::node::OnTeam": (1),
-        "bevy_hierarchy::components::parent::Parent": (0),
+        "game_core::node::OnTeam": (110000000000),
+        "bevy_hierarchy::components::parent::Parent": (010000000000),
       },
     ),
-    5: (
+    510000000000: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "env:access_point",
@@ -98,31 +98,31 @@
         "game_core::node::AccessPoint": (
           card: None,
         ),
-        "game_core::node::OnTeam": (1),
-        "bevy_hierarchy::components::parent::Parent": (0),
+        "game_core::node::OnTeam": (110000000000),
+        "bevy_hierarchy::components::parent::Parent": (010000000000),
       },
     ),
     // ENEMY CURIOS
-    6: (
+    610000000000: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "Enemy",
         ),
-        "game_core::node::OnTeam": (2),
+        "game_core::node::OnTeam": (210000000000),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Sentinel"),
         "game_core::node::ai::SimpleAiCurioOrder": (0),
-        "bevy_hierarchy::components::parent::Parent": (0),
+        "bevy_hierarchy::components::parent::Parent": (010000000000),
       },
     ),
-    7: (
+    710000000000: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "Enemy",
         ),
-        "game_core::node::OnTeam": (2),
+        "game_core::node::OnTeam": (210000000000),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Sentinel"),
         "game_core::node::ai::SimpleAiCurioOrder": (1),
-        "bevy_hierarchy::components::parent::Parent": (0),
+        "bevy_hierarchy::components::parent::Parent": (010000000000),
       },
     ),
   },

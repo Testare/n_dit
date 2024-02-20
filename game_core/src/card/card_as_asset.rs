@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use bevy::asset::io::Reader;
 use bevy::asset::{AssetLoader, LoadContext};
-use bevy::reflect::TypeUuid;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
@@ -53,8 +52,7 @@ pub enum ActionRangeRepr {
     },
 }
 
-#[derive(Asset, CopyGetters, Clone, Debug, Getters, Hash, PartialEq, Reflect, TypeUuid)]
-#[uuid = "e8d74f73-96cf-4916-84c5-9041fa10c4ed"]
+#[derive(Asset, CopyGetters, Clone, Debug, Getters, Hash, PartialEq, Reflect)]
 pub struct CardDefinition {
     id: String,
     #[getset(get = "pub")]

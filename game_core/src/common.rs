@@ -4,7 +4,7 @@ pub mod sord;
 
 use std::ops::Deref;
 
-use bevy::ecs::query::{QueryEntityError, ReadOnlyWorldQuery, WorldQuery};
+use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter, WorldQuery};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
 pub use metadata::Metadata;
@@ -176,14 +176,14 @@ pub struct IndexedQuery<'w, 's, I, Q, F = ()>(
 )
 where
     I: Deref<Target = Entity> + Component,
-    Q: WorldQuery + 'static,
-    F: ReadOnlyWorldQuery + 'static;
+    Q: QueryData + 'static,
+    F: QueryFilter + 'static;
 
 impl<'w, 's, I, Q, F> IndexedQuery<'w, 's, I, Q, F>
 where
     I: Deref<Target = Entity> + Component,
-    Q: WorldQuery + 'static,
-    F: ReadOnlyWorldQuery + 'static,
+    Q: QueryData + 'static,
+    F: QueryFilter + 'static,
 {
     pub fn unindexed(&self) -> &Query<'w, 's, Q, F> {
         &self.1
@@ -212,7 +212,7 @@ where
     pub fn get_for(
         &self,
         index: Entity,
-    ) -> Result<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
+    ) -> Result<<<Q as QueryData>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
         if let Some(id) = self.id_for(index) {
             self.1.get(id)
         } else {

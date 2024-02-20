@@ -2,7 +2,7 @@ use std::sync::mpsc::{Receiver, SendError, Sender, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::QueryData;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy::time::Time;
 
@@ -101,7 +101,7 @@ fn sys_ai_apply(
     }
 }
 
-#[derive(WorldQuery)]
+#[derive(QueryData)]
 struct PieceQ {
     id: Entity,
     actions: AsDerefClonedOrDefault<Actions>,
@@ -109,7 +109,7 @@ struct PieceQ {
     ai_order: OrUsize<AsDerefCopied<SimpleAiCurioOrder>, 30>,
 }
 
-#[derive(WorldQuery)]
+#[derive(QueryData)]
 struct ActionQ {
     range: Copied<ActionRange>,
     effect: Cloned<ActionEffect>,

@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use bevy::asset::{AssetLoader, LoadedUntypedAsset};
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 
 use crate::prelude::*;
 
@@ -19,8 +19,7 @@ impl Plugin for BamPlugin {
 #[derive(Component, Debug)]
 pub struct BamHandle(pub Handle<BevyAssetManifest>);
 
-#[derive(Asset, Debug, Default, TypeUuid, TypePath)]
-#[uuid = "d87e80ab-a13a-448e-b64e-1cd0964862bb"]
+#[derive(Asset, Debug, Default, TypePath)]
 pub struct BevyAssetManifest(Vec<Handle<LoadedUntypedAsset>>);
 
 #[derive(Debug, Default)]

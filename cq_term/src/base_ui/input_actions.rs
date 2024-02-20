@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use bevy::ecs::entity::MapEntities;
+use bevy::ecs::entity::{EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 
 use crate::input_event::KeyEvent;
@@ -29,11 +29,11 @@ pub struct ContextActionsDisabled;
 pub struct LoadedInputEntities(Vec<Entity>);
 
 impl MapEntities for LoadedInputEntities {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = self
             .0
             .drain(..)
-            .map(|e| entity_mapper.get_or_reserve(e))
+            .map(|e| entity_mapper.map_entity(e))
             .collect();
     }
 }

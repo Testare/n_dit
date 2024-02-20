@@ -2,20 +2,18 @@ use std::borrow::Borrow;
 use std::ops::AddAssign;
 
 use bevy::prelude::Asset;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 use bevy::utils::HashMap;
 
 use super::CharacterMapImage;
 
-#[derive(Asset, Clone, Debug, Default, PartialEq, TypeUuid, TypePath)]
-#[uuid = "3dd4417c-1c8f-4ed6-9702-100b1423620a"]
+#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath)]
 #[type_path = "charmi"]
 pub struct CharmieActor {
     pub(super) animations: HashMap<String, CharmieAnimation>,
 }
 
-#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath, TypeUuid)]
-#[uuid = "e9cccab6-b268-455d-b71b-c37b6247455b"]
+#[derive(Asset, Clone, Debug, Default, PartialEq, TypePath)]
 #[type_path = "charmi"]
 pub struct CharmieAnimation {
     pub(super) frames: Vec<CharmieAnimationFrame>,

@@ -1,4 +1,4 @@
-use bevy::audio::VolumeLevel;
+use bevy::audio::Volume;
 use bevy::prelude::{AudioBundle, PlaybackSettings};
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use crossterm::style::Stylize;
@@ -108,7 +108,7 @@ pub fn sys_grid_animations(
                         source: fx.pickup_sound.clone(),
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: bevy::audio::Volume::Relative(VolumeLevel::new(13.0)),
+                            volume: Volume::new(13.0),
                             ..default()
                         },
                     });

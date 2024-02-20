@@ -6,7 +6,7 @@ mod simple_submenu;
 mod stats;
 
 pub use actions::MenuUiActions;
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::QueryData;
 use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
 use charmi::CharacterMapImage;
@@ -50,7 +50,7 @@ pub trait SimpleSubmenu {
     fn ui_bundle_extras() -> Self::UiBundleExtras;
 }
 
-#[derive(WorldQuery)]
+#[derive(QueryData)]
 pub struct NodePieceQ {
     entity: Entity,
     piece: &'static NodePiece,

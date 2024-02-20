@@ -8,7 +8,7 @@ mod node_op;
 mod rule;
 
 pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
-use bevy::ecs::entity::MapEntities;
+use bevy::ecs::entity::{EntityHashMap, EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
 pub use node_loading::NodeScene;
@@ -70,7 +70,8 @@ impl Plugin for NodePlugin {
             .register_type::<rule::AccessPointLoadingRule>()
             // Internal collection types need to be registered too
             .register_type::<Vec<Entity>>()
-            .register_type::<HashMap<Entity, VictoryStatus>>()
+            // .register_type::<HashMap<Entity, VictoryStatus>>()
+            .register_type::<EntityHashMap<VictoryStatus>>()
             .register_type::<Option<Entity>>()
             .add_plugins((
                 ai::NodeAiPlugin,
@@ -89,9 +90,9 @@ pub struct AccessPoint {
 }
 
 impl MapEntities for AccessPoint {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         if let Some(id) = self.card {
-            self.card = Some(entity_mapper.get_or_reserve(id))
+            self.card = Some(entity_mapper.map_entity(id))
         }
     }
 }
@@ -131,9 +132,9 @@ impl Curio {
 }
 
 impl MapEntities for Curio {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         if let Some(id) = self.card {
-            self.card = Some(entity_mapper.get_or_reserve(id))
+            self.card = Some(entity_mapper.map_entity(id))
         }
     }
 }
@@ -150,8 +151,8 @@ impl FromWorld for CurrentTurn {
 }
 
 impl MapEntities for CurrentTurn {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
-        self.0 = entity_mapper.get_or_reserve(self.0)
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -177,8 +178,8 @@ impl FromWorld for InNode {
 }
 
 impl MapEntities for InNode {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
-        self.0 = entity_mapper.get_or_reserve(self.0)
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -303,8 +304,8 @@ impl FromWorld for OnTeam {
 }
 
 impl MapEntities for OnTeam {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
-        self.0 = entity_mapper.get_or_reserve(self.0)
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -382,17 +383,17 @@ pub enum TeamPhase {
 }
 
 /// Lists the victory status of each team in the node.
-/// TODO Should be changd to a component on Team entities
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct TeamStatus(pub HashMap<Entity, VictoryStatus>);
+/// TODO Probably should be changd to a component on Team entities
+#[derive(Clone, Component, Debug, Deserialize, Default, Deref, DerefMut, Reflect, Serialize)]
+#[reflect_value(Component, Deserialize, MapEntities, Serialize)] // Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
+pub struct TeamStatus(EntityHashMap<VictoryStatus>);
 
 impl MapEntities for TeamStatus {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = self
             .0
-            .iter()
-            .filter_map(|(id, status)| Some((*entity_mapper.get_map().get(id)?, *status)))
+            .drain()
+            .map(|(id, status)| (entity_mapper.map_entity(id), status))
             .collect();
     }
 }
@@ -403,16 +404,16 @@ impl MapEntities for TeamStatus {
 pub struct Teams(pub Vec<Entity>);
 
 impl MapEntities for Teams {
-    fn map_entities(&mut self, entity_mapper: &mut bevy::ecs::entity::EntityMapper) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = self
             .0
             .iter()
-            .map(|id| entity_mapper.get_or_reserve(*id))
+            .map(|id| entity_mapper.map_entity(*id))
             .collect();
     }
 }
 
-#[derive(Clone, Copy, Debug, Reflect)]
+#[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
 pub enum VictoryStatus {
     Undecided,
     Loss,

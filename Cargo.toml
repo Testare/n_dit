@@ -5,6 +5,9 @@ members = [
     "cq_term"
 ]
 
+[patch.crates-io]
+simplelog = { git = "https://github.com/aminya/simplelog.rs.git", branch="patch-1" }
+
 [workspace.lints.rust]
 missing_debug_implementations = "warn"
 
@@ -14,10 +17,10 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [workspace.dependencies]
-bevy_query_ext = "0.2"
+bevy_query_ext = "0.3"
 
 [workspace.dependencies.bevy]
-version = "0.12.1"
+version = "0.13.0"
 default-features = false
 features = [
     "animation",
@@ -63,7 +66,7 @@ bevy.workspace = true
 clap = { version = "4.4.11", features = ["derive"] }
 cq_term = { path = "cq_term" }
 game_core = { path = "game_core" }
-simplelog = "^0.10.0"
+simplelog = "^0.12.0"
 tracing = { version = "*", features = ["log"] }
 
 

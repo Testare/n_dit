@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use bevy::asset::io::Reader;
 use bevy::asset::{AssetLoader, LoadContext, LoadedUntypedAsset};
 use bevy::prelude::AssetApp;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -120,8 +120,7 @@ impl<R: Registry> Plugin for Reg<R> {
     }
 }
 
-#[derive(Asset, Serialize, Deserialize, TypeUuid, TypePath)]
-#[uuid = "60c5b905-a8a2-4194-828e-bb1f62432b37"]
+#[derive(Asset, Serialize, Deserialize, TypePath)]
 struct RegistryTomlFile {
     #[serde(skip)]
     source_file: PathBuf,

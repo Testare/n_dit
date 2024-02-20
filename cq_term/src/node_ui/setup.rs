@@ -446,20 +446,17 @@ pub fn create_node_ui(
                 TerminalRendering::default(),
             ));
 
-            commands
-                .entity(player)
-                .insert((
-                    NodeCursor::default(),
-                    CursorIsHidden::default(),
-                    SelectedNodePiece(node_q.grid.item_at(default())),
-                    SelectedAction(None),
-                    TelegraphedAction(None),
-                    AvailableActionTargets::default(),
-                    UiFocusBundle::default(),
-                    AvailableMoves::default(),
-                    HasNodeUi,
-                ))
-                .log_components();
+            commands.entity(player).insert((
+                NodeCursor::default(),
+                CursorIsHidden::default(),
+                SelectedNodePiece(node_q.grid.item_at(default())),
+                SelectedAction(None),
+                TelegraphedAction(None),
+                AvailableActionTargets::default(),
+                UiFocusBundle::default(),
+                AvailableMoves::default(),
+                HasNodeUi,
+            ));
 
             res_ui_ops.request(player, MainUiOp::SwitchScreen(render_root));
         }
