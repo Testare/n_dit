@@ -76,6 +76,7 @@ impl Plugin for NodePlugin {
             .add_plugins((
                 ai::NodeAiPlugin,
                 node_loading::NodeLoadingPlugin,
+                node_op::node_op_undo::NodeOpUndoPlugin::default(),
                 OpPlugin::<NodeOp>::default(),
             ));
     }

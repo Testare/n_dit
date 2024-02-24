@@ -23,7 +23,7 @@ pub trait OpErrorUtils {
 impl OpErrorUtils for &str {
     type Error = OpError;
     fn critical(self) -> OpError {
-        OpError::OpFailureCritical(anyhow::anyhow!(self.to_string()))
+        OpError::OpFailureCritical(self.to_string())
     }
     fn invalid(self) -> Self::Error {
         OpError::InvalidOp(self.to_string())
@@ -33,7 +33,7 @@ impl OpErrorUtils for &str {
 impl<T, E: std::error::Error + Send + Sync + 'static> OpErrorUtils for Result<T, E> {
     type Error = Result<T, OpError>;
     fn critical(self) -> Result<T, OpError> {
-        self.map_err(|e| OpError::OpFailureCritical(anyhow::Error::from(e)))
+        self.map_err(|e| OpError::OpFailureCritical(e.to_string()))
     }
 
     fn invalid(self) -> Result<T, OpError> {
@@ -157,7 +157,7 @@ pub trait Op: std::fmt::Debug + Sync + Send + Reflect + 'static {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum OpError {
     /// This error usually means a user or system was trying to perform an OP but it is unsuccessful
     #[error("Invalid op: {0}")]
@@ -167,10 +167,10 @@ pub enum OpError {
     MismatchedOpSystem,
     /// This error means we encountered an expected error while performing the op but we can continue running
     #[error("Encountered error [{1:3}] running op: {0}")]
-    OpFailureRecoverable(#[source] anyhow::Error, usize),
+    OpFailureRecoverable(String, usize),
     /// This error means we encoutered a failure we are not able to recover from, panic
     #[error("Encountered a fatal error running op: {0}")]
-    OpFailureCritical(#[from] anyhow::Error),
+    OpFailureCritical(String),
 }
 
 impl From<String> for OpError {
@@ -185,7 +185,7 @@ impl From<&str> for OpError {
     }
 }
 
-#[derive(Debug, Event, getset::CopyGetters, getset::Getters)]
+#[derive(Clone, Debug, Event, getset::CopyGetters, getset::Getters)]
 pub struct OpResult<O> {
     #[getset(get_copy = "pub")]
     pub source: Entity,

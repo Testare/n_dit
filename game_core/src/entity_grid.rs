@@ -62,7 +62,7 @@ pub struct EntityGrid {
     width: u32,
     height: u32,
     entries: HashMap<Entity, UVec2>,
-    grid: Vec<Vec<Option<Square>>>, // None = closed. No grid to be. At no point should a square be inserted here from outside
+    grid: Vec<Vec<Option<Square>>>, // None = closed. At no point should a square be inserted here from outside
 }
 
 impl MapEntities for EntityGrid {

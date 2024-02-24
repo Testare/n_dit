@@ -10,7 +10,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-anyhow = "1.0.75"
+anyhow = "1.0.75" # Re-evaluate use of this library
 base64 = "0.13"
 bevy.workspace = true
 bevy_query_ext.workspace = true

@@ -136,7 +136,7 @@ pub fn sys_grid_animations(
 }
 
 fn generate_animation_from_damages(
-    damages: &Vec<UVec2>,
+    damages: &[UVec2],
     base_animation: &CharmieAnimation,
     target: UVec2,
     target_head: Option<String>,

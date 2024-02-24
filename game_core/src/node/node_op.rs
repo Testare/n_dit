@@ -1,3 +1,5 @@
+pub mod node_op_undo;
+
 use std::borrow::Cow;
 
 use bevy::ecs::query::QueryData;
@@ -5,6 +7,7 @@ use bevy::reflect::TypePath;
 use bevy::scene::DynamicScene;
 
 use self::daddy::Daddy;
+use self::node_op_undo::NodeUndoStack;
 use super::{EnteringNode, NodeId, NodeScene};
 use crate::card::{
     Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
@@ -46,6 +49,7 @@ pub enum NodeOp {
         action_id: Cow<'static, str>,
     },
     EnterNode(NodeId),
+    Undo,
 }
 
 #[derive(Debug, QueryData)]
@@ -85,7 +89,8 @@ impl Op for NodeOp {
             .register_op(opsys_node_ready)
             .register_op(opsys_node_end_turn)
             .register_op(opsys_telegraph_action)
-            .register_op(opsys_enter_battle);
+            .register_op(opsys_node_enter_battle)
+            .register_op(opsys_node_undo);
     }
 
     fn system_index(&self) -> usize {
@@ -100,6 +105,7 @@ impl Op for NodeOp {
             Self::EndTurn => 5,
             Self::TelegraphAction { .. } => 6,
             Self::EnterNode(_) => 7,
+            Self::Undo => 8,
         }
     }
 }
@@ -644,15 +650,15 @@ fn opsys_telegraph_action(In((_, op)): In<(Entity, NodeOp)>) -> OpImplResult {
     }
 }
 
-fn opsys_enter_battle(
-    In((player_id, board_op)): In<(Entity, NodeOp)>,
+fn opsys_node_enter_battle(
+    In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
     res_asset_server: Res<AssetServer>,
     res_daddy_node: Res<Daddy<Node>>,
     res_reg_nodes: Res<Reg<NodeScene>>,
     q_nodes: Query<&Node>,
 ) -> OpImplResult {
-    if let NodeOp::EnterNode(node_sid) = board_op {
+    if let NodeOp::EnterNode(node_sid) = node_op {
         let node_already_open = q_nodes.iter().any(|Node(sid)| *sid == node_sid);
         // TODO check if player is already in a node. Cleanup?
         // Add ability to configure node behavior: Autoclose when last player leaves, or leave it open.
@@ -672,4 +678,21 @@ fn opsys_enter_battle(
     } else {
         Err(OpError::MismatchedOpSystem)
     }
+}
+
+fn opsys_node_undo(
+    In((player_id, node_op)): In<(Entity, NodeOp)>,
+    q_player: Query<&OnTeam, With<Player>>,
+    mut q_team: Query<AsDerefMut<NodeUndoStack>, With<Team>>,
+) -> OpImplResult {
+    if !matches!(node_op, NodeOp::Undo) {
+        return Err(OpError::MismatchedOpSystem);
+    }
+    let &OnTeam(team_id) = q_player.get(player_id).invalid()?;
+    let mut undo_queue = q_team.get_mut(team_id).invalid()?;
+    let op_to_undo = undo_queue.pop().ok_or("Nothing to undo")?;
+
+    log::debug!("Testing undo: {op_to_undo:?}");
+
+    Ok(default())
 }
