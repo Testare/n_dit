@@ -37,14 +37,6 @@ impl Metadata {
         Metadata::default()
     }
 
-    /*
-    pub fn get<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<T> {
-        self.0
-            .get(&key.name().to_string())
-            .ok_or_else(|| MetadataErr::RequiredKeyNotFound(key.name().to_owned()))
-            .and_then(|data| Ok(serde_json::from_str(data)?))
-    }*/
-
     pub fn get_optional<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<Option<T>> {
         if let Some(value_str) = self.0.get(&key.name().to_string()) {
             Ok(Some(serde_json::from_str(value_str)?))

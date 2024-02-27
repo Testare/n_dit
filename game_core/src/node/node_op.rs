@@ -10,7 +10,8 @@ use self::daddy::Daddy;
 use self::node_op_undo::NodeUndoStack;
 use super::{EnteringNode, NodeId, NodeScene};
 use crate::card::{
-    Action, Actions, Card, CardDefinition, Deck, Description, MaximumSize, MovementSpeed,
+    Action, ActionEffect, Actions, Card, CardDefinition, Deck, Description, MaximumSize,
+    MovementSpeed,
 };
 use crate::configuration::PlayerConfiguration;
 use crate::node::{
@@ -193,6 +194,8 @@ fn opsys_node_movement(
                 })
                 .unwrap_or(true)
         {
+            // TODO should either just emit PerformCurioAction on the no_op action
+            // Or should do check of PlayerConfiguration to make sure turn ends
             metadata.put(key::TAPPED, true).critical()?;
             **curio_q.tapped = true;
             *active_curio = None;
@@ -288,6 +291,19 @@ fn opsys_node_action(
             Err("Invalid target".invalid())?;
         }
         let mut metadata = Metadata::new();
+        metadata.put(key::CURIO, curio_id).critical()?;
+        if let Some(last_active_id) = *active_curio {
+            if last_active_id != curio_id {
+                metadata.put(key::SKIPPED_ACTIVATION, true).critical()?;
+                metadata
+                    .put(key::DEACTIVATED_CURIO, last_active_id)
+                    .critical()?; // Recoverable?
+            } else {
+                metadata.put(key::SKIPPED_ACTIVATION, false).critical()?;
+            }
+        } else {
+            metadata.put(key::SKIPPED_ACTIVATION, true).critical()?;
+        }
         let effect_metadata = action_def
             .effects()
             .iter()
@@ -353,6 +369,7 @@ fn opsys_node_action(
             team_status.insert(team, victory_status);
         }
 
+        // TODO probably don't bother if the game is over
         if player_config
             .and_then(|config| config.node.as_ref())
             .map(|node_config| node_config.end_turn_after_all_pieces_tap)
@@ -682,17 +699,78 @@ fn opsys_node_enter_battle(
 
 fn opsys_node_undo(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
-    q_player: Query<&OnTeam, With<Player>>,
+    q_player: Query<(&OnTeam, &InNode), With<Player>>,
+    mut q_node: Query<(&mut EntityGrid, AsDerefMut<ActiveCurio>), With<Node>>,
     mut q_team: Query<AsDerefMut<NodeUndoStack>, With<Team>>,
+    mut q_curio: Query<(AsDerefMut<MovesTaken>, AsDerefMut<IsTapped>), With<Curio>>,
+    mut q_curio_effects: Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
 ) -> OpImplResult {
     if !matches!(node_op, NodeOp::Undo) {
         return Err(OpError::MismatchedOpSystem);
     }
-    let &OnTeam(team_id) = q_player.get(player_id).invalid()?;
+    let (&OnTeam(team_id), &InNode(node_id)) = q_player.get(player_id).invalid()?;
     let mut undo_queue = q_team.get_mut(team_id).invalid()?;
-    let op_to_undo = undo_queue.pop().ok_or("Nothing to undo")?;
+    if undo_queue.len() == 0 {
+        Err("Not able to undo any more".invalid())?;
+    }
+    let (mut grid, mut active_curio) = q_node.get_mut(node_id).critical()?;
+    for op_to_undo in undo_queue.drain(..).rev() {
+        if let Ok(metadata) = op_to_undo.result() {
+            match op_to_undo.op() {
+                NodeOp::ActivateCurio { .. } => {
+                    active_curio.set_if_neq(None);
+                },
+                NodeOp::MoveActiveCurio { .. } => {
+                    let curio_id = metadata.get_required(key::CURIO).critical()?;
+                    let (mut moves_taken, mut is_tapped) = q_curio.get_mut(curio_id).critical()?;
+                    if let Some(dropped_square) =
+                        metadata.get_optional(key::DROPPED_SQUARE).critical()?
+                    {
+                        grid.push_back(dropped_square, curio_id);
+                    }
+                    grid.pop_front(curio_id);
+                    active_curio.set_if_neq(Some(curio_id)); // In case something goes wrong before full undo can occur
+                    is_tapped.set_if_neq(false);
+                    *moves_taken -= 1;
+                    // TODO Configurable return pick-up (cq should, nf should not)
+                },
+                NodeOp::PerformCurioAction { .. } => {
+                    let curio_id = metadata.get_required(key::CURIO).critical()?;
+                    let (_, mut is_tapped) = q_curio.get_mut(curio_id).critical()?;
+                    let skipped_activation =
+                        metadata.get_required(key::SKIPPED_ACTIVATION).critical()?;
+                    if !skipped_activation {
+                        active_curio.set_if_neq(Some(curio_id));
+                    } else {
+                        active_curio.set_if_neq(None);
+                    }
+                    is_tapped.set_if_neq(false);
 
-    log::debug!("Testing undo: {op_to_undo:?}");
-
+                    if let Some(effects) = metadata.get_optional(key::EFFECTS).critical()? {
+                        // More than invalid, but not critical
+                        ActionEffect::revert_effects(
+                            effects,
+                            &mut grid,
+                            q_curio_effects.as_query_lens(),
+                        )
+                        .critical()?;
+                    }
+                    if let Some(self_effects) =
+                        metadata.get_optional(key::SELF_EFFECTS).invalid()?
+                    {
+                        ActionEffect::revert_effects(
+                            self_effects,
+                            &mut grid,
+                            q_curio_effects.as_query_lens(),
+                        )
+                        .critical()?;
+                    }
+                },
+                _ => {
+                    log::error!("Invalid op in undo queue: {op_to_undo:?}");
+                },
+            }
+        }
+    }
     Ok(default())
 }

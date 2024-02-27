@@ -1,3 +1,0 @@
-[env]
-# This variable is only used by `cargo test` to output logging using test_log::test
-RUST_LOG = "trace" 

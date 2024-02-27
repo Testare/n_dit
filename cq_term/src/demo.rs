@@ -249,6 +249,14 @@ fn demo_startup(
             asset_server.load("nightfall/lvl3.cards.json#Fiddle"),
         ),))
         .id();
+    let card_memory_hog = commands
+        .spawn((Card::new(
+            "Memory Hog",
+            "curio:memory_hog",
+            None,
+            asset_server.load("nightfall/lvl3.cards.json#Memory Hog"),
+        ),))
+        .id();
 
     let quest_status = QuestStatus::default();
 
@@ -276,6 +284,7 @@ fn demo_startup(
                 .with_card(card_bb)
                 .with_card(card_3)
                 .with_card(card_4)
+                .with_card(card_memory_hog)
                 .with_card(card_5),
         ))
         .id();

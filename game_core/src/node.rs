@@ -36,6 +36,7 @@ pub mod key {
     pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
     pub const DEACTIVATED_CURIO: Key<Entity> = typed_key!("deactivated_curio");
+    pub const SKIPPED_ACTIVATION: Key<bool> = typed_key!("skipped_activate");
 }
 
 #[derive(Debug)]

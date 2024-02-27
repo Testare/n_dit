@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 
+use bevy::ecs::system::QueryLens;
 use getset::Getters;
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +22,10 @@ pub mod key {
     pub const DAMAGES: Key<Vec<UVec2>> = typed_key!("damages");
     pub const FATAL: Key<bool> = typed_key!("fatal");
     pub const TARGET_ENTITY: Key<Entity> = typed_key!("target_entity");
+    pub const CLOSED_SQUARE: Key<bool> = typed_key!("closed");
+    pub const OLD_SQUARE_STATUS: Key<bool> = typed_key!("old_square_status");
+    pub const OLD_TARGET_CAPACITY: Key<u32> = typed_key!("old_capacity");
+    pub const OLD_TARGET_MOVEMENT: Key<u32> = typed_key!("old_movement");
 }
 
 #[derive(Asset, Clone, Debug, Getters, Reflect)]
@@ -131,18 +136,22 @@ impl ActionEffect {
             ActionEffect::Open => {
                 if grid.square_is_closed(target) {
                     grid.open_square(target);
+                    action_metadata.put(key::OLD_SQUARE_STATUS, false)?;
                 }
                 action_metadata
             },
             ActionEffect::Close => {
                 if grid.square_is_free(target) {
                     grid.close_square(target);
+                    action_metadata.put(key::OLD_SQUARE_STATUS, true)?;
                 }
                 action_metadata
             },
             ActionEffect::ModifyCapacity(capacity_change) => {
                 if let Some(target_id) = grid.item_at(target) {
                     if let Ok((mut capacity, _)) = entity_props.get_mut(target_id) {
+                        action_metadata.put(key::TARGET_ENTITY, target_id)?;
+                        action_metadata.put(key::OLD_TARGET_CAPACITY, *capacity)?;
                         if *capacity_change > 0 {
                             *capacity = capacity.saturating_add(*capacity_change as u32);
                         } else {
@@ -155,6 +164,8 @@ impl ActionEffect {
             ActionEffect::ModifyMovement(movement_change) => {
                 if let Some(target_id) = grid.item_at(target) {
                     if let Ok((_, mut movement_speed)) = entity_props.get_mut(target_id) {
+                        action_metadata.put(key::TARGET_ENTITY, target_id)?;
+                        action_metadata.put(key::OLD_TARGET_MOVEMENT, *movement_speed)?;
                         if *movement_change > 0 {
                             *movement_speed =
                                 movement_speed.saturating_add(*movement_change as u32);
@@ -169,6 +180,49 @@ impl ActionEffect {
             ActionEffect::Heal(_healing) => todo!("Healing not implemented yet"),
             _ => todo!("Not implemented yet"),
         })
+    }
+
+    pub fn revert_effects(
+        metadata: Metadata,
+        grid: &mut Mut<EntityGrid>,
+        mut curio_props: QueryLens<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>)>,
+    ) -> Result<(), MetadataErr> {
+        let target_pt = metadata.get_required(key::TARGET_POINT)?;
+        let mut curio_props = curio_props.query();
+        if let Some(mut damages) = metadata.get_optional(key::DAMAGES)? {
+            let target_entity = metadata.get_required(key::TARGET_ENTITY)?;
+            let was_fatal = metadata.get_required(key::FATAL)?;
+            if was_fatal {
+                let head = damages
+                    .pop()
+                    .expect("attack could not have been fatal if no damage was dealt");
+                grid.put_item(head, target_entity);
+            }
+            for pt in damages.into_iter().rev() {
+                grid.push_back(pt, target_entity);
+            }
+        }
+        if let Some(old_square_status) = metadata.get_optional(key::OLD_SQUARE_STATUS)? {
+            if old_square_status {
+                grid.open_square(target_pt);
+            } else {
+                grid.close_square(target_pt);
+            }
+        }
+        if let Some(old_capacity) = metadata.get_optional(key::OLD_TARGET_CAPACITY)? {
+            let target_entity = metadata.get_required(key::TARGET_ENTITY)?;
+            if let Ok((mut max_size, _)) = curio_props.get_mut(target_entity) {
+                *max_size = old_capacity;
+            }
+        }
+        if let Some(old_movement) = metadata.get_optional(key::OLD_TARGET_MOVEMENT)? {
+            let target_entity = metadata.get_required(key::TARGET_ENTITY)?;
+            if let Ok((_, mut movement)) = curio_props.get_mut(target_entity) {
+                *movement = old_movement;
+            }
+        }
+
+        Ok(())
     }
 }
 
