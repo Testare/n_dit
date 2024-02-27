@@ -22,11 +22,15 @@ pub fn kb_ready(
 ) {
     for KeyEvent { code, modifiers } in ev_keys.read() {
         for (player, key_map) in players.iter_mut() {
-            if matches!(
-                key_map.named_input_for_key(Submap::Node, *code, *modifiers),
-                Some(NamedInput::Ready)
-            ) {
-                res_prime_op.request(player, NodeOp::ReadyToGo);
+            let input = key_map.named_input_for_key(Submap::Node, *code, *modifiers);
+            match input {
+                Some(NamedInput::Ready) => {
+                    res_prime_op.request(player, NodeOp::ReadyToGo);
+                },
+                Some(NamedInput::Undo) => {
+                    res_prime_op.request(player, NodeOp::Undo);
+                },
+                _ => {},
             }
         }
     }

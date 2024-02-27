@@ -227,10 +227,6 @@ fn sys_react_to_node_op(
         if let Ok(metadata) = op_result.result() {
             let player = op_result.source();
             match op_result.op() {
-                NodeOp::PerformCurioAction { .. } => {
-                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
-                },
                 NodeOp::MoveActiveCurio { .. } => {
                     // NOTE this will probably fail when an AI takes an action
                     get_assert!(player, player_nodes, |node| {
@@ -248,7 +244,19 @@ fn sys_react_to_node_op(
                         Some(())
                     });
                 },
-                NodeOp::ReadyToGo => {
+                NodeOp::Undo => {
+                    get_assert!(player, player_nodes, |node| {
+                        // Should I use IN_NODE metadata instead?
+                        let (grid, _, _) = get_assert!(node, nodes)?;
+                        let curio = metadata.get_optional(node::key::CURIO).ok()??;
+                        res_ui_ops
+                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
+                        res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                        res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
+                        Some(())
+                    });
+                },
+                NodeOp::ReadyToGo | NodeOp::PerformCurioAction { .. } => {
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                     res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                 },

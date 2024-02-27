@@ -714,11 +714,16 @@ fn opsys_node_undo(
         Err("Not able to undo any more".invalid())?;
     }
     let (mut grid, mut active_curio) = q_node.get_mut(node_id).critical()?;
+    let mut undo_metadata = Metadata::new();
+    undo_metadata.put(key::NODE_ID, node_id).invalid()?;
     for op_to_undo in undo_queue.drain(..).rev() {
         if let Ok(metadata) = op_to_undo.result() {
             match op_to_undo.op() {
                 NodeOp::ActivateCurio { .. } => {
-                    active_curio.set_if_neq(None);
+                    if let Some(curio_id) = *active_curio {
+                        undo_metadata.put(key::CURIO, curio_id).critical()?;
+                        *active_curio = None;
+                    }
                 },
                 NodeOp::MoveActiveCurio { .. } => {
                     let curio_id = metadata.get_required(key::CURIO).critical()?;
@@ -728,6 +733,8 @@ fn opsys_node_undo(
                     {
                         grid.push_back(dropped_square, curio_id);
                     }
+
+                    undo_metadata.put(key::CURIO, curio_id).critical()?;
                     grid.pop_front(curio_id);
                     active_curio.set_if_neq(Some(curio_id)); // In case something goes wrong before full undo can occur
                     is_tapped.set_if_neq(false);
@@ -739,6 +746,7 @@ fn opsys_node_undo(
                     let (_, mut is_tapped) = q_curio.get_mut(curio_id).critical()?;
                     let skipped_activation =
                         metadata.get_required(key::SKIPPED_ACTIVATION).critical()?;
+                    undo_metadata.put(key::CURIO, curio_id).critical()?;
                     if !skipped_activation {
                         active_curio.set_if_neq(Some(curio_id));
                     } else {
@@ -772,5 +780,5 @@ fn opsys_node_undo(
             }
         }
     }
-    Ok(default())
+    Ok(undo_metadata)
 }

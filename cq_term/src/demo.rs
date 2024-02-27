@@ -9,7 +9,7 @@ use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
-use game_core::op::{CoreOps, OpResult};
+use game_core::op::OpResult;
 use game_core::player::{ForPlayer, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
@@ -102,7 +102,6 @@ fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
     mut res_demo_state: ResMut<DemoState>,
     mut res_ui_ops: ResMut<UiOps>,
-    mut res_core_ops: ResMut<CoreOps>,
     mut ev_keys: EventReader<KeyEvent>,
     mut quest_status: Query<&mut QuestStatus>,
     mut key_maps: Query<&mut KeyMap>,
@@ -131,8 +130,6 @@ fn debug_key(
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
-        } else if *code == KeyCode::Backspace {
-            res_core_ops.request(res_demo_state.player_id.unwrap(), NodeOp::Undo)
         } else if *code == KeyCode::Char('m') {
             // TODO Better keymap logic
             for mut key_map in key_maps.iter_mut() {
