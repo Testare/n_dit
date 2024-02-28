@@ -12,6 +12,7 @@ use bevy::ecs::entity::{EntityHashMap, EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
 pub use node_loading::NodeScene;
+pub use node_op::node_op_undo::NodeUndoStack;
 pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};

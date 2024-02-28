@@ -12,9 +12,11 @@ mod titlebar_ui;
 
 use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
 use bevy::reflect::Reflect;
-use game_core::card::Action;
-use game_core::node::EnteringNode;
-use game_core::op::OpPlugin;
+use game_core::card::{Action, Actions};
+use game_core::node::{
+    self, ActiveCurio, Curio, CurrentTurn, EnteringNode, InNode, Node, NodeOp, OnTeam,
+};
+use game_core::op::{OpPlugin, OpResult};
 use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
 use game_core::NDitCoreSet;
@@ -30,6 +32,7 @@ use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
 use super::render::TerminalRendering;
 use crate::main_ui::{MainUiOp, UiOps};
+use crate::node_ui::node_ui_op::FocusTarget;
 use crate::prelude::*;
 /// Plugin for NodeUI
 #[derive(Debug, Default)]
@@ -47,13 +50,17 @@ impl Plugin for NodeUiPlugin {
             )
             .add_systems(
                 Update,
-                ((
-                    node_ui_op::sys_adjust_selected_action,
-                    node_ui_op::sys_adjust_selected_entity,
-                    button_ui::sys_ready_button_disable,
-                )
-                    .chain()
-                    .in_set(NDitCoreSet::PostProcessUiOps),),
+                (
+                    (sys_react_to_node_op, button_ui::sys_undo_button_state)
+                        .in_set(NDitCoreSet::PostProcessCommands),
+                    (
+                        node_ui_op::sys_adjust_selected_action,
+                        node_ui_op::sys_adjust_selected_entity,
+                        button_ui::sys_ready_button_disable,
+                    )
+                        .chain()
+                        .in_set(NDitCoreSet::PostProcessUiOps),
+                ),
             )
             .add_plugins((
                 MenuUiCardSelection::plugin(),
@@ -166,6 +173,124 @@ pub fn sys_switch_screens_on_enter(
                 if nui_player_id == player_id {
                     res_ui_ops.request(player_id, MainUiOp::SwitchScreen(node_ui_screen_id));
                 }
+            }
+        }
+    }
+}
+
+fn sys_react_to_node_op(
+    ast_action: Res<Assets<Action>>,
+    mut evr_op_result: EventReader<OpResult<NodeOp>>,
+    mut res_ui_ops: ResMut<UiOps>,
+    q_node: Query<
+        (
+            &EntityGrid,
+            AsDerefCopied<CurrentTurn>,
+            AsDerefCopied<ActiveCurio>,
+        ),
+        With<Node>,
+    >,
+    q_player_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
+    q_player_in_node: Query<AsDerefCopied<InNode>, With<Player>>,
+    mut q_player_ui: Query<
+        (
+            Entity,
+            AsDerefCopied<OnTeam>,
+            AsDerefCopied<InNode>,
+            &mut TelegraphedAction,
+        ),
+        (With<Player>, With<HasNodeUi>),
+    >,
+    q_curio: Query<&Actions, With<Curio>>,
+) {
+    for op_result in evr_op_result.read() {
+        // Reactions to ops from other players in node
+        if op_result.result().is_ok() {
+            if matches!(op_result.op(), NodeOp::EnterNode(_)) {
+                continue;
+            }
+            get_assert!(op_result.source(), q_player_in_node, |node| {
+                match op_result.op() {
+                    NodeOp::EndTurn => {
+                        let (_, current_turn, _) = get_assert!(node, q_node)?;
+                        for (id, team, _, _) in q_player_ui.iter() {
+                            if team == current_turn {
+                                res_ui_ops.request(id, NodeUiOp::SetCursorHidden(false));
+                            }
+                        }
+                    },
+                    NodeOp::TelegraphAction { action_id } => {
+                        let (_, _, active_curio) = get_assert!(node, q_node)?;
+                        let actions = q_curio.get(active_curio?).ok()?;
+                        let action_handle = actions.iter().find_map(|action_handle| {
+                            let action_def = ast_action.get(action_handle)?;
+                            (action_def.id() == action_id).then_some(action_handle.clone())
+                        });
+
+                        for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
+                            if in_node == node {
+                                **telegraphed_action = action_handle.clone();
+                            }
+                        }
+                    },
+                    NodeOp::PerformCurioAction { .. } => {
+                        for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
+                            if in_node == node {
+                                **telegraphed_action = None;
+                            }
+                        }
+                    },
+                    _ => {},
+                }
+                Some(())
+            });
+        }
+        if !q_player_with_node_ui.contains(op_result.source()) {
+            continue;
+        }
+
+        // Reactions to own actions
+        if let Ok(metadata) = op_result.result() {
+            let player = op_result.source();
+            match op_result.op() {
+                NodeOp::MoveActiveCurio { .. } => {
+                    // NOTE this will probably fail when an AI takes an action
+                    get_assert!(player, q_player_in_node, |node| {
+                        let (grid, _, _) = get_assert!(node, q_node)?;
+                        let curio = metadata.get_required(node::key::CURIO).ok()?;
+                        let remaining_moves =
+                            metadata.get_required(node::key::REMAINING_MOVES).ok()?;
+                        let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
+                        res_ui_ops
+                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
+                        if remaining_moves == 0 && !tapped {
+                            res_ui_ops
+                                .request(player, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
+                        }
+                        Some(())
+                    });
+                },
+                NodeOp::Undo => {
+                    get_assert!(player, q_player_in_node, |node| {
+                        // Should I use IN_NODE metadata instead?
+                        let (grid, _, _) = get_assert!(node, q_node)?;
+                        let curio = metadata.get_optional(node::key::CURIO).ok()??;
+                        res_ui_ops
+                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
+                        res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                        res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
+                        Some(())
+                    });
+                },
+                NodeOp::ReadyToGo | NodeOp::PerformCurioAction { .. } => {
+                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
+                },
+                NodeOp::EndTurn => {
+                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
+                    res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
+                },
+                _ => {},
             }
         }
     }

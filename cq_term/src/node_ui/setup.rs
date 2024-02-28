@@ -17,7 +17,7 @@ use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::linkage::base_ui_game_core;
 use crate::main_ui::{MainUiOp, UiOps};
 use crate::node_ui::button_ui::{
-    EndTurnButton, HelpButton, OptionsButton, QuitButton, ReadyButton,
+    EndTurnButton, HelpButton, OptionsButton, QuitButton, ReadyButton, UndoButton,
 };
 use crate::node_ui::grid_ui::{GridUi, GridUiAnimation};
 use crate::node_ui::menu_ui::{
@@ -44,6 +44,8 @@ pub struct ButtonContextActions {
     toggle_help: Entity,
     #[getset(get_copy = "pub")]
     toggle_options: Entity,
+    #[getset(get_copy = "pub")]
+    undo: Entity,
 }
 
 impl FromWorld for ButtonContextActions {
@@ -139,12 +141,19 @@ impl FromWorld for ButtonContextActions {
                 world.send_event(AppExit);
             }))
             .id();
+        let undo = world
+            .spawn(base_ui_game_core::context_action_from_op::<CoreOps, _>(
+                "Undo",
+                NodeOp::Undo,
+            ))
+            .id();
         ButtonContextActions {
             end_turn,
             quit,
             start,
             toggle_help,
             toggle_options,
+            undo,
         }
     }
 }
@@ -225,12 +234,14 @@ pub fn create_node_ui(
                                     Name::new("Title Bar Right"),
                                 ))
                                 .with_children(|title_bar_right| {
+
                                     title_bar_right.spawn((
-                                        ButtonUiBundle::new("Options", ContentStyle::new().green()),
                                         ForPlayer(player),
-                                        OptionsButton,
-                                        ContextActions::new(player, vec![res_button_context_actions.toggle_options()]),
-                                        Tooltip::new("[Esc] Opens menu for options"),
+                                        UndoButton,
+                                        ButtonUiBundle::new("Undo", ContentStyle::new().cyan()),
+                                        ContextActions::new(player, vec![res_button_context_actions.undo()]),
+                                        VisibilityTty::invisible(),
+                                        Tooltip::new("[⌫] Undo")
                                     ));
 
                                     title_bar_right.spawn((
@@ -263,6 +274,24 @@ pub fn create_node_ui(
                                         ContextActions::new(player, vec![res_button_context_actions.end_turn()]),
                                         VisibilityTty::invisible(),
                                         Tooltip::new("[-] End your turn and let the next player go")
+                                    ));
+
+                                    title_bar_right.spawn((StyleTty(taffy::prelude::Style {
+                                        size: Size {
+                                            width: Dimension::Points(1.0),
+                                            height: Dimension::Auto,
+                                        },
+                                        flex_grow: 0.0,
+                                        flex_shrink: 2.0,
+                                        ..default()
+                                    }),));
+
+                                    title_bar_right.spawn((
+                                        ButtonUiBundle::new("Options", ContentStyle::new().green()),
+                                        ForPlayer(player),
+                                        OptionsButton,
+                                        ContextActions::new(player, vec![res_button_context_actions.toggle_options()]),
+                                        Tooltip::new("[Esc] Opens menu for options"),
                                     ));
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {

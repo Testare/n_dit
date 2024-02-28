@@ -1,5 +1,9 @@
+use bevy::ecs::entity::EntityHashSet;
 use bevy::ecs::query::Has;
-use game_core::node::{AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, OnTeam};
+use game_core::node::{
+    AccessPoint, CurrentTurn, InNode, Node, NodeOp, NodePiece, NodeUndoStack, OnTeam, Team,
+    TeamPhase,
+};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 
@@ -18,6 +22,9 @@ pub struct EndTurnButton;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct HelpButton;
+
+#[derive(Clone, Copy, Component, Reflect)]
+pub struct UndoButton;
 
 #[derive(Clone, Copy, Component, Reflect)]
 pub struct QuitButton;
@@ -115,5 +122,53 @@ pub fn sys_ready_button_disable(
                 }
             }
         }
+    }
+}
+
+pub fn sys_undo_button_state(
+    mut commands: Commands,
+    mut evr_node_op: EventReader<OpResult<NodeOp>>,
+    q_player: Query<AsDerefMut<OnTeam>, With<Player>>,
+    q_team: Query<(&TeamPhase, &NodeUndoStack), With<Team>>,
+    mut q_undo_button: Query<
+        (
+            Entity,
+            &ForPlayer,
+            AsDerefMut<VisibilityTty>,
+            Has<MouseEventTtyDisabled>,
+        ),
+        With<UndoButton>,
+    >,
+) {
+    let updated_teams: EntityHashSet = evr_node_op
+        .read()
+        .map(|op_result| op_result.source())
+        .filter_map(|player_id| q_player.get(player_id).ok().copied())
+        .collect();
+
+    if updated_teams.is_empty() {
+        return;
+    }
+    for (ui_id, &ForPlayer(player_id), mut is_visible, has_disable_component) in
+        q_undo_button.iter_mut()
+    {
+        q_player.get(player_id).ok().and_then(|team_id| {
+            if !updated_teams.contains(team_id) {
+                return None;
+            }
+            let (team_phase, undo_stack) = q_team.get(*team_id).ok()?;
+            let should_be_visible = *team_phase != TeamPhase::Setup;
+            is_visible.set_if_neq(should_be_visible);
+            // If the undo stack is empty, it should have disable component
+            // If not visible, doesn't matter
+            if should_be_visible && (undo_stack.is_empty() != has_disable_component) {
+                if has_disable_component {
+                    commands.entity(ui_id).remove::<MouseEventTtyDisabled>();
+                } else {
+                    commands.entity(ui_id).insert(MouseEventTtyDisabled);
+                }
+            }
+            Some(())
+        });
     }
 }

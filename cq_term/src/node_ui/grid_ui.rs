@@ -8,26 +8,22 @@ mod render_square;
 mod scroll;
 
 use bevy::ecs::query::{Has, QueryData};
-use game_core::card::{Action, Actions, MovementSpeed};
+use game_core::card::{Actions, MovementSpeed};
 use game_core::node::{
-    self, AccessPoint, ActiveCurio, Curio, CurrentTurn, InNode, IsTapped, MovesTaken, Node, NodeOp,
-    NodePiece, OnTeam, Pickup,
+    AccessPoint, Curio, InNode, IsTapped, MovesTaken, Node, NodePiece, OnTeam, Pickup,
 };
-use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 pub use grid_animation::GridUiAnimation;
 
 use self::grid_inputs::GridContextActions;
-use super::node_ui_op::FocusTarget;
 use super::{
-    AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeCursor, NodeUi,
-    NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece, TelegraphedAction,
+    AvailableActionTargets, AvailableMoves, CursorIsHidden, NodeCursor, NodeUi, NodeUiQItem,
+    SelectedAction, SelectedNodePiece, TelegraphedAction,
 };
 use crate::base_ui::{HoverPoint, Scroll2d, Tooltip};
 use crate::input_event::MouseEventListener;
 use crate::layout::{StyleTty, UiFocusOnClick};
-use crate::main_ui::UiOps;
 use crate::prelude::*;
 use crate::render::{RenderTtySet, RENDER_TTY_SCHEDULE};
 
@@ -45,7 +41,6 @@ impl Plugin for GridUi {
             .add_systems(
                 Update,
                 (
-                    sys_react_to_node_op.in_set(NDitCoreSet::PostProcessCommands),
                     grid_animation::sys_grid_animations.in_set(NDitCoreSet::PostProcessCommands),
                     calculate_ui_components::sys_hover_grid_point
                         .in_set(NDitCoreSet::PostProcessUiOps),
@@ -147,125 +142,6 @@ fn sys_react_to_changed_node(
                 };
                 Some(())
             });
-        }
-    }
-}
-
-// TODO move to node_ui
-fn sys_react_to_node_op(
-    ast_action: Res<Assets<Action>>,
-    mut ev_op_result: EventReader<OpResult<NodeOp>>,
-    mut res_ui_ops: ResMut<UiOps>,
-    nodes: Query<
-        (
-            &EntityGrid,
-            AsDerefCopied<CurrentTurn>,
-            AsDerefCopied<ActiveCurio>,
-        ),
-        With<Node>,
-    >,
-    players_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
-    player_nodes: Query<AsDerefCopied<InNode>, With<Player>>,
-    mut player_uis: Query<
-        (
-            Entity,
-            AsDerefCopied<OnTeam>,
-            AsDerefCopied<InNode>,
-            &mut TelegraphedAction,
-        ),
-        (With<Player>, With<HasNodeUi>),
-    >,
-    curio_actions: Query<&Actions, With<Curio>>,
-) {
-    for op_result in ev_op_result.read() {
-        // Reactions to ops from other players in node
-        if op_result.result().is_ok() {
-            if matches!(op_result.op(), NodeOp::EnterNode(_)) {
-                continue;
-            }
-            get_assert!(op_result.source(), player_nodes, |node| {
-                match op_result.op() {
-                    NodeOp::EndTurn => {
-                        let (_, current_turn, _) = get_assert!(node, nodes)?;
-                        for (id, team, _, _) in player_uis.iter() {
-                            if team == current_turn {
-                                res_ui_ops.request(id, NodeUiOp::SetCursorHidden(false));
-                            }
-                        }
-                    },
-                    NodeOp::TelegraphAction { action_id } => {
-                        let (_, _, active_curio) = get_assert!(node, nodes)?;
-                        let actions = curio_actions.get(active_curio?).ok()?;
-                        let action_handle = actions.iter().find_map(|action_handle| {
-                            let action_def = ast_action.get(action_handle)?;
-                            (action_def.id() == action_id).then_some(action_handle.clone())
-                        });
-
-                        for (_, _, in_node, mut telegraphed_action) in player_uis.iter_mut() {
-                            if in_node == node {
-                                **telegraphed_action = action_handle.clone();
-                            }
-                        }
-                    },
-                    NodeOp::PerformCurioAction { .. } => {
-                        for (_, _, in_node, mut telegraphed_action) in player_uis.iter_mut() {
-                            if in_node == node {
-                                **telegraphed_action = None;
-                            }
-                        }
-                    },
-                    _ => {},
-                }
-                Some(())
-            });
-        }
-        if !players_with_node_ui.contains(op_result.source()) {
-            continue;
-        }
-
-        // Reactions to own actions
-        if let Ok(metadata) = op_result.result() {
-            let player = op_result.source();
-            match op_result.op() {
-                NodeOp::MoveActiveCurio { .. } => {
-                    // NOTE this will probably fail when an AI takes an action
-                    get_assert!(player, player_nodes, |node| {
-                        let (grid, _, _) = get_assert!(node, nodes)?;
-                        let curio = metadata.get_required(node::key::CURIO).ok()?;
-                        let remaining_moves =
-                            metadata.get_required(node::key::REMAINING_MOVES).ok()?;
-                        let tapped = metadata.get_or_default(node::key::TAPPED).ok()?;
-                        res_ui_ops
-                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
-                        if remaining_moves == 0 && !tapped {
-                            res_ui_ops
-                                .request(player, NodeUiOp::ChangeFocus(FocusTarget::ActionMenu));
-                        }
-                        Some(())
-                    });
-                },
-                NodeOp::Undo => {
-                    get_assert!(player, player_nodes, |node| {
-                        // Should I use IN_NODE metadata instead?
-                        let (grid, _, _) = get_assert!(node, nodes)?;
-                        let curio = metadata.get_optional(node::key::CURIO).ok()??;
-                        res_ui_ops
-                            .request(player, NodeUiOp::MoveNodeCursor(grid.head(curio)?.into()));
-                        res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                        res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
-                        Some(())
-                    });
-                },
-                NodeOp::ReadyToGo | NodeOp::PerformCurioAction { .. } => {
-                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
-                },
-                NodeOp::EndTurn => {
-                    res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
-                    res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
-                },
-                _ => {},
-            }
         }
     }
 }

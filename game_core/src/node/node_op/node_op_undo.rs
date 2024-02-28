@@ -62,6 +62,7 @@ pub fn sys_record_node_ops(
                 NodeOp::MoveActiveCurio { .. } | NodeOp::PerformCurioAction { .. } => {
                     undo_queue.0.push(op_result.clone())
                 },
+                NodeOp::EnterNode(_) => {},
                 _ => {
                     undo_queue.0.clear();
                 },
