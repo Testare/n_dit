@@ -78,13 +78,12 @@ impl MouseEventTty {
 #[derive(Clone, Copy, Debug)]
 pub enum MouseEventTtyKind {
     Down(MouseButton),
-    Up(MouseButton),
-    DoubleClick, // Only applies to left mosue button
+    Up(MouseButton), // TODO make Drag data a struct and include it Option<> here
+    DoubleClick,     // Only applies to left mouse button
     Drag {
         // NOT IMPLEMENTED YET
         button: MouseButton,
         from: UVec2,
-        origin: UVec2,
         dragged_entity: Option<Entity>,
     },
     Exit,
@@ -121,6 +120,7 @@ pub fn sys_mouse_tty(
     mut evw_mouse_tty: EventWriter<MouseEventTty>,
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
     mut last_position: ResMut<MouseLastPositionTty>,
+    mut drag_data: Local<Option<MouseEventTtyKind>>,
 ) {
     for event @ MouseEvent(crossterm::event::MouseEvent {
         kind,
@@ -153,7 +153,7 @@ pub fn sys_mouse_tty(
                 MEK::Up(mb) => MouseEventTtyKind::Up(mb.into()),
                 MEK::ScrollDown => MouseEventTtyKind::ScrollDown,
                 MEK::ScrollUp => MouseEventTtyKind::ScrollUp,
-                MEK::Drag(_mb) => MouseEventTtyKind::Todo, // TODO drag events
+                MEK::Drag(_mb) => drag_data.unwrap_or(MouseEventTtyKind::Moved), // TODO drag events
             }
         };
         if let Some(render_target) = res_terminal_window.render_target {
@@ -216,6 +216,19 @@ pub fn sys_mouse_tty(
                     is_top_entity_or_ancestor: top_entity == Some(entity)
                         || ancestors.contains(&entity),
                 });
+            }
+            match event_kind {
+                MouseEventTtyKind::Down(button) => {
+                    *drag_data = Some(MouseEventTtyKind::Drag {
+                        from: absolute_pos,
+                        button,
+                        dragged_entity: top_entity,
+                    });
+                },
+                MouseEventTtyKind::Drag { .. } => {},
+                _ => {
+                    *drag_data = None;
+                },
             }
         }
 

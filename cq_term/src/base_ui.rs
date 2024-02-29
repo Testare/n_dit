@@ -246,7 +246,10 @@ pub fn sys_apply_hover(
         if let Ok((mut hover_point,)) = hoverable_ui.get_mut(event.entity()) {
             if !event.is_top_entity_or_ancestor() {
                 hover_point.set_if_neq(None);
-            } else if matches!(event.event_kind(), MouseEventTtyKind::Moved) {
+            } else if matches!(
+                event.event_kind(),
+                MouseEventTtyKind::Moved | MouseEventTtyKind::Drag { .. }
+            ) {
                 hover_point.set_if_neq(Some(event.relative_pos()));
             }
         }
