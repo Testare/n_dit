@@ -32,6 +32,7 @@ pub mod key {
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
     pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
+    pub const UNLOADED_CARD: Key<Entity> = typed_key!("unloaded_card");
     pub const CARD: Key<Entity> = typed_key!("card");
     pub const EFFECTS: Key<Metadata> = typed_key!("effects");
     pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");

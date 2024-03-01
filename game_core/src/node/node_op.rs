@@ -461,13 +461,6 @@ fn opsys_node_access_point(
     if access_point.card == next_card_id {
         Err("That is already loaded".invalid())?;
     }
-    if let Some(card) = access_point.card {
-        metadata.put(key::CARD, card).critical()?;
-        let card_count = played_cards
-            .get_mut(&card)
-            .ok_or("Unloading card that wasn't played".critical())?;
-        *card_count -= 1;
-    }
 
     let mut access_point_commands = commands.entity(access_point_id);
     if let Some(next_card_id) = next_card_id {
@@ -480,6 +473,21 @@ fn opsys_node_access_point(
         let card_def = ast_cards
             .get(card_info.card.definition())
             .ok_or("Card definition is not loaded".invalid())?; // Not really invalid?
+        metadata.put(key::CARD, next_card_id).critical()?;
+        let old_card_count = access_point
+            .card
+            .map(|card| {
+                metadata.put(key::UNLOADED_CARD, card).critical()?;
+                played_cards
+                    .get_mut(&card)
+                    .ok_or("Unloading card that wasn't played".critical())
+            })
+            .transpose()?;
+
+        // VALIDATIONS COMPLETE, COMMENCE MUTATING STATE
+        if let Some(old_card_count) = old_card_count {
+            *old_card_count -= 1;
+        }
 
         *played_cards.entry(next_card_id).or_default() += 1;
         node_piece.set_display_id(card_info.card.card_name().to_owned());
