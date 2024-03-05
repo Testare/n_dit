@@ -1,0 +1,14 @@
+title: Start
+---
+<<declare $player_name="Warudo">>
+<<get_player_name>>
+Hello [dumb]{$player_name}!犬[/dumb] #nerd
+Wow! My first ever Yarn script in Rust!
+-> Gosh!
+-> Incredible!
+-> I'm amazed!
+-> [exit/]
+
+
+Anyway, time to get writing!
+===

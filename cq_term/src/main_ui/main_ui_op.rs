@@ -33,6 +33,5 @@ fn opsys_switch_screen(
             ui_id_commands.add_child(next_screen);
         }
     }
-    // res_terminal_window.set_render_target(Some(id));
     Ok(Metadata::default())
 }

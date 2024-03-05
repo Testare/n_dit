@@ -3,6 +3,7 @@ pub mod board;
 pub mod card;
 pub mod common;
 pub mod configuration;
+pub mod dialogue;
 pub mod entity_grid;
 pub mod node;
 pub mod op;
@@ -72,6 +73,7 @@ impl Plugin for NDitCorePlugin {
             bam::BamPlugin,
             board::BoardPlugin,
             card::CardPlugin,
+            dialogue::DialoguePlugin,
             entity_grid::EntityGridSupportPlugin,
             node::NodePlugin,
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),

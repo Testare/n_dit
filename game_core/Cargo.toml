@@ -14,6 +14,7 @@ anyhow = "1.0.75" # Re-evaluate use of this library
 base64 = "0.13"
 bevy.workspace = true
 bevy_query_ext.workspace = true
+bevy_yarnspinner.workspace = true
 bitvec = "1"
 getset = "0.1.1"
 lazy_static = "1.4.0"

@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 bevy = {workspace = true, features = ["wav"]}
 bevy_query_ext.workspace = true
+bevy_yarnspinner.workspace = true
 charmi = { path = "../charmi" }
 crossterm = { version = "0.20.0", features = ["event-stream", "serde"] }
 game_core = { path = "../game_core" }

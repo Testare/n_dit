@@ -1,13 +1,16 @@
 use std::fs::File;
 use std::io::Write;
 
+use bevy::ecs::schedule::common_conditions::resource_added;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
+use bevy_yarnspinner::prelude::{DialogueRunner, YarnProject, YarnSpinnerSystemSet};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
+use game_core::dialogue::Dialogue;
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, PlayerBundle};
@@ -39,6 +42,7 @@ pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
     player_id: Option<Entity>,
+    dialogue_runner: Option<Entity>,
 }
 
 impl Plugin for DemoPlugin {
@@ -49,7 +53,39 @@ impl Plugin for DemoPlugin {
                 Startup,
                 demo_startup.after(main_ui::sys_startup_create_main_ui),
             )
+            .add_systems(
+                Update,
+                demo_dialogue_runner
+                    .run_if(resource_added::<YarnProject>)
+                    .before(YarnSpinnerSystemSet),
+            )
             .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
+    }
+}
+
+fn yarn_get_player_name(_: In<()>, mut q_dialogue_runner: Query<&mut DialogueRunner>) {
+    for mut dialogue_runner in q_dialogue_runner.iter_mut() {
+        dialogue_runner
+            .variable_storage_mut()
+            .set("$player_name".to_string(), "GORNATHAN".into())
+            .unwrap();
+    }
+}
+
+fn demo_dialogue_runner(
+    mut commands: Commands,
+    res_yarn: Res<YarnProject>,
+    mut res_demo_state: ResMut<DemoState>,
+) {
+    if res_demo_state.dialogue_runner.is_none() {
+        let mut dialogue_runner = res_yarn.create_dialogue_runner();
+        dialogue_runner.start_node("Start");
+        dialogue_runner
+            .commands_mut()
+            .add_command("get_player_name", yarn_get_player_name);
+        let dialogue_runner_id = commands.spawn((Dialogue::default(), dialogue_runner)).id();
+
+        res_demo_state.dialogue_runner = Some(dialogue_runner_id);
     }
 }
 

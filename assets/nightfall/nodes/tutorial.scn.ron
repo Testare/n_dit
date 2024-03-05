@@ -18,10 +18,7 @@
           10000000002: Undecided,
         }),
         "game_core::node::ActiveCurio": (None),
-        "bevy_core::name::Name": (
-          hash: 16442562150909729670,
-          name: "Demo Node",
-        ),
+        "bevy_core::name::Name": "Demo Node",
         "bevy_hierarchy::components::children::Children": ([
           10000000004,
           10000000005,
@@ -63,10 +60,7 @@
     // ENEMY PLAYER
     10000000003: (
       components: {
-        "bevy_core::name::Name": (
-          hash: 7551943587303600895,
-          name: "Enemy",
-        ),
+        "bevy_core::name::Name": "Enemy",
         "game_core::node::OnTeam": (10000000002),
         "game_core::player::Player": (),
         "game_core::node::IsReadyToGo": (true),
