@@ -6,7 +6,7 @@ use game_core::quest::QuestStatus;
 
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
-use crate::board_ui::BoardPieceUi;
+use crate::board_ui::{BoardPieceUi, SelectedBoardPieceUi};
 use crate::input_event::{self, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
@@ -34,19 +34,12 @@ impl Plugin for NfPlugin {
 #[derive(Debug, Resource)]
 pub struct NfContextActions {
     enter_node: Entity,
-    show_dialogue: Entity,
+    enter_shop: Entity,
+    select_piece: Entity,
 }
 
 impl FromWorld for NfContextActions {
     fn from_world(world: &mut World) -> Self {
-        let show_dialogue = world
-            .spawn((
-                Name::new("Show/Hide Dialogue for [{for_node:?}] CA"),
-                ContextAction::new("Show/Hide Dialogue", |_id, _world| {
-                    log::debug!("Coming much later: Dialogue for nodes!")
-                }),
-            ))
-            .id();
         let enter_node = world
             .spawn((
                 Name::new("Enter Node CA"),
@@ -64,9 +57,33 @@ impl FromWorld for NfContextActions {
                 }),
             ))
             .id();
+        let enter_shop = world
+            .spawn((
+                Name::new("Enter Shop CA"),
+                ContextAction::new("Enter Shop", |_id, _world| {
+                    log::debug!("Coming soon: Shops!")
+                }),
+            ))
+            .id();
+        let select_piece = world
+            .spawn((
+                Name::new("Select Node CA"),
+                ContextAction::new("Select Node", |id, world| {
+                    (|| {
+                        // try
+                        let &ForPlayer(player_id) = world.get(id)?;
+                        let mut selected_board_piece_ui: Mut<'_, SelectedBoardPieceUi> =
+                            world.get_mut(player_id)?;
+                        selected_board_piece_ui.as_deref_mut().set_if_neq(Some(id));
+                        Some(())
+                    })();
+                }),
+            ))
+            .id();
         Self {
-            show_dialogue,
             enter_node,
+            enter_shop,
+            select_piece,
         }
     }
 }
@@ -120,12 +137,12 @@ fn sys_apply_ui_to_node_nodes(
                     // TODO when show_dialogue is implemented, swap these
                     entity_commands.insert(ContextActions::new(
                         for_player,
-                        vec![res_nf_ca.enter_node, res_nf_ca.show_dialogue],
+                        vec![res_nf_ca.select_piece, res_nf_ca.enter_node],
                     ));
                 } else {
                     entity_commands.insert(ContextActions::new(
                         for_player,
-                        vec![res_nf_ca.show_dialogue],
+                        vec![res_nf_ca.select_piece, res_nf_ca.enter_shop],
                     ));
                 }
                 if for_node

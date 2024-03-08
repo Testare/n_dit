@@ -1,3 +1,5 @@
+mod sidebar;
+
 use std::ops::Deref;
 
 use bevy::ecs::system::EntityCommands;
@@ -8,6 +10,7 @@ use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
 use game_core::NDitCoreSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+pub use sidebar::InfoPanel;
 
 use crate::animation::AnimationPlayer;
 use crate::layout::StyleTty;
@@ -17,9 +20,12 @@ use crate::render::{TerminalRendering, RENDER_TTY_SCHEDULE};
 #[derive(Debug, Default)]
 pub struct BoardUiPlugin;
 
+#[derive(Clone, Component, Copy, Debug, Default, Deref, DerefMut)]
+pub struct SelectedBoardPieceUi(Option<Entity>);
+
 impl Plugin for BoardUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(Reg::<RegSprite>::default())
+        app.add_plugins((Reg::<RegSprite>::default(), sidebar::SidebarPlugin))
             .add_systems(RENDER_TTY_SCHEDULE, (sys_render_board, sys_render_sprites))
             .add_systems(PreUpdate, sys_board_piece_lifetimes)
             .add_systems(

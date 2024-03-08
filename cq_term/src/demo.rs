@@ -7,7 +7,7 @@ use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use bevy_yarnspinner::prelude::{DialogueRunner, YarnProject, YarnSpinnerSystemSet};
 use game_core::bam::BamHandle;
-use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
+use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialogue::Dialogue;
@@ -17,7 +17,7 @@ use game_core::player::{ForPlayer, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 
-use crate::board_ui::{BoardBackground, BoardUi};
+use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::main_ui::{self, MainUi, MainUiOp, UiOps};
@@ -304,6 +304,7 @@ fn demo_startup(
             },
             quest_status,
             KeyMap::default(),
+            SelectedBoardPieceUi::default(),
             PlayedCards::default(),
             IsReadyToGo(false),
             Deck::new()
@@ -330,6 +331,7 @@ fn demo_startup(
             board.spawn((
                 NFNode,
                 ForNode(NodeId::new("node:demo", 0)),
+                SimplePieceInfo("Demo Node - This node is just a testing ground".to_string()),
                 TerminalRendering::default(),
                 BoardPosition(Vec2 { x: 0.0, y: 0.0 }),
                 BoardPiece("Demo Node".to_owned()),
@@ -338,42 +340,46 @@ fn demo_startup(
             ));
             board.spawn((
                 NFNode,
+                SimplePieceInfo("Tutorial Node - This node should be the tutorial".to_string()),
                 ForNode(NodeId::new("node:tutorial", 0)),
                 RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Next Demo Node".to_owned()),
                 BoardPosition(Vec2 { x: 6.0, y: 4.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
-                Name::new("Board piece 2"),
+                Name::new("Tutorial Node"),
             ));
             board.spawn((
                 NFNode,
+                SimplePieceInfo("Warez Node - Buy new programs".to_string()),
                 RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Shop Node".to_owned()),
                 BoardPosition(Vec2 { x: 0.0, y: 4.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
-                Name::new("Board piece 2"),
+                Name::new("Shop Piece"),
             ));
             board.spawn((
                 NFNode,
+                SimplePieceInfo("Battle node 1 - Tripod".to_string()),
                 ForNode(NodeId::new("node:area1", 0)),
                 RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Demo Node".to_owned()),
                 BoardPosition(Vec2 { x: 14.0, y: 4.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
-                Name::new("Board piece 2"),
+                Name::new("Node 1"),
             ));
             board.spawn((
                 NFNode,
+                SimplePieceInfo("Battle node 2 - Butterfly".to_string()),
                 ForNode(NodeId::new("node:area1", 1)),
                 RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 TerminalRendering::default(),
                 BoardPiece("Demo Node 3".to_owned()),
                 BoardPosition(Vec2 { x: 10.0, y: 0.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
-                Name::new("Board piece 2"),
+                Name::new("Node 2"),
             ));
         })
         .id();
@@ -427,18 +433,27 @@ fn demo_startup(
                     Name::new("Network Map Content Pane"),
                 ))
                 .with_children(|content_pane| {
-                    content_pane.spawn((
-                        StyleTty(taffy::prelude::Style {
-                            size: Size {
-                                width: Dimension::Points(14.),
-                                height: Dimension::Auto,
-                            },
-                            flex_direction: FlexDirection::Column,
-                            ..default()
-                        }),
-                        Name::new("Menu Bar"),
-                        TerminalRendering::new(vec!["WIP".to_owned()]),
-                    ));
+                    content_pane
+                        .spawn((
+                            StyleTty(taffy::prelude::Style {
+                                size: Size {
+                                    width: Dimension::Points(14.),
+                                    height: Dimension::Auto,
+                                },
+                                flex_direction: FlexDirection::Column,
+                                ..default()
+                            }),
+                            Name::new("Menu Bar"),
+                        ))
+                        .with_children(|menu_bar| {
+                            menu_bar.spawn((
+                                StyleTty(Style::default()),
+                                ForPlayer(player),
+                                InfoPanel,
+                                Name::new("InfoPanel"),
+                                TerminalRendering::default(),
+                            ));
+                        });
                     content_pane.spawn((
                         Name::new("Demo map background"),
                         ForPlayer(player),

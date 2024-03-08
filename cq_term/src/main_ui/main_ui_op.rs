@@ -31,6 +31,7 @@ fn opsys_switch_screen(
             }
             *last_screen = Some(next_screen);
             ui_id_commands.add_child(next_screen);
+            // TODO possibly insert child in specific spot
         }
     }
     Ok(Metadata::default())

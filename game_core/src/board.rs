@@ -11,6 +11,12 @@ impl Plugin for BoardPlugin {
 #[reflect(Component)]
 pub struct Board(pub String);
 
+// Simple string displaying basic information on the piece
+// Might need to rethink this one for dynamic piece information
+#[derive(Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
+pub struct SimplePieceInfo(pub String);
+
 #[derive(Component, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
 pub struct BoardPiece(pub String);
