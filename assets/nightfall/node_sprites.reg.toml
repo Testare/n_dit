@@ -1,7 +1,7 @@
 registry="term:sprites"
 
 [values]
-"Demo Node"     = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_b", animation_type="Stay", timing = 0.0}
-"Next Demo Node"= { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_a", animation_type="Stay", timing = 0.0}
-"Demo Node 3"   = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_c", animation_type="Stay", timing = 0.0}
-"Shop Node"= { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_warez", animation_type="Stay", timing = 0.0}
+"Lucky Monkey"  = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_c", animation_type="Stay", timing = 0.0}
+"Smart HQ"      = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_b", animation_type="Stay", timing = 0.0}
+"Pharmhaus"     = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_a", animation_type="Stay", timing = 0.0}
+"Warez"         = { type="Animation", animation_path="nightfall/nodes.charmia.toml#node_warez", animation_type="Stay", timing = 0.0}
