@@ -3,7 +3,7 @@ pub mod base_ui;
 pub mod board_ui;
 pub mod configuration;
 pub mod demo;
-pub mod dialogue_ui;
+pub mod dialog_ui;
 mod fx;
 pub mod input_event;
 mod key_map;
@@ -58,7 +58,7 @@ impl Plugin for CharmiePlugin {
                 animation::AnimationPlugin,
                 base_ui::BaseUiPlugin,
                 board_ui::BoardUiPlugin,
-                dialogue_ui::DialogueUiPlugin,
+                dialog_ui::DialogUiPlugin,
                 layout::TaffyTuiLayoutPlugin,
                 main_ui::MainUiPlugin,
                 node_ui::NodeUiPlugin,

@@ -10,7 +10,7 @@ use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
-use game_core::dialogue::Dialogue;
+use game_core::dialog::Dialog;
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -86,7 +86,7 @@ fn demo_dialogue_runner(
             .add_command("get_player_name", yarn_get_player_name);
         let dialogue_runner_id = commands
             .entity(res_demo_state.player_id.unwrap())
-            .insert((Dialogue::default(), dialogue_runner))
+            .insert((Dialog::default(), dialogue_runner))
             .id();
         // let dialogue_runner_id = commands.spawn((Dialogue::default(), dialogue_runner)).id();
 
@@ -147,7 +147,7 @@ fn debug_key(
     mut quest_status: Query<&mut QuestStatus>,
     mut key_maps: Query<&mut KeyMap>,
     q_player_node_ui: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
-    mut q_player_dr: Query<(&mut DialogueRunner, &Dialogue), With<Player>>,
+    mut q_player_dr: Query<(&mut DialogueRunner, &Dialog), With<Player>>,
     q_main_ui: Query<&MainUi>,
 ) {
     for layout_event in evr_mouse.read() {
@@ -169,8 +169,8 @@ fn debug_key(
                 }
             }
         } else if *code == KeyCode::Char('8') {
-            for (mut player_dr, dialogue) in q_player_dr.iter_mut() {
-                if dialogue.options().is_empty() {
+            for (mut player_dr, dialog) in q_player_dr.iter_mut() {
+                if dialog.options().is_empty() {
                     player_dr.continue_in_next_update();
                 } else {
                     player_dr
