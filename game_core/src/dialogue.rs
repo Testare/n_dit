@@ -1,5 +1,6 @@
-use bevy_yarnspinner::events::PresentLineEvent;
+use bevy_yarnspinner::events::{NodeCompleteEvent, PresentLineEvent, PresentOptionsEvent};
 use bevy_yarnspinner::prelude::*;
+use getset::Getters;
 
 use crate::prelude::*;
 
@@ -22,19 +23,48 @@ pub enum DialogueType {
 }
 */
 
-#[derive(Component, Debug)]
-pub struct DialogueOptions(Vec<LocalizedLine>);
-
-#[derive(Component, Debug, Default)]
-pub struct Dialogue(Option<LocalizedLine>);
+#[derive(Component, Debug, Default, Getters)]
+pub struct Dialogue {
+    #[getset(get = "pub")]
+    line: Option<LocalizedLine>,
+    #[getset(get = "pub")]
+    next_line: Option<LocalizedLine>,
+    #[getset(get = "pub")]
+    options: Vec<DialogueOption>,
+}
 
 pub fn sys_dialogue_view(
-    mut evr_dialogue: EventReader<PresentLineEvent>,
-    mut q_dialogue_runner: Query<Option<&mut Dialogue>, With<DialogueRunner>>,
+    mut evr_dialogue_line: EventReader<PresentLineEvent>,
+    mut evr_dialogue_options: EventReader<PresentOptionsEvent>,
+    mut evr_dialogue_node_complete: EventReader<NodeCompleteEvent>,
+    mut q_dialogue_runner: Query<(Option<&mut Dialogue>, &mut DialogueRunner)>,
 ) {
-    for PresentLineEvent { line, source } in evr_dialogue.read() {
-        if let Some(mut dialogue) = q_dialogue_runner.get_mut(*source).ok().flatten() {
-            dialogue.0 = Some(line.clone());
+    let last_line = "lastline".to_string();
+    for PresentLineEvent { line, source } in evr_dialogue_line.read() {
+        if let Ok((Some(mut dialogue), mut dialogue_runner)) = q_dialogue_runner.get_mut(*source) {
+            dialogue.options.clear();
+            if line.metadata.contains(&last_line) {
+                dialogue.next_line = Some(line.clone());
+                dialogue_runner.continue_in_next_update();
+            } else {
+                dialogue.line = Some(line.clone());
+            }
+        }
+    }
+    for PresentOptionsEvent { options, source } in evr_dialogue_options.read() {
+        if let Ok((Some(mut dialogue), _dialogue_runner)) = q_dialogue_runner.get_mut(*source) {
+            dialogue.line = dialogue.next_line.take();
+            dialogue.options = options.clone();
+        }
+    }
+    for NodeCompleteEvent {
+        node_name: _,
+        source,
+    } in evr_dialogue_node_complete.read()
+    {
+        if let Ok((Some(mut dialogue), _dialogue_runner)) = q_dialogue_runner.get_mut(*source) {
+            dialogue.line = None;
+            dialogue.options.clear();
         }
     }
 }

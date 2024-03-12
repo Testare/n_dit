@@ -1,7 +1,0 @@
-title: warez_0
----
-Leo: Welcome back, kid. How's it going? I got just the woftware to make things easier for you out there. Wanna see?
--> Sure, show me what you got
-    <<open_shop "warez:0">>
--> No thanks
-===

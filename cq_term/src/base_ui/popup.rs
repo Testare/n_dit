@@ -2,6 +2,7 @@ use crate::layout::CalculatedSizeTty;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
+// TODO Make this a pane
 #[derive(Component, Debug)]
 pub struct PopupMenu;
 

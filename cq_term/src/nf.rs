@@ -95,6 +95,9 @@ pub struct RequiredNodes(pub Vec<NodeId>);
 pub struct NFNode;
 
 #[derive(Component, Debug)]
+pub struct NFShop(pub String);
+
+#[derive(Component, Debug)]
 struct NFNodeUi;
 
 // Needs to happen after board_uis have been created and sprites added

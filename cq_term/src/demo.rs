@@ -5,7 +5,7 @@ use bevy::ecs::schedule::common_conditions::resource_added;
 use bevy::ecs::system::SystemState;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
-use bevy_yarnspinner::prelude::{DialogueRunner, YarnProject, YarnSpinnerSystemSet};
+use bevy_yarnspinner::prelude::{DialogueRunner, OptionId, YarnProject, YarnSpinnerSystemSet};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
 use game_core::card::{Card, Deck, Description};
@@ -13,7 +13,7 @@ use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialogue::Dialogue;
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
-use game_core::player::{ForPlayer, PlayerBundle};
+use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 
@@ -21,7 +21,7 @@ use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi}
 use crate::input_event::{KeyCode, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::main_ui::{self, MainUi, MainUiOp, UiOps};
-use crate::nf::{NFNode, NfPlugin, RequiredNodes};
+use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeUiScreen;
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
@@ -79,11 +79,16 @@ fn demo_dialogue_runner(
 ) {
     if res_demo_state.dialogue_runner.is_none() {
         let mut dialogue_runner = res_yarn.create_dialogue_runner();
-        dialogue_runner.start_node("Start");
+        // dialogue_runner.start_node("warez_0");
+        dialogue_runner.start_node("pharmhaus_0_pr_database");
         dialogue_runner
             .commands_mut()
             .add_command("get_player_name", yarn_get_player_name);
-        let dialogue_runner_id = commands.spawn((Dialogue::default(), dialogue_runner)).id();
+        let dialogue_runner_id = commands
+            .entity(res_demo_state.player_id.unwrap())
+            .insert((Dialogue::default(), dialogue_runner))
+            .id();
+        // let dialogue_runner_id = commands.spawn((Dialogue::default(), dialogue_runner)).id();
 
         res_demo_state.dialogue_runner = Some(dialogue_runner_id);
     }
@@ -142,6 +147,7 @@ fn debug_key(
     mut quest_status: Query<&mut QuestStatus>,
     mut key_maps: Query<&mut KeyMap>,
     q_player_node_ui: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
+    mut q_player_dr: Query<(&mut DialogueRunner, &Dialogue), With<Player>>,
     q_main_ui: Query<&MainUi>,
 ) {
     for layout_event in evr_mouse.read() {
@@ -162,7 +168,22 @@ fn debug_key(
                     quest_status.record_node_done(nid);
                 }
             }
-        } else if *code == KeyCode::Char('o') {
+        } else if *code == KeyCode::Char('8') {
+            for (mut player_dr, dialogue) in q_player_dr.iter_mut() {
+                if dialogue.options().is_empty() {
+                    player_dr.continue_in_next_update();
+                } else {
+                    player_dr
+                        .select_option(OptionId(0))
+                        .expect("I shouldn't use this long term");
+                }
+            }
+        } else if *code == KeyCode::Char('9') {
+            for (mut player_dr, _) in q_player_dr.iter_mut() {
+                player_dr
+                    .select_option(OptionId(1))
+                    .expect("I shouldn't use this long term");
+            }
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
@@ -351,6 +372,7 @@ fn demo_startup(
             ));
             board.spawn((
                 NFNode,
+                NFShop("warez:0".to_string()),
                 SimplePieceInfo("Warez Node\nLeo's Shop\nA quality shop of basic programs at low prices. Come and see what we've got to offer".to_string()),
                 RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 TerminalRendering::default(),

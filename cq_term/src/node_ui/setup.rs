@@ -12,6 +12,7 @@ use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
+use crate::dialogue_ui::DialogueMenu;
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::linkage::base_ui_game_core;
@@ -419,15 +420,21 @@ pub fn create_node_ui(
                                         PopupMenu,
                                     )).with_children(|popup_menu| {
                                         popup_menu.spawn((
-                                            TerminalRendering::new(vec!["I love you,".to_string(), "my dear wife!".to_string()]),
                                             StyleTty(taffy::prelude::Style {
+                                                max_size: Size {
+                                                    width: Dimension::Points(40.0),
+                                                    height: Dimension::Points(10.0),
+                                                },
                                                 size: Size {
-                                                    width: Dimension::Points(13.0),
-                                                    height: Dimension::Points(2.0),
+                                                    width: points(0.0),
+                                                    height: points(0.0)
                                                 },
                                                 ..default()
                                             }),
-                                            VisibilityTty(false),
+                                            DialogueMenu::default(),
+                                            ForPlayer(player),
+                                            TerminalRendering::default(),
+                                            VisibilityTty(true),
                                         ));
                                         let help_msg = help_msg();
                                         popup_menu.spawn((

@@ -1,0 +1,74 @@
+title: initial
+---
+Superphreak: Hey, welcome to S.M.A.R.T. You must be the newbie I'm supposed to train.
+-> Newbie?
+-> Yeah.
+Superphreak: Great. I hope you're a fast learner, cause I have more important things to do than hold your hand all day.
+-> Go on.
+    <<jump game_explanation>>
+===
+title: game_explanation
+---
+Superphreak: As a S.M.A.R.T. agent, you're here to fix problems and battle infocrime. you can find out more at the S.M.A.R.T. HQ Node. `#restartline`
+-> What's a Node?
+-> I'll be sure to check that out.
+Superphreak: What you're looking at now is the netmap. It shows you all the network nodes and the connections between them.
+-> Go on.
+-> So what do I do with them?
+Superphreak: You can click on a node to have your spybot set up a link to that computer. Once you're inside you'll need to databattle with that node's defensive programs. By the way, right now your security level is one, so you can only access level one nodes.
+-> Got it.
+Superphreak: Good. Time to get down to action. I'm going to walk you through your first databattle and give you some tips. Ready to get the party started?
+-> I'm ready!
+    <<enter_tutorial>>
+-> Wait. Can you go over all that again?
+    <<jump game_explanation>>
+===
+title: tutorial
+---
+Superphreak: Welcome to your first databattle. Here your programs duke it out with the enemy programs for control of a node.
+-> I already know this stuff.
+    <<exit_tutorial>>
+-> Tell me more.
+    <<indicate "lemons">>
+    Superphreak: First you have to upload your programs. Start by clicking on this upload spot. `indicates lower access spot`
+    -> [clicked_indication /] #hidden
+    Superphreak: Now click on this program to upload it. `Arrow indicates hack program`
+    -> `click on Hack`
+    Superphreak: Now click on the next upload spot `arrow indicates other access point`
+    -> `click on upper access point`
+    Superphreak: Upload this program `indicates slingshot`
+    -> `click slingshot`
+    Superphreak: Alright. Let's get this battle started. `indicates Begin Databattle button`
+    -> `click Begin Databattle`
+    Superphreak: All of your programs move and execute commands first. And then all of the enemy programs get their chance.
+    -> Next 
+    Superphreak: Click on this program to select it `indicates hack`
+    Superphreak: The highlighted grid squares show how far this program can move. Before we move it, let's see what it can do.
+    `linebreaks` 
+    Hack is a simple battle program with only one command. Click on the command to see what it does. `indicates slice`
+    Superphreak: The red squares show you the range for this command. This program has to move next to an enemy program to attack so let's move it first. `linebreaks`
+    Click on Undo to cancel the command. `indicates Undo`
+    Superphreak: Now click on this square to move the program. `indicates EAST of hack`
+    Superphreak: When a program moves through memory, it expands. Each square of a program is called a sector `linebreaks`
+    The max size shows much a program will expand as it moves. When a program reaches its max size, it can still move but the older sectors will disappear.
+    -> Next
+    Superphreak: We're still out of range. Click this square to move the program again. `indicates EAST of hack`
+    Superphreak: Okay, now that we're next to the program, let's use that attack command. `linebreak`
+    Click on the command button. `indicates Slice`
+    Superphreak: To execute an attack command, click on any sector of an enemy program that is within range `linebreaks` Click here to execute this command. `indicates EAST of hack with slice`
+    Superphreak: Nice. Now let's move our other program. Click here to select it. `indicates Slingshot`
+    Superphreak: Move the program closer to your target `indicates EAST of slingshot`
+    Superphreak: Slingshot is a ranged attack program `linebreaks` I think we're in range now. Click on the command to activate it. `indicates Stone`
+    Superphreak: Good, now click on the enemy program to execute the command. `indicates 3 EAST of Slingshot, on sentinel, with Stone`
+    Superphreak: Way to go. You just won your first Databattle
+    -> Next
+    Superphreak: Of course, most databattles won't be as easy as this one. You'll need to pick up more powerful programs from warez nodes on the network. `linebreaks`
+    Some advanced programs have more than one command. Special commands can be used to increase the power of your own programs or even change the grid.
+    -> Next
+    Superphreak: Ok, those are the basics. Do you want me to go over it again?
+    `linebreaks`
+    When you get back to the netmap, you'll be on your own. Click on a node and see what you can find out there. Good luck!
+    -> Repeat
+      <<enter_tutorial>>
+    -> Done
+===

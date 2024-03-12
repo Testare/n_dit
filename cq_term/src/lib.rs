@@ -55,13 +55,14 @@ impl Plugin for CharmiePlugin {
             .init_asset_loader::<CharmiaLoader>()
             .init_asset_loader::<CharmiLoader>()
             .add_plugins((
+                animation::AnimationPlugin,
                 base_ui::BaseUiPlugin,
+                board_ui::BoardUiPlugin,
+                dialogue_ui::DialogueUiPlugin,
                 layout::TaffyTuiLayoutPlugin,
+                main_ui::MainUiPlugin,
                 node_ui::NodeUiPlugin,
                 render::RenderTtyPlugin,
-                board_ui::BoardUiPlugin,
-                animation::AnimationPlugin,
-                main_ui::MainUiPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
