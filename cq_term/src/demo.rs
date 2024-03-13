@@ -79,7 +79,6 @@ fn demo_dialogue_runner(
 ) {
     if res_demo_state.dialogue_runner.is_none() {
         let mut dialogue_runner = res_yarn.create_dialogue_runner();
-        // dialogue_runner.start_node("warez_0");
         dialogue_runner.start_node("pharmhaus_0_pr_database");
         dialogue_runner
             .commands_mut()
@@ -88,7 +87,6 @@ fn demo_dialogue_runner(
             .entity(res_demo_state.player_id.unwrap())
             .insert((Dialog::default(), dialogue_runner))
             .id();
-        // let dialogue_runner_id = commands.spawn((Dialogue::default(), dialogue_runner)).id();
 
         res_demo_state.dialogue_runner = Some(dialogue_runner_id);
     }
@@ -465,7 +463,7 @@ fn demo_startup(
                                 flex_direction: FlexDirection::Column,
                                 ..default()
                             }),
-                            Name::new("Menu Bar"),
+                            Name::new("Board Menu Bar"),
                         ))
                         .with_children(|menu_bar| {
                             menu_bar.spawn((
@@ -477,11 +475,13 @@ fn demo_startup(
                             ));
                         });
                     content_pane.spawn((
-                        Name::new("Demo map background"),
+                        Name::new("Board background"),
                         ForPlayer(player),
                         BoardUi(board),
                         BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
+                        CalculatedSizeTty::default(),
                         StyleTty(taffy::style::Style {
+                            flex_grow: 1.0,
                             display: taffy::style::Display::Grid,
                             // grid_template_columns: 18 x 5 for now
                             grid_auto_rows: vec![NonRepeatedTrackSizingFunction {

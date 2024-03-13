@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub use sidebar::InfoPanel;
 
 use crate::animation::AnimationPlayer;
-use crate::layout::StyleTty;
+use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::prelude::*;
 use crate::render::{TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -136,11 +136,17 @@ impl Registry for RegSprite {
 
 fn sys_render_board(
     ast_charmi: Res<Assets<CharacterMapImage>>,
-    mut board_uis: Query<(AsDeref<BoardBackground>, &mut TerminalRendering)>,
+    mut board_uis: Query<(
+        AsDeref<BoardBackground>,
+        &CalculatedSizeTty,
+        &mut TerminalRendering,
+    )>,
 ) {
-    for (background_handle, mut tr) in board_uis.iter_mut() {
+    for (background_handle, size, mut tr) in board_uis.iter_mut() {
         let charmi = ast_charmi.get(background_handle);
         if let Some(charmi) = charmi.cloned() {
+            // TODO fit_to_size should be fixed and used instead
+            let charmi = charmi.clip(0, 0, size.width32(), size.height32(), None);
             tr.update_charmie(charmi);
         }
     }
