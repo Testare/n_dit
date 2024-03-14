@@ -11,8 +11,8 @@ use unicode_width::UnicodeWidthStr;
 use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, PopupMenu, Tooltip, TooltipBar};
-use crate::dialog_ui::DialogUi;
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, HoverPoint, PopupMenu, Tooltip, TooltipBar};
+use crate::dialog_ui::{DialogLineUi, DialogOptionUi};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::linkage::base_ui_game_core;
@@ -415,6 +415,7 @@ pub fn create_node_ui(
                                         StyleTty(taffy::prelude::Style {
                                             flex_grow: 0.0,
                                             padding: Rect::points(1.0),
+                                            flex_direction: FlexDirection::Column,
                                             ..default()
                                         }),
                                         PopupMenu,
@@ -423,7 +424,7 @@ pub fn create_node_ui(
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
                                                     width: Dimension::Points(40.0),
-                                                    height: Dimension::Points(10.0),
+                                                    height: Dimension::Points(8.0),
                                                 },
                                                 size: Size {
                                                     width: points(0.0),
@@ -431,7 +432,52 @@ pub fn create_node_ui(
                                                 },
                                                 ..default()
                                             }),
-                                            DialogUi::default(),
+                                            DialogLineUi::default(),
+                                            ForPlayer(player),
+                                            TerminalRendering::default(),
+                                            VisibilityTty(true),
+                                        ));
+                                        popup_menu.spawn((
+                                            StyleTty(taffy::prelude::Style {
+                                                max_size: Size {
+                                                    width: Dimension::Points(40.0),
+                                                    height: Dimension::Points(4.0),
+                                                },
+                                                size: zero(),
+                                                ..default()
+                                            }),
+                                            HoverPoint::default(),
+                                            DialogOptionUi(0),
+                                            ForPlayer(player),
+                                            TerminalRendering::default(),
+                                            VisibilityTty(true),
+                                        ));
+                                        popup_menu.spawn((
+                                            StyleTty(taffy::prelude::Style {
+                                                max_size: Size {
+                                                    width: Dimension::Points(40.0),
+                                                    height: Dimension::Points(4.0),
+                                                },
+                                                size: zero(),
+                                                ..default()
+                                            }),
+                                            HoverPoint::default(),
+                                            DialogOptionUi(1),
+                                            ForPlayer(player),
+                                            TerminalRendering::default(),
+                                            VisibilityTty(true),
+                                        ));
+                                        popup_menu.spawn((
+                                            StyleTty(taffy::prelude::Style {
+                                                max_size: Size {
+                                                    width: Dimension::Points(40.0),
+                                                    height: Dimension::Points(4.0),
+                                                },
+                                                size: zero(),
+                                                ..default()
+                                            }),
+                                            HoverPoint::default(),
+                                            DialogOptionUi(2),
                                             ForPlayer(player),
                                             TerminalRendering::default(),
                                             VisibilityTty(true),
