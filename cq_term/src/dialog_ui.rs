@@ -1,30 +1,73 @@
+use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
+use game_core::common::daddy::Daddy;
 use game_core::dialog::Dialog;
 use game_core::player::{ForPlayer, Player};
+use getset::CopyGetters;
 use taffy::geometry::Size;
 use taffy::style::Dimension;
 use taffy::style_helpers::TaffyZero;
 
+use crate::base_ui::context_menu::ContextAction;
 use crate::base_ui::HoverPoint;
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct DialogUiPlugin;
 
 impl Plugin for DialogUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            RENDER_TTY_SCHEDULE,
-            (
-                (sys_layout_dialog_line_ui, sys_layout_dialog_option_ui)
-                    .in_set(RenderTtySet::PreCalculateLayout),
-                (sys_render_dialog_line_ui, sys_render_dialog_option_ui)
-                    .in_set(RenderTtySet::RenderLayouts),
-            ),
-        );
+        app.init_resource::<Daddy<DialogUiPlugin>>()
+            .init_resource::<DialogUiContextActions>()
+            .add_systems(
+                RENDER_TTY_SCHEDULE,
+                (
+                    (sys_layout_dialog_line_ui, sys_layout_dialog_option_ui)
+                        .in_set(RenderTtySet::PreCalculateLayout),
+                    (sys_render_dialog_line_ui, sys_render_dialog_option_ui)
+                        .in_set(RenderTtySet::RenderLayouts),
+                ),
+            );
+    }
+}
+
+#[derive(CopyGetters, Debug, Resource, Reflect)]
+pub struct DialogUiContextActions {
+    #[getset(get_copy="pub")]
+    say_this: Entity
+}
+
+impl FromWorld for DialogUiContextActions {
+    fn from_world(world: &mut World) -> Self {
+        let say_this = world.spawn((
+            Name::new("Say this CA"),
+            ContextAction::new("Say this", |id, world| {
+                (||{ // try
+                    let &DialogOptionUi(opt_index) = world.get(id)?;
+                    let &ForPlayer(player_id) = world.get(id)?;
+                    let dialog: &Dialog = world.get(player_id)?;
+                    let option_exists = opt_index < dialog.options().len();
+                    if option_exists {
+                        let mut dialogue_runner = world.get_mut::<DialogueRunner>(player_id)?;
+                        let result = dialogue_runner.select_option(OptionId(opt_index));
+                        if let Err(err) = result {
+                            log::error!("Error in context action [Say this]: {}", err);
+                        }
+                    } else if opt_index == 0 {
+                        world.get_mut::<DialogueRunner>(player_id)?.continue_in_next_update();
+                    }
+
+                    Some(())
+                })();
+            })
+        )).id();
+
+        DialogUiContextActions {
+            say_this
+        }
     }
 }
 

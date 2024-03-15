@@ -46,6 +46,7 @@ impl Plugin for BaseUiPlugin {
                 sys_apply_hover,
                 sys_render_flexible_text.in_set(RenderTtySet::RenderLayouts),
                 popup::sys_render_popup_menu.in_set(RenderTtySet::RenderLayouts),
+                popup::sys_mouse_popup_menu.in_set(RenderTtySet::PostCalculateLayout),
                 sys_tooltip_on_hover,
             ),
         )

@@ -12,7 +12,7 @@ use super::{NodeCursor, NodeUiQ};
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, HoverPoint, PopupMenu, Tooltip, TooltipBar};
-use crate::dialog_ui::{DialogLineUi, DialogOptionUi};
+use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{MouseEventListener, MouseEventTtyDisabled};
 use crate::layout::{StyleTty, UiFocusBundle, UiFocusCycleOrder, VisibilityTty};
 use crate::linkage::base_ui_game_core;
@@ -162,6 +162,7 @@ impl FromWorld for ButtonContextActions {
 pub fn create_node_ui(
     mut commands: Commands,
     res_button_context_actions: Res<ButtonContextActions>,
+    res_dialog_context_actions: Res<DialogUiContextActions>,
     mut res_ui_ops: ResMut<UiOps>,
     player_now_in_node: Query<
         (Entity, AsDeref<InNode>),
@@ -418,6 +419,7 @@ pub fn create_node_ui(
                                             flex_direction: FlexDirection::Column,
                                             ..default()
                                         }),
+                                        MouseEventListener, // To prevent grid from interacting
                                         PopupMenu,
                                     )).with_children(|popup_menu| {
                                         popup_menu.spawn((
@@ -448,6 +450,8 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(0),
+                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
                                             VisibilityTty(true),
@@ -463,6 +467,8 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(1),
+                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
                                             VisibilityTty(true),
@@ -478,6 +484,8 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(2),
+                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
                                             VisibilityTty(true),

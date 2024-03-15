@@ -43,6 +43,7 @@ impl From<crossterm::event::KeyEvent> for KeyEvent {
 #[derive(Component, Debug)]
 pub struct MouseEventListener;
 
+// Note: This will cause pass-through of mouse events
 #[derive(Component, Debug)]
 pub struct MouseEventTtyDisabled;
 
