@@ -34,7 +34,7 @@ pub fn sys_render_popup_menu(
     }
 }
 
-/// Need to disable mouse events when popup menu is minimized, else it causes 
+/// Need to disable mouse events when popup menu is minimized, else it causes
 /// a deadzone in the middle of the screen
 pub fn sys_mouse_popup_menu(
     mut commands: Commands,

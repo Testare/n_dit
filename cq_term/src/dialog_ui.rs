@@ -36,38 +36,41 @@ impl Plugin for DialogUiPlugin {
 
 #[derive(CopyGetters, Debug, Resource, Reflect)]
 pub struct DialogUiContextActions {
-    #[getset(get_copy="pub")]
-    say_this: Entity
+    #[getset(get_copy = "pub")]
+    say_this: Entity,
 }
 
 impl FromWorld for DialogUiContextActions {
     fn from_world(world: &mut World) -> Self {
-        let say_this = world.spawn((
-            Name::new("Say this CA"),
-            ContextAction::new("Say this", |id, world| {
-                (||{ // try
-                    let &DialogOptionUi(opt_index) = world.get(id)?;
-                    let &ForPlayer(player_id) = world.get(id)?;
-                    let dialog: &Dialog = world.get(player_id)?;
-                    let option_exists = opt_index < dialog.options().len();
-                    if option_exists {
-                        let mut dialogue_runner = world.get_mut::<DialogueRunner>(player_id)?;
-                        let result = dialogue_runner.select_option(OptionId(opt_index));
-                        if let Err(err) = result {
-                            log::error!("Error in context action [Say this]: {}", err);
+        let say_this = world
+            .spawn((
+                Name::new("Say this CA"),
+                ContextAction::new("Say this", |id, world| {
+                    (|| {
+                        // try
+                        let &DialogOptionUi(opt_index) = world.get(id)?;
+                        let &ForPlayer(player_id) = world.get(id)?;
+                        let dialog: &Dialog = world.get(player_id)?;
+                        let option_exists = opt_index < dialog.options().len();
+                        if option_exists {
+                            let mut dialogue_runner = world.get_mut::<DialogueRunner>(player_id)?;
+                            let result = dialogue_runner.select_option(OptionId(opt_index));
+                            if let Err(err) = result {
+                                log::error!("Error in context action [Say this]: {}", err);
+                            }
+                        } else if opt_index == 0 {
+                            world
+                                .get_mut::<DialogueRunner>(player_id)?
+                                .continue_in_next_update();
                         }
-                    } else if opt_index == 0 {
-                        world.get_mut::<DialogueRunner>(player_id)?.continue_in_next_update();
-                    }
 
-                    Some(())
-                })();
-            })
-        )).id();
+                        Some(())
+                    })();
+                }),
+            ))
+            .id();
 
-        DialogUiContextActions {
-            say_this
-        }
+        DialogUiContextActions { say_this }
     }
 }
 
