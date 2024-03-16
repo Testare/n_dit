@@ -349,8 +349,9 @@ fn demo_startup(
 
     // World map things
 
+    let board_size = Vec2 { x: 93.0, y: 38.0 };
     let board = commands
-        .spawn((Board("Network Map".into()),))
+        .spawn((Board("Network Map".into()), BoardSize(board_size)))
         .with_children(|board| {
             board.spawn((
                 NFNode,
@@ -454,8 +455,12 @@ fn demo_startup(
                         flex_grow: 1.0,
                         flex_shrink: 0.0,
                         display: taffy::style::Display::Grid,
-                        grid_template_columns: vec![points(14.0), fr(1.0)],
-                        grid_template_rows: vec![fr(1.0), fr(1.0)],
+                        grid_template_columns: vec![
+                            points(14.0),
+                            minmax(points(10.0), fr(1.0)),
+                            fr(0.0000001),
+                        ],
+                        grid_template_rows: vec![fr(1.0), fr(0.000001)],
                         ..default()
                     }),
                     Name::new("Network Map Content Pane"),
@@ -486,118 +491,115 @@ fn demo_startup(
                             StyleTty(Style {
                                 grid_row: line(1),
                                 grid_column: line(2),
-                                display: Display::Flex,
-                                flex_direction: FlexDirection::Row,
+                                display: Display::Grid,
+                                grid_template_columns: vec![
+                                    fr(1.0),
+                                    minmax(points(0.0), max_content()),
+                                    fr(1.0),
+                                ],
+                                grid_template_rows: vec![
+                                    fr(1.0),
+                                    minmax(points(0.0), max_content()),
+                                    fr(1.0),
+                                ],
                                 ..default()
                             }),
                         ))
                         .with_children(|popup_menu_pane| {
-                            popup_menu_pane.spawn(StyleTty::buffer());
                             popup_menu_pane
-                                .spawn(StyleTty(Style {
-                                    flex_direction: FlexDirection::Column,
-                                    ..default()
-                                }))
-                                .with_children(|popup_menu_pane_center| {
-                                    popup_menu_pane_center.spawn(StyleTty::buffer());
-
-                                    popup_menu_pane_center
-                                        .spawn((
-                                            TerminalRendering::default(),
-                                            Name::new("Node popup menu"),
-                                            StyleTty(taffy::prelude::Style {
-                                                flex_grow: 0.0,
-                                                padding: Rect::points(1.0),
-                                                flex_direction: FlexDirection::Column,
-                                                ..default()
-                                            }),
-                                            MouseEventListener, // To prevent grid from interacting
-                                            PopupMenu,
-                                        ))
-                                        .with_children(|popup_menu| {
-                                            popup_menu.spawn((
-                                                StyleTty(taffy::prelude::Style {
-                                                    max_size: Size {
-                                                        width: Dimension::Points(40.0),
-                                                        height: Dimension::Points(8.0),
-                                                    },
-                                                    size: Size {
-                                                        width: points(0.0),
-                                                        height: points(0.0),
-                                                    },
-                                                    ..default()
-                                                }),
-                                                DialogLineUi::default(),
-                                                ForPlayer(player),
-                                                TerminalRendering::default(),
-                                                VisibilityTty(true),
-                                            ));
-                                            popup_menu.spawn((
-                                                StyleTty(taffy::prelude::Style {
-                                                    max_size: Size {
-                                                        width: Dimension::Points(40.0),
-                                                        height: Dimension::Points(4.0),
-                                                    },
-                                                    size: zero(),
-                                                    ..default()
-                                                }),
-                                                HoverPoint::default(),
-                                                DialogOptionUi(0),
-                                                ContextActions::new(
-                                                    player,
-                                                    vec![res_dialog_context_actions.say_this()],
-                                                ),
-                                                MouseEventListener,
-                                                ForPlayer(player),
-                                                TerminalRendering::default(),
-                                                VisibilityTty(true),
-                                            ));
-                                            popup_menu.spawn((
-                                                StyleTty(taffy::prelude::Style {
-                                                    max_size: Size {
-                                                        width: Dimension::Points(40.0),
-                                                        height: Dimension::Points(4.0),
-                                                    },
-                                                    size: zero(),
-                                                    ..default()
-                                                }),
-                                                HoverPoint::default(),
-                                                DialogOptionUi(1),
-                                                ContextActions::new(
-                                                    player,
-                                                    vec![res_dialog_context_actions.say_this()],
-                                                ),
-                                                MouseEventListener,
-                                                ForPlayer(player),
-                                                TerminalRendering::default(),
-                                                VisibilityTty(true),
-                                            ));
-                                            popup_menu.spawn((
-                                                StyleTty(taffy::prelude::Style {
-                                                    max_size: Size {
-                                                        width: Dimension::Points(40.0),
-                                                        height: Dimension::Points(4.0),
-                                                    },
-                                                    size: zero(),
-                                                    ..default()
-                                                }),
-                                                HoverPoint::default(),
-                                                DialogOptionUi(2),
-                                                ContextActions::new(
-                                                    player,
-                                                    vec![res_dialog_context_actions.say_this()],
-                                                ),
-                                                MouseEventListener,
-                                                ForPlayer(player),
-                                                TerminalRendering::default(),
-                                                VisibilityTty(true),
-                                            ));
-                                        });
-
-                                    popup_menu_pane_center.spawn(StyleTty::buffer());
+                                .spawn((
+                                    TerminalRendering::default(),
+                                    Name::new("Node popup menu"),
+                                    StyleTty(taffy::prelude::Style {
+                                        flex_grow: 0.0,
+                                        grid_row: line(2),
+                                        grid_column: line(2),
+                                        padding: Rect::points(1.0),
+                                        flex_direction: FlexDirection::Column,
+                                        ..default()
+                                    }),
+                                    MouseEventListener, // To prevent grid from interacting
+                                    PopupMenu,
+                                ))
+                                .with_children(|popup_menu| {
+                                    popup_menu.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            max_size: Size {
+                                                width: Dimension::Points(40.0),
+                                                height: Dimension::Points(8.0),
+                                            },
+                                            size: Size {
+                                                width: points(0.0),
+                                                height: points(0.0),
+                                            },
+                                            ..default()
+                                        }),
+                                        DialogLineUi::default(),
+                                        ForPlayer(player),
+                                        TerminalRendering::default(),
+                                        VisibilityTty(true),
+                                    ));
+                                    popup_menu.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            max_size: Size {
+                                                width: Dimension::Points(40.0),
+                                                height: Dimension::Points(4.0),
+                                            },
+                                            size: zero(),
+                                            ..default()
+                                        }),
+                                        HoverPoint::default(),
+                                        DialogOptionUi(0),
+                                        ContextActions::new(
+                                            player,
+                                            vec![res_dialog_context_actions.say_this()],
+                                        ),
+                                        MouseEventListener,
+                                        ForPlayer(player),
+                                        TerminalRendering::default(),
+                                        VisibilityTty(true),
+                                    ));
+                                    popup_menu.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            max_size: Size {
+                                                width: Dimension::Points(40.0),
+                                                height: Dimension::Points(4.0),
+                                            },
+                                            size: zero(),
+                                            ..default()
+                                        }),
+                                        HoverPoint::default(),
+                                        DialogOptionUi(1),
+                                        ContextActions::new(
+                                            player,
+                                            vec![res_dialog_context_actions.say_this()],
+                                        ),
+                                        MouseEventListener,
+                                        ForPlayer(player),
+                                        TerminalRendering::default(),
+                                        VisibilityTty(true),
+                                    ));
+                                    popup_menu.spawn((
+                                        StyleTty(taffy::prelude::Style {
+                                            max_size: Size {
+                                                width: Dimension::Points(40.0),
+                                                height: Dimension::Points(4.0),
+                                            },
+                                            size: zero(),
+                                            ..default()
+                                        }),
+                                        HoverPoint::default(),
+                                        DialogOptionUi(2),
+                                        ContextActions::new(
+                                            player,
+                                            vec![res_dialog_context_actions.say_this()],
+                                        ),
+                                        MouseEventListener,
+                                        ForPlayer(player),
+                                        TerminalRendering::default(),
+                                        VisibilityTty(true),
+                                    ));
                                 });
-
-                            popup_menu_pane.spawn(StyleTty::buffer());
                         });
                     content_pane.spawn((
                         Name::new("Board background"),
@@ -606,9 +608,16 @@ fn demo_startup(
                         BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
                         CalculatedSizeTty::default(),
                         StyleTty(taffy::style::Style {
-                            flex_grow: 1.0,
                             display: taffy::style::Display::Grid,
                             // grid_template_columns: 18 x 5 for now
+                            max_size: Size {
+                                width: points(board_size.x),
+                                height: points(board_size.y),
+                            },
+                            /*size: Size {
+                                width: points(board_size.x),
+                                height: points(board_size.y),
+                            },*/
                             grid_row: line(1),
                             grid_column: line(2),
                             grid_auto_rows: vec![NonRepeatedTrackSizingFunction {
