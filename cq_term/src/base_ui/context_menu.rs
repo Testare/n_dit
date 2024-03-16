@@ -142,8 +142,8 @@ impl ContextMenuPane {
                     grid_row: line(1),
                     grid_column: line(1),
                     display: Display::Grid,
-                    grid_template_rows: vec![points(4.0), points(2.0)],
-                    grid_template_columns: vec![points(10.0), points(22.0)],
+                    grid_template_rows: vec![length(4.0), length(2.0)],
+                    grid_template_columns: vec![length(10.0), length(22.0)],
                     ..default()
                 }),
             ))
@@ -154,8 +154,8 @@ impl ContextMenuPane {
                         display: Display::Grid,
                         grid_row: line(2),
                         grid_column: line(2),
-                        grid_auto_rows: vec![points(1.0)],
-                        grid_template_columns: vec![points(1.), fr(1.), points(1.)],
+                        grid_auto_rows: vec![length(1.0)],
+                        grid_template_columns: vec![length(1.), fr(1.), length(1.)],
                         ..default()
                     }),
                     TerminalRendering::new(vec![
@@ -406,6 +406,8 @@ fn sys_display_context_menu(
 
         let mut charmi = CharacterMapImage::new();
         let cm_style = res_draw_config.color_scheme().context_menu();
+
+        use taffy::prelude::*;
         charmi
             .new_row()
             .add_char('┍', &cm_style)
@@ -415,8 +417,6 @@ fn sys_display_context_menu(
             .entity(cm_id)
             .despawn_descendants()
             .with_children(|cm_commands| {
-                use taffy::prelude::*;
-
                 for (context_menu_item, row) in context_menu_actions.into_iter().zip(2..) {
                     charmi
                         .new_row()
@@ -429,7 +429,7 @@ fn sys_display_context_menu(
                         StyleTty(Style {
                             max_size: Size {
                                 width: auto(),
-                                height: points(1.),
+                                height: length(1.),
                             },
                             grid_row: line(row),
                             grid_column: line(2),
@@ -450,11 +450,10 @@ fn sys_display_context_menu(
             .add_char('┘', &cm_style);
         rendering.update_charmie(charmi);
 
-        use taffy::prelude::points;
         pane_style.grid_template_rows =
-            vec![points(target_pos_y as f32), points(target_height as f32)];
+            vec![length(target_pos_y as f32), length(target_height as f32)];
         pane_style.grid_template_columns =
-            vec![points(target_pos_x as f32), points(target_width as f32)];
+            vec![length(target_pos_x as f32), length(target_width as f32)];
         is_visible.set_if_neq(true);
     }
 }

@@ -2,7 +2,6 @@ use game_core::card::{Action, Actions, Description};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
-use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedAction, SelectedNodePiece};
 use crate::layout::{CalculatedSizeTty, FitToSize, StyleTty};
@@ -20,6 +19,7 @@ impl MenuUiDescription {
         mut ui: Query<(&mut StyleTty, &CalculatedSizeTty, &ForPlayer), With<MenuUiDescription>>,
         mut last_nonzero_width: Local<usize>,
     ) {
+        use taffy::prelude::*;
         for (mut style, size, ForPlayer(player)) in ui.iter_mut() {
             if let Ok((selected_entity, selected_action)) = players.get(*player) {
                 if size.width() != 0 {
@@ -37,14 +37,14 @@ impl MenuUiDescription {
                         Some(textwrap::wrap(desc_str, *last_nonzero_width).len() as f32 + 1.0)
                     })
                     .unwrap_or(0.0);
-                if Dimension::Points(new_height) != style.min_size.height {
-                    style.min_size.height = Dimension::Points(new_height);
+                if Dimension::Length(new_height) != style.min_size.height {
+                    style.min_size.height = length(new_height);
                     style.display = if new_height == 0.0 {
-                        style.size.height = Dimension::Points(new_height);
+                        style.size.height = length(new_height);
                         taffy::style::Display::None
                     } else {
                         // Give a little extra for padding if we can
-                        style.size.height = Dimension::Points(new_height);
+                        style.size.height = length(new_height);
                         taffy::style::Display::Flex
                     };
                 }
@@ -110,7 +110,7 @@ impl NodeUi for MenuUiDescription {
             display: Display::None,
             min_size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(0.0),
+                height: length(0.0),
             },
             ..default()
         })

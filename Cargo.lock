@@ -979,7 +979,7 @@ dependencies = [
  "bevy_window",
  "bytemuck",
  "serde",
- "taffy",
+ "taffy 0.3.16",
  "thiserror",
 ]
 
@@ -1599,7 +1599,7 @@ dependencies = [
  "pad",
  "serde",
  "serde_json",
- "taffy",
+ "taffy 0.4.0",
  "textwrap",
  "thiserror",
  "unicode-width",
@@ -2213,6 +2213,12 @@ name = "grid"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eec1c01eb1de97451ee0d60de7d81cf1e72aabefb021616027f3d1c3ec1c723c"
+
+[[package]]
+name = "grid"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d196ffc1627db18a531359249b2bf8416178d84b729f3cebeb278f285fb9b58c"
 
 [[package]]
 name = "guillotiere"
@@ -3841,7 +3847,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c488aa2bf4bb0cafed312e0876b79a591e3cfa47391f842b7198f9a56547561b"
 dependencies = [
  "arrayvec",
- "grid",
+ "grid 0.10.0",
+ "num-traits",
+ "slotmap",
+]
+
+[[package]]
+name = "taffy"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fddbee94e20bc4612dcb789953324236eebd4fc6a08c650ccbf7f615e59a0d6a"
+dependencies = [
+ "arrayvec",
+ "grid 0.13.0",
  "num-traits",
  "serde",
  "slotmap",

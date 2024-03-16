@@ -36,14 +36,14 @@ impl NodeUi for TitleBarUi {
         StyleTty(Style {
             size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(2.),
+                height: length(2.),
             },
             padding: Rect {
-                bottom: LengthPercentage::Points(1.0),
+                bottom: length(1.0),
                 ..TaffyZero::ZERO
             },
             max_size: Size {
-                width: Dimension::Points(100.0),
+                width: length(100.0),
                 height: Dimension::Auto,
             },
             flex_shrink: 0.0,

@@ -8,8 +8,6 @@ use bevy::ecs::query::Has;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use pad::PadStr;
-use taffy::prelude::Size;
-use taffy::style::Dimension;
 
 use self::context_menu::ContextMenuPlugin;
 pub use self::popup::*;
@@ -77,6 +75,7 @@ pub struct ButtonUiBundle {
 
 impl ButtonUiBundle {
     pub fn new<S: Borrow<str>>(text: S, text_style: ContentStyle) -> Self {
+        use taffy::prelude::*;
         ButtonUiBundle {
             name: Name::from(format!("Button ({})", text.borrow())),
             text_ui: FlexibleTextUi {
@@ -90,16 +89,16 @@ impl ButtonUiBundle {
             hover_point: HoverPoint::default(),
             style_tty: StyleTty(taffy::prelude::Style {
                 size: Size {
-                    width: Dimension::Points(text.borrow().len() as f32 + 2.0),
-                    height: Dimension::Points(1.0),
+                    width: length(text.borrow().len() as f32 + 2.0),
+                    height: length(1.0),
                 },
                 max_size: Size {
-                    width: Dimension::Points(text.borrow().len() as f32 + 2.0),
-                    height: Dimension::Points(1.0),
+                    width: length(text.borrow().len() as f32 + 2.0),
+                    height: length(1.0),
                 },
                 min_size: Size {
-                    width: Dimension::Points(3.0),
-                    height: Dimension::Points(1.0),
+                    width: length(3.0),
+                    height: length(1.0),
                 },
                 flex_grow: 0.0,
                 flex_shrink: 1.0,

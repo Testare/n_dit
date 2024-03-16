@@ -1,8 +1,6 @@
 use game_core::node::{InNode, Node, OnTeam, TeamStatus, VictoryStatus};
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
-use taffy::prelude::Size;
-use taffy::style::Dimension;
 
 use super::{NodeUi, NodeUiQItem};
 use crate::key_map::NamedInput;
@@ -44,8 +42,9 @@ pub fn kb_messages(
 }
 
 pub fn style_message_bar(mut ui: Query<(&CalculatedSizeTty, &MessageBarUi, &mut StyleTty)>) {
+    use taffy::prelude::*;
     for (size, ui, mut style) in ui.iter_mut() {
-        let height = Dimension::Points(if let Some(msg) = ui.first() {
+        let height = length(if let Some(msg) = ui.first() {
             2.0 + textwrap::wrap(msg.as_str(), size.width()).len() as f32
         } else {
             1.0
@@ -94,10 +93,11 @@ impl NodeUi for MessageBarUi {
     type UiPlugin = MessageBarUiPlugin;
 
     fn initial_style(_: &NodeUiQItem) -> StyleTty {
-        StyleTty(taffy::prelude::Style {
+        use taffy::prelude::*;
+        StyleTty(Style {
             size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(1.),
+                height: length(1.),
             },
             flex_shrink: 0.0,
             ..default()

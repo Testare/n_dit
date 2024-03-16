@@ -23,7 +23,7 @@ log = "0.4"
 pad =  { git = "https://github.com/Testare/rust-pad" }
 serde = "1.0"
 serde_json = "1.0"
-taffy = { version = "0.3.16", features = ["serde"] }
+taffy = { version = "0.4.0", features = ["serde"] }
 textwrap = "0.16.0"
 thiserror = "1.0"
 unicode-width = "0.1.8"

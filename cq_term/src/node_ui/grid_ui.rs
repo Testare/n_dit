@@ -98,11 +98,11 @@ impl NodeUi for GridUi {
                 height: Dimension::Auto,
             },
             max_size: Size {
-                width: Dimension::Points((node_q.grid.width() * 3 + 1) as f32),
-                height: Dimension::Points((node_q.grid.height() * 2 + 1) as f32),
+                width: length((node_q.grid.width() * 3 + 1) as f32),
+                height: length((node_q.grid.height() * 2 + 1) as f32),
             },
             border: Rect {
-                left: LengthPercentage::Points(1.0),
+                left: length(1.0),
                 ..TaffyZero::ZERO
             },
             flex_grow: 1.0,
@@ -137,8 +137,8 @@ fn sys_react_to_changed_node(
             get_assert!(node_id, q_node, |grid| {
                 use taffy::prelude::*;
                 style.max_size = Size {
-                    width: Dimension::Points((grid.width() * 3 + 1) as f32),
-                    height: Dimension::Points((grid.height() * 2 + 1) as f32),
+                    width: length((grid.width() * 3 + 1) as f32),
+                    height: length((grid.height() * 2 + 1) as f32),
                 };
                 Some(())
             });

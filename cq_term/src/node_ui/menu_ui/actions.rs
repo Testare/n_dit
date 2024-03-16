@@ -8,7 +8,6 @@ use game_core::node::{IsTapped, NodeOp, NodePiece, OnTeam, Team, TeamPhase};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
-use taffy::style::Dimension;
 
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{HoverPoint, Tooltip};
@@ -162,6 +161,7 @@ impl MenuUiActions {
         players: Query<&SelectedNodePiece, With<Player>>,
         mut ui: Query<(&mut StyleTty, &ForPlayer), With<MenuUiActions>>,
     ) {
+        use taffy::prelude::*;
         for (mut style, ForPlayer(player)) in ui.iter_mut() {
             if let Ok(selected_entity) = players.get(*player) {
                 let new_height = selected_entity
@@ -169,14 +169,14 @@ impl MenuUiActions {
                     .map(|actions| (actions.len() + 1) as f32)
                     .unwrap_or(0.0);
 
-                if Dimension::Points(new_height) != style.min_size.height {
-                    style.min_size.height = Dimension::Points(new_height);
+                if Dimension::Length(new_height) != style.min_size.height {
+                    style.min_size.height = length(new_height);
                     style.display = if new_height == 0.0 {
-                        style.size.height = Dimension::Points(new_height);
+                        style.size.height = length(new_height);
                         taffy::style::Display::None
                     } else {
                         // Give a little extra for padding if we can
-                        style.size.height = Dimension::Points(new_height + 1.0);
+                        style.size.height = length(new_height + 1.0);
                         taffy::style::Display::Flex
                     };
                 }
@@ -252,7 +252,7 @@ impl NodeUi for MenuUiActions {
             display: Display::None,
             min_size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(0.0),
+                height: length(0.0),
             },
             ..default()
         })

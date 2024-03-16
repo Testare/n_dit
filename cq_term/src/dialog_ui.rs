@@ -120,7 +120,7 @@ pub fn sys_layout_dialog_option_ui(
             if dialog.is_changed() || size.is_changed() {
                 if opt_index < dialog.options().len() {
                     let target_width = if size.width() < 2 {
-                        if let Dimension::Points(pts) = style.max_size.width {
+                        if let Dimension::Length(pts) = style.max_size.width {
                             pts as usize
                         } else {
                             log::error!(
@@ -137,8 +137,8 @@ pub fn sys_layout_dialog_option_ui(
                     )
                     .len();
                     let target_size = Size {
-                        height: points(target_height as f32),
-                        width: points(target_width as f32),
+                        height: length(target_height as f32),
+                        width: length(target_width as f32),
                     };
                     if style.size != target_size {
                         style.size = target_size;

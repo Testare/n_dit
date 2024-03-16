@@ -15,11 +15,11 @@ use crate::render::RenderOrder;
 pub struct TaffyTuiLayoutPlugin;
 
 #[derive(Deref, DerefMut, Resource)]
-struct Taffy(taffy::Taffy);
+struct Taffy(taffy::TaffyTree);
 
 impl Default for Taffy {
     fn default() -> Self {
-        let mut taffy = taffy::Taffy::default();
+        let mut taffy = taffy::TaffyTree::default();
         taffy.disable_rounding();
         Taffy(taffy)
     }
@@ -27,7 +27,7 @@ impl Default for Taffy {
 
 /// Hidden component, ties Entity to Taffy Node
 #[derive(Component, Debug, Deref, DerefMut)]
-struct NodeTty(taffy::node::Node);
+struct NodeTty(taffy::tree::NodeId);
 
 /// Root of a layout. Is fitted to terminal
 #[derive(Component, Debug, Default, Reflect)]
@@ -231,7 +231,7 @@ fn taffy_apply_hierarchy_updates(
     new_child_nodes: Query<(&NodeTty, &Children), Changed<Children>>,
 ) {
     for (parent, children) in new_child_nodes.iter() {
-        let children_nodes: Vec<taffy::node::Node> =
+        let children_nodes: Vec<taffy::tree::NodeId> =
             nodes.iter_many(children).map(|node| **node).collect();
         taffy.set_children(**parent, &children_nodes).unwrap();
     }
@@ -256,8 +256,8 @@ fn calculate_layouts(
         height: AvailableSpace::Definite(window.height() as f32),
     };
     let window_size = Size {
-        width: Dimension::Points(window.width() as f32),
-        height: Dimension::Points(window.height() as f32),
+        width: length(window.width() as f32),
+        height: length(window.height() as f32),
     };
     for (root_id, root, root_debug_name) in roots.iter() {
         let root_style = taffy.style(**root).cloned().unwrap();

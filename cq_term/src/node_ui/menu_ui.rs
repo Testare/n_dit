@@ -32,7 +32,7 @@ pub trait SimpleSubmenu {
             display: Display::None,
             min_size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(0.0),
+                height: length(0.0),
             },
             ..default()
         })

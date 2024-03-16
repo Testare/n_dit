@@ -5,7 +5,6 @@ use game_core::node::{AccessPoint, NodeOp, PlayedCards};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
-use taffy::style::Dimension;
 
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{HoverPoint, Tooltip};
@@ -263,6 +262,7 @@ impl MenuUiCardSelection {
         player_info: Query<(&Deck, &SelectedNodePiece), With<Player>>,
         mut ui: Query<(&mut StyleTty, &ForPlayer, AsDerefMut<VisibilityTty>), With<Self>>,
     ) {
+        use taffy::prelude::*;
         for (mut style, ForPlayer(player), mut is_visible) in ui.iter_mut() {
             let (min_height, max_height) = player_info
                 .get(*player)
@@ -273,9 +273,9 @@ impl MenuUiCardSelection {
                     Some((full_len.min(6.0), full_len))
                 })
                 .unwrap_or((0.0, 0.0));
-            if Dimension::Points(max_height) != style.max_size.height {
-                style.max_size.height = Dimension::Points(max_height);
-                style.min_size.height = Dimension::Points(min_height);
+            if Dimension::Length(max_height) != style.max_size.height {
+                style.max_size.height = length(max_height);
+                style.min_size.height = length(min_height);
                 is_visible.set_if_neq(max_height != 0.0);
             }
         }
@@ -436,7 +436,7 @@ impl NodeUi for MenuUiCardSelection {
             display: Display::Flex,
             min_size: Size {
                 width: Dimension::Auto,
-                height: Dimension::Points(0.0),
+                height: length(0.0),
             },
             flex_grow: 1.0,
             ..default()

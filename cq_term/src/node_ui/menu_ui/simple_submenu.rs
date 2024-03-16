@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 
 use bevy::ecs::system::StaticSystemParam;
 use game_core::player::{ForPlayer, Player};
-use taffy::style::Dimension;
 
 use super::{NodePieceQ, NodeUi, SelectedNodePiece, SimpleSubmenu};
 use crate::layout::{CalculatedSizeTty, StyleTty};
@@ -55,6 +54,7 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
     players: Query<&SelectedNodePiece, With<Player>>,
     mut ui: Query<(&mut StyleTty, &ForPlayer), With<T>>,
 ) {
+    use taffy::prelude::*;
     for (mut style, ForPlayer(player)) in ui.iter_mut() {
         if let Ok(selected_entity) = players.get(*player) {
             let new_height = selected_entity
@@ -62,14 +62,14 @@ fn style_simple_submenu<T: SimpleSubmenu + Component>(
                 .and_then(|selected| Some(T::height(&selected)? as f32))
                 .unwrap_or(0.0);
 
-            if Dimension::Points(new_height) != style.min_size.height {
-                style.min_size.height = Dimension::Points(new_height);
+            if Dimension::Length(new_height) != style.min_size.height {
+                style.min_size.height = length(new_height);
                 style.display = if new_height == 0.0 {
-                    style.size.height = Dimension::Points(new_height);
+                    style.size.height = length(new_height);
                     taffy::style::Display::None
                 } else {
                     // Give a little extra for padding if we can
-                    style.size.height = Dimension::Points(new_height + 1.0);
+                    style.size.height = length(new_height + 1.0);
                     taffy::style::Display::Flex
                 };
             }

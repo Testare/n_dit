@@ -208,7 +208,7 @@ pub fn create_node_ui(
                             title_bar.spawn((
                                 StyleTty(taffy::prelude::Style {
                                     size: Size {
-                                        width: Dimension::Points(node_name.as_str().width() as f32),
+                                        width: length(node_name.as_str().width() as f32),
                                         height: Dimension::Auto,
                                     },
                                     flex_grow: 0.0,
@@ -226,7 +226,7 @@ pub fn create_node_ui(
                                             height: Dimension::Auto,
                                         },
                                         max_size: Size {
-                                            width: Dimension::Points(60.0),
+                                            width: length(60.0),
                                             height: Dimension::Auto,
                                         },
                                         flex_grow: 1.0,
@@ -249,7 +249,7 @@ pub fn create_node_ui(
                                     title_bar_right.spawn((
                                         StyleTty(taffy::prelude::Style {
                                             size: Size {
-                                                width: Dimension::Points(1.0),
+                                                width: length(1.0),
                                                 height: Dimension::Auto,
                                             },
                                             min_size: Size { ..TaffyZero::ZERO },
@@ -280,7 +280,7 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
-                                            width: Dimension::Points(1.0),
+                                            width: length(1.0),
                                             height: Dimension::Auto,
                                         },
                                         flex_grow: 0.0,
@@ -298,7 +298,7 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
-                                            width: Dimension::Points(1.0),
+                                            width: length(1.0),
                                             height: Dimension::Auto,
                                         },
                                         flex_grow: 0.0,
@@ -316,7 +316,7 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((StyleTty(taffy::prelude::Style {
                                         size: Size {
-                                            width: Dimension::Points(1.0),
+                                            width: length(1.0),
                                             height: Dimension::Auto,
                                         },
                                         flex_grow: 0.0,
@@ -344,7 +344,7 @@ pub fn create_node_ui(
                         StyleTty(taffy::prelude::Style {
                             size: Size {
                                 width: Dimension::Auto,
-                                height: Dimension::Points(2.0),
+                                height: length(2.0),
                             },
                             flex_shrink: 0.0,
                             flex_grow: 0.0,
@@ -370,7 +370,7 @@ pub fn create_node_ui(
                             .spawn((
                                 StyleTty(taffy::prelude::Style {
                                     size: Size {
-                                        width: Dimension::Points(14.),
+                                        width: length(14.),
                                         height: Dimension::Auto,
                                     },
                                     flex_direction: FlexDirection::Column,
@@ -415,7 +415,7 @@ pub fn create_node_ui(
                                         Name::new("Node popup menu"),
                                         StyleTty(taffy::prelude::Style {
                                             flex_grow: 0.0,
-                                            padding: Rect::points(1.0),
+                                            padding: length(1.0),
                                             flex_direction: FlexDirection::Column,
                                             ..default()
                                         }),
@@ -425,12 +425,12 @@ pub fn create_node_ui(
                                         popup_menu.spawn((
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
-                                                    width: Dimension::Points(40.0),
-                                                    height: Dimension::Points(8.0),
+                                                    width: length(40.0),
+                                                    height: length(8.0),
                                                 },
                                                 size: Size {
-                                                    width: points(0.0),
-                                                    height: points(0.0)
+                                                    width: length(0.0),
+                                                    height: length(0.0)
                                                 },
                                                 ..default()
                                             }),
@@ -442,8 +442,8 @@ pub fn create_node_ui(
                                         popup_menu.spawn((
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
-                                                    width: Dimension::Points(40.0),
-                                                    height: Dimension::Points(4.0),
+                                                    width: length(40.0),
+                                                    height: length(4.0),
                                                 },
                                                 size: zero(),
                                                 ..default()
@@ -459,8 +459,8 @@ pub fn create_node_ui(
                                         popup_menu.spawn((
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
-                                                    width: Dimension::Points(40.0),
-                                                    height: Dimension::Points(4.0),
+                                                    width: length(40.0),
+                                                    height: length(4.0),
                                                 },
                                                 size: zero(),
                                                 ..default()
@@ -476,8 +476,8 @@ pub fn create_node_ui(
                                         popup_menu.spawn((
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
-                                                    width: Dimension::Points(40.0),
-                                                    height: Dimension::Points(4.0),
+                                                    width: length(40.0),
+                                                    height: length(4.0),
                                                 },
                                                 size: zero(),
                                                 ..default()
@@ -497,8 +497,8 @@ pub fn create_node_ui(
                                             Name::new("Help menu"),
                                             StyleTty(taffy::prelude::Style {
                                                 size: Size {
-                                                    width: Dimension::Points(help_msg.width() as f32),
-                                                    height: Dimension::Points(help_msg.height() as f32),
+                                                    width: length(help_msg.width() as f32),
+                                                    height: length(help_msg.height() as f32),
                                                 },
                                                 ..default()
                                             }),
@@ -511,8 +511,8 @@ pub fn create_node_ui(
                                             OptionsMenu,
                                             StyleTty(taffy::prelude::Style {
                                                 size: Size {
-                                                    width: Dimension::Points(13.0),
-                                                    height: Dimension::Points(2.0),
+                                                    width: length(13.0),
+                                                    height: length(2.0),
                                                 },
                                                 ..default()
                                             }),
