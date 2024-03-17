@@ -5,12 +5,14 @@ pub mod common;
 pub mod configuration;
 pub mod dialog;
 pub mod entity_grid;
+pub mod item;
 pub mod node;
 pub mod op;
 pub mod player;
 pub mod prelude;
 pub mod quest;
 pub mod registry;
+pub mod shop;
 
 use op::CoreOps;
 // TODO no longer use these publicly, but have all itnerfaces one level deep?
@@ -74,10 +76,12 @@ impl Plugin for NDitCorePlugin {
             board::BoardPlugin,
             card::CardPlugin,
             dialog::DialogPlugin,
+            item::ItemPlugin,
             entity_grid::EntityGridSupportPlugin,
             node::NodePlugin,
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
             player::PlayerPlugin,
+            shop::ShopPlugin,
             registry::RegistryPlugin,
         ));
     }

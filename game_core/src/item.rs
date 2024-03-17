@@ -5,14 +5,11 @@ use crate::prelude::*;
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
-    fn build(&self, _app: &mut App) {
-        
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Debug)]
 pub enum Item {
     Card(Handle<CardDefinition>),
-    Mon(u32)
-    // Others?
+    Mon(u32), // Others?
 }

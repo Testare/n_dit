@@ -1,8 +1,12 @@
-use bevy_yarnspinner::events::{NodeCompleteEvent, PresentLineEvent, PresentOptionsEvent};
+use bevy::ecs::schedule::common_conditions;
+use bevy_yarnspinner::events::{
+    ExecuteCommandEvent, NodeCompleteEvent, PresentLineEvent, PresentOptionsEvent,
+};
 use bevy_yarnspinner::prelude::*;
 use getset::Getters;
 
 use crate::prelude::*;
+use crate::shop::{InShop, ShopId};
 
 #[derive(Debug)]
 pub struct DialogPlugin;
@@ -10,7 +14,16 @@ pub struct DialogPlugin;
 impl Plugin for DialogPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(YarnSpinnerPlugin::new())
-            .add_systems(Update, sys_dialog_view.after(YarnSpinnerSystemSet));
+            .add_systems(
+                PreUpdate,
+                sys_setup_dialogue_runners.run_if(common_conditions::resource_added::<YarnProject>),
+            )
+            .add_systems(
+                Update,
+                (sys_dialog_view, sys_yarn_commands)
+                    .chain()
+                    .after(YarnSpinnerSystemSet),
+            );
     }
 }
 
@@ -65,6 +78,48 @@ pub fn sys_dialog_view(
         if let Ok((Some(mut dialog), _dialogue_runner)) = q_dialogue_runner.get_mut(*source) {
             dialog.line = None;
             dialog.options.clear();
+        }
+    }
+}
+
+fn sys_setup_dialogue_runners(
+    mut commands: Commands,
+    res_yarn: Res<YarnProject>,
+    q_dialog_without_runner: Query<Entity, (With<Dialog>, Without<DialogueRunner>)>,
+) {
+    for id in q_dialog_without_runner.iter() {
+        let dialogue_runner = res_yarn.create_dialogue_runner();
+        commands.entity(id).insert(dialogue_runner);
+    }
+}
+
+/// TODO make yarn commands more flexible
+fn sys_yarn_commands(
+    mut commands: Commands,
+    mut evr_yarn_commands: EventReader<ExecuteCommandEvent>,
+    q_shops: Query<(Entity, &ShopId)>,
+) {
+    for ExecuteCommandEvent { command, source } in evr_yarn_commands.read() {
+        match command.name.as_str() {
+            "open_shop" => {
+                if let Some(shop_sid_str) = command.parameters.first() {
+                    let shop_sid_str = shop_sid_str.to_string();
+                    let shop_id = q_shops.iter().find_map(|(id, shop_sid)| {
+                        (shop_sid_str == shop_sid.0.to_string()).then_some(id)
+                    });
+                    if let Some(shop_id) = shop_id {
+                        commands.entity(*source).insert(InShop(shop_id));
+                    } else {
+                        log::error!("Could not find shop {shop_sid_str:?}")
+                    }
+                } else {
+                    log::error!("open_shop requires a parameter")
+                }
+            },
+            "jump" => {},
+            _ => {
+                log::error!("Unrecognized yarn command")
+            },
         }
     }
 }

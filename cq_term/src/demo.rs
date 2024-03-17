@@ -1,22 +1,23 @@
 use std::fs::File;
 use std::io::Write;
 
-use bevy::ecs::schedule::common_conditions::resource_added;
 use bevy::ecs::system::SystemState;
 use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
-use bevy_yarnspinner::prelude::{DialogueRunner, OptionId, YarnProject, YarnSpinnerSystemSet};
+use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
+use game_core::item::Item;
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
+use game_core::shop::{ShopId, ShopInventory, ShopListing};
 
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{HoverPoint, PopupMenu};
@@ -46,7 +47,6 @@ pub struct DemoState {
     node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
     player_id: Option<Entity>,
-    dialogue_runner: Option<Entity>,
 }
 
 impl Plugin for DemoPlugin {
@@ -57,42 +57,7 @@ impl Plugin for DemoPlugin {
                 Startup,
                 demo_startup.after(main_ui::sys_startup_create_main_ui),
             )
-            .add_systems(
-                Update,
-                demo_dialogue_runner
-                    .run_if(resource_added::<YarnProject>)
-                    .before(YarnSpinnerSystemSet),
-            )
             .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
-    }
-}
-
-fn yarn_get_player_name(_: In<()>, mut q_dialogue_runner: Query<&mut DialogueRunner>) {
-    for mut dialogue_runner in q_dialogue_runner.iter_mut() {
-        dialogue_runner
-            .variable_storage_mut()
-            .set("$player_name".to_string(), "GORNATHAN".into())
-            .unwrap();
-    }
-}
-
-fn demo_dialogue_runner(
-    mut commands: Commands,
-    res_yarn: Res<YarnProject>,
-    mut res_demo_state: ResMut<DemoState>,
-) {
-    if res_demo_state.dialogue_runner.is_none() {
-        let mut dialogue_runner = res_yarn.create_dialogue_runner();
-        dialogue_runner.start_node("pharmhaus_0_pr_database");
-        dialogue_runner
-            .commands_mut()
-            .add_command("get_player_name", yarn_get_player_name);
-        let dialogue_runner_id = commands
-            .entity(res_demo_state.player_id.unwrap())
-            .insert(dialogue_runner)
-            .id();
-
-        res_demo_state.dialogue_runner = Some(dialogue_runner_id);
     }
 }
 
@@ -169,6 +134,10 @@ fn debug_key(
                 {
                     quest_status.record_node_done(nid);
                 }
+            }
+        } else if *code == KeyCode::Char('7') {
+            for (mut player_dr, _) in q_player_dr.iter_mut() {
+                player_dr.start_node("warez_0");
             }
         } else if *code == KeyCode::Char('8') {
             for (mut player_dr, dialog) in q_player_dr.iter_mut() {
@@ -358,55 +327,58 @@ fn demo_startup(
                 NFNode,
                 ForNode(NodeId::new("node:demo", 0)),
                 SimplePieceInfo("Demo Node - This node is just a testing ground".to_string()),
-                TerminalRendering::default(),
                 BoardPosition(Vec2 { x: 12.0, y: 25.0 }),
                 BoardPiece("Smart HQ".to_owned()),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Board piece 1"),
             ));
             board.spawn((
-                NFNode,
-                SimplePieceInfo("Smart HQ\n".to_string()),
-                ForNode(NodeId::new("node:tutorial", 0)),
-                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
-                TerminalRendering::default(),
                 BoardPiece("Smart HQ".to_owned()),
                 BoardPosition(Vec2 { x: 24.0, y: 25.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
+                ForNode(NodeId::new("node:tutorial", 0)),
                 Name::new("Tutorial Node"),
+                NFNode,
+                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
+                SimplePieceInfo("Smart HQ\n".to_string()),
             ));
             board.spawn((
-                NFNode,
-                NFShop("warez:0".to_string()),
-                SimplePieceInfo("Warez Node\nLeo's Shop\nA quality shop of basic programs at low prices. Come and see what we've got to offer".to_string()),
-                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
-                TerminalRendering::default(),
                 BoardPiece("Warez".to_owned()),
                 BoardPosition(Vec2 { x: 4.0, y: 20.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
                 Name::new("Warez Node: Leo's Shop"),
+                NFNode,
+                NFShop("warez:0".to_string()),
+                ShopId(SetId::new_unchecked("warez", 0)),
+                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
+                SimplePieceInfo("Warez Node\nLeo's Shop\nA quality shop of basic programs at low prices. Come and see what we've got to offer".to_string()),
+                ShopInventory(vec![
+                    ShopListing::new(500, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Hack"))),
+                    ShopListing::new(750, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Bug"))),
+                    ShopListing::new(750, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Slingshot"))),
+                    ShopListing::new(500, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Data Doctor"))),
+                    ShopListing::new(250, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Bit Man"))),
+                ]),
             ));
             board.spawn((
-                NFNode,
-                SimplePieceInfo("Pharmaus\nPR Database\nSecurity Level: 1".to_string()),
-                ForNode(NodeId::new("node:area1", 0)),
-                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
-                TerminalRendering::default(),
                 BoardPiece("Pharmhaus".to_owned()),
                 BoardPosition(Vec2 { x: 28.0, y: 22.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
+                ForNode(NodeId::new("node:area1", 0)),
                 Name::new("Pharmaus: PR Database"),
+                NFNode,
+                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
+                SimplePieceInfo("Pharmaus\nPR Database\nSecurity Level: 1".to_string()),
             ));
             board.spawn((
-                NFNode,
-                SimplePieceInfo("Lucky Monkey Media\nTech Support\nSecurity Level: 1".to_string()),
-                ForNode(NodeId::new("node:area1", 1)),
-                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
-                TerminalRendering::default(),
                 BoardPiece("Lucky Monkey".to_owned()),
                 BoardPosition(Vec2 { x: 28.0, y: 30.0 }),
                 BoardSize(Vec2 { x: 4.0, y: 1.0 }),
+                ForNode(NodeId::new("node:area1", 1)),
                 Name::new("Lucky Monkey: Tech Support"),
+                NFNode,
+                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
+                SimplePieceInfo("Lucky Monkey Media\nTech Support\nSecurity Level: 1".to_string()),
             ));
         })
         .id();

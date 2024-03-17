@@ -1,4 +1,5 @@
 mod main_ui_op;
+mod shop_ui;
 
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::NDitCoreSet;
@@ -21,6 +22,7 @@ impl Plugin for MainUiPlugin {
         app.add_plugins((
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
             OpPlugin::<MainUiOp>::default(),
+            shop_ui::ShopUiPlugin,
         ))
         .add_systems(Startup, sys_startup_create_main_ui);
     }

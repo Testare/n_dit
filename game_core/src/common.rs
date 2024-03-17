@@ -7,7 +7,61 @@ use std::ops::Deref;
 use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter, WorldQuery};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
+use bevy::reflect::{ReflectDeserialize, ReflectSerialize};
 pub use metadata::Metadata;
+use serde::{Deserialize, Serialize};
+
+/// Unique identifier for a member of a set of 32 things or less.
+/// See [crate::node::NodeId], which will probably be replaced with this later
+#[derive(Clone, Debug, Default, Deserialize, Hash, PartialEq, Reflect, Serialize)]
+#[reflect(Deserialize, Serialize)]
+pub struct SetId {
+    /// Nodes are within sets of up to 32 nodes
+    set: String,
+    /// Number of node in series,
+    num: u32,
+}
+
+impl std::fmt::Display for SetId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.set.as_str(), self.num)
+    }
+}
+
+impl SetId {
+    /// ## Panics
+    /// Panics if num is 32 or more
+    pub fn new_unchecked<S: ToString>(set: S, num: u32) -> Self {
+        debug_assert!(num < 32, "Node ID has invalid value: [{}] >= 32", num);
+        Self {
+            num,
+            set: set.to_string(),
+        }
+    }
+
+    pub fn new<S: ToString>(set: S, num: u32) -> Option<Self> {
+        if num < 32 {
+            Some(Self {
+                num,
+                set: set.to_string(),
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn num(&self) -> u32 {
+        self.num
+    }
+
+    pub fn set(&self) -> &str {
+        self.set.as_str()
+    }
+
+    pub fn num_flag(&self) -> u32 {
+        1 << self.num
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum Compass {

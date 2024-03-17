@@ -1,18 +1,17 @@
-title: warez_0_initial
+title: warez_0
 ---
+<<if visited("warez_0")>>
+Leo: Welcome back, kid. How's it going? I got just the woftware to make things easier for you out there. Wanna see? #lastline
+<<else>>
 Leo: Hey, you must be that new S.M.A.R.T. agent I heard about. Welcome to Leo's shop.
 -> Hi
-Leo: We only got the best in wares, but for a up-and-comer like yourself, maybe an ex-agent like me can give you a break. You want to do some business?
+Leo: We only got the best in wares, but for a up-and-comer like yourself, maybe an ex-agent like me can give you a break. You want to do some business? #lastline
+<<endif>>
 -> Sure, show me what you've got
     <<open_shop "warez:0">>
 -> No thanks.
+    <<if !visited("warez_0")>>
     Leo: Suit yourself. Come back when you're ready to buy
     -> Later.
-===
-title: warez_0_returning
----
-Leo: Welcome back, kid. How's it going? I got just the woftware to make things easier for you out there. Wanna see?
--> Sure, show me what you got
-    <<open_shop "warez:0">>
--> No thanks
+    <<endif>>
 ===
