@@ -24,7 +24,6 @@ bevy_yarnspinner = "0.2"
 version = "0.13.0"
 default-features = false
 features = [
-    "animation",
     "bevy_asset",
     "bevy_audio",
     "bevy_scene",
