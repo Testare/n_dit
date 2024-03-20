@@ -587,7 +587,7 @@ pub fn build_popup_menu(
                 }),
                 HoverPoint::default(),
                 DialogOptionUi(0),
-                ContextActions::new(player, vec![say_this_ca]),
+                ContextActions::new(player, &[say_this_ca]),
                 MouseEventListener,
                 ForPlayer(player),
                 TerminalRendering::default(),
@@ -604,7 +604,7 @@ pub fn build_popup_menu(
                 }),
                 HoverPoint::default(),
                 DialogOptionUi(1),
-                ContextActions::new(player, vec![say_this_ca]),
+                ContextActions::new(player, &[say_this_ca]),
                 MouseEventListener,
                 ForPlayer(player),
                 TerminalRendering::default(),
@@ -621,7 +621,7 @@ pub fn build_popup_menu(
                 }),
                 HoverPoint::default(),
                 DialogOptionUi(2),
-                ContextActions::new(player, vec![say_this_ca]),
+                ContextActions::new(player, &[say_this_ca]),
                 MouseEventListener,
                 ForPlayer(player),
                 TerminalRendering::default(),
@@ -648,7 +648,7 @@ pub fn build_popup_menu(
                             ..default()
                         }),
                         ShopListingUi,
-                        ContextActions::new(player, vec![say_this_ca]),
+                        ContextActions::new(player, &[say_this_ca]),
                         ForPlayer(player),
                     ));
                     shop_ui

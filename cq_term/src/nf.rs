@@ -140,12 +140,12 @@ fn sys_apply_ui_to_node_nodes(
                     // TODO when show_dialogue is implemented, swap these
                     entity_commands.insert(ContextActions::new(
                         for_player,
-                        vec![res_nf_ca.select_piece, res_nf_ca.enter_node],
+                        &[res_nf_ca.select_piece, res_nf_ca.enter_node],
                     ));
                 } else {
                     entity_commands.insert(ContextActions::new(
                         for_player,
-                        vec![res_nf_ca.select_piece, res_nf_ca.enter_shop],
+                        &[res_nf_ca.select_piece, res_nf_ca.enter_shop],
                     ));
                 }
                 if for_node

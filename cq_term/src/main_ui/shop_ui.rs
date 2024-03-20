@@ -118,7 +118,7 @@ pub fn sys_open_shop_ui(
                             ),
                             ContextActions::new(
                                 player_id, /* Shop UI ID? */
-                                vec![res_shop_ui_ca.select_item(), res_shop_ui_ca.buy_item()],
+                                &[res_shop_ui_ca.select_item(), res_shop_ui_ca.buy_item()],
                             ),
                         ));
                     }

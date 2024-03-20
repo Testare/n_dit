@@ -87,10 +87,10 @@ pub struct ContextActions {
 }
 
 impl ContextActions {
-    pub fn new(source: Entity, actions: Vec<Entity>) -> Self {
+    pub fn new(settings_source: Entity, actions: &[Entity]) -> Self {
         Self {
-            settings_source: source,
-            actions,
+            settings_source,
+            actions: actions.into(),
         }
     }
 

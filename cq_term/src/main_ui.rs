@@ -80,7 +80,7 @@ pub fn sys_add_buy_button_context_actions(
     for (&ForPlayer(player_id), id) in q_buy_button_new.iter() {
         commands.entity(id).insert(ContextActions::new(
             player_id,
-            vec![res_shop_ui_ca.buy_item()],
+            &[res_shop_ui_ca.buy_item()],
         ));
     }
 }
@@ -96,7 +96,7 @@ pub fn sys_add_finish_shopping_button_context_actions(
     for (&ForPlayer(player_id), id) in q_finish_shopping_button_new.iter() {
         commands.entity(id).insert(ContextActions::new(
             player_id,
-            vec![res_shop_ui_ca.finish_shopping()],
+            &[res_shop_ui_ca.finish_shopping()],
         ));
     }
 }

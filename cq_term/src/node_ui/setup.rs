@@ -241,7 +241,7 @@ pub fn create_node_ui(
                                         ForPlayer(player),
                                         UndoButton,
                                         ButtonUiBundle::new("Undo", ContentStyle::new().cyan()),
-                                        ContextActions::new(player, vec![res_button_context_actions.undo()]),
+                                        ContextActions::new(player, &[res_button_context_actions.undo()]),
                                         VisibilityTty::invisible(),
                                         Tooltip::new("[⌫] Undo")
                                     ));
@@ -265,7 +265,7 @@ pub fn create_node_ui(
                                         ReadyButton,
                                         ButtonUiBundle::new("Ready", ContentStyle::new().blue()),
                                         MouseEventTtyDisabled,
-                                        ContextActions::new(player, vec![res_button_context_actions.start()]),
+                                        ContextActions::new(player, &[res_button_context_actions.start()]),
                                         VisibilityTty(true),
                                         Tooltip::new("[-] When you've placed all your units, click here to begin")
                                     ));
@@ -273,7 +273,7 @@ pub fn create_node_ui(
                                         ForPlayer(player),
                                         EndTurnButton,
                                         ButtonUiBundle::new("End Turn", ContentStyle::new().blue()),
-                                        ContextActions::new(player, vec![res_button_context_actions.end_turn()]),
+                                        ContextActions::new(player, &[res_button_context_actions.end_turn()]),
                                         VisibilityTty::invisible(),
                                         Tooltip::new("[-] End your turn and let the next player go")
                                     ));
@@ -292,7 +292,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Options", ContentStyle::new().green()),
                                         ForPlayer(player),
                                         OptionsButton,
-                                        ContextActions::new(player, vec![res_button_context_actions.toggle_options()]),
+                                        ContextActions::new(player, &[res_button_context_actions.toggle_options()]),
                                         Tooltip::new("[Esc] Opens menu for options"),
                                     ));
 
@@ -310,7 +310,7 @@ pub fn create_node_ui(
                                         ButtonUiBundle::new("Help", ContentStyle::new().yellow()),
                                         ForPlayer(player),
                                         HelpButton,
-                                        ContextActions::new(player, vec![res_button_context_actions.toggle_help()]),
+                                        ContextActions::new(player, &[res_button_context_actions.toggle_help()]),
                                         Tooltip::new("[?] Open guide to the game"),
                                     ));
 
@@ -326,7 +326,7 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Quit", ContentStyle::new().red()),
-                                        ContextActions::new(player, vec![res_button_context_actions.quit()]),
+                                        ContextActions::new(player, &[res_button_context_actions.quit()]),
                                         QuitButton,
                                         Tooltip::new("[q] Click to exit")
                                     ));
@@ -384,21 +384,21 @@ pub fn create_node_ui(
                                     .spawn((
                                         MenuUiCardSelection::bundle(player, &node_q),
                                         UiFocusCycleOrder(2),
-                                        ContextActions::new(player, vec![])
+                                        ContextActions::new(player, &[])
                                     ));
                                 menu_bar.spawn(MenuUiStats::bundle(player, &node_q));
                                 menu_bar
                                     .spawn((
                                         MenuUiActions::bundle(player, &node_q),
                                         UiFocusCycleOrder(1),
-                                        ContextActions::new(player, vec![]),
+                                        ContextActions::new(player, &[]),
                                     ));
                                 menu_bar.spawn(MenuUiDescription::bundle(player, &node_q));
                             });
                         content_pane
                             .spawn((
                                 GridUi::bundle(player, &node_q),
-                                ContextActions::new(player, vec![]),
+                                ContextActions::new(player, &[]),
                                 UiFocusCycleOrder(0),
                             ))
                             .with_children(|grid_ui| {
@@ -450,7 +450,7 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(0),
-                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
                                             MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
@@ -467,7 +467,7 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(1),
-                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
                                             MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
@@ -484,7 +484,7 @@ pub fn create_node_ui(
                                             }),
                                             HoverPoint::default(),
                                             DialogOptionUi(2),
-                                            ContextActions::new(player, vec![res_dialog_context_actions.say_this()]),
+                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
                                             MouseEventListener,
                                             ForPlayer(player),
                                             TerminalRendering::default(),
