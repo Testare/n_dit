@@ -7,7 +7,7 @@ use game_core::NDitCoreSet;
 pub use main_ui_op::MainUiOp;
 pub use shop_ui::{
     ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopUi, ShopUiBuyButton,
-    ShopUiFinishShoppingButton,
+    ShopUiFinishShoppingButton, ShopUiSelectedItem,
 };
 
 use self::shop_ui::ShopUiContextActions;
@@ -78,10 +78,9 @@ pub fn sys_add_buy_button_context_actions(
     q_buy_button_new: Query<(&ForPlayer, Entity), (With<ShopUiBuyButton>, Without<ContextActions>)>,
 ) {
     for (&ForPlayer(player_id), id) in q_buy_button_new.iter() {
-        commands.entity(id).insert(ContextActions::new(
-            player_id,
-            &[res_shop_ui_ca.buy_item()],
-        ));
+        commands
+            .entity(id)
+            .insert(ContextActions::new(player_id, &[res_shop_ui_ca.buy_item()]));
     }
 }
 

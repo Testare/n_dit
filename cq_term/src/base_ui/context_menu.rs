@@ -209,6 +209,38 @@ impl ContextAction {
             action_op,
         }
     }
+
+    pub fn from_system_id<S: ToString>(action_name: S, sys_id: SystemId<Entity>) -> Self {
+        let action_name_0 = action_name.to_string();
+        let action_op = Arc::new(move |id, _, world: &mut World| {
+            if let Err(e) = world.run_system_with_input(sys_id, id) {
+                log::error!("Error executing context action [{action_name_0}]: {e:?}")
+            }
+        });
+
+        ContextAction {
+            action_name: action_name.to_string(),
+            action_op,
+        }
+    }
+
+    pub fn from_system_id_with_mouse_event<S: ToString>(
+        action_name: S,
+        sys_id: SystemId<(Entity, MouseEventTty)>,
+    ) -> Self {
+        let action_name_0 = action_name.to_string();
+        let action_op = Arc::new(move |id, mouse_event, world: &mut World| {
+            if let Err(e) = world.run_system_with_input(sys_id, (id, mouse_event)) {
+                log::error!("Error executing context action [{action_name_0}]: {e:?}")
+            }
+        });
+
+        ContextAction {
+            action_name: action_name.to_string(),
+            action_op,
+        }
+    }
+
     pub fn from_command_default<C: Command + Default>(action_name: String) -> Self {
         let action_op = Arc::new(|_, _, world: &'_ mut World| {
             C::default().apply(world);

@@ -28,7 +28,7 @@ use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
     self, MainUi, MainUiOp, ShopListingUi, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
-    UiOps,
+    ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeUiScreen;
@@ -638,6 +638,7 @@ pub fn build_popup_menu(
                         ..default()
                     }),
                     ShopUi,
+                    ShopUiSelectedItem::default(),
                     ForPlayer(player),
                     VisibilityTty(false),
                 ))
