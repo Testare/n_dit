@@ -4,6 +4,7 @@ mod shop_ui;
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::NDitCoreSet;
 pub use main_ui_op::MainUiOp;
+pub use shop_ui::{ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopUi};
 
 use crate::base_ui::context_menu::ContextMenuPane;
 use crate::layout::StyleTty;

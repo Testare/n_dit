@@ -25,7 +25,7 @@ use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi}
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
-use crate::main_ui::{self, MainUi, MainUiOp, UiOps};
+use crate::main_ui::{self, MainUi, MainUiOp, ShopListingUi, ShopUi, UiOps};
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeUiScreen;
 use crate::prelude::KeyEvent;
@@ -616,5 +616,30 @@ pub fn build_popup_menu(player: Entity, say_this_ca: Entity, popup_menu_pane: &m
                 TerminalRendering::default(),
                 VisibilityTty(true),
             ));
+            popup_menu
+                .spawn((
+                    StyleTty(taffy::prelude::Style {
+                        max_size: Size {
+                            width: length(40.0),
+                            height: length(11.0), // Will need to implement scrolling
+                        },
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    }),
+                    ShopUi,
+                    ForPlayer(player),
+                    VisibilityTty(false),
+                ))
+                .with_children(|shop_ui| {
+                    shop_ui.spawn((
+                        StyleTty(taffy::prelude::Style {
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        }),
+                        ShopListingUi,
+                        ContextActions::new(player, vec![say_this_ca]),
+                        ForPlayer(player),
+                    ));
+                });
         });
 }
