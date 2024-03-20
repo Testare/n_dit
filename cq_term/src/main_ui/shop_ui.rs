@@ -1,9 +1,9 @@
-use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::CardDefinition;
 use game_core::player::{ForPlayer, Player};
 use game_core::shop::{InShop, ShopId, ShopInventory};
 
 use crate::base_ui::ButtonUiBundle;
+use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
@@ -19,6 +19,7 @@ impl Plugin for ShopUiPlugin {
 pub fn sys_open_shop_ui(
     mut commands: Commands,
     ast_card: Res<Assets<CardDefinition>>,
+    res_draw_config: Res<DrawConfiguration>,
     q_player_entering_shop: Query<(Entity, &InShop), (With<Player>, Added<InShop>)>,
     q_shop_listing_ui: Query<(&ForPlayer, Entity), With<ShopListingUi>>,
     q_shop: Query<AsDeref<ShopInventory>, With<ShopId>>,
@@ -54,7 +55,7 @@ pub fn sys_open_shop_ui(
                                     listing.item().name(&ast_card),
                                     listing.price()
                                 ),
-                                ContentStyle::new().cyan().on_dark_blue(),
+                                res_draw_config.color_scheme().shop_ui_listing_item(),
                             ),
                         ));
                     }

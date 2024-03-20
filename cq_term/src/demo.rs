@@ -20,8 +20,9 @@ use game_core::quest::QuestStatus;
 use game_core::shop::{ShopId, ShopInventory, ShopListing};
 
 use crate::base_ui::context_menu::ContextActions;
-use crate::base_ui::{HoverPoint, PopupMenu};
+use crate::base_ui::{ButtonUiBundle, HoverPoint, PopupMenu};
 use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
+use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
@@ -190,6 +191,7 @@ fn debug_key(
 
 fn demo_startup(
     mut res_ui_ops: ResMut<UiOps>,
+    res_draw_config: Res<DrawConfiguration>,
     res_dialog_context_actions: Res<DialogUiContextActions>,
     asset_server: Res<AssetServer>,
     mut res_demo_state: ResMut<DemoState>,
@@ -514,6 +516,7 @@ fn demo_startup(
                                 ))
                                 .with_children(|popup_menu_pane| {
                                     build_popup_menu(
+                                        res_draw_config,
                                         player,
                                         res_dialog_context_actions.say_this(),
                                         popup_menu_pane,
@@ -530,7 +533,12 @@ fn demo_startup(
     res_ui_ops.request(player, MainUiOp::SwitchScreen(board_ui_root));
 }
 
-pub fn build_popup_menu(player: Entity, say_this_ca: Entity, popup_menu_pane: &mut ChildBuilder) {
+pub fn build_popup_menu(
+    res_draw_config: Res<DrawConfiguration>,
+    player: Entity,
+    say_this_ca: Entity,
+    popup_menu_pane: &mut ChildBuilder,
+) {
     use taffy::prelude::*;
     popup_menu_pane
         .spawn((
@@ -640,6 +648,32 @@ pub fn build_popup_menu(player: Entity, say_this_ca: Entity, popup_menu_pane: &m
                         ContextActions::new(player, vec![say_this_ca]),
                         ForPlayer(player),
                     ));
+                    shop_ui
+                        .spawn((
+                            StyleTty(taffy::prelude::Style {
+                                display: Display::Grid,
+                                max_size: Size {
+                                    height: length(1.0),
+                                    width: auto(),
+                                },
+                                grid_template_columns: vec![fr(1.0), fr(1.0)],
+                                ..default()
+                            }),
+                            Name::new("Shop button bar"),
+                        ))
+                        .with_children(|shop_button_bar| {
+                            shop_button_bar.spawn(
+                                //55 95 45
+                                ButtonUiBundle::new(
+                                    "Buy",
+                                    res_draw_config.color_scheme().shop_ui_buy_button(),
+                                ),
+                            );
+                            shop_button_bar.spawn(ButtonUiBundle::new(
+                                "Done",
+                                res_draw_config.color_scheme().shop_ui_done_button(),
+                            ));
+                        });
                 });
         });
 }
