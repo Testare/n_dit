@@ -1,7 +1,11 @@
+use bevy::hierarchy::BuildWorldChildren;
 use game_core::card::CardDefinition;
+use game_core::common::daddy::Daddy;
 use game_core::player::{ForPlayer, Player};
 use game_core::shop::{InShop, ShopId, ShopInventory};
+use getset::CopyGetters;
 
+use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::ButtonUiBundle;
 use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
@@ -12,13 +16,68 @@ pub struct ShopUiPlugin;
 
 impl Plugin for ShopUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, sys_open_shop_ui);
+        app.init_resource::<ShopUiContextActions>()
+            .add_systems(Update, sys_open_shop_ui);
+    }
+}
+
+#[derive(CopyGetters, Debug, Reflect, Resource)]
+#[get_copy = "pub"]
+pub struct ShopUiContextActions {
+    buy_item: Entity,
+    finish_shopping: Entity,
+    select_item: Entity,
+}
+
+impl FromWorld for ShopUiContextActions {
+    fn from_world(world: &mut World) -> Self {
+        world.init_resource::<Daddy<ShopUiContextActions>>();
+        let buy_item = world
+            .spawn((
+                Name::new("Buy item CA"),
+                ContextAction::new("Buy item", |id, world| {
+                    log::debug!("TODO Buy item {id:?}!");
+                }),
+            ))
+            .id();
+        let finish_shopping = world
+            .spawn((
+                Name::new("Finish shopping CA"),
+                ContextAction::new("Finish shopping", |id, world| {
+                    log::debug!("TODO Finish shopping {id:?}!");
+                }),
+            ))
+            .id();
+        let select_item = world
+            .spawn((
+                Name::new("Select item CA"),
+                ContextAction::new("Select item", |id, world| {
+                    log::debug!("TODO Select item {id:?}!");
+                }),
+            ))
+            .id();
+        world
+            .entity_mut(
+                *world
+                    .get_resource::<Daddy<ShopUiContextActions>>()
+                    .expect("daddy should've just been initialized")
+                    .deref(),
+            )
+            .add_child(select_item)
+            .add_child(buy_item)
+            .add_child(finish_shopping);
+        Self {
+            buy_item,
+            finish_shopping,
+            select_item,
+        }
     }
 }
 
 pub fn sys_open_shop_ui(
     mut commands: Commands,
     ast_card: Res<Assets<CardDefinition>>,
+    res_shop_ui_ca: Res<ShopUiContextActions>,
     res_draw_config: Res<DrawConfiguration>,
     q_player_entering_shop: Query<(Entity, &InShop), (With<Player>, Added<InShop>)>,
     q_shop_listing_ui: Query<(&ForPlayer, Entity), With<ShopListingUi>>,
@@ -57,6 +116,10 @@ pub fn sys_open_shop_ui(
                                 ),
                                 res_draw_config.color_scheme().shop_ui_listing_item(),
                             ),
+                            ContextActions::new(
+                                player_id, /* Shop UI ID? */
+                                vec![res_shop_ui_ca.select_item(), res_shop_ui_ca.buy_item()],
+                            ),
                         ));
                     }
                 });
@@ -76,3 +139,9 @@ pub struct ShopListingItemUi(usize);
 
 #[derive(Component, Debug)]
 pub struct ItemDetailsUi;
+
+#[derive(Component, Debug)]
+pub struct ShopUiBuyButton;
+
+#[derive(Component, Debug)]
+pub struct ShopUiFinishShoppingButton;

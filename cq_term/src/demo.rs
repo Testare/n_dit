@@ -26,7 +26,10 @@ use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
-use crate::main_ui::{self, MainUi, MainUiOp, ShopListingUi, ShopUi, UiOps};
+use crate::main_ui::{
+    self, MainUi, MainUiOp, ShopListingUi, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
+    UiOps,
+};
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeUiScreen;
 use crate::prelude::KeyEvent;
@@ -662,16 +665,21 @@ pub fn build_popup_menu(
                             Name::new("Shop button bar"),
                         ))
                         .with_children(|shop_button_bar| {
-                            shop_button_bar.spawn(
-                                //55 95 45
+                            shop_button_bar.spawn((
+                                ShopUiBuyButton,
+                                ForPlayer(player),
                                 ButtonUiBundle::new(
                                     "Buy",
                                     res_draw_config.color_scheme().shop_ui_buy_button(),
                                 ),
-                            );
-                            shop_button_bar.spawn(ButtonUiBundle::new(
-                                "Done",
-                                res_draw_config.color_scheme().shop_ui_done_button(),
+                            ));
+                            shop_button_bar.spawn((
+                                ShopUiFinishShoppingButton,
+                                ForPlayer(player),
+                                ButtonUiBundle::new(
+                                    "Done",
+                                    res_draw_config.color_scheme().shop_ui_done_button(),
+                                ),
                             ));
                         });
                 });

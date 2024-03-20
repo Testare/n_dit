@@ -2,11 +2,16 @@ mod main_ui_op;
 mod shop_ui;
 
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
+use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
 pub use main_ui_op::MainUiOp;
-pub use shop_ui::{ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopUi};
+pub use shop_ui::{
+    ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopUi, ShopUiBuyButton,
+    ShopUiFinishShoppingButton,
+};
 
-use crate::base_ui::context_menu::ContextMenuPane;
+use self::shop_ui::ShopUiContextActions;
+use crate::base_ui::context_menu::{ContextActions, ContextMenuPane};
 use crate::layout::StyleTty;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
@@ -25,6 +30,13 @@ impl Plugin for MainUiPlugin {
             OpPlugin::<MainUiOp>::default(),
             shop_ui::ShopUiPlugin,
         ))
+        .add_systems(
+            PreUpdate,
+            (
+                sys_add_buy_button_context_actions,
+                sys_add_finish_shopping_button_context_actions,
+            ),
+        )
         .add_systems(Startup, sys_startup_create_main_ui);
     }
 }
@@ -58,4 +70,33 @@ pub fn sys_startup_create_main_ui(
         .add_child(context_menu_pane)
         .id();
     terminal_window.set_render_target(Some(main_ui_id));
+}
+
+pub fn sys_add_buy_button_context_actions(
+    mut commands: Commands,
+    res_shop_ui_ca: Res<ShopUiContextActions>,
+    q_buy_button_new: Query<(&ForPlayer, Entity), (With<ShopUiBuyButton>, Without<ContextActions>)>,
+) {
+    for (&ForPlayer(player_id), id) in q_buy_button_new.iter() {
+        commands.entity(id).insert(ContextActions::new(
+            player_id,
+            vec![res_shop_ui_ca.buy_item()],
+        ));
+    }
+}
+
+pub fn sys_add_finish_shopping_button_context_actions(
+    mut commands: Commands,
+    res_shop_ui_ca: Res<ShopUiContextActions>,
+    q_finish_shopping_button_new: Query<
+        (&ForPlayer, Entity),
+        (With<ShopUiFinishShoppingButton>, Without<ContextActions>),
+    >,
+) {
+    for (&ForPlayer(player_id), id) in q_finish_shopping_button_new.iter() {
+        commands.entity(id).insert(ContextActions::new(
+            player_id,
+            vec![res_shop_ui_ca.finish_shopping()],
+        ));
+    }
 }
