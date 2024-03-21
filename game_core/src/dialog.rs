@@ -5,8 +5,9 @@ use bevy_yarnspinner::events::{
 use bevy_yarnspinner::prelude::*;
 use getset::Getters;
 
+use crate::op::CoreOps;
 use crate::prelude::*;
-use crate::shop::{InShop, ShopId};
+use crate::shop::ShopOp;
 
 #[derive(Debug)]
 pub struct DialogPlugin;
@@ -95,22 +96,20 @@ fn sys_setup_dialogue_runners(
 
 /// TODO make yarn commands more flexible
 fn sys_yarn_commands(
-    mut commands: Commands,
+    mut res_core_ops: ResMut<CoreOps>,
     mut evr_yarn_commands: EventReader<ExecuteCommandEvent>,
-    q_shops: Query<(Entity, &ShopId)>,
 ) {
     for ExecuteCommandEvent { command, source } in evr_yarn_commands.read() {
         match command.name.as_str() {
             "open_shop" => {
                 if let Some(shop_sid_str) = command.parameters.first() {
-                    let shop_sid_str = shop_sid_str.to_string();
-                    let shop_id = q_shops.iter().find_map(|(id, shop_sid)| {
-                        (shop_sid_str == shop_sid.0.to_string()).then_some(id)
-                    });
-                    if let Some(shop_id) = shop_id {
-                        commands.entity(*source).insert(InShop(shop_id));
-                    } else {
-                        log::error!("Could not find shop {shop_sid_str:?}")
+                    match shop_sid_str.to_string().parse() {
+                        Ok(shop_sid) => {
+                            res_core_ops.request(*source, ShopOp::Enter(shop_sid));
+                        },
+                        Err(err) => {
+                            log::error!("Error with dialog: unable to parse shop id [{shop_sid_str:?}]: {err:?}");
+                        },
                     }
                 } else {
                     log::error!("open_shop requires a parameter")

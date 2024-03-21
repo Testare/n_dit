@@ -11,7 +11,7 @@ use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceI
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
-use game_core::item::Item;
+use game_core::item::{Item, Wallet};
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
@@ -306,6 +306,7 @@ fn demo_startup(
             SelectedBoardPieceUi::default(),
             PlayedCards::default(),
             IsReadyToGo(false),
+            Wallet::new().with_mon(10_000), // Just for demo
             Deck::new()
                 .with_card(hack)
                 .with_card(hack)

@@ -1,13 +1,42 @@
 use std::borrow::Cow;
 
+use getset::CopyGetters;
+
 use crate::card::CardDefinition;
 use crate::prelude::*;
+
+pub const MAX_MON: u32 = 100_000_000;
 
 #[derive(Debug, Default)]
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
     fn build(&self, _app: &mut App) {}
+}
+
+#[derive(Component, CopyGetters, Debug, Default, Reflect)]
+#[get_copy = "pub"]
+pub struct Wallet {
+    mon: u32,
+}
+
+impl Wallet {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_mon(mut self, mon: u32) -> Self {
+        self.mon = mon;
+        self
+    }
+
+    pub fn increase_mon(&mut self, mon: u32) {
+        self.mon = self.mon.saturating_add(mon).min(MAX_MON);
+    }
+
+    pub fn decrease_mon(&mut self, mon: u32) {
+        self.mon = self.mon.saturating_sub(mon);
+    }
 }
 
 #[derive(Debug)]

@@ -3,6 +3,7 @@ pub mod metadata;
 pub mod sord;
 
 use std::ops::Deref;
+use std::str::FromStr;
 
 use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter, WorldQuery};
 use bevy::ecs::system::SystemParam;
@@ -20,6 +21,27 @@ pub struct SetId {
     set: String,
     /// Number of node in series,
     num: u32,
+}
+
+#[derive(Debug)]
+pub enum SetIdError {
+    NoColon,
+    NumTooHigh,
+    NumNotANumber(<u32 as FromStr>::Err),
+}
+
+impl FromStr for SetId {
+    type Err = SetIdError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split = s.split(':');
+        let set = split
+            .next()
+            .expect("split should always return at least one item")
+            .to_string();
+        let num_unparsed = split.next().ok_or(SetIdError::NoColon)?;
+        let num = num_unparsed.parse().map_err(SetIdError::NumNotANumber)?;
+        Ok(Self { set, num })
+    }
 }
 
 impl std::fmt::Display for SetId {
