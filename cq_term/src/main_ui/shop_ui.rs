@@ -44,29 +44,25 @@ impl FromWorld for ShopUiContextActions {
              q_shop_listing_item_ui: Query<(&ForPlayer, &ShopListingItemUi)>,
              q_buy_button: Query<&ForPlayer, With<ShopUiBuyButton>>,
              q_shop_ui: Query<(&ForPlayer, &ShopUiSelectedItem), With<ShopUi>>| {
-                let player_id_and_buy_index = 
-                // TODO these need to be flipped
-                q_buy_button
+                let player_id_and_buy_index = q_shop_listing_item_ui
                     .get(id)
                     .ok()
-                    .and_then(|&ForPlayer(player_id)| {
-                        let item_idx = q_shop_ui.iter().find_map(
-                            |(&ForPlayer(for_player), &ShopUiSelectedItem(item_idx))| {
-                                if for_player == player_id {
-                                    Some(item_idx)
-                                } else {
-                                    None
-                                }
-                            },
-                        )??;
-                        Some((player_id, item_idx))
+                    .map(|(&ForPlayer(player_id), &ShopListingItemUi(item_idx))| {
+                        (player_id, item_idx)
                     })
                     .or_else(|| {
-                        q_shop_listing_item_ui.get(id).ok().map(
-                            |(&ForPlayer(player_id), &ShopListingItemUi(item_idx))| {
-                                (player_id, item_idx)
-                            },
-                        )
+                        q_buy_button.get(id).ok().and_then(|&ForPlayer(player_id)| {
+                            let item_idx = q_shop_ui.iter().find_map(
+                                |(&ForPlayer(for_player), &ShopUiSelectedItem(item_idx))| {
+                                    if for_player == player_id {
+                                        Some(item_idx)
+                                    } else {
+                                        None
+                                    }
+                                },
+                            )??;
+                            Some((player_id, item_idx))
+                        })
                     });
 
                 if let Some((player_id, item_idx)) = player_id_and_buy_index {
@@ -226,7 +222,14 @@ fn sys_leave_shop_ui(
     mut evr_shop_op: EventReader<OpResult<ShopOp>>,
     q_shop_listing_ui: Query<(&ForPlayer, Entity), With<ShopListingUi>>,
     q_player_not_in_shop: Query<(), (With<Player>, Without<InShop>)>,
-    mut q_shop_ui: Query<(&ForPlayer, AsDerefMut<VisibilityTty>, AsDerefMut<ShopUiSelectedItem>), With<ShopUi>>,
+    mut q_shop_ui: Query<
+        (
+            &ForPlayer,
+            AsDerefMut<VisibilityTty>,
+            AsDerefMut<ShopUiSelectedItem>,
+        ),
+        With<ShopUi>,
+    >,
 ) {
     for shop_op_result in evr_shop_op.read() {
         if let (ShopOp::Leave, Ok(_)) = (shop_op_result.op(), shop_op_result.result()) {
