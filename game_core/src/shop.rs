@@ -5,7 +5,8 @@ use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use super::item::Item;
-use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
+use crate::item::{ItemOp, Wallet};
+use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
 
@@ -57,7 +58,7 @@ impl ShopListing {
 
 #[derive(Clone, Debug, Reflect)]
 pub enum ShopOp {
-    BuyItem(usize),
+    BuyItem(usize), // TODO, perhaps also allow buying by name?
     Enter(ShopId),
     Leave,
 }
@@ -79,8 +80,39 @@ impl Op for ShopOp {
     }
 }
 
-pub fn opsys_buy_item(In((player_id, shop_op)): In<(Entity, ShopOp)>) -> OpImplResult {
-    Ok(default())
+pub fn opsys_buy_item(
+    In((player_id, shop_op)): In<(Entity, ShopOp)>,
+    mut res_core_ops: ResMut<CoreOps>,
+    mut q_player: Query<(&InShop, &mut Wallet), With<Player>>,
+    q_shop: Query<&ShopInventory, With<ShopId>>,
+) -> OpImplResult {
+    // TODO Add item to inventory
+    if let ShopOp::BuyItem(item_idx) = shop_op {
+        let (&InShop(shop_id), mut wallet) = q_player.get_mut(player_id).invalid()?;
+        let shop_inventory = q_shop.get(shop_id).invalid()?;
+        let listing = shop_inventory
+            .get(item_idx)
+            .ok_or("No item listed for that index")?;
+        let can_pay = wallet.try_spend(listing.price());
+        if !can_pay {
+            Err("Cannot afford that item".invalid())?;
+        }
+
+        res_core_ops.request(
+            player_id,
+            ItemOp::AddItem {
+                item: listing.item().clone(),
+                refund: listing.price(),
+            },
+        );
+        log::debug!(
+            "Player bought [{:?}] Remaining Mon [{wallet:?}]",
+            listing.item()
+        );
+        Ok(default())
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
 }
 
 pub fn opsys_enter(

@@ -38,6 +38,10 @@ pub struct ShopUiContextActions {
 impl FromWorld for ShopUiContextActions {
     fn from_world(world: &mut World) -> Self {
         world.init_resource::<Daddy<ShopUiContextActions>>();
+        let daddy = *world
+            .get_resource::<Daddy<ShopUiContextActions>>()
+            .expect("daddy should've just been initialized")
+            .deref();
         let buy_item_sys = world.register_system(
             |In(id): In<Entity>,
              mut res_ui_ops: ResMut<UiOps>,
@@ -97,6 +101,7 @@ impl FromWorld for ShopUiContextActions {
                 Name::new("Buy item CA"),
                 ContextAction::from_system_id("Buy item", buy_item_sys),
             ))
+            .set_parent(daddy)
             .id();
         let finish_shopping = world
             .spawn((
@@ -106,23 +111,15 @@ impl FromWorld for ShopUiContextActions {
                     ShopOp::Leave,
                 ),
             ))
+            .set_parent(daddy)
             .id();
         let select_item = world
             .spawn((
                 Name::new("Select item CA"),
                 ContextAction::from_system_id("Select item", select_item_sys),
             ))
+            .set_parent(daddy)
             .id();
-        world
-            .entity_mut(
-                *world
-                    .get_resource::<Daddy<ShopUiContextActions>>()
-                    .expect("daddy should've just been initialized")
-                    .deref(),
-            )
-            .add_child(select_item)
-            .add_child(buy_item)
-            .add_child(finish_shopping);
         Self {
             buy_item,
             finish_shopping,

@@ -2,16 +2,29 @@ use std::borrow::Cow;
 
 use getset::CopyGetters;
 
-use crate::card::CardDefinition;
+use self::daddy::Daddy;
+use crate::card::{Card, CardDefinition, Deck};
+use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::prelude::*;
 
 pub const MAX_MON: u32 = 100_000_000;
+
+pub mod key {
+    use bevy::ecs::entity::Entity;
+    use typed_key::{typed_key, Key};
+
+    pub const CARD_ID: Key<Entity> = typed_key!("card_id");
+    pub const NEW_CARD: Key<bool> = typed_key!("new_card");
+}
 
 #[derive(Debug, Default)]
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Daddy<Card>>()
+            .add_plugins(OpPlugin::<ItemOp>::default());
+    }
 }
 
 #[derive(Component, CopyGetters, Debug, Default, Reflect)]
@@ -37,9 +50,19 @@ impl Wallet {
     pub fn decrease_mon(&mut self, mon: u32) {
         self.mon = self.mon.saturating_sub(mon);
     }
+
+    /// Decrease mon only if we have sufficient amount
+    pub fn try_spend(&mut self, mon: u32) -> bool {
+        if self.mon >= mon {
+            self.mon -= mon;
+            true
+        } else {
+            false
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Reflect, PartialEq)]
 pub enum Item {
     Card(Handle<CardDefinition>),
     Mon(u32), // Others?
@@ -57,5 +80,94 @@ impl Item {
                     Cow::from("???")
                 }),
         }
+    }
+}
+
+#[derive(Debug, Reflect)]
+pub enum ItemOp {
+    AddItem { item: Item, refund: u32 },
+    GiveItem { item: Item, target: Entity }, // Remove #[non_exhaustive] when we add another enum
+                                             // Give, Drop, Trash?
+}
+
+impl Op for ItemOp {
+    fn register_systems(mut registrar: OpRegistrar<Self>) {
+        registrar.register_op(opsys_add_item);
+    }
+
+    fn system_index(&self) -> usize {
+        0
+    }
+}
+
+pub fn opsys_add_item(
+    In((source_id, op)): In<(Entity, ItemOp)>,
+    mut commands: Commands,
+    ast_card_def: Res<Assets<CardDefinition>>,
+    res_daddy_card: Res<Daddy<Card>>,
+    mut q_deck: Query<&mut Deck>,
+    mut q_wallet: Query<&mut Wallet>,
+    q_card: Query<&Card>,
+) -> OpImplResult {
+    if let ItemOp::AddItem { item, refund } = op {
+        // Need to re-evaluate how cards are handled
+        match item {
+            Item::Card(card_handle) => {
+                let interim_result = (|| {
+                    let card_def = ast_card_def
+                        .get(&card_handle)
+                        .ok_or("Internal error: Card not loaded".critical())?;
+                    let mut deck = q_deck.get_mut(source_id).invalid()?;
+
+                    let existing_card = deck
+                        .cards_iter()
+                        .filter_map(|card_id| {
+                            let card = q_card.get(card_id).ok()?;
+                            if card.card_name() == card_def.id() {
+                                Some(card_id)
+                            } else {
+                                None
+                            }
+                        })
+                        .next();
+                    let mut metadata = Metadata::default();
+                    let card_id = if let Some(existing_card_id) = existing_card {
+                        metadata.put(key::NEW_CARD, false).invalid()?;
+                        existing_card_id
+                    } else {
+                        metadata.put(key::NEW_CARD, true).invalid()?;
+                        // TODO add under Daddy<Card>
+                        commands
+                            .spawn((
+                                Name::new(format!("Card[{}/{source_id:?}]", card_def.id())),
+                                Card::new(
+                                    card_def.id(),
+                                    "TODO Remove me",
+                                    None,
+                                    card_handle.clone(),
+                                ),
+                            ))
+                            .set_parent(**res_daddy_card)
+                            .id()
+                    };
+                    metadata.put(key::CARD_ID, card_id).invalid()?;
+                    deck.add_card(card_id);
+                    Ok(default())
+                })();
+                // Refund them if problems occur
+                if interim_result.is_err() {
+                    let mut wallet = q_wallet.get_mut(source_id).critical()?;
+                    wallet.increase_mon(refund);
+                }
+                interim_result
+            },
+            Item::Mon(mon) => {
+                let mut wallet = q_wallet.get_mut(source_id).invalid()?;
+                wallet.increase_mon(mon);
+                Ok(default())
+            },
+        }
+    } else {
+        Err(OpError::MismatchedOpSystem)
     }
 }
