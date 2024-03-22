@@ -4,7 +4,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
 use clap::Parser;
-use cq_term::demo::DemoNodeId;
+use cq_term::demo::{DemoNodeId, UseDemoShader};
 use game_core::node::NodeId;
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -23,6 +23,9 @@ struct CqCliPlugin {
     /// Specifies a server to connect to. Not currently implemented
     #[arg(short, long, value_name = "SERVER ADDRESS")]
     connect: Option<String>,
+    /// Applies "demo shader" affect, a sliding rainbow
+    #[arg(long = "rainbow", value_name = "RAINBOW HEIGHT")]
+    demo_shader: Option<u32>,
 }
 
 impl Plugin for CqCliPlugin {
@@ -34,6 +37,7 @@ impl Plugin for CqCliPlugin {
             3 => Some(NodeId::new("node:area1", 1)),
             _ => None,
         }));
+        app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
         app.insert_resource(demo_node_id);
     }
 }

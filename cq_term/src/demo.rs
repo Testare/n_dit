@@ -6,18 +6,19 @@ use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
+use charmi::CharacterMapImage;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
 use game_core::card::{Card, Deck, Description};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
-use game_core::item::{Item, Wallet};
+use game_core::item::{Item, ItemOp, Wallet};
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
-use game_core::shop::{ShopId, ShopInventory, ShopListing};
+use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{ButtonUiBundle, HoverPoint, PopupMenu};
@@ -53,6 +54,14 @@ pub struct DemoState {
     player_id: Option<Entity>,
 }
 
+#[derive(Debug, Resource)]
+pub struct UseDemoShader(pub u32);
+
+#[derive(Component, Debug, Default)]
+pub struct DemoShader {
+    color: u8,
+}
+
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DemoState>()
@@ -61,12 +70,44 @@ impl Plugin for DemoPlugin {
                 Startup,
                 demo_startup.after(main_ui::sys_startup_create_main_ui),
             )
+            .add_systems(Update, sys_demo_shader)
             .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
     }
 }
 
-fn log_op_results(mut node_ops: EventReader<OpResult<NodeOp>>) {
-    for op in node_ops.read() {
+pub fn sys_demo_shader(
+    mut q_demo_shader: Query<(&CalculatedSizeTty, &mut DemoShader, &mut TerminalRendering)>,
+) {
+    use crossterm::style::*;
+    for (size, mut ds, mut tr) in q_demo_shader.iter_mut() {
+        let mut charmi = CharacterMapImage::new();
+        for y in 0..size.height() {
+            let row = charmi.new_row();
+            for cell_style in (0..size.width()).map(|x| {
+                ContentStyle::new().on(Color::AnsiValue(
+                    ds.color.wrapping_add(((x + y) % 256) as u8),
+                ))
+            }) {
+                row.add_effect(1, &cell_style);
+            }
+        }
+        tr.update_charmie(charmi);
+        ds.color = ds.color.wrapping_add(1);
+    }
+}
+
+fn log_op_results(
+    mut evr_node_op: EventReader<OpResult<NodeOp>>,
+    mut evr_item_op: EventReader<OpResult<ItemOp>>,
+    mut evr_shop_op: EventReader<OpResult<ShopOp>>,
+) {
+    for op in evr_node_op.read() {
+        log::debug!("NODE_OP_RESULT {:?}", op)
+    }
+    for op in evr_item_op.read() {
+        log::debug!("NODE_OP_RESULT {:?}", op)
+    }
+    for op in evr_shop_op.read() {
         log::debug!("NODE_OP_RESULT {:?}", op)
     }
 }
@@ -194,6 +235,7 @@ fn debug_key(
 
 fn demo_startup(
     mut res_ui_ops: ResMut<UiOps>,
+    res_use_demo_shader: Res<UseDemoShader>,
     res_draw_config: Res<DrawConfiguration>,
     res_dialog_context_actions: Res<DialogUiContextActions>,
     asset_server: Res<AssetServer>,
@@ -403,27 +445,42 @@ fn demo_startup(
         ))
         .with_children(|board_ui_root| {
             use taffy::prelude::*;
-            board_ui_root.spawn((
-                Name::new("Network map title bar"),
-                ForPlayer(player),
-                StyleTty(taffy::style::Style {
-                    size: Size {
-                        width: Dimension::Auto,
-                        height: length(2.0),
-                    },
-                    padding: Rect {
-                        bottom: length(1.0),
-                        ..TaffyZero::ZERO
-                    },
-                    max_size: Size {
-                        width: length(100.0),
-                        height: Dimension::Auto,
-                    },
-                    flex_shrink: 0.0,
-                    ..Default::default()
-                }),
-                TerminalRendering::new(vec!["Network Map".to_owned()]),
-            ));
+            board_ui_root
+                .spawn((
+                    Name::new("Network map title bar"),
+                    ForPlayer(player),
+                    StyleTty(taffy::style::Style {
+                        size: Size {
+                            width: Dimension::Auto,
+                            height: length(2.0),
+                        },
+                        padding: Rect {
+                            bottom: length(1.0),
+                            ..TaffyZero::ZERO
+                        },
+                        flex_direction: FlexDirection::Row,
+                        flex_shrink: 0.0,
+                        ..Default::default()
+                    }),
+                    TerminalRendering::new(vec!["Network Map".to_owned()]),
+                ))
+                .with_children(|title_bar| {
+                    if res_use_demo_shader.0 > 0 {
+                        title_bar.spawn((
+                            Name::new("Demo shader"),
+                            StyleTty(taffy::style::Style {
+                                size: Size {
+                                    width: length(256.0),
+                                    height: length(res_use_demo_shader.0 as f32),
+                                },
+                                flex_grow: 1.0,
+                                ..Default::default()
+                            }),
+                            DemoShader::default(),
+                            TerminalRendering::default(),
+                        ));
+                    }
+                });
             board_ui_root
                 .spawn((
                     StyleTty(taffy::prelude::Style {
