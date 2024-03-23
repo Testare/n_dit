@@ -699,6 +699,7 @@ fn opsys_node_enter_battle(
                 log::error!("Unable to find scene file for [{node_sid}] in the registry ")
             }
         }
+
         commands.entity(player_id).insert(EnteringNode(node_sid));
         Ok(default())
     } else {

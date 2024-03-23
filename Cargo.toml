@@ -28,7 +28,8 @@ features = [
     "bevy_audio",
     "bevy_scene",
     "file_watcher",
-    "multi-threaded"
+    "multi-threaded",
+    "dynamic_linking"
 ]
 
 [workspace.package]

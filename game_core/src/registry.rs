@@ -144,6 +144,7 @@ impl RegistryTomlFile {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Resource)]
 struct Registries(Vec<Handle<LoadedUntypedAsset>>);
 

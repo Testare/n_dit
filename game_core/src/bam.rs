@@ -20,7 +20,7 @@ impl Plugin for BamPlugin {
 pub struct BamHandle(pub Handle<BevyAssetManifest>);
 
 #[derive(Asset, Debug, Default, TypePath)]
-pub struct BevyAssetManifest(Vec<Handle<LoadedUntypedAsset>>);
+pub struct BevyAssetManifest(pub Vec<Handle<LoadedUntypedAsset>>);
 
 #[derive(Debug, Default)]
 struct BevyAssetManifestLoader;
