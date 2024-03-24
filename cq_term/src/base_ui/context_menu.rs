@@ -313,6 +313,9 @@ pub fn sys_context_actions(
                     MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => {
                         *mousebutton
                     },
+                    MouseEventTtyKind::DoubleClick if mouse_event.is_top_entity() => {
+                        MouseButton::Left
+                    },
                     _ => return None,
                 };
                 let settings = source_settings

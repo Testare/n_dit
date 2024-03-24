@@ -9,7 +9,7 @@ use getset::CopyGetters;
 
 use super::UiOps;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
-use crate::base_ui::ButtonUiBundle;
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi};
 use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
 use crate::linkage;
@@ -57,9 +57,13 @@ impl FromWorld for ShopUiContextActions {
                     .or_else(|| {
                         q_buy_button.get(id).ok().and_then(|&ForPlayer(player_id)| {
                             let item_idx = q_shop_ui.iter().find_map(
-                                |(&ForPlayer(for_player), &ShopUiSelectedItem(item_idx))| {
+                                |(&ForPlayer(for_player), &ShopUiSelectedItem(listing_item_id))| {
                                     if for_player == player_id {
-                                        Some(item_idx)
+                                        if let Some((_, &ShopListingItemUi(item_idx))) /*(_, ShopListingItemUi(item_idx))*/ = listing_item_id.and_then(|listing_item_id|q_shop_listing_item_ui.get(listing_item_id).ok()) {
+                                            Some(Some(item_idx))
+                                        } else {
+                                            Some(None) // We found the right ui, but there is no item selected
+                                        }
                                     } else {
                                         None
                                     }
@@ -79,21 +83,40 @@ impl FromWorld for ShopUiContextActions {
         let select_item_sys =
             world.register_system(
                 |In(id): In<Entity>,
-                 q_shop_listing_ui: Query<(&ForPlayer, &ShopListingItemUi)>,
+                 res_draw_config: Res<DrawConfiguration>,
+                 mut q_shop_listing_ui: Query<
+                    (&ForPlayer, &mut FlexibleTextUi),
+                    With<ShopListingItemUi>,
+                >,
                  mut q_shop_ui: Query<
                     (&ForPlayer, AsDerefMut<ShopUiSelectedItem>),
                     With<ShopUi>,
                 >| {
-                    get_assert!(id, q_shop_listing_ui, |(
-                        &ForPlayer(player_id),
-                        &ShopListingItemUi(item_idx),
-                    )| {
-                        let (_, mut shop_ui_selected_item) = q_shop_ui
-                            .iter_mut()
-                            .find(|(&ForPlayer(for_player), _)| player_id == for_player)?;
-                        shop_ui_selected_item.set_if_neq(Some(item_idx));
-                        Some(())
-                    });
+                    let old_selected_id = get_assert_mut!(
+                        id,
+                        q_shop_listing_ui,
+                        |(&ForPlayer(player_id), mut flexible_text_ui)| {
+                            let (_, mut shop_ui_selected_item) = q_shop_ui
+                                .iter_mut()
+                                .find(|(&ForPlayer(for_player), _)| player_id == for_player)?;
+                            let old_selected_id = *shop_ui_selected_item;
+                            if old_selected_id != Some(id) {
+                                *shop_ui_selected_item = Some(id);
+                                flexible_text_ui.style = res_draw_config
+                                    .color_scheme()
+                                    .shop_ui_listing_item_selected();
+                                old_selected_id
+                            } else {
+                                None // They match, take no action
+                            }
+                        }
+                    );
+                    // Reset colors on old selected item
+                    if let Some((_, mut flexible_text)) =
+                        old_selected_id.and_then(|id| get_assert_mut!(id, q_shop_listing_ui))
+                    {
+                        flexible_text.style = res_draw_config.color_scheme().shop_ui_listing_item();
+                    }
                 },
             );
         let buy_item = world
@@ -132,7 +155,7 @@ impl FromWorld for ShopUiContextActions {
 pub struct ShopUi;
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
-pub struct ShopUiSelectedItem(Option<usize>);
+pub struct ShopUiSelectedItem(Option<Entity>);
 
 #[derive(Component, Debug)]
 pub struct ShopListingUi;
