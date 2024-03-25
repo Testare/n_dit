@@ -10,8 +10,7 @@ use self::daddy::Daddy;
 use self::node_op_undo::NodeUndoStack;
 use super::{EnteringNode, NodeId, NodeScene};
 use crate::card::{
-    Action, ActionEffect, Actions, Card, CardDefinition, Deck, Description, MaximumSize,
-    MovementSpeed,
+    Action, ActionEffect, Actions, CardQuery, Deck, Description, MaximumSize, MovementSpeed,
 };
 use crate::configuration::PlayerConfiguration;
 use crate::node::{
@@ -51,15 +50,6 @@ pub enum NodeOp {
     },
     EnterNode(NodeId),
     Undo,
-}
-
-#[derive(Debug, QueryData)]
-pub struct CardInfo {
-    card: &'static Card,
-    description: Option<&'static Description>,
-    speed: Option<&'static MovementSpeed>,
-    size: Option<&'static MaximumSize>,
-    actions: Option<&'static Actions>,
 }
 
 #[derive(Debug, QueryData)]
@@ -436,9 +426,8 @@ fn opsys_node_activate(
 
 fn opsys_node_access_point(
     In((player, node_op)): In<(Entity, NodeOp)>,
-    ast_cards: Res<Assets<CardDefinition>>,
     mut commands: Commands,
-    cards: Query<CardInfo>,
+    cards: Query<CardQuery>,
     mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
     mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
 ) -> OpImplResult {
@@ -467,12 +456,9 @@ fn opsys_node_access_point(
         if !played_cards.can_be_played(deck, next_card_id) {
             Err("Already played all of those".invalid())?;
         }
-        let card_info = cards
+        let card_q = cards
             .get(next_card_id)
-            .map_err(|_| "Cannot find that card".invalid())?;
-        let card_def = ast_cards
-            .get(card_info.card.definition())
-            .ok_or("Card definition is not loaded".invalid())?; // Not really invalid?
+            .map_err(|_| "Cannot find that card or it is not loaded".invalid())?;
         metadata.put(key::CARD, next_card_id).critical()?;
         let old_card_count = access_point
             .card
@@ -490,13 +476,13 @@ fn opsys_node_access_point(
         }
 
         *played_cards.entry(next_card_id).or_default() += 1;
-        node_piece.set_display_id(card_info.card.card_name().to_owned());
+        node_piece.set_display_id(card_q.base_name.clone());
 
         access_point_commands.insert((
-            Description::new(card_def.description().to_owned()),
-            MovementSpeed(card_def.movement_speed()),
-            MaximumSize(card_def.max_size()),
-            Actions(card_def.actions().clone()),
+            Description::new(card_q.description.to_owned()),
+            MovementSpeed(card_q.movement_speed),
+            MaximumSize(card_q.max_size),
+            Actions(card_q.actions.clone()),
         ));
     } else {
         node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
@@ -510,9 +496,8 @@ fn opsys_node_access_point(
 fn opsys_node_ready(
     In((player, node_op)): In<(Entity, NodeOp)>,
     no_op_action: Res<NoOpAction>,
-    ast_cards: Res<Assets<CardDefinition>>,
     mut commands: Commands,
-    cards: Query<&Card>,
+    cards: Query<CardQuery>,
     mut players: Query<(Entity, &OnTeam, &InNode, AsDerefMut<IsReadyToGo>), With<Player>>,
     mut team_phases: Query<&mut TeamPhase, With<Team>>,
     access_points: Query<(Entity, &OnTeam, &AccessPoint), With<NodePiece>>,
@@ -566,21 +551,20 @@ fn opsys_node_ready(
         for (node_piece, card_id) in relevant_access_points.into_iter() {
             card_id
                 .and_then(|card_id| {
-                    let card = get_assert!(card_id, cards)?;
-                    let card_base = ast_cards.get(card.definition())?;
+                    let card_q = get_assert!(card_id, cards)?;
                     let mut ap_commands = commands.entity(node_piece);
 
                     ap_commands
                         .insert((
-                            Curio::new_with_card(card.card_name(), card_id),
+                            Curio::new_with_card(card_q.nickname_or_name(), card_id),
                             IsTapped::default(),
                             MovesTaken::default(),
                         ))
                         .remove::<AccessPoint>();
 
-                    if !card_base.prevent_no_op() {
+                    if !card_q.prevent_no_op() {
                         // Add No Op action
-                        let mut new_actions = card_base.actions().clone();
+                        let mut new_actions = card_q.actions.clone();
                         new_actions.push(no_op_action.0.clone());
 
                         ap_commands.insert(Actions(new_actions));

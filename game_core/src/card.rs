@@ -1,10 +1,14 @@
+use std::borrow::Cow;
 use std::num::NonZeroU32;
 
+use crate::node::PreventNoOp;
 use crate::prelude::*;
+use crate::NDitCoreSet;
 
 mod card_action;
 mod card_as_asset;
 
+use bevy::ecs::query::QueryData;
 use bevy::prelude::AssetApp;
 pub use card_action::{
     key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
@@ -20,61 +24,92 @@ impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<CardDefinition>()
             .init_asset::<Action>()
+            .register_type::<BaseName>()
             .register_type::<Card>()
+            .register_type::<Deck>()
             .register_type::<Description>()
             .register_type::<MaximumSize>()
             .register_type::<MovementSpeed>()
+            .register_type::<Nickname>()
             .register_type::<Tag>()
             .register_type::<Tags>()
-            // .register_type::<Deck>() // Can't register because of NonZeroU32
+            .register_type::<HashMap<Entity, NonZeroU32>>()
+            .register_type::<NonZeroU32>()
+            .register_type::<Vec<Entity>>()
             .init_asset_loader::<card_as_asset::CardAssetLoader>()
-            .init_asset_loader::<card_as_asset::ActionAssetLoader>();
+            .init_asset_loader::<card_as_asset::ActionAssetLoader>()
+            .add_systems(
+                Update,
+                (sys_load_cards, sys_sort_decks)
+                    .chain()
+                    .in_set(NDitCoreSet::PostProcessCommands),
+            );
     }
 }
 
-#[derive(Component, Debug, Default, Reflect, getset::Getters)]
+#[derive(Clone, Component, Debug, Deref, Reflect)]
 #[reflect(Component)]
-pub struct Card {
-    card_name: String,
-    #[getset(get = "pub")]
-    display_id: String,
-    short_name: Option<String>,
-    nickname: Option<String>,
-    #[getset(get = "pub")]
-    definition: Handle<CardDefinition>,
+pub struct BaseName(String);
+
+#[derive(Component, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct Card;
+
+#[derive(Bundle, Debug)]
+pub struct CardBundle {
+    actions: Actions,
+    card: Card,
+    description: Description,
+    max_size: MaximumSize,
+    movement_speed: MovementSpeed,
+    base_name: BaseName,
 }
 
+impl CardBundle {
+    fn from_def(card_def: &CardDefinition) -> Self {
+        CardBundle {
+            actions: Actions(card_def.actions().clone()),
+            card: Card,
+            description: Description::new(card_def.description()),
+            max_size: MaximumSize(card_def.max_size()),
+            movement_speed: MovementSpeed(card_def.movement_speed()),
+            base_name: BaseName(card_def.id().to_owned()),
+        }
+    }
+}
+
+#[derive(Debug, QueryData)]
+pub struct CardQuery {
+    card: &'static Card,
+    pub actions: AsDeref<Actions>,
+    pub description: AsDeref<Description>,
+    pub max_size: OrU32<AsDerefCopied<MaximumSize>, 0>,
+    pub movement_speed: OrU32<AsDerefCopied<MovementSpeed>, 0>,
+    pub base_name: AsDeref<BaseName>,
+    pub nickname: Option<AsDeref<Nickname>>,
+    prevent_no_op: Option<&'static PreventNoOp>, // TODO Replace when "Has" when it implements Debug
+}
+
+impl CardQueryItem<'_> {
+    pub fn nickname_or_name(&self) -> &str {
+        self.nickname.unwrap_or(self.base_name).as_str()
+    }
+
+    pub fn nickname_or_name_cow(&self) -> Cow<'static, str> {
+        Cow::Owned(self.nickname.unwrap_or(self.base_name).clone())
+    }
+
+    pub fn prevent_no_op(&self) -> bool {
+        self.prevent_no_op.is_some()
+    }
+}
+
+// TODO MapEntities?
 #[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Deserialize, Serialize)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
     ordering: Vec<Entity>,
-}
-
-#[derive(Clone, Component, Debug, Default, Deref, Reflect)]
-#[reflect(Component)]
-pub struct Description(String);
-
-#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component)]
-pub struct MaximumSize(pub u32);
-
-#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component)]
-pub struct MovementSpeed(pub u32);
-
-#[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
-pub enum Tag {
-    Damage,
-    Healing,
-    Fire,
-    Flying,
-}
-
-#[derive(Component, Default, Deref, Reflect)]
-#[reflect(Component)]
-struct Tags {
-    tags: Vec<Tag>,
 }
 
 impl Deck {
@@ -167,38 +202,9 @@ impl Deck {
     }
 }
 
-impl Card {
-    pub fn new<S: Into<String>>(
-        card_name: S,
-        display_id: S,
-        short_name: Option<S>,
-        definition: Handle<CardDefinition>,
-    ) -> Self {
-        Card {
-            card_name: card_name.into(),
-            display_id: display_id.into(),
-            short_name: short_name.map(Into::into),
-            nickname: None,
-            definition,
-        }
-    }
-
-    pub fn name_or_nickname(&self) -> &str {
-        self.nickname.as_ref().unwrap_or(&self.card_name).as_str()
-    }
-
-    pub fn short_name_or_nickname(&self) -> &str {
-        self.nickname
-            .as_ref()
-            .or(self.short_name.as_ref())
-            .unwrap_or(&self.card_name)
-            .as_str()
-    }
-
-    pub fn card_name(&self) -> &str {
-        self.card_name.as_str()
-    }
-}
+#[derive(Clone, Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
+pub struct Description(String);
 
 impl Description {
     pub fn new<S: Into<String>>(description: S) -> Self {
@@ -206,13 +212,57 @@ impl Description {
     }
 }
 
-pub fn sys_sort_decks(cards: Query<&Card>, mut decks: Query<&mut Deck, Changed<Deck>>) {
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct MaximumSize(pub u32);
+
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct MovementSpeed(pub u32);
+
+#[derive(Clone, Component, Debug, Deref, DerefMut, Reflect)]
+#[reflect(Component)]
+pub struct Nickname(String);
+
+#[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
+pub enum Tag {
+    Damage,
+    Healing,
+    Fire,
+    Flying,
+}
+
+#[derive(Component, Default, Deref, Reflect)]
+#[reflect(Component)]
+struct Tags {
+    tags: Vec<Tag>,
+}
+
+pub fn sys_sort_decks(cards: Query<CardQuery>, mut decks: Query<&mut Deck, Changed<Deck>>) {
+    // TODO Make sure we sort this when cards are loaded
     for mut deck in decks.iter_mut() {
         // In the future, perhaps have a property of Deck configure sorting method
         deck.sort_by_key(|card_id| {
-            get_assert!(*card_id, &cards)
-                .map(|card| card.short_name_or_nickname())
-                .unwrap_or("")
+            cards
+                .get(*card_id)
+                .map(|card| Cow::Owned(card.nickname_or_name().into()))
+                .unwrap_or(Cow::Borrowed("")) // Might not have loaded yet
         })
+    }
+}
+
+pub fn sys_load_cards(
+    ast_card_defs: Res<Assets<CardDefinition>>,
+    mut commands: Commands,
+    unloaded_cards: Query<(Entity, &Handle<CardDefinition>), Without<Card>>,
+) {
+    for (id, card_handle) in unloaded_cards.iter() {
+        if let Some(card_def) = ast_card_defs.get(card_handle) {
+            let mut card = commands.entity(id);
+            card.insert(CardBundle::from_def(card_def));
+            if card_def.prevent_no_op() {
+                card.insert(PreventNoOp);
+            }
+        }
     }
 }

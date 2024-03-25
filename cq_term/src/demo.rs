@@ -9,7 +9,7 @@ use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use charmi::CharacterMapImage;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
-use game_core::card::{Card, Deck, Description};
+use game_core::card::{CardDefinition, Deck};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
@@ -247,89 +247,36 @@ fn demo_startup(
     // Create things node still needs but can't load yet
 
     let hack = commands
-        .spawn((Card::new(
-            "Hack",
-            "curio:hack",
-            None,
-            asset_server.load("nightfall/lvl1.cards.json#Hack"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"))
         .id();
 
     // Create player things
     let card_0 = commands
-        .spawn((Card::new(
-            "Slingshot",
-            "curio:sling",
-            None,
-            asset_server.load("nightfall/lvl1.cards.json#Slingshot"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Slingshot"))
         .id();
     let card_1 = commands
-        .spawn((Card::new(
-            "Bit Man",
-            "curio:bit_man",
-            None,
-            asset_server.load("nightfall/lvl1.cards.json#Bit Man"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Bit Man"))
         .id();
     let card_2 = commands
-        .spawn((Card::new(
-            "Bug",
-            "curio:bug",
-            None,
-            asset_server.load("nightfall/lvl1.cards.json#Bug"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Bug"))
         .id();
     let card_3 = commands
-        .spawn((Card::new(
-            "Mandelbug",
-            "curio:death",
-            None,
-            asset_server.load("nightfall/lvl3.cards.json#Mandelbug"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Mandelbug"))
         .id();
     let card_4 = commands
-        .spawn((
-            Card::new(
-                "Hack 3.0",
-                "curio:hack",
-                None,
-                asset_server.load("nightfall/lvl3.cards.json#Hack 3.0"),
-            ),
-            Description::new("Basic attack program4"),
-        ))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Hack 3.0"))
         .id();
     let card_5 = commands
-        .spawn((Card::new(
-            "Data Doctor Pro",
-            "curio:data_doctor_pro",
-            Some("DataDocPro"),
-            asset_server.load("nightfall/lvl3.cards.json#Data Doctor Pro"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Data Doctor Pro"))
         .id();
     let card_bb = commands
-        .spawn((Card::new(
-            "Buzzbomb",
-            "curio:buzzbomb",
-            None,
-            asset_server.load("nightfall/lvl3.cards.json#Buzzbomb"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Buzzbomb"))
         .id();
     let card_fiddle = commands
-        .spawn((Card::new(
-            "Fiddle",
-            "curio:fiddle",
-            None,
-            asset_server.load("nightfall/lvl3.cards.json#Fiddle"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Fiddle"))
         .id();
     let card_memory_hog = commands
-        .spawn((Card::new(
-            "Memory Hog",
-            "curio:memory_hog",
-            None,
-            asset_server.load("nightfall/lvl3.cards.json#Memory Hog"),
-        ),))
+        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Memory Hog"))
         .id();
 
     let quest_status = QuestStatus::default();

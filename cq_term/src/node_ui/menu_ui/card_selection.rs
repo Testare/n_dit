@@ -1,6 +1,8 @@
+use std::borrow::Cow;
+
 use charmi::{CharacterMapImage, CharmieString};
 use crossterm::style::Stylize;
-use game_core::card::{Card, Deck};
+use game_core::card::{Card, CardQuery, Deck};
 use game_core::node::{AccessPoint, NodeOp, PlayedCards};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
@@ -285,7 +287,7 @@ impl MenuUiCardSelection {
     fn render_system(
         res_draw_config: Res<DrawConfiguration>,
         access_points: Query<Ref<AccessPoint>>,
-        cards: Query<&Card>,
+        cards: Query<CardQuery>,
         players: Query<(&Deck, &SelectedNodePiece, &PlayedCards, &UiFocus), With<Player>>,
         mut ui: Query<(
             Entity,
@@ -334,8 +336,8 @@ impl MenuUiCardSelection {
                             let is_mouse_hover = mouse_hover_index == Some(num);
                             let name = cards
                                 .get(id)
-                                .map(|card| card.short_name_or_nickname())
-                                .unwrap_or("NotACard");
+                                .map(|card| card.nickname_or_name_cow())
+                                .unwrap_or(Cow::Borrowed("NotACard"));
                             let mut row = CharmieString::new();
                             if is_hover {
                                 row.add_styled_text("▷".green());
@@ -464,7 +466,7 @@ pub fn sys_create_load_context_items(
     >,
     q_player_decks: Query<Ref<Deck>>,
     q_load_card_ca: Query<(), (With<LoadCardContextAction>, With<Card>)>,
-    q_card: Query<&Card>,
+    q_card: Query<CardQuery>,
 ) {
     for (player, csm_ref) in q_players_with_csm.iter() {
         if let Ok(deck) = q_player_decks.get(player) {
@@ -474,8 +476,7 @@ pub fn sys_create_load_context_items(
             for card_id in deck.cards_iter() {
                 if !q_load_card_ca.contains(card_id) {
                     if let Ok(card) = q_card.get(card_id) {
-                        let card_name = card.card_name();
-                        let ca_name = format!("Load {card_name} to access point");
+                        let ca_name = format!("Load {} to access point", card.nickname_or_name());
                         let load_card_ca = commands.spawn((
                             Name::new(ca_name.clone()),
                             ContextAction::new(ca_name, move |id, world: &mut World| {

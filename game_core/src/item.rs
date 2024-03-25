@@ -107,7 +107,7 @@ pub fn opsys_add_item(
     res_daddy_card: Res<Daddy<Card>>,
     mut q_deck: Query<&mut Deck>,
     mut q_wallet: Query<&mut Wallet>,
-    q_card: Query<&Card>,
+    q_card: Query<&Handle<CardDefinition>>,
 ) -> OpImplResult {
     if let ItemOp::AddItem { item, refund } = op {
         // Need to re-evaluate how cards are handled
@@ -123,7 +123,7 @@ pub fn opsys_add_item(
                         .cards_iter()
                         .filter_map(|card_id| {
                             let card = q_card.get(card_id).ok()?;
-                            if card.card_name() == card_def.id() {
+                            if card == &card_handle {
                                 Some(card_id)
                             } else {
                                 None
@@ -140,12 +140,7 @@ pub fn opsys_add_item(
                         commands
                             .spawn((
                                 Name::new(format!("Card[{}/{source_id:?}]", card_def.id())),
-                                Card::new(
-                                    card_def.id(),
-                                    "TODO Remove me",
-                                    None,
-                                    card_handle.clone(),
-                                ),
+                                card_handle,
                             ))
                             .set_parent(**res_daddy_card)
                             .id()

@@ -64,13 +64,6 @@ impl Plugin for NDitCorePlugin {
             )
                 .chain(),
         )
-        .add_systems(
-            Update,
-            (
-                apply_deferred.in_set(NDitCoreSet::ProcessCommandsFlush),
-                (card::sys_sort_decks,).in_set(NDitCoreSet::PostProcessCommands),
-            ),
-        )
         .add_plugins((
             bam::BamPlugin,
             board::BoardPlugin,
