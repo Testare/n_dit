@@ -9,7 +9,7 @@ use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use charmi::CharacterMapImage;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
-use game_core::card::{CardDefinition, Deck};
+use game_core::card::{CardDefinition, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
@@ -247,7 +247,10 @@ fn demo_startup(
     // Create things node still needs but can't load yet
 
     let hack = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"))
+        .spawn((
+            asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"),
+            Nickname::new("Stabby boi"),
+        ))
         .id();
 
     // Create player things
@@ -298,7 +301,6 @@ fn demo_startup(
             IsReadyToGo(false),
             Wallet::new().with_mon(10_000), // Just for demo
             Deck::new()
-                .with_card(hack)
                 .with_card(hack)
                 .with_card(card_0)
                 .with_card(card_1)

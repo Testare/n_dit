@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use getset::CopyGetters;
 
 use self::daddy::Daddy;
-use crate::card::{Card, CardDefinition, Deck};
+use crate::card::{Card, CardDefinition, Deck, Nickname};
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::prelude::*;
 
@@ -107,7 +107,7 @@ pub fn opsys_add_item(
     res_daddy_card: Res<Daddy<Card>>,
     mut q_deck: Query<&mut Deck>,
     mut q_wallet: Query<&mut Wallet>,
-    q_card: Query<&Handle<CardDefinition>>,
+    q_card: Query<&Handle<CardDefinition>, Without<Nickname>>,
 ) -> OpImplResult {
     if let ItemOp::AddItem { item, refund } = op {
         // Need to re-evaluate how cards are handled

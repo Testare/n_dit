@@ -224,6 +224,12 @@ pub struct MovementSpeed(pub u32);
 #[reflect(Component)]
 pub struct Nickname(String);
 
+impl Nickname {
+    pub fn new<S: ToString>(name: S) -> Self {
+        Self(name.to_string())
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
 pub enum Tag {
     Damage,
