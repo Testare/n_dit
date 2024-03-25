@@ -1,13 +1,16 @@
 use bevy::hierarchy::{BuildWorldChildren, DespawnRecursiveExt};
+use charmi::{CharacterMapImage, CharmieAnimation};
+use crossterm::style::{Color, ContentStyle, Stylize};
 use game_core::card::CardDefinition;
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
-use game_core::shop::{InShop, ShopId, ShopInventory, ShopOp};
+use game_core::shop::{self, InShop, ShopId, ShopInventory, ShopOp};
 use game_core::NDitCoreSet;
 use getset::CopyGetters;
 
 use super::UiOps;
+use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi};
 use crate::configuration::DrawConfiguration;
@@ -22,7 +25,10 @@ impl Plugin for ShopUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ShopUiContextActions>().add_systems(
             Update,
-            (sys_open_shop_ui, sys_leave_shop_ui).in_set(NDitCoreSet::PostProcessUiOps),
+            (
+                (sys_open_shop_ui, sys_leave_shop_ui).in_set(NDitCoreSet::PostProcessUiOps),
+                sys_buy_notification_ui.in_set(NDitCoreSet::PostProcessCommands),
+            ),
         );
     }
 }
@@ -151,6 +157,9 @@ impl FromWorld for ShopUiContextActions {
     }
 }
 
+#[derive(Component, Debug, Default)]
+pub struct ShopNotification;
+
 #[derive(Component, Debug)]
 pub struct ShopUi;
 
@@ -277,4 +286,60 @@ fn sys_leave_shop_ui(
             }
         }
     }
+}
+
+fn sys_buy_notification_ui(
+    mut evr_shop_op: EventReader<OpResult<ShopOp>>,
+    mut ast_animation: ResMut<Assets<CharmieAnimation>>,
+    mut q_shop_notification: Query<(&ForPlayer, &mut AnimationPlayer), With<ShopNotification>>,
+) {
+    for shop_op_result in evr_shop_op.read() {
+        if let (ShopOp::BuyItem(_), Ok(metadata)) = (shop_op_result.op(), shop_op_result.result()) {
+            for (&ForPlayer(player_id), mut animation_player) in q_shop_notification.iter_mut() {
+                if shop_op_result.source() != player_id {
+                    continue;
+                }
+                // TODO Sound effect!
+                if let Ok(item_name) = metadata.get_required(shop::key::ITEM_NAME) {
+                    let animation = generate_buy_notification_animation(item_name.as_str());
+                    let animation_handle = ast_animation.add(animation);
+                    animation_player
+                        .load(animation_handle.clone())
+                        .play_once()
+                        .unload_when_finished();
+                } else {
+                    log::error!("Unable to get name of item purchased");
+                }
+                break;
+            }
+        }
+    }
+}
+
+pub fn generate_buy_notification_animation(name: &str) -> CharmieAnimation {
+    let frame_timing = [1000.0, 130.0, 130.0, 130.0, 1000.0];
+    let shade_timing = [255, 191, 127, 63, 0];
+    frame_timing
+        .iter()
+        .zip(shade_timing)
+        .map(|(&timing, shade)| {
+            let mut frame_img = CharacterMapImage::new();
+            let basic_color = ContentStyle::new().with(Color::Rgb {
+                r: shade,
+                g: shade,
+                b: shade,
+            });
+            let emphasis_color = ContentStyle::new().with(Color::Rgb {
+                r: shade / 2,
+                g: shade,
+                b: 0,
+            });
+            frame_img
+                .new_row()
+                .add_text("Bought ", &basic_color)
+                .add_text(name, &emphasis_color);
+            // .add_text("", &basic_color);
+            (timing, frame_img)
+        })
+        .collect()
 }

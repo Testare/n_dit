@@ -6,7 +6,7 @@ use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
 pub use main_ui_op::MainUiOp;
 pub use shop_ui::{
-    ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopUi, ShopUiBuyButton,
+    ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
     ShopUiFinishShoppingButton, ShopUiSelectedItem,
 };
 

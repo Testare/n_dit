@@ -20,6 +20,7 @@ use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
+use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{ButtonUiBundle, HoverPoint, PopupMenu};
 use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
@@ -28,8 +29,8 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, MainUi, MainUiOp, ShopListingUi, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
-    ShopUiSelectedItem, UiOps,
+    self, MainUi, MainUiOp, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
+    ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
 use crate::node_ui::NodeUiScreen;
@@ -701,6 +702,19 @@ pub fn build_popup_menu(
                     VisibilityTty(false),
                 ))
                 .with_children(|shop_ui| {
+                    shop_ui.spawn((
+                        StyleTty(Style {
+                            size: Size {
+                                width: auto(),
+                                height: length(1.0),
+                            },
+                            ..default()
+                        }),
+                        ShopNotification,
+                        TerminalRendering::default(),
+                        AnimationPlayer::default(),
+                        ForPlayer(player),
+                    ));
                     shop_ui.spawn((
                         StyleTty(taffy::prelude::Style {
                             flex_direction: FlexDirection::Column,

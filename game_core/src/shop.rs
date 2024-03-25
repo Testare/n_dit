@@ -5,10 +5,17 @@ use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use super::item::Item;
+use crate::card::CardDefinition;
 use crate::item::{ItemOp, Wallet};
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
+
+pub mod key {
+    use typed_key::{typed_key, Key};
+
+    pub const ITEM_NAME: Key<String> = typed_key!("item_name");
+}
 
 #[derive(Debug, Default)]
 pub struct ShopPlugin;
@@ -82,6 +89,7 @@ impl Op for ShopOp {
 
 pub fn opsys_buy_item(
     In((player_id, shop_op)): In<(Entity, ShopOp)>,
+    ast_card_def: Res<Assets<CardDefinition>>,
     mut res_core_ops: ResMut<CoreOps>,
     mut q_player: Query<(&InShop, &mut Wallet), With<Player>>,
     q_shop: Query<&ShopInventory, With<ShopId>>,
@@ -89,6 +97,7 @@ pub fn opsys_buy_item(
     // TODO Add item to inventory
     if let ShopOp::BuyItem(item_idx) = shop_op {
         let (&InShop(shop_id), mut wallet) = q_player.get_mut(player_id).invalid()?;
+        let mut metadata = Metadata::default();
         let shop_inventory = q_shop.get(shop_id).invalid()?;
         let listing = shop_inventory
             .get(item_idx)
@@ -97,6 +106,10 @@ pub fn opsys_buy_item(
         if !can_pay {
             Err("Cannot afford that item".invalid())?;
         }
+        let name = listing.item().name(&ast_card_def);
+        metadata
+            .put(key::ITEM_NAME, name.to_string())
+            .expect("it would be crazy if you couldn't deserialize a string");
 
         res_core_ops.request(
             player_id,
@@ -109,7 +122,7 @@ pub fn opsys_buy_item(
             "Player bought [{:?}] Remaining Mon [{wallet:?}]",
             listing.item()
         );
-        Ok(default())
+        Ok(metadata)
     } else {
         Err(OpError::MismatchedOpSystem)
     }

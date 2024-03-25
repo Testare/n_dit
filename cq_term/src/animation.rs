@@ -3,6 +3,7 @@ use std::time::Instant;
 use charmi::{CharmieAnimation, CharmieAnimationFrame};
 use game_core::NDitCoreSet;
 
+use crate::layout::CalculatedSizeTty;
 use crate::prelude::*;
 use crate::render::TerminalRendering;
 
@@ -209,16 +210,16 @@ pub fn sys_update_animations(
 
 pub fn sys_render_animations(
     ast_animation: Res<Assets<CharmieAnimation>>,
-    mut animation_player: Query<(&AnimationPlayer, &mut TerminalRendering)>,
+    mut animation_player: Query<(&AnimationPlayer, &CalculatedSizeTty, &mut TerminalRendering)>,
 ) {
-    for (animation_player, mut tr) in animation_player.iter_mut() {
+    for (animation_player, size, mut tr) in animation_player.iter_mut() {
         if animation_player.is_loaded() {
-            tr.update_charmie(
-                animation_player
-                    .frame(&ast_animation)
-                    .map(|frame| frame.into_charmi())
-                    .unwrap_or_default(),
-            );
+            let mut frame_img = animation_player
+                .frame(&ast_animation)
+                .map(|frame| frame.into_charmi())
+                .unwrap_or_default(); //.fit_to_size(size.width32(), size.height32()),
+            frame_img.fit_to_size(size.width32(), size.height32());
+            tr.update_charmie(frame_img);
         }
     }
 }
