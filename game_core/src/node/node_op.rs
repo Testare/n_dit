@@ -485,6 +485,19 @@ fn opsys_node_access_point(
             Actions(card_q.actions.clone()),
         ));
     } else {
+        // Unloading card
+        let old_card_count = access_point
+            .card
+            .map(|card| {
+                metadata.put(key::UNLOADED_CARD, card).critical()?;
+                played_cards
+                    .get_mut(&card)
+                    .ok_or("Unloading card that wasn't played".critical())
+            })
+            .transpose()?;
+        if let Some(old_card_count) = old_card_count {
+            *old_card_count -= 1;
+        }
         node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
         access_point_commands.remove::<(Description, MovementSpeed, MaximumSize, Actions)>();
     };

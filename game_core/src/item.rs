@@ -103,7 +103,6 @@ impl Op for ItemOp {
 pub fn opsys_add_item(
     In((source_id, op)): In<(Entity, ItemOp)>,
     mut commands: Commands,
-    ast_card_def: Res<Assets<CardDefinition>>,
     res_daddy_card: Res<Daddy<Card>>,
     mut q_deck: Query<&mut Deck>,
     mut q_wallet: Query<&mut Wallet>,
@@ -113,9 +112,6 @@ pub fn opsys_add_item(
         match item {
             Item::Card(card_handle) => {
                 let interim_result = (|| {
-                    let card_def = ast_card_def
-                        .get(&card_handle)
-                        .ok_or("Internal error: Card not loaded".critical())?;
                     let mut deck = q_deck.get_mut(source_id).invalid()?;
 
                     let existing_card = deck
@@ -135,11 +131,9 @@ pub fn opsys_add_item(
                         existing_card_id
                     } else {
                         metadata.put(key::NEW_CARD, true).invalid()?;
+                        // TODO source individual parent or component
                         commands
-                            .spawn((
-                                Name::new(format!("Card[{}/{source_id:?}]", card_def.id())),
-                                card_handle,
-                            ))
+                            .spawn((card_handle,))
                             .set_parent(**res_daddy_card)
                             .id()
                     };
