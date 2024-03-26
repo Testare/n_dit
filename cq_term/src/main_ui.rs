@@ -1,6 +1,8 @@
+mod card_ui;
 mod main_ui_op;
 mod shop_ui;
 
+pub use card_ui::ShortName;
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
@@ -28,6 +30,7 @@ impl Plugin for MainUiPlugin {
         app.add_plugins((
             OpExecutorPlugin::<UiOps>::new(Update, Some(NDitCoreSet::ProcessUiOps)),
             OpPlugin::<MainUiOp>::default(),
+            card_ui::CardUiPlugin,
             shop_ui::ShopUiPlugin,
         ))
         .add_systems(

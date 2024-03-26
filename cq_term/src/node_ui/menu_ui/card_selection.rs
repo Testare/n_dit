@@ -14,7 +14,7 @@ use crate::configuration::DrawConfiguration;
 use crate::input_event::{MouseButton, MouseEventListener, MouseEventTty, MouseEventTtyKind};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty, UiFocus, VisibilityTty};
-use crate::main_ui::UiOps;
+use crate::main_ui::{ShortName, UiOps};
 use crate::node_ui::node_context_actions::NodeContextActions;
 use crate::node_ui::node_ui_op::FocusTarget;
 use crate::node_ui::{NodeUi, NodeUiOp, NodeUiQItem, SelectedAction, SelectedNodePiece};
@@ -287,7 +287,7 @@ impl MenuUiCardSelection {
     fn render_system(
         res_draw_config: Res<DrawConfiguration>,
         access_points: Query<Ref<AccessPoint>>,
-        cards: Query<CardQuery>,
+        cards: Query<(CardQuery, Option<&ShortName>)>,
         players: Query<(&Deck, &SelectedNodePiece, &PlayedCards, &UiFocus), With<Player>>,
         mut ui: Query<(
             Entity,
@@ -336,7 +336,9 @@ impl MenuUiCardSelection {
                             let is_mouse_hover = mouse_hover_index == Some(num);
                             let name = cards
                                 .get(id)
-                                .map(|card| card.nickname_or_name_cow())
+                                .map(|(card, short_name)| {
+                                    ShortName::nickname_or_short_name(short_name, card)
+                                })
                                 .unwrap_or(Cow::Borrowed("NotACard"));
                             let mut row = CharmieString::new();
                             if is_hover {

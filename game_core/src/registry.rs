@@ -83,6 +83,9 @@ impl<R: Registry> Reg<R> {
         evw_key_updates: &mut EventWriter<UpdatedRegistryKey<R>>,
     ) {
         if !self.values.contains_key(&key) {
+            if <R as Registry>::emit_change_events() {
+                evw_key_updates.send(UpdatedRegistryKey::new(key.clone()));
+            }
             self.values.insert(key, (priority, value));
             return;
         }

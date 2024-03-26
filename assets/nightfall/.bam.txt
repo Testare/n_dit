@@ -1,3 +1,4 @@
 node_glyphs.reg.toml
 node_sprites.reg.toml
 node_scenes.reg.toml
+program_short_names.reg.toml
