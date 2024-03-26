@@ -14,7 +14,7 @@ use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
-use game_core::op::OpResult;
+use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
@@ -236,6 +236,7 @@ fn debug_key(
 
 fn demo_startup(
     mut res_ui_ops: ResMut<UiOps>,
+    mut res_core_ops: ResMut<CoreOps>,
     res_use_demo_shader: Res<UseDemoShader>,
     res_draw_config: Res<DrawConfiguration>,
     res_dialog_context_actions: Res<DialogUiContextActions>,
@@ -244,45 +245,13 @@ fn demo_startup(
     mut commands: Commands,
 ) {
     commands.spawn(BamHandle(asset_server.load("base.bam.txt")));
-    // Create things node still needs but can't load yet
 
-    let hack = commands
+    let stabby_boi = commands
         .spawn((
             asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"),
             Nickname::new("Stabby boi"),
         ))
         .id();
-
-    // Create player things
-    let card_0 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Slingshot"))
-        .id();
-    let card_1 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Bit Man"))
-        .id();
-    let card_2 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Bug"))
-        .id();
-    let card_3 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Mandelbug"))
-        .id();
-    let card_4 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Hack 3.0"))
-        .id();
-    let card_5 = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Data Doctor Pro"))
-        .id();
-    let card_bb = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Buzzbomb"))
-        .id();
-    let card_fiddle = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Fiddle"))
-        .id();
-    let card_memory_hog = commands
-        .spawn(asset_server.load::<CardDefinition>("nightfall/lvl3.cards.json#Memory Hog"))
-        .id();
-
-    let quest_status = QuestStatus::default();
 
     let player = commands
         .spawn((
@@ -293,27 +262,47 @@ fn demo_startup(
                     end_turn_after_all_pieces_tap: true,
                 }),
             },
-            quest_status,
+            QuestStatus::default(),
             Dialog::default(),
             KeyMap::default(),
             SelectedBoardPieceUi::default(),
             PlayedCards::default(),
             IsReadyToGo(false),
             Wallet::new().with_mon(10_000), // Just for demo
-            Deck::new()
-                .with_card(hack)
-                .with_card(card_0)
-                .with_card(card_1)
-                .with_card(card_2)
-                .with_card(card_fiddle)
-                // Comment the following out when demonstrating to others
-                .with_card(card_bb)
-                .with_card(card_3)
-                .with_card(card_4)
-                .with_card(card_memory_hog)
-                .with_card(card_5),
+            Deck::new().with_card(stabby_boi),
         ))
         .id();
+
+    // TODO FIXME This is to reduce crashes from bevy issue
+    // SEE https://github.com/bevyengine/bevy/issues/10820
+    // When issue is resolved, remove these
+    commands.spawn(asset_server.load::<()>("nightfall/lvl1.cards.json"));
+    commands.spawn(asset_server.load::<()>("nightfall/lvl2.cards.json"));
+    commands.spawn(asset_server.load::<()>("nightfall/lvl3.cards.json"));
+    commands.spawn(asset_server.load::<()>("nightfall/lvl4.cards.json"));
+    commands.spawn(asset_server.load::<()>("nightfall/enemies.cards.json"));
+
+    // Add demo cards
+    let card_def_paths = [
+        "nightfall/lvl1.cards.json#Slingshot",
+        "nightfall/lvl1.cards.json#Bit Man",
+        "nightfall/lvl1.cards.json#Bug",
+        "nightfall/lvl3.cards.json#Mandelbug",
+        "nightfall/lvl3.cards.json#Hack 3.0",
+        "nightfall/lvl3.cards.json#Data Doctor Pro",
+        "nightfall/lvl3.cards.json#Buzzbomb",
+        "nightfall/lvl3.cards.json#Fiddle",
+        "nightfall/lvl3.cards.json#Memory Hog",
+    ];
+    for card_def_path in card_def_paths.into_iter() {
+        res_core_ops.request(
+            player,
+            ItemOp::AddItem {
+                item: Item::Card(asset_server.load(card_def_path)),
+                refund: 0,
+            },
+        );
+    }
 
     // World map things
 

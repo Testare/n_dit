@@ -110,7 +110,6 @@ pub fn opsys_add_item(
     q_card: Query<&Handle<CardDefinition>, Without<Nickname>>,
 ) -> OpImplResult {
     if let ItemOp::AddItem { item, refund } = op {
-        // Need to re-evaluate how cards are handled
         match item {
             Item::Card(card_handle) => {
                 let interim_result = (|| {
@@ -136,7 +135,6 @@ pub fn opsys_add_item(
                         existing_card_id
                     } else {
                         metadata.put(key::NEW_CARD, true).invalid()?;
-                        // TODO add under Daddy<Card>
                         commands
                             .spawn((
                                 Name::new(format!("Card[{}/{source_id:?}]", card_def.id())),
