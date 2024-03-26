@@ -77,11 +77,23 @@ impl CharacterMapImage {
         result
     }
 
-    pub fn fit_to_size(&mut self, width: u32, height: u32) {
+    pub fn fit_to_size(&mut self, width: u32, height: u32, fill_char: Option<char>) {
         self.repr.take();
         self.rows.truncate(height as usize);
         for row in self.rows.iter_mut() {
-            row.pad_to(width);
+            row.fit_to_len(width, fill_char);
+        }
+        if self.rows.len() < height as usize {
+            if let Some(fill_char) = fill_char {
+                let fill_str: String = std::iter::repeat(fill_char).take(width as usize).collect();
+                for _ in self.rows.len()..(height as usize) {
+                    self.new_row().add_plain_text(fill_str.as_str());
+                }
+            } else {
+                for _ in self.rows.len()..(height as usize) {
+                    self.new_row().add_gap(width);
+                }
+            }
         }
     }
 
@@ -521,14 +533,21 @@ impl CharmieString {
         self.segments.is_empty()
     }
 
-    pub fn fit_to_len(&mut self, len: u32) -> &mut Self {
+    pub fn fit_to_len(&mut self, len: u32, fill_char: Option<char>) -> &mut Self {
         let self_len = self.len();
         match self_len.cmp(&len) {
             Ordering::Less => {
-                self.add_gap(len - self_len);
+                if let Some(fill_char) = fill_char {
+                    let fill_str: String = std::iter::repeat(fill_char)
+                        .take((len - self_len) as usize)
+                        .collect();
+                    self.add_plain_text(fill_str);
+                } else {
+                    self.add_gap(len - self_len);
+                }
             },
             Ordering::Greater => {
-                *self = self.clip(0, len, None);
+                *self = self.clip(0, len, fill_char);
             },
             Ordering::Equal => {},
         }

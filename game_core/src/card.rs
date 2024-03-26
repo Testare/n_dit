@@ -87,7 +87,9 @@ pub struct CardQuery {
     pub movement_speed: OrU32<AsDerefCopied<MovementSpeed>, 0>,
     pub base_name: AsDeref<BaseName>,
     pub nickname: Option<AsDeref<Nickname>>,
-    prevent_no_op: Option<&'static PreventNoOp>, // TODO Replace when "Has" when it implements Debug
+    // TODO Replace with "Has" when it implements Debug
+    // https://github.com/bevyengine/bevy/pull/12722
+    prevent_no_op: Option<&'static PreventNoOp>,
 }
 
 impl CardQueryItem<'_> {

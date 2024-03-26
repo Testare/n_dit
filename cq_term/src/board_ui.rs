@@ -144,9 +144,8 @@ fn sys_render_board(
 ) {
     for (background_handle, size, mut tr) in board_uis.iter_mut() {
         let charmi = ast_charmi.get(background_handle);
-        if let Some(charmi) = charmi.cloned() {
-            // TODO fit_to_size should be fixed and used instead
-            let charmi = charmi.clip(0, 0, size.width32(), size.height32(), None);
+        if let Some(mut charmi) = charmi.cloned() {
+            charmi.fit_to_size(size.width32(), size.height32(), None);
             tr.update_charmie(charmi);
         }
     }

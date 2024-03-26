@@ -361,7 +361,7 @@ pub fn render_layouts(
             }
         }
 
-        charmie.fit_to_size(root_size.width32(), root_size.height32());
+        charmie.fit_to_size(root_size.width32(), root_size.height32(), None);
         rendering.update_charmie(charmie);
     }
 }

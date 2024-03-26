@@ -352,7 +352,7 @@ impl MenuUiCardSelection {
                                 .unwrap_or_default();
 
                             row.add_text(name, &style)
-                                .fit_to_len(size.width32() - 4)
+                                .fit_to_len(size.width32() - 4, Some(' '))
                                 .add_plain_text(" ")
                                 .add_plain_text(remaining_count.to_string());
                             row
@@ -415,7 +415,7 @@ impl MenuUiCardSelection {
                     Some(cards_menu)
                 })
                 .unwrap_or_default();
-            rendering.fit_to_size(size.width32(), size.height32());
+            rendering.fit_to_size(size.width32(), size.height32(), Some(' '));
             tr.update_charmie(rendering);
         }
     }

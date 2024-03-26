@@ -91,7 +91,7 @@ fn render_simple_submenu<T: SimpleSubmenu + Component>(
                 .of(&node_pieces)
                 .and_then(|selected| T::render(*player, &selected, size, &render_param))
                 .unwrap_or_default();
-            rendering.fit_to_size(size.x, size.y);
+            rendering.fit_to_size(size.x, size.y, Some(' '));
             tr.update_charmie(rendering);
         }
     }

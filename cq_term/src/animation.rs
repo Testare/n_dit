@@ -223,7 +223,7 @@ pub fn sys_render_animations(
                 .map(|frame| frame.into_charmi())
                 .unwrap_or_default();
             if let Some(size) = size {
-                frame_img.fit_to_size(size.width32(), size.height32());
+                frame_img.fit_to_size(size.width32(), size.height32(), None);
             }
             tr.update_charmie(frame_img);
         }
