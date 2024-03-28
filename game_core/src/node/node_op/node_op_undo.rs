@@ -67,9 +67,6 @@ pub fn sys_record_node_ops(
                     undo_queue.0.clear();
                 },
             }
-
-            log::debug!("Undo queue size: {}", undo_queue.0.len());
-
             Some(())
         })();
     }

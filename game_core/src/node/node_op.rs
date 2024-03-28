@@ -8,7 +8,7 @@ use bevy::scene::DynamicScene;
 
 use self::daddy::Daddy;
 use self::node_op_undo::NodeUndoStack;
-use super::{EnteringNode, NodeId, NodeScene};
+use super::{Claimed, EnteringNode, NodeId, NodeScene};
 use crate::card::{
     Action, ActionEffect, Actions, CardQuery, Deck, Description, MaximumSize, MovementSpeed,
 };
@@ -49,6 +49,7 @@ pub enum NodeOp {
         action_id: Cow<'static, str>,
     },
     EnterNode(NodeId),
+    QuitNode(NodeId),
     Undo,
 }
 
@@ -81,11 +82,11 @@ impl Op for NodeOp {
             .register_op(opsys_node_end_turn)
             .register_op(opsys_telegraph_action)
             .register_op(opsys_node_enter_battle)
+            .register_op(opsys_node_quit_battle)
             .register_op(opsys_node_undo);
     }
 
     fn system_index(&self) -> usize {
-        log::debug!("NodeOp: {self:?}");
         match self {
             Self::MoveActiveCurio { .. } => 0,
             Self::PerformCurioAction { .. } => 1,
@@ -96,13 +97,15 @@ impl Op for NodeOp {
             Self::EndTurn => 5,
             Self::TelegraphAction { .. } => 6,
             Self::EnterNode(_) => 7,
-            Self::Undo => 8,
+            Self::QuitNode(_) => 8,
+            Self::Undo => 9,
         }
     }
 }
 
 fn opsys_node_movement(
     In((player, node_op)): In<(Entity, NodeOp)>,
+    mut commands: Commands,
     no_op_action: Res<NoOpAction>,
     mut nodes: Query<
         (
@@ -152,7 +155,11 @@ fn opsys_node_movement(
             } else if let Ok(pickup) = pickups.get(entity_at_pt) {
                 grid.remove_entity(entity_at_pt);
                 metadata.put(key::PICKUP, pickup).critical()?;
-                log::debug!("Picked up: {:?}", pickup);
+                metadata.put(key::PICKUP_ID, entity_at_pt).critical()?;
+                commands
+                    .entity(entity_at_pt)
+                    .insert(Claimed { player, node_id });
+                log::debug!("Picked up: {pickup:?} ({entity_at_pt:?}) at {next_pt:?}");
             } else {
                 return Err("Invalid target")?;
             }
@@ -704,8 +711,28 @@ fn opsys_node_enter_battle(
     }
 }
 
+fn opsys_node_quit_battle(
+    In((player_id, node_op)): In<(Entity, NodeOp)>,
+    q_claimed_pickups: Query<(&Pickup, &Claimed)>,
+) -> OpImplResult {
+    if let NodeOp::QuitNode(node_sid) = node_op {
+        for (pickup, claimed) in q_claimed_pickups.iter() {
+            log::debug!("Got pickup [{pickup:?}] with claim [{claimed:?}], is it in [{node_sid:?}] or for [{player_id:?}]?");
+        }
+        // Check victory status, if victorious, update quest status
+        // Hooks for quit? (On victory this will likely at least trigger dialog)
+        // Check for claimed pickups, and handle these as determined by node config
+        // Remove InNode if player is in this node.
+        // If no non-computer players left in Node, despawn node.
+        Ok(default())
+    } else {
+        Err(OpError::MismatchedOpSystem)
+    }
+}
+
 fn opsys_node_undo(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
+    mut commands: Commands,
     q_player: Query<(&OnTeam, &InNode), With<Player>>,
     mut q_node: Query<(&mut EntityGrid, AsDerefMut<ActiveCurio>), With<Node>>,
     mut q_team: Query<AsDerefMut<NodeUndoStack>, With<Team>>,
@@ -740,13 +767,18 @@ fn opsys_node_undo(
                     {
                         grid.push_back(dropped_square, curio_id);
                     }
-
                     undo_metadata.put(key::CURIO, curio_id).critical()?;
                     grid.pop_front(curio_id);
+
+                    if let Some(pickup_id) = metadata.get_optional(key::PICKUP_ID).critical()? {
+                        // TODO Configurable return pick-up (cq should, nf should not)
+                        let target_pt = metadata.get_required(key::TARGET_POINT).critical()?;
+                        grid.put_item(target_pt, pickup_id);
+                        commands.entity(pickup_id).remove::<Claimed>();
+                    }
                     active_curio.set_if_neq(Some(curio_id)); // In case something goes wrong before full undo can occur
                     is_tapped.set_if_neq(false);
                     *moves_taken -= 1;
-                    // TODO Configurable return pick-up (cq should, nf should not)
                 },
                 NodeOp::PerformCurioAction { .. } => {
                     let curio_id = metadata.get_required(key::CURIO).critical()?;

@@ -28,6 +28,7 @@ pub mod key {
     pub const CURIO: Key<Entity> = typed_key!("curio");
     pub const TAPPED: Key<bool> = typed_key!("tapped");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
+    pub const PICKUP_ID: Key<Entity> = typed_key!("pickup_id");
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
     pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
@@ -105,6 +106,21 @@ impl MapEntities for AccessPoint {
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
 pub struct ActiveCurio(pub Option<Entity>);
+
+/// Indicates a pickup has been claimed by a player
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, MapEntities)]
+pub struct Claimed {
+    node_id: Entity,
+    player: Entity,
+}
+
+impl MapEntities for Claimed {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.node_id = entity_mapper.map_entity(self.node_id);
+        self.player = entity_mapper.map_entity(self.player);
+    }
+}
 
 /// Indicates a node piece capable of moving and performing actions
 #[derive(Component, Debug, Default, Reflect)]
@@ -214,6 +230,8 @@ pub struct Mon(pub u32);
 pub struct MovesTaken(pub u32);
 
 /// Indicates a Node entity
+/// Note that multiple Node instances at runtime can exist for the same [NodeId],
+/// so that multiple players can play different instances of the same node.
 #[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct Node(pub NodeId);
@@ -319,8 +337,8 @@ impl MapEntities for OnTeam {
 #[reflect(Component)]
 pub enum Pickup {
     Mon(Mon),     // Money
-    Card(Entity), // A new card to play
-    Item(Entity), // An item
+    Card(String), // A new card to play
+    Item(Entity), // A non-card item
     #[default]
     MacGuffin, // A token of some sort, usually a victory condition
 }

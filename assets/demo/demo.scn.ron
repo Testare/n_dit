@@ -94,7 +94,7 @@
         "game_core::node::NodePiece": (
           display_id: "pickup:card",
         ),
-        "game_core::node::Pickup": Card(110000000000),
+        "game_core::node::Pickup": Card("nightfall/lvl1.cards.json#Bug"),
         "game_core::card::Description": ("A card! Get this card! It\'s a good card! A very good card!"),
         "bevy_hierarchy::components::parent::Parent": (010000000000),
       },

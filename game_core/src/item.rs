@@ -23,6 +23,7 @@ pub struct ItemPlugin;
 impl Plugin for ItemPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Daddy<Card>>()
+            .register_type::<Item>()
             .add_plugins(OpPlugin::<ItemOp>::default());
     }
 }

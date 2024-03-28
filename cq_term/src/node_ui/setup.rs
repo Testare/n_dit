@@ -34,18 +34,14 @@ use crate::render::TerminalRendering;
 use crate::{KeyMap, Submap};
 
 #[derive(Debug, Resource, CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct ButtonContextActions {
-    #[getset(get_copy = "pub")]
     end_turn: Entity,
-    #[getset(get_copy = "pub")]
-    quit: Entity,
-    #[getset(get_copy = "pub")]
+    quit_battle: Entity,
+    quit_game: Entity,
     start: Entity,
-    #[getset(get_copy = "pub")]
     toggle_help: Entity,
-    #[getset(get_copy = "pub")]
     toggle_options: Entity,
-    #[getset(get_copy = "pub")]
     undo: Entity,
 }
 
@@ -137,10 +133,27 @@ impl FromWorld for ButtonContextActions {
                 },
             ),))
             .id();
-        let quit = world
+        let quit_game = world
             .spawn(ContextAction::new("Quit game".to_string(), |_, world| {
                 world.send_event(AppExit);
             }))
+            .id();
+        let quit_battle = world
+            .spawn(ContextAction::new(
+                "Quit battle".to_string(),
+                |id, world| {
+                    (|| {
+                        //try
+                        let &ForPlayer(player_id) = world.get(id)?;
+                        let &InNode(node_id) = world.get(player_id)?;
+                        let Node(node_sid) = world.get(node_id)?;
+                        let op = NodeOp::QuitNode(node_sid.clone());
+                        let mut core_ops = world.get_resource_mut::<CoreOps>()?;
+                        core_ops.request(player_id, op);
+                        Some(())
+                    })();
+                },
+            ))
             .id();
         let undo = world
             .spawn(base_ui_game_core::context_action_from_op::<CoreOps, _>(
@@ -150,7 +163,8 @@ impl FromWorld for ButtonContextActions {
             .id();
         ButtonContextActions {
             end_turn,
-            quit,
+            quit_battle,
+            quit_game,
             start,
             toggle_help,
             toggle_options,
@@ -326,7 +340,8 @@ pub fn create_node_ui(
 
                                     title_bar_right.spawn((
                                         ButtonUiBundle::new("Quit", ContentStyle::new().red()),
-                                        ContextActions::new(player, &[res_button_context_actions.quit()]),
+                                        ContextActions::new(player, &[res_button_context_actions.quit_battle(), res_button_context_actions.quit_game()]),
+                                        ForPlayer(player),
                                         QuitButton,
                                         Tooltip::new("[q] Click to exit")
                                     ));
