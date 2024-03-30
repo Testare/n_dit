@@ -713,12 +713,15 @@ fn opsys_node_enter_battle(
 
 fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
+    mut commands: Commands,
     q_claimed_pickups: Query<(&Pickup, &Claimed)>,
 ) -> OpImplResult {
     if let NodeOp::QuitNode(node_sid) = node_op {
         for (pickup, claimed) in q_claimed_pickups.iter() {
             log::debug!("Got pickup [{pickup:?}] with claim [{claimed:?}], is it in [{node_sid:?}] or for [{player_id:?}]?");
         }
+        commands.entity(player_id).remove::<InNode>();
+
         // Check victory status, if victorious, update quest status
         // Hooks for quit? (On victory this will likely at least trigger dialog)
         // Check for claimed pickups, and handle these as determined by node config

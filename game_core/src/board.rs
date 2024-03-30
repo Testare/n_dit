@@ -46,3 +46,7 @@ pub enum BoardShape {
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct InteractionPoint;
+
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
+pub struct BoardScreen;

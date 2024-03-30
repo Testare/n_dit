@@ -12,6 +12,7 @@ mod titlebar_ui;
 
 use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
 use bevy::reflect::Reflect;
+use game_core::board::BoardScreen;
 use game_core::card::{Action, Actions};
 use game_core::node::{
     self, ActiveCurio, Curio, CurrentTurn, EnteringNode, InNode, Node, NodeOp, OnTeam,
@@ -192,6 +193,7 @@ fn sys_react_to_node_op(
     >,
     q_player_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
     q_player_in_node: Query<AsDerefCopied<InNode>, With<Player>>,
+    q_board_screen: Query<(AsDerefCopied<ForPlayer>, Entity), With<BoardScreen>>,
     mut q_player_ui: Query<
         (
             Entity,
@@ -206,44 +208,44 @@ fn sys_react_to_node_op(
     for op_result in evr_op_result.read() {
         // Reactions to ops from other players in node
         if op_result.result().is_ok() {
-            if matches!(op_result.op(), NodeOp::EnterNode(_)) {
-                continue;
-            }
-            get_assert!(op_result.source(), q_player_in_node, |node| {
-                match op_result.op() {
-                    NodeOp::EndTurn => {
-                        let (_, current_turn, _) = get_assert!(node, q_node)?;
-                        for (id, team, _, _) in q_player_ui.iter() {
-                            if team == current_turn {
-                                res_ui_ops.request(id, NodeUiOp::SetCursorHidden(false));
+            q_player_in_node
+                .get(op_result.source())
+                .ok()
+                .and_then(|node| {
+                    match op_result.op() {
+                        NodeOp::EndTurn => {
+                            let (_, current_turn, _) = get_assert!(node, q_node)?;
+                            for (id, team, _, _) in q_player_ui.iter() {
+                                if team == current_turn {
+                                    res_ui_ops.request(id, NodeUiOp::SetCursorHidden(false));
+                                }
                             }
-                        }
-                    },
-                    NodeOp::TelegraphAction { action_id } => {
-                        let (_, _, active_curio) = get_assert!(node, q_node)?;
-                        let actions = q_curio.get(active_curio?).ok()?;
-                        let action_handle = actions.iter().find_map(|action_handle| {
-                            let action_def = ast_action.get(action_handle)?;
-                            (action_def.id() == action_id).then_some(action_handle.clone())
-                        });
+                        },
+                        NodeOp::TelegraphAction { action_id } => {
+                            let (_, _, active_curio) = get_assert!(node, q_node)?;
+                            let actions = q_curio.get(active_curio?).ok()?;
+                            let action_handle = actions.iter().find_map(|action_handle| {
+                                let action_def = ast_action.get(action_handle)?;
+                                (action_def.id() == action_id).then_some(action_handle.clone())
+                            });
 
-                        for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
-                            if in_node == node {
-                                **telegraphed_action = action_handle.clone();
+                            for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
+                                if in_node == node {
+                                    **telegraphed_action = action_handle.clone();
+                                }
                             }
-                        }
-                    },
-                    NodeOp::PerformCurioAction { .. } => {
-                        for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
-                            if in_node == node {
-                                **telegraphed_action = None;
+                        },
+                        NodeOp::PerformCurioAction { .. } => {
+                            for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
+                                if in_node == node {
+                                    **telegraphed_action = None;
+                                }
                             }
-                        }
-                    },
-                    _ => {},
-                }
-                Some(())
-            });
+                        },
+                        _ => {},
+                    }
+                    Some(())
+                });
         }
         if !q_player_with_node_ui.contains(op_result.source()) {
             continue;
@@ -289,6 +291,14 @@ fn sys_react_to_node_op(
                 NodeOp::EndTurn => {
                     res_ui_ops.request(player, NodeUiOp::ChangeFocus(FocusTarget::Grid));
                     res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
+                },
+                NodeOp::QuitNode(_) => {
+                    if let Some((_, board_screen_id)) = q_board_screen
+                        .iter()
+                        .find(|&(i_player_id, _)| i_player_id == player)
+                    {
+                        res_ui_ops.request(player, MainUiOp::SwitchScreen(board_screen_id));
+                    }
                 },
                 _ => {},
             }

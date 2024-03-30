@@ -8,7 +8,7 @@ use bevy::scene::DynamicSceneBuilder;
 use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use charmi::CharacterMapImage;
 use game_core::bam::BamHandle;
-use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize, SimplePieceInfo};
+use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
 use game_core::card::{CardDefinition, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
@@ -253,26 +253,6 @@ fn demo_startup(
         ))
         .id();
 
-    let player = commands
-        .spawn((
-            Name::new("Steve"),
-            PlayerBundle::default(),
-            PlayerConfiguration {
-                node: Some(NodeConfiguration {
-                    end_turn_after_all_pieces_tap: true,
-                }),
-            },
-            QuestStatus::default(),
-            Dialog::default(),
-            KeyMap::default(),
-            SelectedBoardPieceUi::default(),
-            PlayedCards::default(),
-            IsReadyToGo(false),
-            Wallet::new().with_mon(10_000), // Just for demo
-            Deck::new().with_card(stabby_boi),
-        ))
-        .id();
-
     // TODO FIXME This is to reduce crashes from bevy issue
     // SEE https://github.com/bevyengine/bevy/issues/10820
     // When issue is resolved, remove these
@@ -294,15 +274,6 @@ fn demo_startup(
         "nightfall/lvl3.cards.json#Fiddle",
         "nightfall/lvl3.cards.json#Memory Hog",
     ];
-    for card_def_path in card_def_paths.into_iter() {
-        res_core_ops.request(
-            player,
-            ItemOp::AddItem {
-                item: Item::Card(asset_server.load(card_def_path)),
-                refund: 0,
-            },
-        );
-    }
 
     // World map things
 
@@ -370,17 +341,49 @@ fn demo_startup(
         })
         .id();
 
+    let player = commands
+        .spawn((
+            Deck::new().with_card(stabby_boi),
+            Dialog::default(),
+            IsReadyToGo(false),
+            KeyMap::default(),
+            Name::new("Steve"),
+            PlayedCards::default(),
+            PlayerBundle::default(),
+            PlayerConfiguration {
+                node: Some(NodeConfiguration {
+                    end_turn_after_all_pieces_tap: true,
+                }),
+            },
+            QuestStatus::default(),
+            SelectedBoardPieceUi::default(),
+            Wallet::new().with_mon(10_000), // Just for demo
+        ))
+        .id();
+
+    for card_def_path in card_def_paths.into_iter() {
+        res_core_ops.request(
+            player,
+            ItemOp::AddItem {
+                item: Item::Card(asset_server.load(card_def_path)),
+                refund: 0,
+            },
+        );
+    }
+
     let board_ui_root = commands
         .spawn((
-            Name::new("Network map"),
-            TerminalRendering::new(Vec::new()),
+            BoardScreen,
             CalculatedSizeTty(UVec2 { x: 400, y: 500 }),
+            ForPlayer(player),
+            Name::new("Network map"),
             StyleTty(taffy::style::Style {
                 grid_row: taffy::prelude::line(1),
                 grid_column: taffy::prelude::line(1),
                 flex_direction: taffy::style::FlexDirection::Column,
                 ..default()
             }),
+            TerminalRendering::new(Vec::new()),
         ))
         .with_children(|board_ui_root| {
             use taffy::prelude::*;
