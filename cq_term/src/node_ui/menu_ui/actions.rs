@@ -278,7 +278,7 @@ fn sys_create_action_ca(
     q_team: Query<&TeamPhase, With<Team>>,
 ) {
     for (&ForPlayer(player_id), mut actions_menu_ca) in q_actions_ui.iter_mut() {
-        get_assert!(player_id, q_players, |(
+        q_players.get(player_id).ok().and_then(|(
             selected_entity,
             &OnTeam(team_id),
         )| {

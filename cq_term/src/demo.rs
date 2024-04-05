@@ -15,7 +15,7 @@ use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
 use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::{CoreOps, OpResult};
-use game_core::player::{ForPlayer, Player, PlayerBundle};
+use game_core::player::{ForPlayer, Ncp, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
 use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
@@ -348,6 +348,7 @@ fn demo_startup(
             IsReadyToGo(false),
             KeyMap::default(),
             Name::new("Steve"),
+            Ncp,
             PlayedCards::default(),
             PlayerBundle::default(),
             PlayerConfiguration {

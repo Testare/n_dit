@@ -3,6 +3,7 @@ pub mod node_op_undo;
 use std::borrow::Cow;
 
 use bevy::ecs::query::QueryData;
+use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::reflect::TypePath;
 use bevy::scene::DynamicScene;
 
@@ -19,7 +20,7 @@ use crate::node::{
     TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
-use crate::player::Player;
+use crate::player::{Ncp, Player};
 use crate::prelude::*;
 use crate::registry::Reg;
 
@@ -436,7 +437,7 @@ fn opsys_node_access_point(
     mut commands: Commands,
     cards: Query<CardQuery>,
     mut access_points: Query<(&mut AccessPoint, &mut NodePiece)>,
-    mut players: Query<(&mut PlayedCards, &Deck), With<Player>>,
+    mut players: Query<(&mut PlayedCards, &Deck, &InNode), With<Player>>,
 ) -> OpImplResult {
     let (access_point_id, next_card_id) = match node_op {
         NodeOp::LoadAccessPoint {
@@ -450,7 +451,9 @@ fn opsys_node_access_point(
     let (mut access_point, mut node_piece) = access_points
         .get_mut(access_point_id)
         .map_err(|_| "No such access point".invalid())?;
-    let (mut played_cards, deck) = players.get_mut(player).critical()?;
+    let (mut played_cards, deck, &InNode(node_id)) = players.get_mut(player).critical()?;
+    metadata.put(key::NODE_ID, node_id).invalid()?;
+
     if access_point.card.is_none() && next_card_id.is_none() {
         Err("Access point is already unloaded".invalid())?;
     }
@@ -467,22 +470,17 @@ fn opsys_node_access_point(
             .get(next_card_id)
             .map_err(|_| "Cannot find that card or it is not loaded".invalid())?;
         metadata.put(key::CARD, next_card_id).critical()?;
-        let old_card_count = access_point
-            .card
-            .map(|card| {
-                metadata.put(key::UNLOADED_CARD, card).critical()?;
-                played_cards
-                    .get_mut(&card)
-                    .ok_or("Unloading card that wasn't played".critical())
-            })
-            .transpose()?;
 
         // VALIDATIONS COMPLETE, COMMENCE MUTATING STATE
-        if let Some(old_card_count) = old_card_count {
-            *old_card_count -= 1;
+        if let Some(old_card_id) = access_point.card {
+            let withdrawn_successfully = played_cards.withdraw_card_from(old_card_id, node_id);
+            if !withdrawn_successfully {
+                Err("Attempting to unload card that wasn't played here".critical())?;
+            }
         }
 
-        *played_cards.entry(next_card_id).or_default() += 1;
+        played_cards.play_card_to(deck, next_card_id, node_id);
+
         node_piece.set_display_id(card_q.base_name.clone());
 
         access_point_commands.insert((
@@ -493,18 +491,13 @@ fn opsys_node_access_point(
         ));
     } else {
         // Unloading card
-        let old_card_count = access_point
-            .card
-            .map(|card| {
-                metadata.put(key::UNLOADED_CARD, card).critical()?;
-                played_cards
-                    .get_mut(&card)
-                    .ok_or("Unloading card that wasn't played".critical())
-            })
-            .transpose()?;
-        if let Some(old_card_count) = old_card_count {
-            *old_card_count -= 1;
+        if let Some(old_card_id) = access_point.card {
+            let withdrawn_successfully = played_cards.withdraw_card_from(old_card_id, node_id);
+            if !withdrawn_successfully {
+                Err("Attempting to unload card that wasn't played here".critical())?;
+            }
         }
+
         node_piece.set_display_id(ACCESS_POINT_DISPLAY_ID.to_owned());
         access_point_commands.remove::<(Description, MovementSpeed, MaximumSize, Actions)>();
     };
@@ -714,20 +707,58 @@ fn opsys_node_enter_battle(
 fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
-    q_claimed_pickups: Query<(&Pickup, &Claimed)>,
+    q_node: Query<(&Node, &TeamStatus)>,
+    mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards), With<Player>>,
+    q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
+    q_claimed_pickup: Query<(&Pickup, &Claimed)>,
 ) -> OpImplResult {
     if let NodeOp::QuitNode(node_sid) = node_op {
-        for (pickup, claimed) in q_claimed_pickups.iter() {
-            log::debug!("Got pickup [{pickup:?}] with claim [{claimed:?}], is it in [{node_sid:?}] or for [{player_id:?}]?");
+        // TODO When the player is able to join multiple games and leave midway through,
+        // we'll need to find the node that was actually quit.
+        let (&InNode(node_id), OnTeam(team_id), mut played_cards) =
+            q_player.get_mut(player_id).invalid()?;
+        let (node, team_status) = q_node.get(node_id).invalid()?;
+        if node.0 != node_sid {
+            Err("The player is not in that node".invalid())?;
         }
-        commands.entity(player_id).remove::<InNode>();
+        let pickups: Vec<Pickup> = q_claimed_pickup
+            .iter()
+            .filter(|(_, claimed)| claimed.player == player_id && claimed.node_id == node_id)
+            .map(|(pickup, _)| pickup.clone())
+            .collect();
+        let victory_status = team_status
+            .get(team_id)
+            .ok_or("Couldn't find team status".invalid())?;
+
+        let node_still_in_use = q_ncp_players
+            .iter()
+            .any(|(ncp_id, &InNode(ncp_node_id))| ncp_id != player_id && ncp_node_id == node_id);
+
+        let mut metadata = Metadata::new();
+        metadata.put(key::NODE_ID, node_id).invalid()?;
+        metadata.put_nonempty(key::PICKUPS, &pickups).invalid()?;
+        metadata
+            .put(key::VICTORY_STATUS, victory_status)
+            .invalid()?;
+        metadata
+            .put(key::CLOSING_NODE, !node_still_in_use)
+            .invalid()?;
+        metadata
+            .put(key::RETURNED_CARDS, played_cards.clear_location(node_id))
+            .critical()?;
+
+        if !node_still_in_use {
+            commands.entity(node_id).despawn_recursive();
+        }
+
+        commands.entity(player_id).remove::<(InNode, OnTeam)>();
+        Ok(metadata)
 
         // Check victory status, if victorious, update quest status
         // Hooks for quit? (On victory this will likely at least trigger dialog)
         // Check for claimed pickups, and handle these as determined by node config
         // Remove InNode if player is in this node.
         // If no non-computer players left in Node, despawn node.
-        Ok(default())
     } else {
         Err(OpError::MismatchedOpSystem)
     }

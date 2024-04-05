@@ -25,9 +25,11 @@ pub mod key {
     use super::*;
 
     pub const NODE_ID: Key<Entity> = typed_key!("node_id");
+    pub const CLOSING_NODE: Key<bool> = typed_key!("closing_node");
     pub const CURIO: Key<Entity> = typed_key!("curio");
     pub const TAPPED: Key<bool> = typed_key!("tapped");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
+    pub const PICKUPS: Key<Vec<Pickup>> = typed_key!("pickups");
     pub const PICKUP_ID: Key<Entity> = typed_key!("pickup_id");
     pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
@@ -38,8 +40,10 @@ pub mod key {
     pub const EFFECTS: Key<Metadata> = typed_key!("effects");
     pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
     pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
+    pub const RETURNED_CARDS: Key<Vec<Entity>> = typed_key!("returned_cards");
     pub const DEACTIVATED_CURIO: Key<Entity> = typed_key!("deactivated_curio");
     pub const SKIPPED_ACTIVATION: Key<bool> = typed_key!("skipped_activate");
+    pub const VICTORY_STATUS: Key<VictoryStatus> = typed_key!("victory_status");
 }
 
 #[derive(Debug)]
@@ -222,7 +226,7 @@ pub enum CurioFromCard {
 }
 
 /// A pickup of money. Is NOT a component
-#[derive(Debug, Default, Deserialize, Reflect, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Reflect, Serialize)]
 pub struct Mon(pub u32);
 
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
@@ -333,7 +337,7 @@ impl MapEntities for OnTeam {
 
 /// A pickup, typically found as a Node Piece. Enumerates different types
 /// of pickups
-#[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
+#[derive(Clone, Component, Debug, Default, Deserialize, Reflect, Serialize)]
 #[reflect(Component)]
 pub enum Pickup {
     Mon(Mon),     // Money
@@ -355,18 +359,66 @@ impl Pickup {
 }
 
 /// Player Component, indicates which cards they've played already.
-#[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
+///
+/// Contains a list of cards and where they have been played to.
+#[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct PlayedCards(HashMap<Entity, u32>);
+pub struct PlayedCards(HashMap<Entity, Vec<Entity>>);
 
 impl PlayedCards {
+    fn num_played(&self, card_id: Entity) -> u32 {
+        self.0
+            .get(&card_id)
+            .map(|played_list| played_list.len() as u32)
+            .unwrap_or_default()
+    }
+
     pub fn can_be_played(&self, deck: &Deck, card_id: Entity) -> bool {
-        self.get(&card_id).copied().unwrap_or_default() < deck.count_of_card(card_id)
+        self.num_played(card_id) < deck.count_of_card(card_id)
+    }
+
+    pub fn can_be_withdrawn(&self, card_id: Entity, location: Entity) -> bool {
+        self.0
+            .get(&card_id)
+            .map(|location_list| location_list.contains(&location))
+            .unwrap_or(false)
     }
 
     pub fn remaining_count(&self, deck: &Deck, card_id: Entity) -> u32 {
         deck.count_of_card(card_id)
-            .saturating_sub(self.get(&card_id).copied().unwrap_or_default())
+            .saturating_sub(self.num_played(card_id))
+    }
+
+    pub fn play_card_to(&mut self, deck: &Deck, card_id: Entity, location: Entity) -> bool {
+        if self.can_be_played(deck, card_id) {
+            let location_list = self.0.entry(card_id).or_default();
+            location_list.push(location);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn withdraw_card_from(&mut self, card_id: Entity, location: Entity) -> bool {
+        self.0
+            .get_mut(&card_id)
+            .and_then(|location_list| {
+                let idx = location_list.iter().position(|loc| *loc == location)?;
+                location_list.remove(idx);
+                Some(true)
+            })
+            .unwrap_or(false)
+    }
+
+    pub fn clear_location(&mut self, location: Entity) -> Vec<Entity> {
+        self.0
+            .iter_mut()
+            .flat_map(|(card_id, location_list)| {
+                let original_size = location_list.len();
+                location_list.retain(|loc| *loc != location);
+                std::iter::repeat(*card_id).take(original_size - location_list.len())
+            })
+            .collect()
     }
 }
 

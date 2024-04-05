@@ -25,6 +25,11 @@ impl MapEntities for ForPlayer {
 #[reflect(Component)]
 pub struct Player;
 
+/// Marker for "Non-Computer Player"
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct Ncp;
+
 #[derive(Bundle, Debug)]
 pub struct PlayerBundle {
     player_marker: Player,

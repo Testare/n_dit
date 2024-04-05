@@ -293,6 +293,7 @@ fn sys_react_to_node_op(
                     res_ui_ops.request(player, NodeUiOp::SetCursorHidden(true));
                 },
                 NodeOp::QuitNode(_) => {
+                    res_ui_ops.request(player, NodeUiOp::SetSelectedAction(None));
                     if let Some((_, board_screen_id)) = q_board_screen
                         .iter()
                         .find(|&(i_player_id, _)| i_player_id == player)
