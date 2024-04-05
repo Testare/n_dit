@@ -1,3 +1,4 @@
+mod charmi_cell;
 mod charmie_actor;
 mod charmie_def;
 mod loader;
@@ -10,6 +11,7 @@ use std::sync::OnceLock;
 
 use bevy::prelude::Asset;
 use bevy::reflect::TypePath;
+pub use charmi_cell::CharmiCell;
 pub use charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 pub use charmie_def::{
     CharmieActorDef, CharmieAnimationDef, CharmieDef, CharmieFrameDef, ColorDef,

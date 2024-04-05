@@ -12,7 +12,7 @@ use super::{CharacterMapImage, CharmieSegment, CharmieString};
 
 static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum ColorDef {
     Named(String),

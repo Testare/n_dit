@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "charmi",
-    "game_core",
-    "cq_term"
+    "charmi_bevy",
+    "cq_term",
+    "game_core"
 ]
 
 [patch.crates-io]
