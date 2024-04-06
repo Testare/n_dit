@@ -71,7 +71,7 @@ impl Plugin for NDitCorePlugin {
             dialog::DialogPlugin,
             item::ItemPlugin,
             entity_grid::EntityGridSupportPlugin,
-            node::NodePlugin,
+            node::NodePlugin::default(),
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
             player::PlayerPlugin,
             shop::ShopPlugin,

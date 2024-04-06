@@ -1,6 +1,8 @@
 use crate::card::{Action, CardDefinition, Deck};
-use crate::op::OpPlugin;
+use crate::item::{Item, ItemOp};
+use crate::op::{CoreOps, OpPlugin, OpResult};
 use crate::prelude::*;
+use crate::NDitCoreSet;
 
 mod ai;
 mod node_loading;
@@ -47,7 +49,17 @@ pub mod key {
 }
 
 #[derive(Debug)]
-pub struct NodePlugin;
+pub struct NodePlugin {
+    pub always_award_pickups: bool,
+}
+
+impl Default for NodePlugin {
+    fn default() -> Self {
+        Self {
+            always_award_pickups: true,
+        }
+    }
+}
 
 impl Plugin for NodePlugin {
     fn build(&self, app: &mut App) {
@@ -87,6 +99,13 @@ impl Plugin for NodePlugin {
                 node_op::node_op_undo::NodeOpUndoPlugin::default(),
                 OpPlugin::<NodeOp>::default(),
             ));
+
+        if self.always_award_pickups {
+            app.add_systems(
+                Update,
+                sys_grant_pickups_on_node_exit.in_set(NDitCoreSet::PostProcessCommands),
+            );
+        }
     }
 }
 
@@ -498,5 +517,43 @@ pub enum VictoryStatus {
 impl VictoryStatus {
     pub fn is_undecided(&self) -> bool {
         matches!(self, VictoryStatus::Undecided)
+    }
+}
+
+pub fn sys_grant_pickups_on_node_exit(
+    asset_server: Res<AssetServer>,
+    mut evr_node_op: EventReader<OpResult<NodeOp>>,
+    mut res_core_ops: ResMut<CoreOps>,
+) {
+    for node_op_result in evr_node_op.read() {
+        if let OpResult {
+            source,
+            op: NodeOp::QuitNode(_),
+            result: Ok(metadata),
+        } = node_op_result
+        {
+            log::debug!("{source:?} quit with {metadata:?}");
+            match metadata.get_optional(key::PICKUPS) {
+                Err(e) => {
+                    log::error!("Error retrieving pickups: {e}");
+                },
+                Ok(None) => {},
+                Ok(Some(pickups)) => {
+                    for pickup in pickups.into_iter() {
+                        let item = match pickup {
+                            Pickup::Card(card_path) => Item::Card(asset_server.load(card_path)),
+                            Pickup::Mon(mon_val) => Item::Mon(mon_val.0),
+                            Pickup::MacGuffin => {
+                                continue;
+                            },
+                            Pickup::Item(_item_id) => {
+                                unimplemented!()
+                            },
+                        };
+                        res_core_ops.request(*source, ItemOp::AddItem { item, refund: 0 });
+                    }
+                },
+            }
+        }
     }
 }

@@ -110,10 +110,7 @@ mod test {
                 UVec2 { x: 0, y: 1 },
                 UVec2 { x: 1, y: 1 },
             ];
-            let result_cells: Vec<CharmiCell> = test_input
-                .into_iter()
-                .map(|coord| cell_function(coord))
-                .collect();
+            let result_cells: Vec<CharmiCell> = test_input.into_iter().map(cell_function).collect();
 
             assert_eq!(
                 result_cells,
