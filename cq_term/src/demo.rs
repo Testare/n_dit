@@ -13,7 +13,7 @@ use game_core::card::{CardDefinition, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
-use game_core::node::{ForNode, IsReadyToGo, Node, NodeId, NodeOp, PlayedCards};
+use game_core::node::{ForNode, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player, PlayerBundle};
 use game_core::prelude::*;
@@ -29,14 +29,13 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, MainUi, MainUiOp, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
+    self, MainUiOp, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
     ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
-use crate::node_ui::NodeUiScreen;
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
-use crate::{KeyMap, Submap};
+use crate::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 #[derive(Debug)]
@@ -50,7 +49,6 @@ pub struct DebugEntityMarker;
 
 #[derive(Debug, Default, Resource)]
 pub struct DemoState {
-    node_ui_id: Option<Entity>,
     board_ui_id: Option<Entity>,
     player_id: Option<Entity>,
 }
@@ -154,14 +152,9 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
 fn debug_key(
     mut evr_mouse: EventReader<MouseEventTty>,
-    mut res_demo_state: ResMut<DemoState>,
-    mut res_ui_ops: ResMut<UiOps>,
     mut ev_keys: EventReader<KeyEvent>,
     mut quest_status: Query<&mut QuestStatus>,
-    mut key_maps: Query<&mut KeyMap>,
-    q_player_node_ui: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
     mut q_player_dr: Query<(&mut DialogueRunner, &Dialog), With<Player>>,
-    q_main_ui: Query<&MainUi>,
 ) {
     for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
@@ -204,32 +197,6 @@ fn debug_key(
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
-        } else if *code == KeyCode::Char('m') {
-            // TODO Better keymap logic
-            for mut key_map in key_maps.iter_mut() {
-                key_map.toggle_submap(Submap::Node);
-            }
-
-            q_main_ui.get_single().ok().and_then(|main_ui| {
-                if res_demo_state.node_ui_id.is_none() {
-                    for (node_ui_id, &ForPlayer(player_id)) in q_player_node_ui.iter() {
-                        if Some(player_id) == res_demo_state.player_id {
-                            res_demo_state.node_ui_id = Some(node_ui_id);
-                        }
-                    }
-                }
-                let next_screen = if **main_ui == res_demo_state.node_ui_id {
-                    res_demo_state.board_ui_id
-                } else {
-                    res_demo_state.node_ui_id
-                }?;
-
-                res_ui_ops.request(
-                    res_demo_state.player_id?,
-                    MainUiOp::SwitchScreen(next_screen),
-                );
-                Some(())
-            });
         }
     }
 }
@@ -345,7 +312,6 @@ fn demo_startup(
         .spawn((
             Deck::new().with_card(stabby_boi),
             Dialog::default(),
-            IsReadyToGo(false),
             KeyMap::default(),
             Name::new("Steve"),
             Ncp,

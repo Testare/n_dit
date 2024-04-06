@@ -3,8 +3,8 @@ use std::ops::Deref;
 use bevy::ecs::query::Has;
 
 use super::{
-    Curio, CurioFromCard, EnteringNode, InNode, IsTapped, MovesTaken, Node, NodePiece, OnTeam,
-    Teams,
+    Curio, CurioFromCard, EnteringNode, InNode, IsReadyToGo, IsTapped, MovesTaken, Node, NodePiece,
+    OnTeam, Teams,
 };
 use crate::card::{Actions, CardDefinition, Description, MaximumSize, MovementSpeed};
 use crate::player::Player;
@@ -62,10 +62,11 @@ fn sys_enter_node_when_ready(
         {
             // TODO check that all curios are loaded first
             if node_is_ready {
-                commands
-                    .entity(player_id)
-                    .remove::<EnteringNode>()
-                    .insert((InNode(node_entity), OnTeam(teams[0])));
+                commands.entity(player_id).remove::<EnteringNode>().insert((
+                    InNode(node_entity),
+                    OnTeam(teams[0]),
+                    IsReadyToGo(false),
+                ));
             }
         }
     }

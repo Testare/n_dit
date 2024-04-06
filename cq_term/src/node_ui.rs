@@ -35,6 +35,7 @@ use super::render::TerminalRendering;
 use crate::main_ui::{MainUiOp, UiOps};
 use crate::node_ui::node_ui_op::FocusTarget;
 use crate::prelude::*;
+use crate::{KeyMap, Submap};
 /// Plugin for NodeUI
 #[derive(Debug, Default)]
 pub struct NodeUiPlugin;
@@ -165,20 +166,22 @@ pub trait NodeUi: Component + Default {
 pub fn sys_switch_screens_on_enter(
     mut res_ui_ops: ResMut<UiOps>,
     mut q_removed_entering_node: RemovedComponents<EnteringNode>,
-    q_player: Query<(), (With<HasNodeUi>, With<Player>)>,
+    mut q_player: Query<&mut KeyMap, (With<HasNodeUi>, With<Player>)>,
     q_node_ui_screen: Query<(Entity, &ForPlayer), With<NodeUiScreen>>,
 ) {
     for player_id in q_removed_entering_node.read() {
-        if q_player.contains(player_id) {
+        if let Ok(mut key_map) = q_player.get_mut(player_id) {
             for (node_ui_screen_id, &ForPlayer(nui_player_id)) in q_node_ui_screen.iter() {
                 if nui_player_id == player_id {
                     res_ui_ops.request(player_id, MainUiOp::SwitchScreen(node_ui_screen_id));
+                    key_map.activate_submap(Submap::Node);
                 }
             }
         }
     }
 }
 
+// This should be broken up into separate systems
 fn sys_react_to_node_op(
     ast_action: Res<Assets<Action>>,
     mut evr_op_result: EventReader<OpResult<NodeOp>>,
@@ -194,6 +197,7 @@ fn sys_react_to_node_op(
     q_player_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
     q_player_in_node: Query<AsDerefCopied<InNode>, With<Player>>,
     q_board_screen: Query<(AsDerefCopied<ForPlayer>, Entity), With<BoardScreen>>,
+    mut q_player_key_map: Query<&mut KeyMap, With<Player>>,
     mut q_player_ui: Query<
         (
             Entity,
@@ -299,6 +303,9 @@ fn sys_react_to_node_op(
                         .find(|&(i_player_id, _)| i_player_id == player)
                     {
                         res_ui_ops.request(player, MainUiOp::SwitchScreen(board_screen_id));
+                        if let Ok(mut key_map) = q_player_key_map.get_mut(player) {
+                            key_map.deactivate_submap(Submap::Node)
+                        }
                     }
                 },
                 _ => {},

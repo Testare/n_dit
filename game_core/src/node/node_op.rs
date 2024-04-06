@@ -550,6 +550,7 @@ fn opsys_node_ready(
     metadata
         .put(key::ALL_TEAM_MEMBERS_READY, relevant_teams_are_ready)
         .critical()?;
+
     if relevant_teams_are_ready {
         let relevant_access_points: Vec<(Entity, Option<Entity>)> = access_points
             .iter()
