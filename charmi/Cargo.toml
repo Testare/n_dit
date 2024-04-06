@@ -15,6 +15,7 @@ test-log = "0.2.12"
 
 [dependencies]
 crossterm = "0.20.0"
+freeform.workspace = true
 itertools = "0.10.1"
 log = "0.4"
 regex = "1.10.2"

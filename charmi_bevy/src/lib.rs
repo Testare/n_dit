@@ -2,6 +2,7 @@ use bevy::ecs::system::SystemId;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use charmi::CharmiCell;
+use freeform::Freeform;
 
 #[derive(Debug, Default)]
 pub struct CharmiPlugin {}
@@ -15,7 +16,6 @@ impl Plugin for CharmiPlugin {
 // Later, I want to be able to pass in more free-form information to the shader functions
 // from the charmi/charmia files.
 // Will probably rename Metadata type from game_core to Freeform and make its own crate
-type Freeform = ();
 
 #[derive(Debug, Default, Resource)]
 pub struct CharmiFunctionRegistry {
@@ -24,7 +24,7 @@ pub struct CharmiFunctionRegistry {
 }
 
 impl CharmiFunctionRegistry {
-    fn get_cell_function(
+    pub fn get_cell_function(
         world: &mut World,
         name: &str,
         freeform: Freeform,
@@ -92,8 +92,6 @@ mod test {
         })
     }
 
-    const FREEFORM_STUB: Freeform = ();
-
     #[test]
     pub fn register_a_cell_function() {
         let mut app = App::new();
@@ -104,7 +102,7 @@ mod test {
 
         app.add_systems(Update, |world: &mut World| {
             let cell_function =
-                CharmiFunctionRegistry::get_cell_function(world, "test", FREEFORM_STUB)
+                CharmiFunctionRegistry::get_cell_function(world, "test", Freeform::new())
                     .expect("Should have successfully registered test function");
             let test_input = [
                 UVec2 { x: 0, y: 0 },
