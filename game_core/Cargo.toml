@@ -22,5 +22,5 @@ log = "0.4"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
 thiserror = "1.0.44"
-toml = "0.8.2"
+toml.workspace = true
 typed_key = "0.1"

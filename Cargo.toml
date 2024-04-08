@@ -18,9 +18,10 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [workspace.dependencies]
-freeform = "0.1.0"
+freeform = { version = "0.3", features = ["toml"]  }
 bevy_query_ext = "0.3"
 bevy_yarnspinner = "0.2"
+toml = "0.8.12"
 
 [workspace.dependencies.bevy]
 version = "0.13.0"

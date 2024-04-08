@@ -2,7 +2,7 @@ use bevy::ecs::system::SystemId;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use charmi::CharmiCell;
-use freeform::Freeform;
+use freeform::FreeformToml;
 
 #[derive(Debug, Default)]
 pub struct CharmiPlugin {}
@@ -13,21 +13,17 @@ impl Plugin for CharmiPlugin {
     }
 }
 
-// Later, I want to be able to pass in more free-form information to the shader functions
-// from the charmi/charmia files.
-// Will probably rename Metadata type from game_core to Freeform and make its own crate
-
 #[derive(Debug, Default, Resource)]
 pub struct CharmiFunctionRegistry {
-    cell_functions: HashMap<String, SystemId<Freeform, Box<dyn Fn(UVec2) -> CharmiCell>>>,
-    timing_functions: HashMap<String, SystemId<Freeform, bool>>,
+    cell_functions: HashMap<String, SystemId<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>>>,
+    timing_functions: HashMap<String, SystemId<FreeformToml, bool>>,
 }
 
 impl CharmiFunctionRegistry {
     pub fn get_cell_function(
         world: &mut World,
         name: &str,
-        freeform: Freeform,
+        freeform: FreeformToml,
     ) -> Option<Box<dyn Fn(UVec2) -> CharmiCell>> {
         let reg = world.get_resource::<Self>()?;
         let factory_id = reg.cell_functions.get(name)?;
@@ -38,16 +34,16 @@ impl CharmiFunctionRegistry {
 pub trait RegisterCharmiFunctions {
     fn register_cell_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<Freeform, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static;
+        F: IntoSystem<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static;
     fn register_timing_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<Freeform, bool, M> + 'static;
+        F: IntoSystem<FreeformToml, bool, M> + 'static;
 }
 
 impl RegisterCharmiFunctions for App {
     fn register_cell_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<Freeform, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static,
+        F: IntoSystem<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static,
     {
         let sys_id = self.world.register_system(function);
         let mut registry = self
@@ -58,7 +54,7 @@ impl RegisterCharmiFunctions for App {
 
     fn register_timing_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<Freeform, bool, M> + 'static,
+        F: IntoSystem<FreeformToml, bool, M> + 'static,
     {
         let sys_id = self.world.register_system(function);
         let mut registry = self
@@ -71,19 +67,23 @@ impl RegisterCharmiFunctions for App {
 #[cfg(test)]
 mod test {
     use charmi::ColorDef;
+    use typed_key::{typed_key, Key};
 
     use super::*;
 
     #[derive(Resource)]
     struct TestResource(u8);
 
+    const Z_KEY: Key<u8> = typed_key!("z");
+
     fn test_cell_function(
-        In(_): In<Freeform>,
+        In(freeform): In<FreeformToml>,
         res_in: Res<TestResource>,
     ) -> Box<dyn Fn(UVec2) -> CharmiCell> {
         let start = res_in.0;
+        let z = freeform.get_owned_or_default(Z_KEY).unwrap();
         Box::new(move |UVec2 { x, y }| {
-            let shader_val = start + (x as u8) * 3 + (y as u8) * 2;
+            let shader_val = start + (x as u8) * 3 + (y as u8) * 2 - z;
             CharmiCell {
                 character: None,
                 fg: None,
@@ -101,9 +101,10 @@ mod test {
             .register_cell_function("test", test_cell_function);
 
         app.add_systems(Update, |world: &mut World| {
-            let cell_function =
-                CharmiFunctionRegistry::get_cell_function(world, "test", Freeform::new())
-                    .expect("Should have successfully registered test function");
+            let mut freeform = FreeformToml::new();
+            freeform.put(Z_KEY, 4).unwrap();
+            let cell_function = CharmiFunctionRegistry::get_cell_function(world, "test", freeform)
+                .expect("Should have successfully registered test function");
             let test_input = [
                 UVec2 { x: 0, y: 0 },
                 UVec2 { x: 1, y: 0 },
@@ -116,19 +117,19 @@ mod test {
                 result_cells,
                 vec![
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(10u8)),
+                        bg: Some(ColorDef::Ansi(6u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(13u8)),
+                        bg: Some(ColorDef::Ansi(9u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(12u8)),
+                        bg: Some(ColorDef::Ansi(8u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(15u8)),
+                        bg: Some(ColorDef::Ansi(11u8)),
                         ..default()
                     },
                 ]

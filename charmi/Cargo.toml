@@ -21,7 +21,7 @@ log = "0.4"
 regex = "1.10.2"
 serde = { version = "1.0", features = ["derive", "rc"] }
 thiserror = "1.0"
-toml = "0.8.2"
+toml.workspace = true
 unicode-width = "0.1.8"
 
 [dependencies.bevy]
