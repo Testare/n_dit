@@ -1,3 +1,4 @@
+use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
 use game_core::node::{ForNode, NodeId, NodeOp};
 use game_core::op::CoreOps;
@@ -60,8 +61,18 @@ impl FromWorld for NfContextActions {
         let enter_shop = world
             .spawn((
                 Name::new("Enter Shop CA"),
-                ContextAction::new("Enter Shop", |_id, _world| {
-                    log::debug!("Coming soon: Shops!")
+                ContextAction::new("Enter Shop", |id, world| {
+                    (|| {
+                        let &ForPlayer(player_id) = world.get(id)?;
+                        let &BoardPieceUi(bp_id) = world.get(id)?;
+                        let nf_shop: &NFShop = world.get(bp_id)?;
+                        let dialog_id = nf_shop.dialog_id();
+                        let mut player_dr = world.get_mut::<DialogueRunner>(player_id)?;
+                        if !player_dr.is_running() {
+                            player_dr.start_node(dialog_id);
+                        }
+                        Some(())
+                    })();
                 }),
             ))
             .id();
@@ -96,6 +107,12 @@ pub struct NFNode;
 
 #[derive(Component, Debug)]
 pub struct NFShop(pub String);
+
+impl NFShop {
+    fn dialog_id(&self) -> String {
+        self.0.replace(':', "_")
+    }
+}
 
 #[derive(Component, Debug)]
 struct NFNodeUi;
