@@ -98,6 +98,10 @@ impl ContextActions {
     pub fn actions_mut(&mut self) -> &mut Vec<Entity> {
         &mut self.actions
     }
+
+    pub fn actions(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.actions.iter().copied()
+    }
 }
 
 /// The component for the UI that displays the context actions
@@ -195,6 +199,10 @@ impl ContextAction {
         }
     }
 
+    pub fn name(&self) -> &str {
+        self.action_name.as_str()
+    }
+
     pub fn new_with_mouse_event<
         S: ToString,
         F: Fn(Entity, MouseEventTty, &mut World) + Send + Sync + 'static,
@@ -277,6 +285,17 @@ impl ContextAction {
     }
 }
 
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct ContextActionDelegate {
+    delegator: Entity,
+}
+
+impl ContextActionDelegate {
+    pub fn new(delegator: Entity) -> Self {
+        Self { delegator }
+    }
+}
+
 // Determines what we do in response to a mouse button click
 #[derive(Clone, Copy, Debug)]
 pub enum MouseButtonAction {
@@ -298,16 +317,18 @@ impl FromWorld for SystemIdDisplayContextMenu {
 pub fn sys_context_actions(
     mut evr_mouse: EventReader<MouseEventTty>,
     mut commands: Commands,
-    context_actions: Query<(&ContextActions, Has<ContextActionsNoDefault>)>,
+    context_actions: Query<(
+        &ContextActions,
+        Option<AsDerefCopied<ContextActionDelegate>>,
+        Has<ContextActionsNoDefault>,
+    )>,
     source_settings: Query<CopiedOrDefault<ContextMenuSettings>>,
     context_action: Query<&ContextAction>,
 ) {
     for mouse_event in evr_mouse.read() {
         let id = mouse_event.entity();
-        context_actions
-            .get(id)
-            .ok()
-            .and_then(|(context_actions, no_default)| {
+        context_actions.get(id).ok().and_then(
+            |(context_actions, context_action_delegate, no_default)| {
                 let mb = match mouse_event.event_kind() {
                     // Should we swap this with up to enable draggable things too?
                     MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => {
@@ -355,9 +376,11 @@ pub fn sys_context_actions(
                         )
                     },
                 };
-                commands.add(move |w: &'_ mut World| action(id, mouse_event, w));
+                let context_action_target = context_action_delegate.unwrap_or(id);
+                commands.add(move |w: &'_ mut World| action(context_action_target, mouse_event, w));
                 Some(())
-            });
+            },
+        );
     }
 }
 

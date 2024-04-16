@@ -23,7 +23,7 @@ use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{ButtonUiBundle, HoverPoint, PopupMenu};
-use crate::board_ui::{BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
+use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
@@ -417,6 +417,7 @@ fn demo_startup(
                                 grid_row: line(1),
                                 grid_column: line(1),
                                 flex_direction: FlexDirection::Column,
+                                display: Display::Flex,
                                 ..default()
                             }),
                             Name::new("Board Menu Bar"),
@@ -426,7 +427,17 @@ fn demo_startup(
                                 StyleTty(Style::default()),
                                 ForPlayer(player),
                                 InfoPanel,
-                                Name::new("InfoPanel"),
+                                Name::new("Info Panel"),
+                                TerminalRendering::default(),
+                            ));
+                            menu_bar.spawn((
+                                StyleTty(Style {
+                                    flex_direction: FlexDirection::Column,
+                                    ..Style::default()
+                                }),
+                                ForPlayer(player),
+                                ActionsPanel,
+                                Name::new("Actions Panel"),
                                 TerminalRendering::default(),
                             ));
                         });
