@@ -22,6 +22,7 @@ use crate::node::{
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
 use crate::player::{Ncp, Player};
 use crate::prelude::*;
+use crate::quest::QuestStatus;
 use crate::registry::Reg;
 
 #[derive(Clone, Debug, Reflect)]
@@ -709,14 +710,14 @@ fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
     q_node: Query<(&Node, &TeamStatus)>,
-    mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards), With<Player>>,
+    mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards, &mut QuestStatus), With<Player>>,
     q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
     q_claimed_pickup: Query<(&Pickup, &Claimed)>,
 ) -> OpImplResult {
     if let NodeOp::QuitNode(node_sid) = node_op {
         // TODO When the player is able to join multiple games and leave midway through,
         // we'll need to find the node that was actually quit.
-        let (&InNode(node_id), OnTeam(team_id), mut played_cards) =
+        let (&InNode(node_id), OnTeam(team_id), mut played_cards, mut quest_status) =
             q_player.get_mut(player_id).invalid()?;
         let (node, team_status) = q_node.get(node_id).invalid()?;
         if node.0 != node_sid {
@@ -730,6 +731,13 @@ fn opsys_node_quit_battle(
         let victory_status = team_status
             .get(team_id)
             .ok_or("Couldn't find team status".invalid())?;
+
+        match victory_status {
+            VictoryStatus::Victory | VictoryStatus::PerfectVictory => {
+                quest_status.record_node_done(&node_sid);
+            },
+            _ => {},
+        }
 
         let node_still_in_use = q_ncp_players
             .iter()
