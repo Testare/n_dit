@@ -6,7 +6,9 @@ use game_core::board::SimplePieceInfo;
 use game_core::player::{ForPlayer, Player};
 
 use super::{BoardPieceUi, SelectedBoardPieceUi};
-use crate::base_ui::context_menu::{ContextAction, ContextActionDelegate, ContextActions};
+use crate::base_ui::context_menu::{
+    ContextAction, ContextActionDelegate, ContextActions, ContextActionsInteraction,
+};
 use crate::base_ui::ButtonUiBundle;
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::prelude::*;
@@ -128,6 +130,7 @@ pub fn sys_update_context_action_panel(
                                     ButtonUiBundle::new(ca.name(), ContentStyle::new().yellow()),
                                     ContextActions::new(player_id, &[ca_id]),
                                     ContextActionDelegate::new(board_piece_id),
+                                    ContextActionsInteraction::SingleActionOnly,
                                 ));
                                 height += 1.0;
                             }

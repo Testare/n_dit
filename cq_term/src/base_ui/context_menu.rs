@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bevy::ecs::query::{Has, QueryEntityError};
+use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{Command, SystemId};
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::time::{Time, Timer, TimerMode};
@@ -43,7 +43,7 @@ pub struct ContextMenuSettings {
     /// If there are only two actions, changes right click to perform that action
     adaptive_right_click: bool,
     /// If there is only one action, whether we should display context menu
-    single_action_context_menu: bool,
+    single_action_no_context_menu: bool,
 }
 
 impl ContextMenuSettings {
@@ -51,34 +51,48 @@ impl ContextMenuSettings {
         &self,
         mb: MouseButton,
         context_menu_size: usize,
-        no_default_flag: bool,
+        interaction: ContextActionsInteraction,
     ) -> Option<MouseButtonAction> {
         match mb {
             MouseButton::Left => {
-                if no_default_flag {
+                if matches!(interaction, ContextActionsInteraction::ContextMenuOnly) {
                     Some(MouseButtonAction::DisplayContextMenu)
                 } else {
                     Some(MouseButtonAction::PerformContextAction(0))
                 }
             },
-            MouseButton::Middle => None, //(context_menu_size > 1).then_some(MouseButtonAction::CycleContextAction),
-            MouseButton::Right => {
-                if self.single_action_context_menu && context_menu_size == 1 {
-                    None
-                } else if self.adaptive_right_click && context_menu_size == 2 {
-                    Some(MouseButtonAction::PerformContextAction(1))
-                } else {
+            MouseButton::Middle => None, // (context_menu_size > 1).then_some(MouseButtonAction::CycleContextAction),
+            MouseButton::Right => match interaction {
+                ContextActionsInteraction::SingleActionOnly => None,
+                ContextActionsInteraction::ContextMenuOnly => {
                     Some(MouseButtonAction::DisplayContextMenu)
-                }
+                },
+                ContextActionsInteraction::DefaultActionAndContextMenu => {
+                    if self.single_action_no_context_menu && context_menu_size == 1 {
+                        None
+                    } else if self.adaptive_right_click && context_menu_size == 2 {
+                        Some(MouseButtonAction::PerformContextAction(1))
+                    } else {
+                        Some(MouseButtonAction::DisplayContextMenu)
+                    }
+                },
             },
         }
     }
 }
 
-/// Used to indicate that left-click should not perform the default (first)
-/// action but instead open the context menu.
-#[derive(Component, Debug)]
-pub struct ContextActionsNoDefault;
+/// Used to indicate types of interactions
+///
+#[derive(Clone, Component, Copy, Debug, Default)]
+pub enum ContextActionsInteraction {
+    /// Default option - Left click performs first action, Right click opens menu
+    #[default]
+    DefaultActionAndContextMenu,
+    /// No default action, left click also opens menu
+    ContextMenuOnly,
+    /// No context menu, right click no-ops
+    SingleActionOnly,
+}
 
 #[derive(Component, Debug)]
 pub struct ContextActions {
@@ -320,7 +334,7 @@ pub fn sys_context_actions(
     context_actions: Query<(
         &ContextActions,
         Option<AsDerefCopied<ContextActionDelegate>>,
-        Has<ContextActionsNoDefault>,
+        CopiedOrDefault<ContextActionsInteraction>,
     )>,
     source_settings: Query<CopiedOrDefault<ContextMenuSettings>>,
     context_action: Query<&ContextAction>,
@@ -328,7 +342,7 @@ pub fn sys_context_actions(
     for mouse_event in evr_mouse.read() {
         let id = mouse_event.entity();
         context_actions.get(id).ok().and_then(
-            |(context_actions, context_action_delegate, no_default)| {
+            |(context_actions, context_action_delegate, context_interaction)| {
                 let mb = match mouse_event.event_kind() {
                     // Should we swap this with up to enable draggable things too?
                     MouseEventTtyKind::Down(mousebutton) if mouse_event.is_top_entity() => {
@@ -347,7 +361,7 @@ pub fn sys_context_actions(
                 let action = match settings.determine_action(
                     mb,
                     context_actions.actions.len(),
-                    no_default,
+                    context_interaction,
                 )? {
                     MouseButtonAction::PerformContextAction(n) => {
                         let context_action =
@@ -364,6 +378,10 @@ pub fn sys_context_actions(
                                 for mut context_menu in
                                     world.query::<&mut ContextMenu>().iter_mut(world)
                                 {
+                                    // TODO When there is a delegate, save both delegate id and delegator id
+                                    // So that ContextMenu only shows delegated actions, but targets delegator
+                                    // Currently it shows all context actions for delegator when we show context menu for delegatee
+
                                     // TODO what if there are multiple???
                                     context_menu.actions_context = Some(id);
                                     context_menu.position = mouse_event.absolute_pos();
