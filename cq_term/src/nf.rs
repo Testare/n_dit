@@ -2,18 +2,24 @@ use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
 use game_core::node::{ForNode, NodeId, NodeOp};
 use game_core::op::CoreOps;
-use game_core::player::{ForPlayer, Player};
+use game_core::player::{ForPlayer, Ncp, Player};
 use game_core::quest::QuestStatus;
 
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
+use crate::base_ui::HoverPoint;
 use crate::board_ui::{BoardPieceUi, SelectedBoardPieceUi};
-use crate::input_event::{self, MouseEventListener, MouseEventTty, MouseEventTtyKind};
+use crate::input_event::MouseEventListener;
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
 
 #[derive(Debug)]
 pub struct NfPlugin;
+
+pub const NODE_ANIMATION_FRAME_UNBEATEN: f32 = 0.0;
+pub const NODE_ANIMATION_FRAME_COMPLETE: f32 = 1.0;
+pub const NODE_ANIMATION_FRAME_HOVER: f32 = 2.0;
+pub const NODE_ANIMATION_FRAME_SELECTED: f32 = 3.0;
 
 impl Plugin for NfPlugin {
     fn build(&self, app: &mut App) {
@@ -22,13 +28,7 @@ impl Plugin for NfPlugin {
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
         app.init_resource::<NfContextActions>()
             .add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
-            .add_systems(
-                Update,
-                (
-                    sys_adjust_nf_ui_when_quest_status_updates,
-                    mouse_network_map_nodes,
-                ),
-            );
+            .add_systems(Update, (sys_nf_node_ui_display,));
     }
 }
 
@@ -151,6 +151,7 @@ fn sys_apply_ui_to_node_nodes(
                 entity_commands.insert((
                     VisibilityTty(met_requirements),
                     NFNodeUi,
+                    HoverPoint::default(),
                     MouseEventListener,
                 ));
                 if for_node.is_some() {
@@ -169,9 +170,9 @@ fn sys_apply_ui_to_node_nodes(
                     .map(|for_node| quest_status.is_node_done(for_node))
                     .unwrap_or(false)
                 {
-                    ap.set_timing(1.0);
+                    ap.set_timing(NODE_ANIMATION_FRAME_COMPLETE);
                 } else {
-                    ap.set_timing(0.0);
+                    ap.set_timing(NODE_ANIMATION_FRAME_UNBEATEN);
                 }
                 Some(())
             });
@@ -179,83 +180,71 @@ fn sys_apply_ui_to_node_nodes(
     }
 }
 
-// TODO should combine this system with `sys_apply_ui_to_node_nodes`
-fn sys_adjust_nf_ui_when_quest_status_updates(
-    players: Query<(Entity, &QuestStatus), Changed<QuestStatus>>,
+fn sys_nf_node_ui_display(
+    q_player: Query<
+        (
+            Entity,
+            Ref<QuestStatus>,
+            AsDerefCopied<SelectedBoardPieceUi>,
+        ),
+        (With<Player>, With<Ncp>),
+    >,
     nf_nodes: Query<(Option<AsDeref<RequiredNodes>>, Option<AsDeref<ForNode>>), With<NFNode>>,
     mut nf_node_ui: Query<
         (
+            Entity,
             AsDerefCopied<ForPlayer>,
             AsDerefCopied<BoardPieceUi>,
             &mut AnimationPlayer,
+            AsDerefCopied<HoverPoint>,
             AsDerefMut<VisibilityTty>,
         ),
         With<NFNodeUi>,
     >,
 ) {
-    for (player_id, quest_status) in players.iter() {
-        for (for_player, bp_id, mut ap, mut is_visible) in nf_node_ui.iter_mut() {
+    for (player_id, quest_status, selected_board_piece) in q_player.iter() {
+        for (bp_ui_id, for_player, bp_id, mut ap, hover_point, mut is_visible) in
+            nf_node_ui.iter_mut()
+        {
             if player_id != for_player {
                 continue;
-            }
-            get_assert!(bp_id, nf_nodes, |(required_nodes, for_node)| {
-                let met_requirements = required_nodes
-                    .map(|req_nodes| {
-                        req_nodes
-                            .iter()
-                            .all(|node_id| quest_status.is_node_done(node_id))
-                    })
-                    .unwrap_or(true);
-                is_visible.set_if_neq(met_requirements);
-                if for_node
+            } // TODO try inverting these
+            let next_timing = get_assert!(bp_id, nf_nodes, |(required_nodes, for_node)| {
+                if !*is_visible {
+                    // It is assumed that we only go from invisible to visible
+                    let met_requirements = required_nodes
+                        .map(|req_nodes| {
+                            req_nodes
+                                .iter()
+                                .all(|node_id| quest_status.is_node_done(node_id))
+                        })
+                        .unwrap_or(true);
+                    if met_requirements {
+                        *is_visible = true;
+                    } else {
+                        return None;
+                    }
+                }
+
+                if selected_board_piece == Some(bp_ui_id) {
+                    Some(NODE_ANIMATION_FRAME_SELECTED)
+                } else if hover_point.is_some() {
+                    Some(NODE_ANIMATION_FRAME_HOVER)
+                } else if for_node
                     .map(|for_node| quest_status.is_node_done(for_node))
                     .unwrap_or(false)
                 {
-                    ap.set_timing(1.0);
+                    Some(NODE_ANIMATION_FRAME_COMPLETE)
                 } else {
-                    ap.set_timing(0.0);
+                    Some(NODE_ANIMATION_FRAME_UNBEATEN)
                 }
-                Some(())
             });
-        }
-    }
-}
 
-fn mouse_network_map_nodes(
-    mut evr_mouse: EventReader<MouseEventTty>,
-    mut nf_nodes: Query<
-        (
-            AsDerefCopied<ForPlayer>,
-            AsDerefCopied<BoardPieceUi>,
-            &mut AnimationPlayer,
-        ),
-        With<NFNodeUi>,
-    >,
-    board_pieces: Query<Option<AsDeref<ForNode>>, (With<BoardPiece>, With<NFNode>)>,
-    players: Query<(&QuestStatus,), With<Player>>,
-) {
-    for event in evr_mouse.read() {
-        if let Ok((for_player, bp_id, mut ap)) = nf_nodes.get_mut(event.entity()) {
-            get_assert!(for_player, players, |(quest_status,)| {
-                match event.event_kind() {
-                    MouseEventTtyKind::Moved => ap.set_timing(2.0),
-                    MouseEventTtyKind::Exit => {
-                        if get_assert!(bp_id, board_pieces)?
-                            .map(|node_id| quest_status.is_node_done(node_id))
-                            .unwrap_or(false)
-                        {
-                            ap.set_timing(1.0)
-                        } else {
-                            ap.set_timing(0.0);
-                        }
-                    },
-                    MouseEventTtyKind::Down(input_event::MouseButton::Left) => {
-                        log::debug!("Click event for NF node");
-                    },
-                    _ => {},
+            if let Some(next_timing) = next_timing {
+                if ap.timing() != next_timing {
+                    ap.set_timing(next_timing);
                 }
-                Some(())
-            });
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use charmi::{CharmieAnimation, CharmieAnimationFrame};
 use game_core::NDitCoreSet;
+use getset::CopyGetters;
 
 use crate::layout::CalculatedSizeTty;
 use crate::prelude::*;
@@ -22,10 +23,11 @@ impl Plugin for AnimationPlugin {
 }
 
 /// In the future, we might change this to a bundle of components instead?
-#[derive(Component, Debug)]
+#[derive(Component, Debug, CopyGetters)]
 pub struct AnimationPlayer {
     animation: Option<Handle<CharmieAnimation>>,
     last_update: Instant,
+    #[getset(get_copy = "pub")]
     timing: f32,
     speed: f32,
     play_state: AnimationPlayerState,

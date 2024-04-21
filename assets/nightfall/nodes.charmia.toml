@@ -10,6 +10,11 @@ fg="gggg"
 
 [[a.node_a.f]]
 timing=1.0
+text="(<>)"
+fg="cBBc"
+
+[[a.node_a.f]]
+timing=1.0
 text="[<>]"
 fg="wwww"
 bg="BBBB"
@@ -23,6 +28,11 @@ fg="wyyw"
 timing=1.0
 text="[&&]"
 fg="gggg"
+
+[[a.node_b.f]]
+timing=1.0
+text="(&&)"
+fg="cyyc"
 
 [[a.node_b.f]]
 timing=1.0
@@ -42,6 +52,11 @@ fg="gggg"
 
 [[a.node_c.f]]
 timing=1.0
+text="(=))"
+fg="cGGc"
+
+[[a.node_c.f]]
+timing=1.0
 text="[=)]"
 fg="bbbb"
 bg="GGGG"
@@ -54,8 +69,15 @@ fg="yyyy"
 [[a.node_warez.f]]
 timing=1.0
 text="$$$$"
+fg="yyyy"
+
+
+[[a.node_warez.f]]
+timing=2.0
+text="$$$$"
 fg="bbbb"
 bg="yyyy"
+
 
 [values.colors]
 g="grey"
@@ -64,3 +86,4 @@ w="white"
 b="black"
 B="blue"
 G="green"
+c="cyan"
