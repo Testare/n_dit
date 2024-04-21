@@ -29,7 +29,7 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, MainUiOp, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
+    self, MainUiOp, MonDisplay, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
     ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
@@ -371,7 +371,6 @@ fn demo_startup(
                         flex_shrink: 0.0,
                         ..Default::default()
                     }),
-                    TerminalRendering::new(vec!["Network Map".to_owned()]),
                 ))
                 .with_children(|title_bar| {
                     if res_use_demo_shader.0 > 0 {
@@ -387,6 +386,46 @@ fn demo_startup(
                             }),
                             DemoShader::default(),
                             TerminalRendering::default(),
+                        ));
+                    } else {
+                        title_bar.spawn((
+                            Name::new("Network map title"),
+                            ForPlayer(player),
+                            StyleTty(taffy::style::Style {
+                                size: Size {
+                                    width: length(12.0),
+                                    height: length(1.0),
+                                },
+                                padding: Rect {
+                                    bottom: length(1.0),
+                                    ..TaffyZero::ZERO
+                                },
+                                flex_direction: FlexDirection::Row,
+                                flex_grow: 1.0,
+                                flex_shrink: 0.0,
+                                ..Default::default()
+                            }),
+                            TerminalRendering::new(vec!["Network Map".to_owned()]),
+                        ));
+                        title_bar.spawn((
+                            Name::new("Mon Display"),
+                            MonDisplay::default(),
+                            ForPlayer(player),
+                            StyleTty(taffy::style::Style {
+                                size: Size {
+                                    width: length(10.0),
+                                    height: length(1.0),
+                                },
+                                padding: Rect {
+                                    bottom: length(1.0),
+                                    ..TaffyZero::ZERO
+                                },
+                                flex_direction: FlexDirection::Row,
+                                flex_grow: 1.0,
+                                flex_shrink: 0.0,
+                                ..Default::default()
+                            }),
+                            TerminalRendering::new(vec!["$Mon Display".to_owned()]),
                         ));
                     }
                 });

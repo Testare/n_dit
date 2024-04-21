@@ -1,4 +1,5 @@
 mod card_ui;
+mod hud;
 mod main_ui_op;
 mod shop_ui;
 
@@ -6,6 +7,7 @@ pub use card_ui::ShortName;
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
+pub use hud::*;
 pub use main_ui_op::MainUiOp;
 pub use shop_ui::{
     ItemDetailsUi, ShopListingItemUi, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
@@ -32,6 +34,7 @@ impl Plugin for MainUiPlugin {
             OpPlugin::<MainUiOp>::default(),
             card_ui::CardUiPlugin,
             shop_ui::ShopUiPlugin,
+            hud::HudPlugin::default(),
         ))
         .add_systems(
             PreUpdate,

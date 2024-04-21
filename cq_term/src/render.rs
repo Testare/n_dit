@@ -18,7 +18,7 @@ pub enum RenderTtySet {
     AdjustLayoutStyle,
     PreCalculateLayout,
     CalculateLayout,
-    PostCalculateLayout,
+    PostCalculateLayout, // TODO probably should rename "RenderElements"
     RenderLayouts,
     RenderToTerminal,
 }
