@@ -10,7 +10,7 @@ use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
 use game_core::NDitCoreSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-pub use sidebar::{ActionsPanel, InfoPanel};
+pub use sidebar::{ActionsPanel, ActionsPanelIgnoredAction, InfoPanel};
 
 use crate::animation::AnimationPlayer;
 use crate::layout::{CalculatedSizeTty, StyleTty};

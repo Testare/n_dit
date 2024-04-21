@@ -8,7 +8,7 @@ use game_core::quest::QuestStatus;
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::HoverPoint;
-use crate::board_ui::{BoardPieceUi, SelectedBoardPieceUi};
+use crate::board_ui::{ActionsPanelIgnoredAction, BoardPieceUi, SelectedBoardPieceUi};
 use crate::input_event::MouseEventListener;
 use crate::layout::VisibilityTty;
 use crate::prelude::*;
@@ -79,6 +79,7 @@ impl FromWorld for NfContextActions {
         let select_piece = world
             .spawn((
                 Name::new("Select Node CA"),
+                ActionsPanelIgnoredAction,
                 ContextAction::new("Select Node", |id, world| {
                     (|| {
                         // try

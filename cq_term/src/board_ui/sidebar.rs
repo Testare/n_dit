@@ -17,6 +17,9 @@ use crate::render::{RenderTtySet, TerminalRendering};
 #[derive(Debug)]
 pub struct SidebarPlugin;
 
+#[derive(Component, Debug)]
+pub struct ActionsPanelIgnoredAction;
+
 impl Plugin for SidebarPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
@@ -106,7 +109,7 @@ pub fn sys_update_context_action_panel(
     mut commands: Commands,
     mut q_actions_panel: Query<(Entity, &ForPlayer, &mut StyleTty), With<ActionsPanel>>,
     q_player: Query<(Entity, Ref<SelectedBoardPieceUi>), With<Player>>,
-    q_context_action: Query<&ContextAction>,
+    q_context_action: Query<&ContextAction, Without<ActionsPanelIgnoredAction>>,
     q_board_piece_ui: Query<Ref<ContextActions>, With<BoardPieceUi>>,
 ) {
     for (player_id, selected_board_piece_ui) in q_player.iter() {
