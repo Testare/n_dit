@@ -1,9 +1,11 @@
 use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
+use game_core::dialog::Dialog;
 use game_core::node::{ForNode, NodeId, NodeOp};
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Ncp, Player};
 use game_core::quest::QuestStatus;
+use game_core::shop::InShop;
 
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
@@ -84,6 +86,18 @@ impl FromWorld for NfContextActions {
                     (|| {
                         // try
                         let &ForPlayer(player_id) = world.get(id)?;
+                        // Do not allow selecting pieces while in dialog
+                        if let Some(dialog) = world.get::<Dialog>(player_id) {
+                            if dialog.line().is_some() {
+                                return None;
+                            }
+                        }
+
+                        // Do not allow selecting pieces while in shop
+                        if world.get::<InShop>(player_id).is_some() {
+                            return None;
+                        }
+
                         let mut selected_board_piece_ui: Mut<'_, SelectedBoardPieceUi> =
                             world.get_mut(player_id)?;
                         selected_board_piece_ui.as_deref_mut().set_if_neq(Some(id));
