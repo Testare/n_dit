@@ -26,25 +26,26 @@ pub mod key {
 
     use super::*;
 
-    pub const NODE_ID: Key<Entity> = typed_key!("node_id");
+    pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
+    pub const CARD: Key<Entity> = typed_key!("card");
     pub const CLOSING_NODE: Key<bool> = typed_key!("closing_node");
     pub const CURIO: Key<Entity> = typed_key!("curio");
-    pub const TAPPED: Key<bool> = typed_key!("tapped");
+    pub const DEACTIVATED_CURIO: Key<Entity> = typed_key!("deactivated_curio");
+    pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
+    pub const EFFECTS: Key<Metadata> = typed_key!("effects");
+    pub const FIRST_VICTORY: Key<bool> = typed_key!("first_victory");
+    pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
+    pub const NODE_ID: Key<Entity> = typed_key!("node_id");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const PICKUPS: Key<Vec<Pickup>> = typed_key!("pickups");
     pub const PICKUP_ID: Key<Entity> = typed_key!("pickup_id");
-    pub const DROPPED_SQUARE: Key<UVec2> = typed_key!("dropped_square");
     pub const REMAINING_MOVES: Key<u32> = typed_key!("remaining_moves");
-    pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
+    pub const RETURNED_CARDS: Key<Vec<Entity>> = typed_key!("returned_cards");
+    pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
+    pub const SKIPPED_ACTIVATION: Key<bool> = typed_key!("skipped_activate");
+    pub const TAPPED: Key<bool> = typed_key!("tapped");
     pub const TARGET_POINT: Key<UVec2> = typed_key!("target_pt");
     pub const UNLOADED_CARD: Key<Entity> = typed_key!("unloaded_card");
-    pub const CARD: Key<Entity> = typed_key!("card");
-    pub const EFFECTS: Key<Metadata> = typed_key!("effects");
-    pub const SELF_EFFECTS: Key<Metadata> = typed_key!("self_effects");
-    pub const ALL_TEAM_MEMBERS_READY: Key<bool> = typed_key!("all_team_members_ready");
-    pub const RETURNED_CARDS: Key<Vec<Entity>> = typed_key!("returned_cards");
-    pub const DEACTIVATED_CURIO: Key<Entity> = typed_key!("deactivated_curio");
-    pub const SKIPPED_ACTIVATION: Key<bool> = typed_key!("skipped_activate");
     pub const VICTORY_STATUS: Key<VictoryStatus> = typed_key!("victory_status");
 }
 

@@ -5,7 +5,7 @@ Disarray: Are you the newbie? I saw you beat the test run.
 -> Who are you?
 Disarray: Fellow S.M.A.R.T. agent on patrol. I was just executing some elite hacks in security level two. Where are you headed next?
 -> Just hacking through level one.
-Disarray: Cool. You'll definitely want to grab some better programs. Hae you checked out the level one warez node? I'll show you where it is. Later.
+Disarray: Cool. You'll definitely want to grab some better programs. Have you checked out the level one Warez node? I'll show you where it is. Later.
 -> Later
 <<reveal_node "warez:0">>
 ===

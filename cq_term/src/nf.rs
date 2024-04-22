@@ -1,8 +1,8 @@
 use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
 use game_core::dialog::Dialog;
-use game_core::node::{ForNode, NodeId, NodeOp};
-use game_core::op::CoreOps;
+use game_core::node::{self, ForNode, NodeId, NodeOp, VictoryStatus};
+use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player};
 use game_core::quest::QuestStatus;
 use game_core::shop::InShop;
@@ -30,7 +30,7 @@ impl Plugin for NfPlugin {
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
         app.init_resource::<NfContextActions>()
             .add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
-            .add_systems(Update, (sys_nf_node_ui_display,));
+            .add_systems(Update, (sys_nf_node_ui_display, sys_nf_victory_dialog));
     }
 }
 
@@ -131,6 +131,15 @@ impl NFShop {
 
 #[derive(Component, Debug)]
 struct NFNodeUi;
+
+#[derive(Component, Debug)]
+pub struct VictoryDialogue(pub String);
+
+impl VictoryDialogue {
+    pub fn new(dialog_id: &str) -> Self {
+        Self(dialog_id.to_string())
+    }
+}
 
 // Needs to happen after board_uis have been created and sprites added
 // Check new board_uis if they point to a node
@@ -260,6 +269,38 @@ fn sys_nf_node_ui_display(
                     ap.set_timing(next_timing);
                 }
             }
+        }
+    }
+}
+
+pub fn sys_nf_victory_dialog(
+    mut evr_node_op: EventReader<OpResult<NodeOp>>,
+    q_nf_node: Query<(AsDeref<ForNode>, &VictoryDialogue), With<NFNode>>,
+    mut q_player: Query<&mut DialogueRunner>,
+) {
+    for node_op_result in evr_node_op.read() {
+        if let OpResult {
+            op: NodeOp::QuitNode(node_sid),
+            source: player_id,
+            result: Ok(metadata),
+        } = node_op_result
+        {
+            (|| {
+                let victory_status = metadata.get_required(node::key::VICTORY_STATUS).ok()?;
+                if matches!(
+                    victory_status,
+                    VictoryStatus::Loss | VictoryStatus::Undecided
+                ) {
+                    return None;
+                }
+                let first_victory = metadata.get_required(node::key::FIRST_VICTORY).ok()?;
+                if first_victory {
+                    let (_, victory_dialog) = q_nf_node.iter().find(|i| i.0 == node_sid)?;
+                    let mut player_dr = q_player.get_mut(*player_id).ok()?;
+                    player_dr.start_node(victory_dialog.0.as_str());
+                }
+                Some(())
+            })();
         }
     }
 }

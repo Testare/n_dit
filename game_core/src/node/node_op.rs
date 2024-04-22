@@ -732,9 +732,14 @@ fn opsys_node_quit_battle(
             .get(team_id)
             .ok_or("Couldn't find team status".invalid())?;
 
+        let mut metadata = Metadata::new();
         match victory_status {
             VictoryStatus::Victory | VictoryStatus::PerfectVictory => {
-                quest_status.record_node_done(&node_sid);
+                let first_victory = !quest_status.is_node_done(&node_sid);
+                metadata.put(key::FIRST_VICTORY, first_victory).invalid()?;
+                if first_victory {
+                    quest_status.record_node_done(&node_sid);
+                }
             },
             _ => {},
         }
@@ -743,7 +748,6 @@ fn opsys_node_quit_battle(
             .iter()
             .any(|(ncp_id, &InNode(ncp_node_id))| ncp_id != player_id && ncp_node_id == node_id);
 
-        let mut metadata = Metadata::new();
         metadata.put(key::NODE_ID, node_id).invalid()?;
         metadata.put_nonempty(key::PICKUPS, &pickups).invalid()?;
         metadata

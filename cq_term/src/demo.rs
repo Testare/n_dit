@@ -32,7 +32,7 @@ use crate::main_ui::{
     self, MainUiOp, MonDisplay, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
     ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
-use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes};
+use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
 use crate::KeyMap;
@@ -294,6 +294,7 @@ fn demo_startup(
                 NFNode,
                 RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 SimplePieceInfo("Pharmaus\nPR Database\nSecurity Level: 1".to_string()),
+                VictoryDialogue::new("pharmhaus_0_pr_database"),
             ));
             board.spawn((
                 BoardPiece("Lucky Monkey".to_owned()),
@@ -304,6 +305,7 @@ fn demo_startup(
                 NFNode,
                 RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 SimplePieceInfo("Lucky Monkey Media\nTech Support\nSecurity Level: 1".to_string()),
+                VictoryDialogue::new("lucky_monkey_0_tech_support"),
             ));
         })
         .id();
