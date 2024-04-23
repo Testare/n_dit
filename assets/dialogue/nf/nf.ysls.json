@@ -1,0 +1,55 @@
+{ 
+    "Commands": [
+        {
+            "YarnName": "open_shop",
+            "DefinitionName": "open_shop",
+            "Language": "text",
+            "Signature": "open_shop ShopId",
+            "Parameters": [
+                {
+                    "Name": "ShopId",
+                    "Type": "string"
+                }
+            ]
+        },
+        {
+            "YarnName": "reveal_node",
+            "DefinitionName": "reveal_node",
+            "Language": "text",
+            "Signature": "reveal_node NodeId",
+            "Parameters": [
+                {
+                    "Name": "NodeId",
+                    "Type": "string"
+                }
+            ]
+        },
+        {
+            "YarnName": "enter_tutorial",
+            "DefinitionName": "enter_tutorial",
+            "Language": "text",
+            "Signature": "enter_tutorial",
+            "Parameters": []
+        },
+        {
+            "YarnName": "exit_tutorial",
+            "DefinitionName": "exit_tutorial",
+            "Language": "text",
+            "Signature": "exit_tutorial",
+            "Parameters": []
+        },
+        {
+            "YarnName": "tutorial_indicate",
+            "DefinitionName": "tutorial_indicate",
+            "Language": "text",
+            "Signature": "tutorial_indicate indicator",
+            "Parameters": [
+                {
+                    "Name": "indicator",
+                    "Type": "string"
+                }
+            ]
+        }
+    ],
+    "Functions": []
+}

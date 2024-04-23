@@ -29,7 +29,7 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
 -> I already know this stuff.
     <<exit_tutorial>>
 -> Tell me more.
-    <<indicate "lemons">>
+    <<tutorial_indicate "something">>
     Superphreak: First you have to upload your programs. Start by clicking on this upload spot. `indicates lower access spot`
     -> [clicked_indication /] #hidden
     Superphreak: Now click on this program to upload it. `Arrow indicates hack program`
@@ -69,6 +69,7 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
     `linebreaks`
     When you get back to the netmap, you'll be on your own. Click on a node and see what you can find out there. Good luck!
     -> Repeat
-      <<enter_tutorial>>
+        <<enter_tutorial>>
     -> Done
+        <<exit_tutorial>>
 ===
