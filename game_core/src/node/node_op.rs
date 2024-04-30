@@ -709,7 +709,7 @@ fn opsys_node_enter_battle(
 fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
-    q_node: Query<(&Node, &TeamStatus)>,
+    q_node: Query<(AsDerefCopied<Parent>, &Node, &TeamStatus)>,
     mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards, &mut QuestStatus), With<Player>>,
     q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
     q_claimed_pickup: Query<(&Pickup, &Claimed)>,
@@ -719,7 +719,8 @@ fn opsys_node_quit_battle(
         // we'll need to find the node that was actually quit.
         let (&InNode(node_id), OnTeam(team_id), mut played_cards, mut quest_status) =
             q_player.get_mut(player_id).invalid()?;
-        let (node, team_status) = q_node.get(node_id).invalid()?;
+        // ASSUMES THAT THE NODE HAS NO PARENTS OTHER THAN THE SCENE
+        let (node_scene_id, node, team_status) = q_node.get(node_id).invalid()?;
         if node.0 != node_sid {
             Err("The player is not in that node".invalid())?;
         }
@@ -761,7 +762,7 @@ fn opsys_node_quit_battle(
             .critical()?;
 
         if !node_still_in_use {
-            commands.entity(node_id).despawn_recursive();
+            commands.entity(node_scene_id).despawn_recursive();
         }
 
         commands.entity(player_id).remove::<(InNode, OnTeam)>();

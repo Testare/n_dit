@@ -322,13 +322,16 @@ impl EntityGrid {
         hbytes.copy_from_slice(hbits.to_bitvec().as_raw_slice());
         let width = <u16>::from_be_bytes(wbytes) as usize;
         let height = <u16>::from_be_bytes(hbytes) as usize;
-        let mut grid: Vec<Vec<Option<Square>>> = vec![vec![None ; height] ; width];
+        let mut grid: Vec<Vec<Option<Square>>> = vec![vec![None; height]; width];
         let n_limit = width * height;
 
-        for idx in squarebits.iter_ones().take_while(|n|*n < n_limit) {
+        for idx in squarebits.iter_ones().take_while(|n| *n < n_limit) {
             let x = idx % width;
             let y = idx / width;
-            grid[x][y] = Some(Square::new(UVec2 { x: x as u32, y: y as u32}));
+            grid[x][y] = Some(Square::new(UVec2 {
+                x: x as u32,
+                y: y as u32,
+            }));
         }
 
         EntityGrid {

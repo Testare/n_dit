@@ -1,5 +1,5 @@
 use game_core::node::{InNode, Node, OnTeam, TeamStatus, VictoryStatus};
-use game_core::player::{ForPlayer, Player};
+use game_core::player::{ForPlayer, Ncp, Player};
 use game_core::NDitCoreSet;
 
 use super::{NodeUi, NodeUiQItem};
@@ -109,7 +109,10 @@ impl NodeUi for MessageBarUi {
 
 fn sys_tmp_display_victory_or_less_message(
     nodes: Query<(Entity, AsDeref<TeamStatus>), (With<Node>, Changed<TeamStatus>)>,
-    players: Query<(Entity, AsDerefCopied<InNode>, AsDerefCopied<OnTeam>), With<Player>>,
+    players: Query<
+        (Entity, AsDerefCopied<InNode>, AsDerefCopied<OnTeam>),
+        (With<Player>, With<Ncp>),
+    >,
     mut message_bar_ui: IndexedQuery<ForPlayer, &mut MessageBarUi>,
 ) {
     for (node_id, team_status) in nodes.iter() {

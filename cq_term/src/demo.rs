@@ -5,7 +5,6 @@ use bevy::ecs::system::SystemState;
 use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
-use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
 use charmi::CharacterMapImage;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
@@ -13,7 +12,9 @@ use game_core::card::{CardDefinition, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
-use game_core::node::{ForNode, Node, NodeId, NodeOp, PlayedCards};
+use game_core::node::{
+    ForNode, InNode, Node, NodeId, NodeOp, OnTeam, PlayedCards, Team, TeamStatus,
+};
 use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player, PlayerBundle};
 use game_core::prelude::*;
@@ -151,17 +152,20 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 }
 
 fn debug_key(
+    mut commands: Commands,
     mut evr_mouse: EventReader<MouseEventTty>,
     mut ev_keys: EventReader<KeyEvent>,
-    mut quest_status: Query<&mut QuestStatus>,
-    mut q_player_dr: Query<(&mut DialogueRunner, &Dialog), With<Player>>,
+    mut q_quest_status: Query<&mut QuestStatus>,
+    q_player_ncp: Query<(Entity, Option<&OnTeam>, &InNode), (With<Player>, With<Ncp>)>,
+    q_node: Query<(Entity, &TeamStatus), With<Node>>,
+    q_team: Query<Entity, With<Team>>,
 ) {
     for layout_event in evr_mouse.read() {
         log::trace!("MOUSE EVENT: {:?}", layout_event);
     }
     for KeyEvent { code, .. } in ev_keys.read() {
         if *code == KeyCode::Char('/') {
-            for mut quest_status in quest_status.iter_mut() {
+            for mut quest_status in q_quest_status.iter_mut() {
                 if let Some(nid) = [
                     NodeId::new("node:demo", 0),
                     NodeId::new("node:tutorial", 0),
@@ -174,29 +178,19 @@ fn debug_key(
                     quest_status.record_node_done(nid);
                 }
             }
-        } else if *code == KeyCode::Char('7') {
-            for (mut player_dr, _) in q_player_dr.iter_mut() {
-                player_dr.start_node("warez_0");
-            }
-        } else if *code == KeyCode::Char('8') {
-            for (mut player_dr, dialog) in q_player_dr.iter_mut() {
-                if dialog.options().is_empty() {
-                    player_dr.continue_in_next_update();
-                } else {
-                    player_dr
-                        .select_option(OptionId(0))
-                        .expect("I shouldn't use this long term");
-                }
-            }
-        } else if *code == KeyCode::Char('9') {
-            for (mut player_dr, _) in q_player_dr.iter_mut() {
-                player_dr
-                    .select_option(OptionId(1))
-                    .expect("I shouldn't use this long term");
-            }
         } else if *code == KeyCode::Char('p') {
             log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
             std::process::Command::new("aseprite").spawn().unwrap();
+        } else if *code == KeyCode::Char('i') {
+            for (player_id, on_team, in_node) in q_player_ncp.iter() {
+                log::debug!("TEAM for [{player_id:?}]: {on_team:?} / Node {in_node:?}");
+            }
+            for (node_id, team_status) in q_node.iter() {
+                log::debug!("TEAM STATUS for [{node_id:?}]: {team_status:?}");
+            }
+            for team_id in q_team.iter() {
+                commands.entity(team_id).log_components();
+            }
         }
     }
 }
