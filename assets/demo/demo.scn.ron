@@ -29,7 +29,7 @@
           1010000000000,
         ]),
         "game_core::entity_grid::EntityGrid": (
-          shape: "EwALACCAAz7447/vP/7x+AABPh7/+O/7jz/4gAMIAA==",
+          shape: "ABMACwccAePAfHwf38fKffHH3ynx/fwfHwHjwBxwAA==",
           entities: {
             410000000000: [ // Card Pickup
               (4, 3),

@@ -25,7 +25,7 @@
           10000000006,
         ]),
         "game_core::entity_grid::EntityGrid": (
-          shape: "CgAHAP//////////fw==",
+          shape: "AAoAB////////////A==",
           entities: {
             10000000004: [ // AP
               (2, 2),

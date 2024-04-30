@@ -7,6 +7,7 @@ use std::vec::IntoIter;
 use bevy::ecs::entity::{EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use bevy::reflect::Reflect;
+use bitvec::order::Msb0;
 use bitvec::slice::BitSlice;
 use bitvec::vec::BitVec;
 use serde::{Deserialize, Serialize};
@@ -307,41 +308,34 @@ impl EntityGrid {
 
     pub fn from_shape_string(shape: &str) -> Result<Self, base64::DecodeError> {
         let bits: Vec<u8> = base64::decode(shape)?;
-        let bitvec = BitVec::<u8>::from_vec(bits);
+        let bitvec = BitVec::<u8, Msb0>::from_vec(bits);
         Ok(Self::from_shape_bitslice(bitvec.as_bitslice()))
     }
 
     /// Creates a base grid_map from a shape string
-    pub fn from_shape_bitslice(bits: &BitSlice<u8>) -> Self {
+    pub fn from_shape_bitslice(bits: &BitSlice<u8, Msb0>) -> Self {
         let (hw, squarebits) = bits.split_at(32);
         let (wbits, hbits) = hw.split_at(16);
         let mut wbytes: [u8; 2] = Default::default();
         let mut hbytes: [u8; 2] = Default::default();
         wbytes.copy_from_slice(wbits.to_bitvec().as_raw_slice());
         hbytes.copy_from_slice(hbits.to_bitvec().as_raw_slice());
-        let width = <u16>::from_le_bytes(wbytes) as u32;
-        let height = <u16>::from_le_bytes(hbytes) as u32;
+        let width = <u16>::from_be_bytes(wbytes) as usize;
+        let height = <u16>::from_be_bytes(hbytes) as usize;
+        let mut grid: Vec<Vec<Option<Square>>> = vec![vec![None ; height] ; width];
+        let n_limit = width * height;
 
-        let grid: Vec<Vec<Option<Square>>> = squarebits
-            .chunks(height as usize)
-            .enumerate()
-            .map(|(x, col)| {
-                col.iter()
-                    .enumerate()
-                    .map(|(y, bit)| bit.then(|| Square::new((x as u32, y as u32).into())))
-                    .chain(std::iter::repeat(None))
-                    .take(height as usize)
-                    .collect()
-            })
-            .chain(std::iter::repeat_with(|| vec![None; height as usize]))
-            .take(width as usize)
-            .collect();
+        for idx in squarebits.iter_ones().take_while(|n|*n < n_limit) {
+            let x = idx % width;
+            let y = idx / width;
+            grid[x][y] = Some(Square::new(UVec2 { x: x as u32, y: y as u32}));
+        }
 
         EntityGrid {
-            height,
+            height: height as u32,
             entries: HashMap::new(),
             grid,
-            width,
+            width: width as u32,
         }
     }
 
