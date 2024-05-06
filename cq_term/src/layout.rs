@@ -42,6 +42,10 @@ pub struct LayoutRoot;
 #[reflect(Component)]
 pub struct UiFocusOnClick;
 
+///Event indicating that the layout was recalculated
+#[derive(Debug, Event)]
+pub struct LayoutUpdatedEvent;
+
 /// Indicates the UI element that is being focused on for
 /// controls. Added on a player entity.
 /// If it is empty, default controls can be defined.
@@ -149,6 +153,7 @@ impl Plugin for TaffyTuiLayoutPlugin {
             .register_type::<UiFocusCycleOrder>()
             .register_type::<UiFocusOnClick>()
             .register_type::<VisibilityTty>()
+            .add_event::<LayoutUpdatedEvent>()
             .add_systems(Last, remove_ui_focus_if_not_displayed)
             .add_systems(
                 RENDER_TTY_SCHEDULE,
@@ -221,7 +226,7 @@ fn taffy_apply_style_updates(
     for (node_id, style, vis) in changed_styles.iter() {
         (**taffy)
             .set_style(**node_id, style.taffy_style(vis))
-            .unwrap()
+            .unwrap();
     }
 }
 
@@ -239,6 +244,7 @@ fn taffy_apply_hierarchy_updates(
 
 fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
+    mut evw_layout_updated: EventWriter<LayoutUpdatedEvent>,
     window: Res<TerminalWindow>,
     roots: Query<(Entity, &NodeTty, DebugName), Without<Parent>>,
     children: Query<&Children>,
@@ -275,6 +281,7 @@ fn calculate_layouts(
                 .unwrap();
         }
         if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
+            evw_layout_updated.send(LayoutUpdatedEvent);
             taffy.compute_layout(**root, space).unwrap();
             let mut render_order: u32 = 0;
             log::debug!("Recalculated Layouts [{root_debug_name:?}]");

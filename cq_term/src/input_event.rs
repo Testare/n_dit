@@ -1,10 +1,13 @@
+use std::collections::VecDeque;
+
+use bevy::ecs::entity::EntityHashSet;
 use bevy::prelude::HierarchyQueryExt;
 pub use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
 use game_core::prelude::*;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, LayoutUpdatedEvent};
 use crate::render::RenderOrder;
 use crate::TerminalWindow;
 
@@ -88,7 +91,7 @@ pub enum MouseEventTtyKind {
         dragged_entity: Option<Entity>,
     },
     Exit,
-    Moved,
+    Moved, // NOTE: Also triggers if mouse doesn't move but layout does
     ScrollUp,
     ScrollDown,
     Todo, // Placeholder
@@ -101,11 +104,12 @@ pub enum MouseButton {
     Middle,
 }
 
-#[derive(Resource, Debug, Default, Deref)]
+#[derive(Resource, Debug, Default, Deref, PartialEq)]
 pub struct MouseLastPositionTty(UVec2);
 
 pub fn sys_mouse_tty(
     mut evr_crossterm_mouse: EventReader<MouseEvent>,
+    mut evr_layout_update: EventReader<LayoutUpdatedEvent>,
     res_terminal_window: Res<TerminalWindow>,
     children: Query<&Children>,
     parent_q: Query<&Parent>,
@@ -122,7 +126,15 @@ pub fn sys_mouse_tty(
     mut last_click: Local<Option<(std::time::Instant, MouseEvent)>>,
     mut last_position: ResMut<MouseLastPositionTty>,
     mut drag_data: Local<Option<MouseEventTtyKind>>,
+    mut entered_entities: Local<EntityHashSet>,
 ) {
+    let render_target = match res_terminal_window.render_target {
+        Some(render_target) => render_target,
+        None => return,
+    };
+    let mut mouse_event_queue: VecDeque<(MouseEventTtyKind, UVec2, KeyModifiers, bool)> =
+        VecDeque::default();
+
     for event @ MouseEvent(crossterm::event::MouseEvent {
         kind,
         column,
@@ -130,10 +142,11 @@ pub fn sys_mouse_tty(
         modifiers,
     }) in evr_crossterm_mouse.read()
     {
-        let (event_x, event_y) = (*column as u32, *row as u32);
+        use crossterm::event::MouseEventKind as MEK;
+
         let absolute_pos = UVec2 {
-            x: event_x,
-            y: event_y,
+            x: *column as u32,
+            y: *row as u32,
         };
         let double_click = last_click
             .map(|(last_event_time, last_event)| {
@@ -144,10 +157,13 @@ pub fn sys_mouse_tty(
             })
             .unwrap_or_default();
 
+        if matches!(kind, MEK::Down(crossterm::event::MouseButton::Left)) {
+            last_click.replace((std::time::Instant::now(), *event));
+        };
+
         let event_kind = if double_click {
             MouseEventTtyKind::DoubleClick
         } else {
-            use crossterm::event::MouseEventKind as MEK;
             match kind {
                 MEK::Moved => MouseEventTtyKind::Moved,
                 MEK::Down(mb) => MouseEventTtyKind::Down(mb.into()),
@@ -157,93 +173,104 @@ pub fn sys_mouse_tty(
                 MEK::Drag(_mb) => drag_data.unwrap_or(MouseEventTtyKind::Moved), // TODO drag events
             }
         };
-        if let Some(render_target) = res_terminal_window.render_target {
-            let layout_elements = children
-                .iter_descendants(render_target)
-                .filter_map(|e| layout_elements.get(e).ok());
 
-            let mut highest_order: u32 = 0;
-            let mut top_entity: Option<Entity> = None;
-            let event_entities: Vec<_> = layout_elements
-                .filter_map(|(entity, size, translation, render_order)| {
-                    if translation.x <= event_x
-                        && event_x < (translation.x + size.width32())
-                        && translation.y <= event_y
-                        && event_y < (translation.y + size.height32())
-                    {
-                        if render_order > highest_order {
-                            highest_order = render_order;
-                            top_entity = Some(entity);
-                        }
-                        let relative_pos = UVec2 {
-                            x: event_x - translation.x,
-                            y: event_y - translation.y,
-                        };
-                        Some((entity, relative_pos))
-                    } else if translation.x <= last_position.x
-                        && last_position.x < (translation.x + size.width32())
-                        && translation.y <= last_position.y
-                        && last_position.y < (translation.y + size.height32())
-                    {
-                        evw_mouse_tty.send(MouseEventTty {
-                            entity,
-                            absolute_pos,
-                            relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
-                            modifiers: *modifiers,
-                            event_kind: MouseEventTtyKind::Exit,
-                            double_click,
-                            top_entity: None, // This one is a little more dubious. This still might be helpful information
-                            is_top_entity_or_ancestor: false,
-                        });
-                        None
-                    } else {
-                        None
+        mouse_event_queue.push_back((event_kind, absolute_pos, *modifiers, double_click));
+    }
+
+    if !evr_layout_update.is_empty() && mouse_event_queue.is_empty() {
+        // Layout updated, but with no mouse event we must manually check new enter/exits
+        mouse_event_queue.push_back((
+            MouseEventTtyKind::Moved,
+            **last_position,
+            KeyModifiers::NONE,
+            false,
+        ));
+        evr_layout_update.clear();
+    }
+
+    // Run through events, mouse or layout generated
+    for (
+        event_kind,
+        absolute_pos @ UVec2 {
+            x: event_x,
+            y: event_y,
+        },
+        modifiers,
+        double_click,
+    ) in mouse_event_queue.into_iter()
+    {
+        let layout_elements = children
+            .iter_descendants(render_target)
+            .filter_map(|e| layout_elements.get(e).ok());
+
+        let mut highest_order: u32 = 0;
+        let mut top_entity: Option<Entity> = None;
+        let event_entities: Vec<_> = layout_elements
+            .filter_map(|(entity, size, translation, render_order)| {
+                if translation.x <= event_x
+                    && event_x < (translation.x + size.width32())
+                    && translation.y <= event_y
+                    && event_y < (translation.y + size.height32())
+                {
+                    entered_entities.insert(entity);
+                    if render_order > highest_order {
+                        highest_order = render_order;
+                        top_entity = Some(entity);
                     }
-                })
-                .collect();
-            let ancestors: Vec<Entity> = top_entity
-                .map(|top_entity| parent_q.iter_ancestors(top_entity).collect())
-                .unwrap_or_default();
-            // TODO store top_entity and ancestors in some sort of resource?
-            for (entity, relative_pos) in event_entities {
-                evw_mouse_tty.send(MouseEventTty {
-                    entity,
-                    relative_pos,
-                    absolute_pos,
-                    modifiers: *modifiers,
-                    event_kind,
-                    double_click,
-                    top_entity,
-                    is_top_entity_or_ancestor: top_entity == Some(entity)
-                        || ancestors.contains(&entity),
-                });
-            }
-            match event_kind {
-                MouseEventTtyKind::Down(button) => {
-                    *drag_data = Some(MouseEventTtyKind::Drag {
-                        from: absolute_pos,
-                        button,
-                        dragged_entity: top_entity,
+                    let relative_pos = UVec2 {
+                        x: event_x - translation.x,
+                        y: event_y - translation.y,
+                    };
+                    Some((entity, relative_pos))
+                } else if entered_entities.contains(&entity) {
+                    entered_entities.remove(&entity);
+                    evw_mouse_tty.send(MouseEventTty {
+                        entity,
+                        absolute_pos,
+                        relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
+                        modifiers,
+                        event_kind: MouseEventTtyKind::Exit,
+                        double_click,
+                        top_entity: None, // This one is a little more dubious. This still might be helpful information
+                        is_top_entity_or_ancestor: false,
                     });
-                },
-                MouseEventTtyKind::Drag { .. } => {},
-                _ => {
-                    *drag_data = None;
-                },
-            }
+                    None
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let ancestors: Vec<Entity> = top_entity
+            .map(|top_entity| parent_q.iter_ancestors(top_entity).collect())
+            .unwrap_or_default();
+        // TODO store top_entity and ancestors in some sort of resource?
+        for (entity, relative_pos) in event_entities {
+            evw_mouse_tty.send(MouseEventTty {
+                entity,
+                relative_pos,
+                absolute_pos,
+                modifiers,
+                event_kind,
+                double_click,
+                top_entity,
+                is_top_entity_or_ancestor: top_entity == Some(entity)
+                    || ancestors.contains(&entity),
+            });
         }
 
-        match *kind {
-            MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
-                last_click.replace((std::time::Instant::now(), *event));
+        last_position.set_if_neq(MouseLastPositionTty(absolute_pos));
+        match event_kind {
+            MouseEventTtyKind::Down(button) => {
+                *drag_data = Some(MouseEventTtyKind::Drag {
+                    from: absolute_pos,
+                    button,
+                    dragged_entity: top_entity,
+                });
             },
-            MouseEventKind::Moved | MouseEventKind::Drag(_) => {
-                last_position.0 = UVec2 {
-                    x: event_x,
-                    y: event_y,
-                };
+            MouseEventTtyKind::Drag { .. } => {},
+            _ => {
+                *drag_data = None;
             },
-            _ => {},
         }
     }
 }
