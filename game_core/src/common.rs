@@ -26,20 +26,21 @@ pub struct SetId {
 #[derive(Debug)]
 pub enum SetIdError {
     NoColon,
-    NumTooHigh,
+    NumTooHigh(u32),
     NumNotANumber(<u32 as FromStr>::Err),
 }
 
 impl FromStr for SetId {
     type Err = SetIdError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut split = s.split(':');
-        let set = split
-            .next()
-            .expect("split should always return at least one item")
-            .to_string();
-        let num_unparsed = split.next().ok_or(SetIdError::NoColon)?;
+        let split_idx = s.rfind(':').ok_or(SetIdError::NoColon)?;
+        let set = s[..split_idx].to_string();
+        let num_unparsed = &s[(split_idx + 1)..];
+        let set = set.to_string();
         let num = num_unparsed.parse().map_err(SetIdError::NumNotANumber)?;
+        if num >= 32 {
+            return Err(SetIdError::NumTooHigh(num));
+        }
         Ok(Self { set, num })
     }
 }

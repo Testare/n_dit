@@ -300,6 +300,12 @@ impl NodeId {
     }
 }
 
+impl From<SetId> for NodeId {
+    fn from(value: SetId) -> Self {
+        NodeId::new(value.set(), value.num())
+    }
+}
+
 #[derive(Component, Debug, Deserialize, Default, Reflect, Serialize)]
 pub enum NodeLoadStatus {
     #[default]

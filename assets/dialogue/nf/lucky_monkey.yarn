@@ -7,5 +7,5 @@ Disarray: Fellow S.M.A.R.T. agent on patrol. I was just executing some elite hac
 -> Just hacking through level one.
 Disarray: Cool. You'll definitely want to grab some better programs. Have you checked out the level one Warez node? I'll show you where it is. Later.
 -> Later
-<<reveal_node "warez:0">>
+<<reveal_node "node:area1:0">>
 ===

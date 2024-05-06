@@ -1,4 +1,5 @@
 use bevy_yarnspinner::prelude::DialogueRunner;
+use bevy_yarnspinner::events::ExecuteCommandEvent;
 use game_core::board::BoardPiece;
 use game_core::dialog::Dialog;
 use game_core::node::{self, ForNode, NodeId, NodeOp, VictoryStatus};
@@ -30,7 +31,7 @@ impl Plugin for NfPlugin {
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
         app.init_resource::<NfContextActions>()
             .add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
-            .add_systems(Update, (sys_nf_node_ui_display, sys_nf_victory_dialog));
+            .add_systems(Update, (sys_nf_node_ui_display, sys_nf_victory_dialog, sys_yarn_commands_nf));
     }
 }
 
@@ -302,5 +303,34 @@ pub fn sys_nf_victory_dialog(
                 Some(())
             })();
         }
+    }
+}
+
+fn sys_yarn_commands_nf(
+    mut evr_yarn_commands: EventReader<ExecuteCommandEvent>,
+    mut q_player: Query<AsDerefMut<SelectedBoardPieceUi>, With<Player>>,
+    q_nf_node: Query<(AsDeref<ForNode>, Entity), Or<(With<NFNode>, With<NFShop>)>>,
+    q_board_piece: Query<(AsDerefCopied<BoardPieceUi>, Entity)>,
+) {
+    for ExecuteCommandEvent { command, source } in evr_yarn_commands.read() {
+
+        if command.name.as_str() != "reveal_node" {
+            continue;
+        }
+        let result: Result<(), String> = (||{ // try
+            let node_sid_str = command.parameters.first().ok_or("Missing node parameter".to_string())?;
+            let node_sid: SetId = node_sid_str.to_string().parse().map_err(|e|format!("Error parsing {node_sid_str:?}: {e:?}"))?;
+            let node_sid: NodeId = NodeId::from(node_sid);
+            let (_, node_bp_id) = q_nf_node.iter().find(|i| i.0 == &node_sid).ok_or_else(||format!("Cannot find piece that matches {node_sid:?}"))?;
+            let (_, node_bpui_id) = q_board_piece.iter().find(|i| i.0 == node_bp_id).ok_or_else(||format!("Cannot find piece UI corresponding to piece {node_bp_id:?}"))?;
+            let mut player_selected_bp = q_player.get_mut(*source).map_err(|_|format!("Unable to find UI for player {source:?}"))?;
+            *player_selected_bp = Some(node_bpui_id);
+            Ok(())
+        })();
+
+        if let Err(msg) = result {
+            log::error!("Error with yarn reveal_node command: {msg}");
+        }
+
     }
 }

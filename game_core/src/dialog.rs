@@ -115,10 +115,7 @@ fn sys_yarn_commands(
                     log::error!("open_shop requires a parameter")
                 }
             },
-            "jump" => {},
-            _ => {
-                log::error!("Unrecognized yarn command")
-            },
+            _ => {},
         }
     }
 }
