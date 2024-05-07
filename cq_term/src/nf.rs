@@ -1,5 +1,5 @@
-use bevy_yarnspinner::prelude::DialogueRunner;
 use bevy_yarnspinner::events::ExecuteCommandEvent;
+use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
 use game_core::dialog::Dialog;
 use game_core::node::{self, ForNode, NodeId, NodeOp, VictoryStatus};
@@ -31,7 +31,14 @@ impl Plugin for NfPlugin {
         // Needs to be after default sprites added, and an apply_deferred, but before rendering occurs
         app.init_resource::<NfContextActions>()
             .add_systems(PostUpdate, sys_apply_ui_to_node_nodes)
-            .add_systems(Update, (sys_nf_node_ui_display, sys_nf_victory_dialog, sys_yarn_commands_nf));
+            .add_systems(
+                Update,
+                (
+                    sys_nf_node_ui_display,
+                    sys_nf_victory_dialog,
+                    sys_yarn_commands_nf,
+                ),
+            );
     }
 }
 
@@ -121,7 +128,7 @@ pub struct RequiredNodes(pub Vec<NodeId>);
 #[derive(Component, Debug)]
 pub struct NFNode;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Deref)]
 pub struct NFShop(pub String);
 
 impl NFShop {
@@ -309,21 +316,51 @@ pub fn sys_nf_victory_dialog(
 fn sys_yarn_commands_nf(
     mut evr_yarn_commands: EventReader<ExecuteCommandEvent>,
     mut q_player: Query<AsDerefMut<SelectedBoardPieceUi>, With<Player>>,
-    q_nf_node: Query<(AsDeref<ForNode>, Entity), Or<(With<NFNode>, With<NFShop>)>>,
+    q_nf_node: Query<(AsDeref<ForNode>, Entity), With<NFNode>>,
+    q_nf_shop: Query<(AsDeref<NFShop>, Entity), With<NFShop>>,
     q_board_piece: Query<(AsDerefCopied<BoardPieceUi>, Entity)>,
 ) {
     for ExecuteCommandEvent { command, source } in evr_yarn_commands.read() {
-
         if command.name.as_str() != "reveal_node" {
             continue;
         }
-        let result: Result<(), String> = (||{ // try
-            let node_sid_str = command.parameters.first().ok_or("Missing node parameter".to_string())?;
-            let node_sid: SetId = node_sid_str.to_string().parse().map_err(|e|format!("Error parsing {node_sid_str:?}: {e:?}"))?;
-            let node_sid: NodeId = NodeId::from(node_sid);
-            let (_, node_bp_id) = q_nf_node.iter().find(|i| i.0 == &node_sid).ok_or_else(||format!("Cannot find piece that matches {node_sid:?}"))?;
-            let (_, node_bpui_id) = q_board_piece.iter().find(|i| i.0 == node_bp_id).ok_or_else(||format!("Cannot find piece UI corresponding to piece {node_bp_id:?}"))?;
-            let mut player_selected_bp = q_player.get_mut(*source).map_err(|_|format!("Unable to find UI for player {source:?}"))?;
+        let result: Result<(), String> = (|| {
+            // try
+            let sid_str = command
+                .parameters
+                .first()
+                .ok_or("Missing node parameter".to_string())?
+                .to_string();
+
+            let node_bp_id = if sid_str.starts_with("node:") {
+                let node_sid: SetId = sid_str
+                    .parse()
+                    .map_err(|e| format!("Error parsing {sid_str:?}: {e:?}"))?;
+                let node_sid: NodeId = NodeId::from(node_sid);
+                let (_, node_bp_id) = q_nf_node
+                    .iter()
+                    .find(|i| i.0 == &node_sid)
+                    .ok_or_else(|| format!("Cannot find node piece that matches {node_sid:?}"))?;
+                node_bp_id
+            } else if sid_str.starts_with("warez:") {
+                let (_, node_bp_id) = q_nf_shop
+                    .iter()
+                    .find(|i| i.0 == &sid_str)
+                    .ok_or_else(|| format!("Cannot find shop piece that matches {sid_str:?}"))?;
+                node_bp_id
+            } else {
+                return Err(format!("Don't know what type of piece {sid_str} is"));
+            };
+
+            let (_, node_bpui_id) = q_board_piece
+                .iter()
+                .find(|i| i.0 == node_bp_id)
+                .ok_or_else(|| {
+                    format!("Cannot find piece UI corresponding to piece {node_bp_id:?}")
+                })?;
+            let mut player_selected_bp = q_player
+                .get_mut(*source)
+                .map_err(|_| format!("Unable to find UI for player {source:?}"))?;
             *player_selected_bp = Some(node_bpui_id);
             Ok(())
         })();
@@ -331,6 +368,5 @@ fn sys_yarn_commands_nf(
         if let Err(msg) = result {
             log::error!("Error with yarn reveal_node command: {msg}");
         }
-
     }
 }
