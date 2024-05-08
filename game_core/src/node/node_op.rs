@@ -12,6 +12,7 @@ use self::node_op_undo::NodeUndoStack;
 use super::{Claimed, EnteringNode, NodeId, NodeScene};
 use crate::card::{
     Action, ActionEffect, Actions, CardQuery, Deck, Description, MaximumSize, MovementSpeed,
+    NO_OP_ACTION_ID,
 };
 use crate::configuration::PlayerConfiguration;
 use crate::node::{
@@ -108,12 +109,13 @@ impl Op for NodeOp {
 fn opsys_node_movement(
     In((player, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
-    no_op_action: Res<NoOpAction>,
+    mut res_core_ops: ResMut<CoreOps>,
+    res_no_op_action: Res<NoOpAction>,
     mut nodes: Query<
         (
             &mut EntityGrid,
             AsDerefCopied<CurrentTurn>,
-            AsDerefMut<ActiveCurio>,
+            AsDerefCopied<ActiveCurio>,
         ),
         With<Node>,
     >,
@@ -125,7 +127,7 @@ fn opsys_node_movement(
     if let NodeOp::MoveActiveCurio { dir } = node_op {
         let mut metadata = Metadata::default();
         let (player_team_id, node_id) = players.get(player).critical()?;
-        let (mut grid, current_turn, mut active_curio) = nodes.get_mut(node_id).critical()?;
+        let (mut grid, current_turn, active_curio) = nodes.get_mut(node_id).critical()?;
 
         if player_team_id != current_turn {
             Err("Not this player's turn".invalid())?;
@@ -189,15 +191,18 @@ fn opsys_node_movement(
                 .map(|curio_actions| {
                     !curio_actions
                         .iter()
-                        .any(|action| action.id() != no_op_action.id())
+                        .any(|action| action.id() != res_no_op_action.id())
                 })
                 .unwrap_or(true)
         {
-            // TODO should either just emit PerformCurioAction on the no_op action
-            // Or should do check of PlayerConfiguration to make sure turn ends
-            metadata.put(key::TAPPED, true).critical()?;
-            **curio_q.tapped = true;
-            *active_curio = None;
+            res_core_ops.request(
+                player,
+                NodeOp::PerformCurioAction {
+                    action_id: NO_OP_ACTION_ID,
+                    curio: None,
+                    target: UVec2::default(),
+                },
+            );
         }
         Ok(metadata)
     } else {
