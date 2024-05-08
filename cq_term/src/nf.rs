@@ -74,6 +74,12 @@ impl FromWorld for NfContextActions {
                 ContextAction::new("Enter Shop", |id, world| {
                     (|| {
                         let &ForPlayer(player_id) = world.get(id)?;
+
+                        // Do not allow enter shop when already in shop
+                        if world.get::<InShop>(player_id).is_some() {
+                            return None;
+                        }
+
                         let &BoardPieceUi(bp_id) = world.get(id)?;
                         let nf_shop: &NFShop = world.get(bp_id)?;
                         let dialog_id = nf_shop.dialog_id();
