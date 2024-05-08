@@ -31,6 +31,7 @@ features = [
     "bevy_audio",
     "bevy_scene",
     "file_watcher",
+    "mp3",
     "multi-threaded",
     "dynamic_linking"
 ]

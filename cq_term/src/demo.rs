@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
+use bevy::audio::Volume;
 use bevy::ecs::system::SystemState;
 use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
@@ -222,6 +223,19 @@ fn demo_startup(
     commands.spawn(asset_server.load::<()>("nightfall/lvl3.cards.json"));
     commands.spawn(asset_server.load::<()>("nightfall/lvl4.cards.json"));
     commands.spawn(asset_server.load::<()>("nightfall/enemies.cards.json"));
+
+    // This is to fix bug where game "crashes" (spams console)
+    // if no audio is playing, we are adding "background music" of
+    // silence.
+    // See issue: https://github.com/bevyengine/bevy/issues/9798
+    commands.spawn(AudioBundle {
+        source: asset_server.load("audio/1-second-of-silence.mp3"),
+        settings: PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            volume: Volume::new(0.0),
+            ..default()
+        },
+    });
 
     // Add demo cards
     let card_def_paths = [
