@@ -15,6 +15,7 @@ use crate::card::{
     NO_OP_ACTION_ID,
 };
 use crate::configuration::PlayerConfiguration;
+use crate::entity_grid::Square;
 use crate::node::{
     key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
     IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
@@ -156,6 +157,13 @@ fn opsys_node_movement(
         if let Some(entity_at_pt) = grid.item_at(next_pt) {
             if entity_at_pt == active_curio_id {
                 // Curios can move onto their own squares
+                // TODO Consider replacing the use case of replaced_square being the last square to just use DROPPED_SQUARE
+                metadata.put(key::REPLACED_SQUARE, true).critical()?;
+                // Will be None if the replaced square is the last square
+                let sqr_next = grid.square_ref(next_pt).and_then(Square::next);
+                metadata
+                    .put_optional(key::REPLACED_SQUARE_NEXT, sqr_next)
+                    .critical()?;
             } else if let Ok(pickup) = pickups.get(entity_at_pt) {
                 grid.remove_entity(entity_at_pt);
                 metadata.put(key::PICKUP, pickup).critical()?;
@@ -822,10 +830,20 @@ fn opsys_node_undo(
                     }
                     undo_metadata.put(key::CURIO, curio_id).critical()?;
                     grid.pop_front(curio_id);
+                    let target_pt = metadata.get_required(key::TARGET_POINT).critical()?;
+                    if metadata
+                        .get_optional(key::REPLACED_SQUARE)
+                        .critical()?
+                        .unwrap_or(false)
+                    {
+                        let replaced_square_next = metadata
+                            .get_optional(key::REPLACED_SQUARE_NEXT)
+                            .critical()?;
+                        grid.insert_square_before(curio_id, target_pt, replaced_square_next);
+                    }
 
                     if let Some(pickup_id) = metadata.get_optional(key::PICKUP_ID).critical()? {
                         // TODO Configurable return pick-up (cq should, nf should not)
-                        let target_pt = metadata.get_required(key::TARGET_POINT).critical()?;
                         grid.put_item(target_pt, pickup_id);
                         commands.entity(pickup_id).remove::<Claimed>();
                     }

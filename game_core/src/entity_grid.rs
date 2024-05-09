@@ -658,6 +658,35 @@ impl EntityGrid {
         }
     }
 
+    /**
+     * Used when you want to insert a square into a sequence
+     * If before_pt is None, is essentialyl identify to push_back
+     */
+    pub fn insert_square_before(
+        &mut self,
+        item_key: Entity,
+        insert_pt: UVec2,
+        before_pt: Option<UVec2>,
+    ) -> bool {
+        if self.square_is_blocked(insert_pt) {
+            return false;
+        }
+        if let Some(prev_sqr) = self
+            .square_iter_mut(item_key)
+            .find(|sqr| sqr.next() == before_pt)
+        {
+            prev_sqr.next = Some(insert_pt);
+        } else {
+            return false;
+        }
+        let insert_sqr = self
+            .square_mut(insert_pt)
+            .expect("If it is not blocked, it must be available");
+        insert_sqr.next = before_pt;
+        insert_sqr.item = Some(item_key);
+        true
+    }
+
     /// Adds a new entries to the EntityGrid. Takes the point in the grid to add the item to, and the
     /// Item to be added.
     ///

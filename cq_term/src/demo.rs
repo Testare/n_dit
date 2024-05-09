@@ -232,7 +232,7 @@ fn demo_startup(
         source: asset_server.load("audio/1-second-of-silence.mp3"),
         settings: PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
-            volume: Volume::new(0.0),
+            volume: Volume::new(10.0),
             ..default()
         },
     });

@@ -35,6 +35,8 @@ pub mod key {
     pub const EFFECTS: Key<Metadata> = typed_key!("effects");
     pub const FIRST_VICTORY: Key<bool> = typed_key!("first_victory");
     pub const MOVED_PIECES: Key<HashMap<Entity, u32>> = typed_key!("pieces_moved");
+    pub const REPLACED_SQUARE: Key<bool> = typed_key!("replaced_square");
+    pub const REPLACED_SQUARE_NEXT: Key<UVec2> = typed_key!("replaced_square_next");
     pub const NODE_ID: Key<Entity> = typed_key!("node_id");
     pub const PICKUP: Key<Pickup> = typed_key!("pickup");
     pub const PICKUPS: Key<Vec<Pickup>> = typed_key!("pickups");
