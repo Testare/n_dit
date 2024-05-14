@@ -11,6 +11,7 @@ mod setup;
 mod titlebar_ui;
 
 use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
+use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::reflect::Reflect;
 use game_core::board::BoardScreen;
 use game_core::card::{Action, Actions};
@@ -184,6 +185,7 @@ pub fn sys_switch_screens_on_enter(
 // This should be broken up into separate systems
 fn sys_react_to_node_op(
     ast_action: Res<Assets<Action>>,
+    mut commands: Commands,
     mut evr_op_result: EventReader<OpResult<NodeOp>>,
     mut res_ui_ops: ResMut<UiOps>,
     q_node: Query<
@@ -197,6 +199,7 @@ fn sys_react_to_node_op(
     q_player_with_node_ui: Query<(), (With<Player>, With<HasNodeUi>)>,
     q_player_in_node: Query<AsDerefCopied<InNode>, With<Player>>,
     q_board_screen: Query<(AsDerefCopied<ForPlayer>, Entity), With<BoardScreen>>,
+    mut q_node_screen: Query<(&ForPlayer, Entity), With<NodeUiScreen>>,
     mut q_player_key_map: Query<&mut KeyMap, With<Player>>,
     mut q_player_ui: Query<
         (
@@ -305,6 +308,11 @@ fn sys_react_to_node_op(
                         res_ui_ops.request(player, MainUiOp::SwitchScreen(board_screen_id));
                         if let Ok(mut key_map) = q_player_key_map.get_mut(player) {
                             key_map.deactivate_submap(Submap::Node)
+                        }
+                        if let Some((_, node_screen_id)) =
+                            ForPlayer::get(&mut q_node_screen, player)
+                        {
+                            commands.entity(node_screen_id).despawn_recursive();
                         }
                     }
                 },
