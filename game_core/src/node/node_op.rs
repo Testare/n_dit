@@ -117,6 +117,7 @@ fn opsys_node_movement(
             &mut EntityGrid,
             AsDerefCopied<CurrentTurn>,
             AsDerefCopied<ActiveCurio>,
+            &TeamStatus,
         ),
         With<Node>,
     >,
@@ -128,8 +129,12 @@ fn opsys_node_movement(
     if let NodeOp::MoveActiveCurio { dir } = node_op {
         let mut metadata = Metadata::default();
         let (player_team_id, node_id) = players.get(player).critical()?;
-        let (mut grid, current_turn, active_curio) = nodes.get_mut(node_id).critical()?;
+        let (mut grid, current_turn, active_curio, team_status) =
+            nodes.get_mut(node_id).critical()?;
 
+        if team_status.is_decided(player_team_id) {
+            Err("Cannot do any more".invalid())?;
+        }
         if player_team_id != current_turn {
             Err("Not this player's turn".invalid())?;
         }
@@ -228,7 +233,7 @@ fn opsys_node_action(
             AsDerefCopied<CurrentTurn>,
             AsDerefMut<ActiveCurio>,
             &Teams,
-            AsDerefMut<TeamStatus>,
+            &mut TeamStatus,
         ),
         With<Node>,
     >,
@@ -257,6 +262,9 @@ fn opsys_node_action(
         let (mut grid, current_turn, mut active_curio, teams, mut team_status) =
             nodes.get_mut(node_id).critical()?;
 
+        if team_status.is_decided(player_team_id) {
+            Err("Cannot do any more".invalid())?;
+        }
         if player_team_id != current_turn {
             Err("Not this player's turn".invalid())?;
         }
@@ -404,7 +412,14 @@ fn opsys_node_action(
 
 fn opsys_node_activate(
     In((player, node_op)): In<(Entity, NodeOp)>,
-    mut nodes: Query<(AsDerefCopied<CurrentTurn>, AsDerefMut<ActiveCurio>), With<Node>>,
+    mut nodes: Query<
+        (
+            AsDerefCopied<CurrentTurn>,
+            AsDerefMut<ActiveCurio>,
+            &TeamStatus,
+        ),
+        With<Node>,
+    >,
     players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
@@ -412,7 +427,11 @@ fn opsys_node_activate(
     if let NodeOp::ActivateCurio { curio_id } = node_op {
         let mut metadata = Metadata::default();
         let (player_team_id, node_id) = players.get(player).critical()?;
-        let (current_turn, mut active_curio) = nodes.get_mut(node_id).critical()?;
+        let (current_turn, mut active_curio, team_status) = nodes.get_mut(node_id).critical()?;
+
+        if team_status.is_decided(player_team_id) {
+            Err("Cannot do any more".invalid())?;
+        }
 
         if player_team_id != current_turn {
             Err("Not this player's turn".invalid())?;
@@ -625,6 +644,7 @@ fn opsys_node_end_turn(
             AsDerefMut<CurrentTurn>,
             AsDerefMut<ActiveCurio>,
             AsDeref<Teams>,
+            &TeamStatus,
         ),
         With<Node>,
     >,
@@ -644,7 +664,11 @@ fn opsys_node_end_turn(
     }
 
     let (player_team, node) = players.get(player).critical()?;
-    let (mut current_turn, mut active_curio, teams) = nodes.get_mut(node).critical()?;
+    let (mut current_turn, mut active_curio, teams, team_status) =
+        nodes.get_mut(node).critical()?;
+    if team_status.is_decided(player_team) {
+        Err("Cannot do any more".invalid())?;
+    }
 
     if *current_turn.as_ref() != player_team {
         Err("Not this player's turn")?;
@@ -795,7 +819,7 @@ fn opsys_node_undo(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
     q_player: Query<(&OnTeam, &InNode), With<Player>>,
-    mut q_node: Query<(&mut EntityGrid, AsDerefMut<ActiveCurio>), With<Node>>,
+    mut q_node: Query<(&mut EntityGrid, AsDerefMut<ActiveCurio>, &TeamStatus), With<Node>>,
     mut q_team: Query<AsDerefMut<NodeUndoStack>, With<Team>>,
     mut q_curio: Query<(AsDerefMut<MovesTaken>, AsDerefMut<IsTapped>), With<Curio>>,
     mut q_curio_effects: Query<(AsDerefMut<MaximumSize>, AsDerefMut<MovementSpeed>), With<Curio>>,
@@ -808,7 +832,10 @@ fn opsys_node_undo(
     if undo_queue.len() == 0 {
         Err("Not able to undo any more".invalid())?;
     }
-    let (mut grid, mut active_curio) = q_node.get_mut(node_id).critical()?;
+    let (mut grid, mut active_curio, team_status) = q_node.get_mut(node_id).critical()?;
+    if team_status.is_decided(team_id) {
+        Err("Cannot do any more".invalid())?;
+    }
     let mut undo_metadata = Metadata::new();
     undo_metadata.put(key::NODE_ID, node_id).invalid()?;
     for op_to_undo in undo_queue.drain(..).rev() {

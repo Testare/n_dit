@@ -500,6 +500,16 @@ impl MapEntities for TeamStatus {
     }
 }
 
+impl TeamStatus {
+    fn is_decided(&self, team_id: Entity) -> bool {
+        if let Some(status) = self.0.get(&team_id) {
+            status.is_decided()
+        } else {
+            true // Why not?
+        }
+    }
+}
+
 /// Node component, listing the teams that belong to it
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component, MapEntities)]
@@ -524,6 +534,10 @@ pub enum VictoryStatus {
 }
 
 impl VictoryStatus {
+    pub fn is_decided(&self) -> bool {
+        !matches!(self, VictoryStatus::Undecided)
+    }
+
     pub fn is_undecided(&self) -> bool {
         matches!(self, VictoryStatus::Undecided)
     }
