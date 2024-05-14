@@ -142,6 +142,7 @@ fn sys_render_board(
         &mut TerminalRendering,
     )>,
 ) {
+    // TODO can probably optimize to only run when needed
     for (background_handle, size, mut tr) in board_uis.iter_mut() {
         let charmi = ast_charmi.get(background_handle);
         if let Some(mut charmi) = charmi.cloned() {

@@ -492,67 +492,62 @@ fn demo_startup(
                         });
                     content_pane
                         .spawn((
-                            Name::new("Board background"),
-                            ForPlayer(player),
-                            BoardUi(board),
-                            BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
-                            CalculatedSizeTty::default(),
-                            StyleTty(taffy::style::Style {
-                                display: taffy::style::Display::Grid,
+                            Name::new("Board UI Popup menu pane"),
+                            StyleTty(Style {
+                                display: Display::Grid,
+                                grid_row: line(1),
+                                grid_column: line(2),
                                 max_size: Size {
                                     width: length(board_size.x),
                                     height: length(board_size.y),
                                 },
-                                grid_row: line(1),
-                                grid_column: line(2),
-                                grid_template_rows: vec![repeat(
-                                    GridTrackRepetition::AutoFill,
-                                    vec![length(1.0)],
-                                )],
-                                grid_template_columns: vec![repeat(
-                                    GridTrackRepetition::AutoFill,
-                                    vec![length(1.0)],
-                                )],
+                                grid_template_columns: vec![
+                                    fr(1.0),
+                                    minmax(length(0.0), max_content()),
+                                    fr(1.0),
+                                ],
+                                grid_template_rows: vec![
+                                    fr(1.0),
+                                    minmax(length(0.0), max_content()),
+                                    fr(1.0),
+                                ],
                                 ..default()
                             }),
-                            TerminalRendering::new(Vec::new()),
                         ))
-                        .with_children(|board_ui| {
-                            board_ui
-                                .spawn((
-                                    Name::new("Board UI Popup menu pane"),
-                                    StyleTty(Style {
-                                        display: Display::Grid,
-                                        grid_row: Line {
-                                            start: line(1),
-                                            end: line(-1),
-                                        },
-                                        grid_column: Line {
-                                            start: line(1),
-                                            end: line(-1),
-                                        },
-                                        grid_template_columns: vec![
-                                            fr(1.0),
-                                            minmax(length(0.0), max_content()),
-                                            fr(1.0),
-                                        ],
-                                        grid_template_rows: vec![
-                                            fr(1.0),
-                                            minmax(length(0.0), max_content()),
-                                            fr(1.0),
-                                        ],
-                                        ..default()
-                                    }),
-                                ))
-                                .with_children(|popup_menu_pane| {
-                                    build_popup_menu(
-                                        res_draw_config,
-                                        player,
-                                        res_dialog_context_actions.say_this(),
-                                        popup_menu_pane,
-                                    );
-                                });
+                        .with_children(|popup_menu_pane| {
+                            build_popup_menu(
+                                res_draw_config,
+                                player,
+                                res_dialog_context_actions.say_this(),
+                                popup_menu_pane,
+                            );
                         });
+                    content_pane.spawn((
+                        Name::new("Board background"),
+                        ForPlayer(player),
+                        BoardUi(board),
+                        BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
+                        CalculatedSizeTty::default(),
+                        StyleTty(taffy::style::Style {
+                            display: taffy::style::Display::Grid,
+                            max_size: Size {
+                                width: length(board_size.x),
+                                height: length(board_size.y),
+                            },
+                            grid_row: line(1),
+                            grid_column: line(2),
+                            grid_template_rows: vec![repeat(
+                                GridTrackRepetition::AutoFill,
+                                vec![length(1.0)],
+                            )],
+                            grid_template_columns: vec![repeat(
+                                GridTrackRepetition::AutoFill,
+                                vec![length(1.0)],
+                            )],
+                            ..default()
+                        }),
+                        TerminalRendering::new(Vec::new()),
+                    ));
                 });
         })
         .id();
