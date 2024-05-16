@@ -24,7 +24,7 @@ use crate::node_ui::grid_ui::{GridUi, GridUiAnimation};
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
-use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu};
+use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu, StatusScreen};
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, NodeUiScreen,
     SelectedAction, SelectedNodePiece, TelegraphedAction,
@@ -458,6 +458,23 @@ pub fn create_node_ui(
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
                                                     width: length(40.0),
+                                                    height: length(2.0),
+                                                },
+                                                size: Size {
+                                                    width: length(40.0),
+                                                    height: length(2.0),
+                                                },
+                                                ..default()
+                                            }),
+                                            StatusScreen::default(),
+                                            ForPlayer(player),
+                                            TerminalRendering::default(),
+                                            VisibilityTty(false),
+                                        ));
+                                        popup_menu.spawn((
+                                            StyleTty(taffy::prelude::Style {
+                                                max_size: Size {
+                                                    width: length(40.0),
                                                     height: length(4.0),
                                                 },
                                                 size: zero(),
@@ -540,7 +557,6 @@ pub fn create_node_ui(
                                 grid_ui.spawn(StyleTty::buffer());
                             });
                     });
-                    root.spawn(super::MessageBarUi::bundle(player, &node_q));
                 })
                 .id();
             commands.spawn((

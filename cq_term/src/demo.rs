@@ -283,7 +283,7 @@ fn demo_startup(
                 NFNode,
                 NFShop("warez:0".to_string()),
                 ShopId(SetId::new_unchecked("warez", 0)),
-                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
+                RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 SimplePieceInfo("Warez Node\nLeo's Shop\nA quality shop of basic programs at low prices. Come and see what we've got to offer".to_string()),
                 ShopInventory(vec![
                     ShopListing::new(500, Item::Card(asset_server.load("nightfall/lvl1.cards.json#Hack"))),

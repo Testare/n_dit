@@ -1,5 +1,4 @@
-use game_core::node::{InNode, Node, OnTeam, TeamStatus, VictoryStatus};
-use game_core::player::{ForPlayer, Ncp, Player};
+use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 
 use super::{NodeUi, NodeUiQItem};
@@ -74,10 +73,6 @@ impl Plugin for MessageBarUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, (kb_messages.in_set(NDitCoreSet::ProcessInputs),))
             .add_systems(
-                Update,
-                sys_tmp_display_victory_or_less_message.in_set(NDitCoreSet::PostProcessCommands),
-            )
-            .add_systems(
                 RENDER_TTY_SCHEDULE,
                 (
                     style_message_bar.in_set(RenderTtySet::AdjustLayoutStyle),
@@ -105,31 +100,4 @@ impl NodeUi for MessageBarUi {
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {}
-}
-
-fn sys_tmp_display_victory_or_less_message(
-    nodes: Query<(Entity, AsDeref<TeamStatus>), (With<Node>, Changed<TeamStatus>)>,
-    players: Query<
-        (Entity, AsDerefCopied<InNode>, AsDerefCopied<OnTeam>),
-        (With<Player>, With<Ncp>),
-    >,
-    mut message_bar_ui: IndexedQuery<ForPlayer, &mut MessageBarUi>,
-) {
-    for (node_id, team_status) in nodes.iter() {
-        // There should be a way to know what teams have lost just now or lost before
-        for (player_id, in_node, team) in players.iter() {
-            if in_node != node_id {
-                continue;
-            }
-            if let Ok(mut msgbar) = message_bar_ui.get_for_mut(player_id) {
-                let msg = match team_status[&team] {
-                    VictoryStatus::Undecided => continue,
-                    VictoryStatus::PerfectVictory => "You won FLAWLESSLY!",
-                    VictoryStatus::Victory => "You won!",
-                    VictoryStatus::Loss => "You lost...",
-                };
-                msgbar.push(msg.to_string());
-            }
-        }
-    }
 }

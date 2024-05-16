@@ -29,6 +29,7 @@ use self::menu_ui::{
 };
 pub use self::messagebar_ui::MessageBarUi;
 pub use self::node_glyph::NodeGlyph;
+use self::node_popups::NodePopupsPlugin;
 pub use self::node_ui_op::NodeUiOp;
 use self::titlebar_ui::TitleBarUi;
 use super::layout::StyleTty;
@@ -71,6 +72,7 @@ impl Plugin for NodeUiPlugin {
                 MenuUiLabel::plugin(),
                 MenuUiActions::plugin(),
                 MenuUiDescription::plugin(),
+                NodePopupsPlugin,
                 GridUi::plugin(),
                 MessageBarUi::plugin(),
                 TitleBarUi::plugin(),
