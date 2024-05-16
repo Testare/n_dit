@@ -105,5 +105,13 @@
         "bevy_hierarchy::components::parent::Parent": (10000000000),
       },
     ),
+    // VICTORY AWARD
+    10000000007: (
+      components: {
+        "game_core::node::Pickup": Mon((250)),
+        "game_core::card::Description": ("Moneeeeey"),
+        "game_core::node::VictoryAward": (10000000000)
+      },
+    ),
   },
 )

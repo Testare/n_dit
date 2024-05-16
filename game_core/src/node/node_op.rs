@@ -9,7 +9,7 @@ use bevy::scene::DynamicScene;
 
 use self::daddy::Daddy;
 use self::node_op_undo::NodeUndoStack;
-use super::{Claimed, EnteringNode, NodeId, NodeScene};
+use super::{Claimed, EnteringNode, NodeId, NodeScene, VictoryAward};
 use crate::card::{
     Action, ActionEffect, Actions, CardQuery, Deck, Description, MaximumSize, MovementSpeed,
     NO_OP_ACTION_ID,
@@ -750,6 +750,7 @@ fn opsys_node_quit_battle(
     mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards, &mut QuestStatus), With<Player>>,
     q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
     q_claimed_pickup: Query<(&Pickup, &Claimed)>,
+    q_victory_pickup: Query<(&Pickup, &VictoryAward)>,
 ) -> OpImplResult {
     if let NodeOp::QuitNode(node_sid) = node_op {
         // TODO When the player is able to join multiple games and leave midway through,
@@ -761,7 +762,7 @@ fn opsys_node_quit_battle(
         if node.0 != node_sid {
             Err("The player is not in that node".invalid())?;
         }
-        let pickups: Vec<Pickup> = q_claimed_pickup
+        let mut pickups: Vec<Pickup> = q_claimed_pickup
             .iter()
             .filter(|(_, claimed)| claimed.player == player_id && claimed.node_id == node_id)
             .map(|(pickup, _)| pickup.clone())
@@ -769,6 +770,14 @@ fn opsys_node_quit_battle(
         let victory_status = team_status
             .get(team_id)
             .ok_or("Couldn't find team status".invalid())?;
+        if victory_status.is_victorious() {
+            // Current implementation: All winners get a copy of victory pickups
+            let victory_pickups = q_victory_pickup
+                .iter()
+                .filter(|(_, &VictoryAward(v_node_id))| v_node_id == node_id)
+                .map(|(pickup, _)| pickup.clone());
+            pickups.extend(victory_pickups);
+        }
 
         let mut metadata = Metadata::new();
         match victory_status {

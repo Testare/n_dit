@@ -89,6 +89,7 @@ impl Plugin for NodePlugin {
             .register_type::<TeamPhase>()
             .register_type::<TeamStatus>()
             .register_type::<Teams>()
+            .register_type::<VictoryAward>()
             .register_type::<VictoryStatus>()
             .register_type::<rule::AccessPointLoadingRule>()
             // Internal collection types need to be registered too
@@ -525,6 +526,16 @@ impl MapEntities for Teams {
     }
 }
 
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, MapEntities)]
+pub struct VictoryAward(Entity);
+
+impl MapEntities for VictoryAward {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0);
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
 pub enum VictoryStatus {
     Undecided,
@@ -540,6 +551,10 @@ impl VictoryStatus {
 
     pub fn is_undecided(&self) -> bool {
         matches!(self, VictoryStatus::Undecided)
+    }
+
+    pub fn is_victorious(&self) -> bool {
+        matches!(self, VictoryStatus::Victory | VictoryStatus::PerfectVictory)
     }
 }
 
