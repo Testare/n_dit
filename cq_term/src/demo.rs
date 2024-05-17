@@ -228,6 +228,7 @@ fn demo_startup(
     // if no audio is playing, we are adding "background music" of
     // silence.
     // See issue: https://github.com/bevyengine/bevy/issues/9798
+    // NOTE: This unfortunately did not work.
     commands.spawn(AudioBundle {
         source: asset_server.load("audio/1-second-of-silence.mp3"),
         settings: PlaybackSettings {

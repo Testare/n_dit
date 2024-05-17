@@ -176,5 +176,11 @@
         "bevy_hierarchy::components::parent::Parent": (10000000000),
       },
     ),
+    10000000012: (
+      components: {
+        "game_core::node::Pickup": Mon((250)),
+        "game_core::node::VictoryAward": (10000000000)
+      },
+    ),
   },
 )

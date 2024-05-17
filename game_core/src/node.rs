@@ -135,8 +135,9 @@ impl MapEntities for AccessPoint {
 pub struct ActiveCurio(pub Option<Entity>);
 
 /// Indicates a pickup has been claimed by a player
-#[derive(Component, Debug, Reflect)]
+#[derive(Component, CopyGetters, Debug, Reflect)]
 #[reflect(Component, MapEntities)]
+#[get_copy = "pub"]
 pub struct Claimed {
     node_id: Entity,
     player: Entity,
@@ -528,7 +529,7 @@ impl MapEntities for Teams {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component, MapEntities)]
-pub struct VictoryAward(Entity);
+pub struct VictoryAward(pub Entity);
 
 impl MapEntities for VictoryAward {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {

@@ -169,5 +169,27 @@
         "bevy_hierarchy::components::parent::Parent": (010000000000),
       },
     ),
+    // Victory rewards
+    1110000000000: (
+      components: {
+        "game_core::node::Pickup": Card("nightfall/lvl2.cards.json#Hack 2.0"),
+        "game_core::node::VictoryAward": (010000000000),
+      },
+    ),
+    1210000000000: (
+      components: {
+        "game_core::node::Pickup": Card("nightfall/lvl2.cards.json#Medic"),
+        "game_core::node::VictoryAward": (010000000000),
+      },
+    ),
+    1310000000000: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((100)),
+        "game_core::node::VictoryAward": (010000000000),
+      },
+    ),
   },
 )
