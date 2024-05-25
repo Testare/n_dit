@@ -7,6 +7,7 @@ use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use charmi::CharacterMapImage;
+use crossterm::style::ContentStyle;
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
 use game_core::card::{CardDefinition, Deck, Nickname};
@@ -24,7 +25,7 @@ use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
-use crate::base_ui::{ButtonUiBundle, HoverPoint, PopupMenu};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUiMultiline, HoverPoint, PopupMenu};
 use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
@@ -672,6 +673,7 @@ pub fn build_popup_menu(
                                 width: auto(),
                                 height: length(1.0),
                             },
+                            flex_shrink: 0.0,
                             ..default()
                         }),
                         ShopNotification,
@@ -719,6 +721,22 @@ pub fn build_popup_menu(
                                 ),
                             ));
                         });
+                    shop_ui.spawn((
+                        StyleTty(Style {
+                            size: Size {
+                                width: auto(),
+                                height: length(5.0),
+                            },
+                            flex_shrink: 1.0,
+                            ..default()
+                        }),
+                        FlexibleTextUiMultiline {
+                            style: ContentStyle::new(),
+                            text: "This is a test of the multiline text thing. What happens if this text is really long is somethign that I should really test".to_owned(),
+                        },
+                        TerminalRendering::default(),
+                        ForPlayer(player),
+                    ));
                 });
         });
 }
