@@ -80,7 +80,7 @@ pub struct GlobalTranslationTty(#[deref] pub UVec2, pub u32);
 pub struct CalculatedSizeTty(pub UVec2);
 
 impl CalculatedSizeTty {
-    /// Returns true if either x or y is 0 
+    /// Returns true if either x or y is 0
     pub fn is_empty(&self) -> bool {
         self.0.x == 0 || self.0.y == 0
     }

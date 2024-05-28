@@ -12,7 +12,7 @@ use getset::CopyGetters;
 use super::UiOps;
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::{ContextAction, ContextActions};
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUi};
+use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline};
 use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
 use crate::linkage;
@@ -26,7 +26,8 @@ impl Plugin for ShopUiPlugin {
         app.init_resource::<ShopUiContextActions>().add_systems(
             Update,
             (
-                (sys_open_shop_ui, sys_leave_shop_ui).in_set(NDitCoreSet::PostProcessUiOps),
+                (sys_open_shop_ui, sys_leave_shop_ui, sys_update_item_details)
+                    .in_set(NDitCoreSet::PostProcessUiOps),
                 sys_buy_notification_ui.in_set(NDitCoreSet::PostProcessCommands),
             ),
         );
@@ -176,6 +177,9 @@ pub struct ShopListingItemUi(usize);
 pub struct ItemDetailsUi;
 
 #[derive(Component, Debug)]
+pub struct ItemDetailsUiDescription;
+
+#[derive(Component, Debug)]
 pub struct ShopUiBuyButton;
 
 #[derive(Component, Debug)]
@@ -284,6 +288,29 @@ fn sys_leave_shop_ui(
             {
                 commands.entity(ui_id).despawn_descendants();
             }
+        }
+    }
+}
+
+fn sys_update_item_details(
+    q_shop_ui: Query<
+        (&ForPlayer, &ShopUiSelectedItem),
+        (With<ShopUi>, Changed<ShopUiSelectedItem>),
+    >,
+    mut q_shop_item_desc: Query<
+        (
+            &ForPlayer,
+            AsDerefMut<VisibilityTty>,
+            &mut FlexibleTextUiMultiline,
+        ),
+        With<ItemDetailsUiDescription>,
+    >,
+) {
+    for (&ForPlayer(player_id), &ShopUiSelectedItem(selection)) in q_shop_ui.iter() {
+        if let Some((_, mut visibility, mut flexible_text)) =
+            ForPlayer::get_mut(&mut q_shop_item_desc, player_id)
+        {
+            visibility.set_if_neq(selection.is_some());
         }
     }
 }

@@ -38,19 +38,18 @@ pub struct BaseUiPlugin;
 
 impl Plugin for BaseUiPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_systems(Update, sys_apply_hover.in_set(NDitCoreSet::ProcessInputs))
-        .add_systems(
-            RENDER_TTY_SCHEDULE,
-            (
-                sys_tooltip_on_hover.in_set(RenderTtySet::PreCalculateLayout),
-                sys_render_flexible_text.in_set(RenderTtySet::PostCalculateLayout),
-                sys_render_flexible_text_multiline.in_set(RenderTtySet::PostCalculateLayout),
-                popup::sys_render_popup_menu.in_set(RenderTtySet::PostCalculateLayout),
-                popup::sys_mouse_popup_menu.in_set(RenderTtySet::PostCalculateLayout),
-            ),
-        )
-        .add_plugins(ContextMenuPlugin);
+        app.add_systems(Update, sys_apply_hover.in_set(NDitCoreSet::ProcessInputs))
+            .add_systems(
+                RENDER_TTY_SCHEDULE,
+                (
+                    sys_tooltip_on_hover.in_set(RenderTtySet::PreCalculateLayout),
+                    sys_render_flexible_text.in_set(RenderTtySet::PostCalculateLayout),
+                    sys_render_flexible_text_multiline.in_set(RenderTtySet::PostCalculateLayout),
+                    popup::sys_render_popup_menu.in_set(RenderTtySet::PostCalculateLayout),
+                    popup::sys_mouse_popup_menu.in_set(RenderTtySet::PostCalculateLayout),
+                ),
+            )
+            .add_plugins(ContextMenuPlugin);
     }
 }
 
@@ -215,17 +214,20 @@ pub fn sys_render_flexible_text(
     // TODO allow configuring short buttons to be always on
 }
 
+// TOOD this can probably be merged with above and simply add a "Wrapping" marker component
 pub fn sys_render_flexible_text_multiline(
-    mut buttons: Query<(
-        &FlexibleTextUiMultiline,
-        &CalculatedSizeTty,
-        &mut TerminalRendering,
-        Has<MouseEventTtyDisabled>,
-        Option<AsDeref<HoverPoint>>,
-        Option<&TextUiBorder>,
-        Option<&DisabledTextEffect>,
-    ),
-    Or<(Changed<FlexibleTextUiMultiline>, Changed<CalculatedSizeTty>)>>,
+    mut buttons: Query<
+        (
+            &FlexibleTextUiMultiline,
+            &CalculatedSizeTty,
+            &mut TerminalRendering,
+            Has<MouseEventTtyDisabled>,
+            Option<AsDeref<HoverPoint>>,
+            Option<&TextUiBorder>,
+            Option<&DisabledTextEffect>,
+        ),
+        Or<(Changed<FlexibleTextUiMultiline>, Changed<CalculatedSizeTty>)>,
+    >,
 ) {
     for (
         text_ui,
@@ -258,13 +260,13 @@ pub fn sys_render_flexible_text_multiline(
         }
         if let (true, Some(effect)) = (disabled, disabled_text_effect) {
             charmi.apply_effect(effect);
-        } else if matches!(hover_point, Some(Some(_))) { // Why not?
+        } else if matches!(hover_point, Some(Some(_))) {
+            // Why not?
             charmi.apply_effect(&ContentStyle::new().reverse());
         }
         rendering.update_charmie(charmi)
     }
 }
-
 
 pub fn sys_tooltip_on_hover(
     tooltips: Query<(AsDeref<Tooltip>, AsDeref<HoverPoint>)>,

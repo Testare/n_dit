@@ -32,8 +32,8 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, MainUiOp, MonDisplay, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
-    ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
+    self, ItemDetailsUiDescription, MainUiOp, MonDisplay, ShopListingUi, ShopNotification, ShopUi,
+    ShopUiBuyButton, ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
@@ -169,7 +169,6 @@ fn debug_key(
         if *code == KeyCode::Char('/') {
             for mut quest_status in q_quest_status.iter_mut() {
                 if let Some(nid) = [
-                    NodeId::new("node:demo", 0),
                     NodeId::new("node:tutorial", 0),
                     NodeId::new("node:area1", 0),
                     NodeId::new("node:area1", 1),
@@ -234,7 +233,7 @@ fn demo_startup(
         source: asset_server.load("tmp/audio/mixkit-coins-sound-2003.wav"),
         settings: PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
-            volume: Volume::new(0.0),
+            volume: Volume::new(0.2),
             ..default()
         },
     });
@@ -274,7 +273,6 @@ fn demo_startup(
                 ForNode(NodeId::new("node:tutorial", 0)),
                 Name::new("Tutorial Node"),
                 NFNode,
-                RequiredNodes(vec![NodeId::new("node:demo", 0)]),
                 SimplePieceInfo("Smart HQ\n".to_string()),
             ));
             board.spawn((
@@ -730,6 +728,8 @@ pub fn build_popup_menu(
                             flex_shrink: 1.0,
                             ..default()
                         }),
+                        ItemDetailsUiDescription,
+                        VisibilityTty(true),
                         FlexibleTextUiMultiline {
                             style: ContentStyle::new(),
                             text: "This is a test of the multiline text thing. What happens if this text is really long is somethign that I should really test".to_owned(),
