@@ -7,7 +7,7 @@ use bevy::hierarchy::ChildBuilder;
 use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use charmi::CharacterMapImage;
-use crossterm::style::ContentStyle;
+use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
 use game_core::card::{CardDefinition, Deck, Nickname};
@@ -725,13 +725,17 @@ pub fn build_popup_menu(
                                 width: auto(),
                                 height: length(5.0),
                             },
+                            margin: Rect {
+                                top: length(1.0), 
+                                ..zero() 
+                            },
                             flex_shrink: 1.0,
                             ..default()
                         }),
                         ItemDetailsUiDescription,
                         VisibilityTty(true),
                         FlexibleTextUiMultiline {
-                            style: ContentStyle::new(),
+                            style: ContentStyle::new().cyan(),
                             text: "This is a test of the multiline text thing. What happens if this text is really long is somethign that I should really test".to_owned(),
                         },
                         TerminalRendering::default(),

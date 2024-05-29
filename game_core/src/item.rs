@@ -82,6 +82,19 @@ impl Item {
                 }),
         }
     }
+
+    pub fn description(&self, cards: &Assets<CardDefinition>) -> Cow<str> {
+        match self {
+            Self::Mon(_) => Cow::from("Makes the world go round"), // TODO Better money description
+            Self::Card(handle) => cards
+                .get(handle)
+                .map(|card_def| Cow::Owned(card_def.description().to_owned()))
+                .unwrap_or_else(|| {
+                    log::error!("Unable to retreive description for card {handle:?}");
+                    Cow::from("???")
+                }),
+        }
+    }
 }
 
 #[derive(Debug, Reflect)]

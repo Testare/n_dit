@@ -293,10 +293,14 @@ fn sys_leave_shop_ui(
 }
 
 fn sys_update_item_details(
+    ast_card_def: Res<Assets<CardDefinition>>,
     q_shop_ui: Query<
         (&ForPlayer, &ShopUiSelectedItem),
         (With<ShopUi>, Changed<ShopUiSelectedItem>),
     >,
+    q_shop_listing: Query<&ShopListingItemUi>,
+    q_player_entering_shop: Query<&InShop, With<Player>>,
+    q_shop: Query<AsDeref<ShopInventory>, With<ShopId>>,
     mut q_shop_item_desc: Query<
         (
             &ForPlayer,
@@ -310,7 +314,18 @@ fn sys_update_item_details(
         if let Some((_, mut visibility, mut flexible_text)) =
             ForPlayer::get_mut(&mut q_shop_item_desc, player_id)
         {
-            visibility.set_if_neq(selection.is_some());
+            let text_desc = selection.and_then(|selection_id|{ //try 
+                let &ShopListingItemUi(selection_idx) = q_shop_listing.get(selection_id).ok()?;
+                let &InShop(shop_id) = q_player_entering_shop.get(player_id).ok()?;
+                let shop_inventory = q_shop.get(shop_id).ok()?;
+                let listing = shop_inventory.get(selection_idx)?;
+                Some(listing.item().description(&ast_card_def))
+            });
+
+            visibility.set_if_neq(text_desc.is_some());
+            if let Some(text_desc) = text_desc {
+                flexible_text.text = text_desc.into_owned();
+            }
         }
     }
 }
