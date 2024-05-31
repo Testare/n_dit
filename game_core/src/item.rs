@@ -109,32 +109,17 @@ impl Item {
         }
     }
 
-    pub fn action_names(
-        &self,
-        cards: &Assets<CardDefinition>,
-        actions: &Assets<Action>,
-    ) -> Vec<Cow<str>> {
+    pub fn speed(&self, cards: &Assets<CardDefinition>) -> Option<u32> {
         match self {
-            Self::Mon(_) => Vec::default(), // TODO Better money description
-            Self::Card(handle) => cards
-                .get(handle)
-                .map(|card_def| {
-                    let card_actions = card_def.actions();
+            Self::Mon(_) => None, // TODO Better money description
+            Self::Card(handle) => cards.get(handle).map(|card_def| card_def.movement_speed()),
+        }
+    }
 
-                    card_actions
-                        .iter()
-                        .map(|action_handle| {
-                            actions
-                                .get(action_handle)
-                                .map(|a| a.id_cow())
-                                .unwrap_or(Cow::Borrowed("???"))
-                        })
-                        .collect()
-                })
-                .unwrap_or_else(|| {
-                    log::error!("Unable to retreive description for card {handle:?}");
-                    Vec::default()
-                }),
+    pub fn max_size(&self, cards: &Assets<CardDefinition>) -> Option<u32> {
+        match self {
+            Self::Mon(_) => None, // TODO Better money description
+            Self::Card(handle) => cards.get(handle).map(|card_def| card_def.max_size()),
         }
     }
 }

@@ -10,9 +10,9 @@ use game_core::NDitCoreSet;
 pub use hud::*;
 pub use main_ui_op::MainUiOp;
 pub use shop_ui::{
-    ItemDetailsUi, ItemDetailsUiActions, ItemDetailsUiDescription, ShopListingItemUi,
-    ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
-    ShopUiSelectedItem,
+    ItemDetailsUi, ItemDetailsUiActions, ItemDetailsUiDescription, ItemDetailsUiStats,
+    ShopListingItemUi, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
+    ShopUiFinishShoppingButton, ShopUiSelectedItem,
 };
 
 use self::shop_ui::ShopUiContextActions;

@@ -25,16 +25,18 @@ use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
-use crate::base_ui::{ButtonUiBundle, FlexibleTextUiMultiline, HoverPoint, PopupMenu};
+use crate::base_ui::{
+    ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline, HoverPoint, PopupMenu,
+};
 use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, ItemDetailsUiActions, ItemDetailsUiDescription, MainUiOp, MonDisplay, ShopListingUi,
-    ShopNotification, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton, ShopUiSelectedItem,
-    UiOps,
+    self, ItemDetailsUiActions, ItemDetailsUiDescription, ItemDetailsUiStats, MainUiOp, MonDisplay,
+    ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
+    ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
@@ -655,7 +657,7 @@ pub fn build_popup_menu(
                     StyleTty(taffy::prelude::Style {
                         max_size: Size {
                             width: length(40.0),
-                            height: length(19.0), // Will need to implement scrolling
+                            height: length(30.0), // Will need to implement scrolling
                         },
                         flex_direction: FlexDirection::Column,
                         ..default()
@@ -663,6 +665,7 @@ pub fn build_popup_menu(
                     ShopUi,
                     ShopUiSelectedItem::default(),
                     ForPlayer(player),
+                    Name::new("Shop UI"),
                     VisibilityTty(false),
                 ))
                 .with_children(|shop_ui| {
@@ -724,6 +727,29 @@ pub fn build_popup_menu(
                         StyleTty(Style {
                             size: Size {
                                 width: auto(),
+                                height: length(1.0),
+                            },
+                            margin: Rect {
+                                top: length(1.0),
+                                ..zero()
+                            },
+                            flex_shrink: 0.0,
+                            ..default()
+                        }),
+                        ItemDetailsUiStats,
+                        VisibilityTty(false),
+                        FlexibleTextUi {
+                            style: ContentStyle::new().magenta(),
+                            text: "".to_owned(),
+                        },
+                        Name::new("Shop UI/Item Details/Stats"),
+                        TerminalRendering::default(),
+                        ForPlayer(player),
+                    ));
+                    shop_ui.spawn((
+                        StyleTty(Style {
+                            size: Size {
+                                width: auto(),
                                 height: length(2.0),
                             },
                             margin: Rect {
@@ -752,7 +778,7 @@ pub fn build_popup_menu(
                                 top: length(1.0),
                                 ..zero()
                             },
-                            flex_shrink: 1.0,
+                            flex_shrink: 0.0,
                             ..default()
                         }),
                         ItemDetailsUiDescription,

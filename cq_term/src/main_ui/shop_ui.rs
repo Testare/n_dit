@@ -31,8 +31,9 @@ impl Plugin for ShopUiPlugin {
                 (
                     sys_open_shop_ui,
                     sys_leave_shop_ui,
-                    sys_update_item_details,
+                    sys_update_item_details_description,
                     sys_update_item_details_actions,
+                    sys_update_item_details_stats,
                 )
                     .in_set(NDitCoreSet::PostProcessUiOps),
                 sys_buy_notification_ui.in_set(NDitCoreSet::PostProcessCommands),
@@ -434,7 +435,53 @@ fn sys_update_item_details_actions(
     }
 }
 
-fn sys_update_item_details(
+fn sys_update_item_details_stats(
+    ast_card_def: Res<Assets<CardDefinition>>,
+    q_shop_ui: Query<
+        (&ForPlayer, &ShopUiSelectedItem),
+        (With<ShopUi>, Changed<ShopUiSelectedItem>),
+    >,
+    q_shop_listing: Query<&ShopListingItemUi>,
+    q_player_in_shop: Query<&InShop, With<Player>>,
+    q_shop: Query<AsDeref<ShopInventory>, With<ShopId>>,
+    mut q_shop_item_stats: Query<
+        (&ForPlayer, AsDerefMut<VisibilityTty>, &mut FlexibleTextUi),
+        With<ItemDetailsUiStats>,
+    >,
+) {
+    for (&ForPlayer(player_id), &ShopUiSelectedItem(selection)) in q_shop_ui.iter() {
+        if let Some((_, mut visibility, mut flexible_text)) =
+            ForPlayer::get_mut(&mut q_shop_item_stats, player_id)
+        {
+            let mut stats = Vec::new();
+            selection.and_then(|selection_id| {
+                //try
+                let &ShopListingItemUi(selection_idx) = q_shop_listing.get(selection_id).ok()?;
+                let &InShop(shop_id) = q_player_in_shop.get(player_id).ok()?;
+                let shop_inventory = q_shop.get(shop_id).ok()?;
+                let listing = shop_inventory.get(selection_idx)?;
+                let item = listing.item();
+                if let Some(speed) = item.speed(&ast_card_def) {
+                    stats.push(format!("Speed {}", speed));
+                }
+                if let Some(size) = item.max_size(&ast_card_def) {
+                    stats.push(format!("Max Size {}", size));
+                }
+                Some(())
+            });
+            if stats.is_empty() {
+                visibility.set_if_neq(false);
+                flexible_text.text = String::new();
+            } else {
+                visibility.set_if_neq(true);
+                let stats_text = stats.join(" / ");
+                flexible_text.text = stats_text;
+            }
+        }
+    }
+}
+
+fn sys_update_item_details_description(
     ast_card_def: Res<Assets<CardDefinition>>,
     q_shop_ui: Query<
         (&ForPlayer, &ShopUiSelectedItem),
