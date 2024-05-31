@@ -32,8 +32,9 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, ItemDetailsUiDescription, MainUiOp, MonDisplay, ShopListingUi, ShopNotification, ShopUi,
-    ShopUiBuyButton, ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
+    self, ItemDetailsUiActions, ItemDetailsUiDescription, MainUiOp, MonDisplay, ShopListingUi,
+    ShopNotification, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton, ShopUiSelectedItem,
+    UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
@@ -654,7 +655,7 @@ pub fn build_popup_menu(
                     StyleTty(taffy::prelude::Style {
                         max_size: Size {
                             width: length(40.0),
-                            height: length(11.0), // Will need to implement scrolling
+                            height: length(19.0), // Will need to implement scrolling
                         },
                         flex_direction: FlexDirection::Column,
                         ..default()
@@ -723,11 +724,33 @@ pub fn build_popup_menu(
                         StyleTty(Style {
                             size: Size {
                                 width: auto(),
-                                height: length(5.0),
+                                height: length(2.0),
                             },
                             margin: Rect {
-                                top: length(1.0), 
-                                ..zero() 
+                                top: length(1.0),
+                                ..zero()
+                            },
+                            padding: Rect {
+                                top: length(1.0),
+                                ..zero()
+                            },
+                            ..default()
+                        }),
+                        Name::new("Shop UI/Item Details/Actions"),
+                        ItemDetailsUiActions,
+                        VisibilityTty(true),
+                        TerminalRendering::new(vec!["--Actions--".to_string()]),
+                        ForPlayer(player),
+                    ));
+                    shop_ui.spawn((
+                        StyleTty(Style {
+                            size: Size {
+                                width: auto(),
+                                height: length(3.0),
+                            },
+                            margin: Rect {
+                                top: length(1.0),
+                                ..zero()
                             },
                             flex_shrink: 1.0,
                             ..default()
@@ -736,8 +759,9 @@ pub fn build_popup_menu(
                         VisibilityTty(true),
                         FlexibleTextUiMultiline {
                             style: ContentStyle::new().cyan(),
-                            text: "This is a test of the multiline text thing. What happens if this text is really long is somethign that I should really test".to_owned(),
+                            text: "".to_owned(),
                         },
+                        Name::new("Shop UI/Item Details/Description"),
                         TerminalRendering::default(),
                         ForPlayer(player),
                     ));

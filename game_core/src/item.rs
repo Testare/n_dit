@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use getset::CopyGetters;
 
 use self::daddy::Daddy;
-use crate::card::{Card, CardDefinition, Deck, Nickname};
+use crate::card::{Action, Card, CardDefinition, Deck, Nickname};
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::prelude::*;
 
@@ -92,6 +92,48 @@ impl Item {
                 .unwrap_or_else(|| {
                     log::error!("Unable to retreive description for card {handle:?}");
                     Cow::from("???")
+                }),
+        }
+    }
+
+    pub fn actions(&self, cards: &Assets<CardDefinition>) -> Vec<Handle<Action>> {
+        match self {
+            Self::Mon(_) => Vec::default(), // TODO Better money description
+            Self::Card(handle) => cards
+                .get(handle)
+                .map(|card_def| card_def.actions().clone())
+                .unwrap_or_else(|| {
+                    log::error!("Unable to retreive description for card {handle:?}");
+                    Vec::default()
+                }),
+        }
+    }
+
+    pub fn action_names(
+        &self,
+        cards: &Assets<CardDefinition>,
+        actions: &Assets<Action>,
+    ) -> Vec<Cow<str>> {
+        match self {
+            Self::Mon(_) => Vec::default(), // TODO Better money description
+            Self::Card(handle) => cards
+                .get(handle)
+                .map(|card_def| {
+                    let card_actions = card_def.actions();
+
+                    card_actions
+                        .iter()
+                        .map(|action_handle| {
+                            actions
+                                .get(action_handle)
+                                .map(|a| a.id_cow())
+                                .unwrap_or(Cow::Borrowed("???"))
+                        })
+                        .collect()
+                })
+                .unwrap_or_else(|| {
+                    log::error!("Unable to retreive description for card {handle:?}");
+                    Vec::default()
                 }),
         }
     }

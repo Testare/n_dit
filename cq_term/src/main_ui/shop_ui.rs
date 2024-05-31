@@ -1,7 +1,9 @@
+use std::borrow::Cow;
+
 use bevy::hierarchy::{BuildWorldChildren, DespawnRecursiveExt};
 use charmi::{CharacterMapImage, CharmieAnimation};
 use crossterm::style::{Color, ContentStyle, Stylize};
-use game_core::card::CardDefinition;
+use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
@@ -26,7 +28,12 @@ impl Plugin for ShopUiPlugin {
         app.init_resource::<ShopUiContextActions>().add_systems(
             Update,
             (
-                (sys_open_shop_ui, sys_leave_shop_ui, sys_update_item_details)
+                (
+                    sys_open_shop_ui,
+                    sys_leave_shop_ui,
+                    sys_update_item_details,
+                    sys_update_item_details_actions,
+                )
                     .in_set(NDitCoreSet::PostProcessUiOps),
                 sys_buy_notification_ui.in_set(NDitCoreSet::PostProcessCommands),
             ),
@@ -40,6 +47,7 @@ pub struct ShopUiContextActions {
     buy_item: Entity,
     finish_shopping: Entity,
     select_item: Entity,
+    select_action: Entity,
 }
 
 impl FromWorld for ShopUiContextActions {
@@ -84,6 +92,58 @@ impl FromWorld for ShopUiContextActions {
                     res_ui_ops.request(player_id, ShopOp::BuyItem(item_idx));
                 } else {
                     log::warn!("Trying to buy item, but no item selected")
+                }
+            },
+        );
+        let select_action_sys = world.register_system(
+            |In(id): In<Entity>,
+             ast_action: Res<Assets<Action>>,
+             res_draw_config: Res<DrawConfiguration>,
+             q_item_details_ui_action_item: Query<(&ForPlayer, &ItemDetailsUiActionItem)>,
+             mut q_item_details_ui_action_item_ui: Query<
+                (Entity, &ForPlayer, &mut FlexibleTextUi),
+                With<ItemDetailsUiActionItem>,
+            >,
+             mut q_shop_ui_item_details_description: Query<
+                (&ForPlayer, &mut FlexibleTextUiMultiline),
+                With<ItemDetailsUiDescription>,
+            >| {
+                let desc_updated_for_player = get_assert!(
+                    id,
+                    q_item_details_ui_action_item,
+                    |(&ForPlayer(player_id), ItemDetailsUiActionItem(action_handle))| {
+                        let (_, mut desc_text) =
+                            ForPlayer::get_mut(&mut q_shop_ui_item_details_description, player_id)?;
+                        let action_desc = ast_action.get(action_handle)?.description();
+
+                        if desc_text.text != action_desc {
+                            desc_text.text = action_desc.to_string();
+                            Some(player_id)
+                        } else {
+                            None // They match, take no action
+                        }
+                    }
+                );
+                // Reset colors on old selected item
+                if let Some(player_id) = desc_updated_for_player {
+                    for (ui_id, &ForPlayer(for_p_id), mut text_ui) in
+                        q_item_details_ui_action_item_ui.iter_mut()
+                    {
+                        if for_p_id == player_id {
+                            let desired_style = if ui_id == id {
+                                // res_draw_config.
+                                res_draw_config
+                                    .color_scheme()
+                                    .shop_ui_listing_item_selected() // TODO replace with specific style
+                            } else {
+                                res_draw_config.color_scheme().shop_ui_listing_item()
+                                // TODO replace with specific style
+                            };
+                            if text_ui.style != desired_style {
+                                text_ui.style = desired_style;
+                            }
+                        }
+                    }
                 }
             },
         );
@@ -150,10 +210,18 @@ impl FromWorld for ShopUiContextActions {
             ))
             .set_parent(daddy)
             .id();
+
+        let select_action = world
+            .spawn((
+                Name::new("Select action CA"),
+                ContextAction::from_system_id("See action details", select_action_sys),
+            ))
+            .id();
         Self {
             buy_item,
             finish_shopping,
             select_item,
+            select_action,
         }
     }
 }
@@ -178,6 +246,15 @@ pub struct ItemDetailsUi;
 
 #[derive(Component, Debug)]
 pub struct ItemDetailsUiDescription;
+
+#[derive(Component, Debug)]
+pub struct ItemDetailsUiActions;
+
+#[derive(Component, Debug)]
+pub struct ItemDetailsUiActionItem(Handle<Action>);
+
+#[derive(Component, Debug)]
+pub struct ItemDetailsUiStats;
 
 #[derive(Component, Debug)]
 pub struct ShopUiBuyButton;
@@ -292,6 +369,71 @@ fn sys_leave_shop_ui(
     }
 }
 
+fn sys_update_item_details_actions(
+    ast_card_def: Res<Assets<CardDefinition>>,
+    ast_action: Res<Assets<Action>>,
+    mut commands: Commands,
+    res_draw_config: Res<DrawConfiguration>,
+    res_shop_ui_ca: Res<ShopUiContextActions>,
+    q_player_in_shop: Query<&InShop, With<Player>>,
+    q_shop: Query<AsDeref<ShopInventory>, With<ShopId>>,
+    q_shop_listing: Query<&ShopListingItemUi>,
+    q_shop_ui: Query<
+        (&ForPlayer, &ShopUiSelectedItem),
+        (With<ShopUi>, Changed<ShopUiSelectedItem>),
+    >,
+    mut q_shop_item_actions: Query<
+        (Entity, &ForPlayer, AsDerefMut<VisibilityTty>),
+        With<ItemDetailsUiActions>,
+    >,
+) {
+    for (&ForPlayer(player_id), &ShopUiSelectedItem(selection)) in q_shop_ui.iter() {
+        if let Some((item_details_actions_ui_id, _, mut visibility)) =
+            ForPlayer::get_mut(&mut q_shop_item_actions, player_id)
+        {
+            let item_actions = selection.and_then(|selection_id| {
+                //try
+                let &ShopListingItemUi(selection_idx) = q_shop_listing.get(selection_id).ok()?;
+                let &InShop(shop_id) = q_player_in_shop.get(player_id).ok()?;
+                let shop_inventory = q_shop.get(shop_id).ok()?;
+                let listing = shop_inventory.get(selection_idx)?;
+                Some(listing.item().actions(&ast_card_def))
+            });
+
+            visibility.set_if_neq(item_actions.is_some());
+            commands
+                .entity(item_details_actions_ui_id)
+                .despawn_descendants();
+            if let Some(item_actions) = item_actions {
+                commands.entity(item_details_actions_ui_id).with_children(
+                    |item_details_actions_ui| {
+                        for action_handle in item_actions.into_iter() {
+                            item_details_actions_ui.spawn((
+                                ButtonUiBundle::new(
+                                    format!(
+                                        "* {}",
+                                        ast_action
+                                            .get(&action_handle)
+                                            .map(|action| action.id_cow())
+                                            .unwrap_or(Cow::Borrowed("???"))
+                                    ),
+                                    res_draw_config.color_scheme().shop_ui_listing_item(),
+                                ),
+                                ItemDetailsUiActionItem(action_handle),
+                                ContextActions::new(
+                                    player_id, /* Shop UI ID? */
+                                    &[res_shop_ui_ca.select_action],
+                                ),
+                                ForPlayer(player_id),
+                            ));
+                        }
+                    },
+                );
+            }
+        }
+    }
+}
+
 fn sys_update_item_details(
     ast_card_def: Res<Assets<CardDefinition>>,
     q_shop_ui: Query<
@@ -299,7 +441,7 @@ fn sys_update_item_details(
         (With<ShopUi>, Changed<ShopUiSelectedItem>),
     >,
     q_shop_listing: Query<&ShopListingItemUi>,
-    q_player_entering_shop: Query<&InShop, With<Player>>,
+    q_player_in_shop: Query<&InShop, With<Player>>,
     q_shop: Query<AsDeref<ShopInventory>, With<ShopId>>,
     mut q_shop_item_desc: Query<
         (
@@ -314,9 +456,10 @@ fn sys_update_item_details(
         if let Some((_, mut visibility, mut flexible_text)) =
             ForPlayer::get_mut(&mut q_shop_item_desc, player_id)
         {
-            let text_desc = selection.and_then(|selection_id|{ //try 
+            let text_desc = selection.and_then(|selection_id| {
+                //try
                 let &ShopListingItemUi(selection_idx) = q_shop_listing.get(selection_id).ok()?;
-                let &InShop(shop_id) = q_player_entering_shop.get(player_id).ok()?;
+                let &InShop(shop_id) = q_player_in_shop.get(player_id).ok()?;
                 let shop_inventory = q_shop.get(shop_id).ok()?;
                 let listing = shop_inventory.get(selection_idx)?;
                 Some(listing.item().description(&ast_card_def))
