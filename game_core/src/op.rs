@@ -63,14 +63,14 @@ impl<T: Op + TypePath + FromReflect> Plugin for OpPlugin<T> {
 }
 
 #[derive(Default, Resource)]
-struct OpRegistry(HashMap<&'static str, Vec<SystemId>>);
+struct OpRegistry(HashMap<&'static str, Vec<SystemId<OpRequest>>>);
 
 impl OpRegistry {
-    fn add_op_system<T: TypePath>(&mut self, system_id: SystemId) {
+    fn add_op_system<T: TypePath>(&mut self, system_id: SystemId<OpRequest>) {
         self.0.entry(T::type_path()).or_default().push(system_id);
     }
 
-    fn get_op_system(&self, type_path: &str, index: usize) -> Option<SystemId> {
+    fn get_op_system(&self, type_path: &str, index: usize) -> Option<SystemId<OpRequest>> {
         self.0
             .get(type_path)
             .and_then(|system_ids| system_ids.get(index).copied())
@@ -92,31 +92,26 @@ impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
     }
 }
 
-#[derive(Debug, Default, Resource)]
-struct OpLoader(Option<OpRequest>);
-
 fn wrap_op_system<S, M, O>(
     mut op_sys: S,
-) -> impl FnMut(ResMut<OpLoader>, StaticSystemParam<S::Param>, EventWriter<OpResult<O>>)
+) -> impl FnMut(In<OpRequest>, StaticSystemParam<S::Param>, EventWriter<OpResult<O>>)
 where
     S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
     O: Op + FromReflect,
 {
-    move |mut op_loader, param, mut evw| {
-        if let Some(op_request) = op_loader.0.take() {
-            let OpRequest { op, source, .. } = op_request;
-            let reflect_op = op.into_reflect();
-            let op: O = FromReflect::from_reflect(&*reflect_op.clone_value())
-                .expect("Unwrap should be good?");
-            // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
-            let result = op_sys.run((source, op), param.into_inner());
-            let res = OpResult {
-                source,
-                op: *reflect_op.downcast().unwrap(),
-                result,
-            };
-            evw.send(res);
-        }
+    move |In(OpRequest{op, source}), param, mut evw| {
+        // let OpRequest { op, source, .. } = op_request;
+        let reflect_op = op.into_reflect();
+        let op: O = FromReflect::from_reflect(&*reflect_op.clone_value())
+            .expect("Unwrap should be good?");
+        // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
+        let result = op_sys.run((source, op), param.into_inner());
+        let res = OpResult {
+            source,
+            op: *reflect_op.downcast().unwrap(),
+            result,
+        };
+        evw.send(res);
     }
 }
 

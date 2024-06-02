@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::ecs::schedule::ScheduleLabel;
 
-use super::{Op, OpLoader, OpRegistry, OpRequest};
+use super::{Op, OpRegistry, OpRequest};
 use crate::prelude::*;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -56,7 +56,7 @@ where
     E: Resource + Default + std::ops::DerefMut + std::ops::Deref<Target = OpExecutor>,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<E>().init_resource::<OpLoader>();
+        app.init_resource::<E>();
         if let Some(ref system_set) = self.system_set {
             app.add_systems(
                 self.schedule.clone(),
@@ -136,11 +136,7 @@ pub fn sys_perform_ops<E: Resource + std::ops::DerefMut + std::ops::Deref<Target
                 log::warn!("Op has no registered system: {op_data:?}")
             },
             Some(op_sys) => {
-                world
-                    .get_resource_mut::<OpLoader>()
-                    .expect("OpLoader for OpQueue should be initialized")
-                    .0 = Some(op_data);
-                if let Err(e) = world.run_system(op_sys) {
+                if let Err(e) = world.run_system_with_input(op_sys, op_data) {
                     log::error!("Error running op system [{op_sys:?}]: {e:?}");
                 }
             },
