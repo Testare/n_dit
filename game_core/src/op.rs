@@ -2,7 +2,7 @@ mod executor;
 
 use std::marker::PhantomData;
 
-use bevy::ecs::system::{StaticSystemParam, SystemId};
+use bevy::ecs::system::{ExclusiveSystemParamFunction, StaticSystemParam, SystemId};
 use bevy::reflect::TypePath;
 pub use executor::{OpExecutor, OpExecutorPlugin, OpExecutorResource};
 use thiserror::Error;
@@ -90,6 +90,17 @@ impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
         op_reg.add_op_system::<O>(sys_id);
         self
     }
+
+    pub fn register_op_exclusive<M: 'static, S>(&mut self, opsys: S) -> &mut Self
+    where
+        S: ExclusiveSystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+    {
+        let sys = wrap_exclusive_op_system(self.0, opsys);
+        let sys_id = self.0.register_system(sys);
+        let mut op_reg = self.0.get_resource_or_insert_with(OpRegistry::default);
+        op_reg.add_op_system::<O>(sys_id);
+        self
+    }
 }
 
 fn wrap_op_system<S, M, O>(
@@ -99,11 +110,11 @@ where
     S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
     O: Op + FromReflect,
 {
-    move |In(OpRequest{op, source}), param, mut evw| {
+    move |In(OpRequest { op, source }), param, mut evw| {
         // let OpRequest { op, source, .. } = op_request;
         let reflect_op = op.into_reflect();
-        let op: O = FromReflect::from_reflect(&*reflect_op.clone_value())
-            .expect("Unwrap should be good?");
+        let op: O =
+            FromReflect::from_reflect(&*reflect_op.clone_value()).expect("Unwrap should be good?");
         // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
         let result = op_sys.run((source, op), param.into_inner());
         let res = OpResult {
@@ -112,6 +123,34 @@ where
             result,
         };
         evw.send(res);
+    }
+}
+
+fn wrap_exclusive_op_system<S, M, O>(
+    world: &mut World,
+    op_sys: S,
+) -> impl FnMut(In<OpRequest>, &mut World)
+where
+    S: ExclusiveSystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+    M: 'static,
+    O: Op + FromReflect,
+{
+    let inner_system_id = world.register_system(op_sys);
+    move |In(OpRequest { op, source }), world| {
+        // let OpRequest { op, source, .. } = op_request;
+        let reflect_op = op.into_reflect();
+        let op: O =
+            FromReflect::from_reflect(&*reflect_op.clone_value()).expect("Unwrap should be good?");
+        // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
+        let result = world
+            .run_system_with_input(inner_system_id, (source, op))
+            .unwrap_or_else(|e|Err(OpError::FrameworkError(format!("{e:?}"))));
+        let res: OpResult<O> = OpResult {
+            source,
+            op: *reflect_op.downcast().unwrap(),
+            result,
+        };
+        world.send_event(res);
     }
 }
 
@@ -166,6 +205,9 @@ pub enum OpError {
     /// This error means we encoutered a failure we are not able to recover from, panic
     #[error("Encountered a fatal error running op: {0}")]
     OpFailureCritical(String),
+
+    #[error("Encountered a framework error when running op: {0}")]
+    FrameworkError(String),
 }
 
 impl From<String> for OpError {

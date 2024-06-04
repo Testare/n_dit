@@ -12,6 +12,7 @@ pub mod player;
 pub mod prelude;
 pub mod quest;
 pub mod registry;
+pub mod saving;
 pub mod shop;
 
 use op::CoreOps;
@@ -74,6 +75,7 @@ impl Plugin for NDitCorePlugin {
             node::NodePlugin::default(),
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
             player::PlayerPlugin,
+            saving::SavePlugin,
             shop::ShopPlugin,
             registry::RegistryPlugin,
         ));

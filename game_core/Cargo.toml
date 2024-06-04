@@ -17,6 +17,7 @@ bevy_query_ext.workspace = true
 bevy_yarnspinner.workspace = true
 bitvec = "1"
 getset = "0.1.1"
+homedir = "0.2.1"
 lazy_static = "1.4.0"
 log = "0.4"
 serde = { version = "1.0", features = ["derive", "rc"] }

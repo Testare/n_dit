@@ -21,6 +21,7 @@ use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player, PlayerBundle};
 use game_core::prelude::*;
 use game_core::quest::QuestStatus;
+use game_core::saving::SaveOp;
 use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
 use crate::animation::AnimationPlayer;
@@ -158,6 +159,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
 fn debug_key(
     mut commands: Commands,
+    mut res_core_ops: ResMut<CoreOps>,
     mut evr_mouse: EventReader<MouseEventTty>,
     mut ev_keys: EventReader<KeyEvent>,
     mut q_quest_status: Query<&mut QuestStatus>,
@@ -195,6 +197,8 @@ fn debug_key(
             for team_id in q_team.iter() {
                 commands.entity(team_id).log_components();
             }
+        } else if *code == KeyCode::Char('0') {
+            res_core_ops.request(Entity::PLACEHOLDER, SaveOp);
         }
     }
 }
