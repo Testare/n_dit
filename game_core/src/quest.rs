@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::node::NodeId;
 use crate::player::{Ncp, Player};
 use crate::prelude::*;
-use crate::saving::{LoadData, SaveData, SaveSchedule};
+use crate::saving::{LoadData, LoadSchedule, SaveData, SaveSchedule};
 
 #[derive(Debug)]
 pub struct QuestPlugin;
@@ -17,7 +17,8 @@ mod key {
 impl Plugin for QuestPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<QuestStatus>()
-            .add_systems(SaveSchedule, sys_save_quest_status);
+            .add_systems(SaveSchedule, sys_save_quest_status)
+            .add_systems(LoadSchedule, sys_load_quest_status);
     }
 }
 /// Indicates status of nodes and quests
@@ -54,7 +55,7 @@ pub fn sys_save_quest_status(
     }
 }
 
-pub fn sys_load_quest_statuss(
+pub fn sys_load_quest_status(
     res_save_data: Res<LoadData>,
     mut q_player: Query<&mut QuestStatus, (With<Player>, With<Ncp>)>,
 ) {

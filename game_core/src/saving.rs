@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use bevy::ecs::schedule::ScheduleLabel;
 
-use crate::op::{Op, OpErrorUtils, OpImplResult, OpPlugin};
+use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
 #[derive(Debug)]
@@ -62,10 +62,10 @@ impl CurrentSaveFile {
     }
 
     fn create(&self) -> std::io::Result<File> {
-        if self.0.exists() {
-            return File::create(&self.0);
-        }
         let path = self.get_path()?;
+        if path.exists() {
+            return File::create(path);
+        }
         let parent = path
             .parent()
             .expect("There should always be a parent in the expanded path");
@@ -76,6 +76,10 @@ impl CurrentSaveFile {
         log::info!("Creating save file {path:?}");
         File::create(path)
         // Err(std::io::Error::new(std::io::ErrorKind::Other, "This was just test"))
+    }
+
+    fn open(&self) -> std::io::Result<File> {
+        File::open(self.get_path()?)
     }
 }
 
@@ -98,20 +102,33 @@ pub struct SaveData(Metadata);
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
 pub struct SaveSchedule;
 
+// TODO when saving becomes more involved, break Load op into two ops: InitiateLoad (load to
+// memory) and PerformLoad
 #[derive(Debug, Clone, Reflect)]
-pub struct SaveOp;
+pub enum SaveOp {
+    Save,
+    Load,
+}
 
 impl Op for SaveOp {
     fn register_systems(mut registrar: crate::op::OpRegistrar<Self>) {
-        registrar.register_op_exclusive(opsys_save_op);
+        registrar
+            .register_op_exclusive(opsys_save_op)
+            .register_op_exclusive(opsys_load_op);
     }
 
     fn system_index(&self) -> usize {
-        0
+        match self {
+            Self::Save => 0,
+            Self::Load => 1,
+        }
     }
 }
 
-pub fn opsys_save_op(In((_source, _op)): In<(Entity, SaveOp)>, world: &mut World) -> OpImplResult {
+pub fn opsys_save_op(In((_source, op)): In<(Entity, SaveOp)>, world: &mut World) -> OpImplResult {
+    if !matches!(op, SaveOp::Save) {
+        return Err(OpError::MismatchedOpSystem);
+    }
     world.insert_resource(SaveData::default());
     let current_save_file = world
         .get_resource::<CurrentSaveFile>()
@@ -127,4 +144,20 @@ pub fn opsys_save_op(In((_source, _op)): In<(Entity, SaveOp)>, world: &mut World
     } else {
         Err("Something went wrong, unable to save".critical())
     }
+}
+
+pub fn opsys_load_op(In((_source, op)): In<(Entity, SaveOp)>, world: &mut World) -> OpImplResult {
+    if !matches!(op, SaveOp::Load) {
+        return Err(OpError::MismatchedOpSystem);
+    }
+    let current_save_file = world
+        .get_resource::<CurrentSaveFile>()
+        .cloned()
+        .ok_or_else(|| "No save file configured".critical())?;
+    let file = current_save_file.open().critical()?;
+    let data: Metadata = serde_json::from_reader(file).critical()?;
+    world.insert_resource(LoadData(data));
+    world.run_schedule(LoadSchedule);
+    world.remove_resource::<LoadData>();
+    Ok(default())
 }

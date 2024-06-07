@@ -106,15 +106,19 @@ fn log_op_results(
     mut evr_node_op: EventReader<OpResult<NodeOp>>,
     mut evr_item_op: EventReader<OpResult<ItemOp>>,
     mut evr_shop_op: EventReader<OpResult<ShopOp>>,
+    mut evr_save_op: EventReader<OpResult<SaveOp>>,
 ) {
     for op in evr_node_op.read() {
-        log::debug!("NODE_OP_RESULT {:?}", op)
+        log::debug!("NodeOp Result: {:?}", op)
     }
     for op in evr_item_op.read() {
-        log::debug!("NODE_OP_RESULT {:?}", op)
+        log::debug!("ItemOp Result: {:?}", op)
     }
     for op in evr_shop_op.read() {
-        log::debug!("NODE_OP_RESULT {:?}", op)
+        log::debug!("ShopOp Result: {:?}", op)
+    }
+    for op in evr_save_op.read() {
+        log::debug!("SaveOp Result: {:?}", op)
     }
 }
 
@@ -198,7 +202,9 @@ fn debug_key(
                 commands.entity(team_id).log_components();
             }
         } else if *code == KeyCode::Char('0') {
-            res_core_ops.request(Entity::PLACEHOLDER, SaveOp);
+            res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Save);
+        } else if *code == KeyCode::Char('9') {
+            res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Load);
         }
     }
 }
