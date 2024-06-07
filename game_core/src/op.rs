@@ -144,7 +144,7 @@ where
         // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
         let result = world
             .run_system_with_input(inner_system_id, (source, op))
-            .unwrap_or_else(|e|Err(OpError::FrameworkError(format!("{e:?}"))));
+            .unwrap_or_else(|e| Err(OpError::FrameworkError(format!("{e:?}"))));
         let res: OpResult<O> = OpResult {
             source,
             op: *reflect_op.downcast().unwrap(),

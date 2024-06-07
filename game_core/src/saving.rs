@@ -7,12 +7,6 @@ use bevy::ecs::schedule::ScheduleLabel;
 use crate::op::{Op, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
-pub mod key {
-    use typed_key::{typed_key, Key};
-
-    pub const LEMONS: Key<String> = typed_key!("lemons");
-}
-
 #[derive(Debug)]
 pub struct SavePlugin;
 
@@ -20,7 +14,7 @@ impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CurrentSaveFile>()
             .init_schedule(SaveSchedule)
-            .add_systems(SaveSchedule, sys_save_test_flag)
+            .init_schedule(LoadSchedule)
             .add_plugins(OpPlugin::<SaveOp>::default());
     }
 }
@@ -53,7 +47,10 @@ impl CurrentSaveFile {
                 let mut pathbuf = PathBuf::new();
                 let home = homedir::get_my_home()?;
                 if home.is_none() {
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "No home directory"));
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "No home directory",
+                    ));
                 }
                 pathbuf.push(home.unwrap());
                 pathbuf.push(".local");
@@ -82,8 +79,21 @@ impl CurrentSaveFile {
     }
 }
 
-#[derive(Component, Debug, Default, Resource, Deref, DerefMut)]
-pub struct SaveMetadata(Metadata);
+/// Contains data from loaded save file, to provide as a resource
+/// to the bevy LoadSchedule.
+///
+/// Essentially identical to [SaveData], but to prevent load/save systems
+/// from running in the wrong schedules this is kept separate and you
+/// can't deref it as mut.
+#[derive(Debug, Default, Resource, Deref)]
+pub struct LoadData(Metadata);
+
+///
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
+pub struct LoadSchedule;
+
+#[derive(Debug, Default, Resource, Deref, DerefMut)]
+pub struct SaveData(Metadata);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
 pub struct SaveSchedule;
@@ -101,28 +111,20 @@ impl Op for SaveOp {
     }
 }
 
-pub fn opsys_save_op(
-    In((_source, _op)): In<(Entity, SaveOp)>,
-    world: &mut World
-) -> OpImplResult {
-    world.insert_resource(SaveMetadata::default());
+pub fn opsys_save_op(In((_source, _op)): In<(Entity, SaveOp)>, world: &mut World) -> OpImplResult {
+    world.insert_resource(SaveData::default());
     let current_save_file = world
         .get_resource::<CurrentSaveFile>()
         .cloned()
         .ok_or_else(|| "No save file configured".critical())?;
     let file = current_save_file.create().critical()?;
     world.run_schedule(SaveSchedule);
-    if let Some(SaveMetadata(metadata)) = world.remove_resource::<SaveMetadata>() {
-        // TODO save this metadata, don't just return it
+    if let Some(SaveData(metadata)) = world.remove_resource::<SaveData>() {
+        // TODO return different metadata
+        // TODO more importantly, this writing should be async instead of in-frame
         serde_json::to_writer(file, &metadata).critical()?;
         Ok(metadata)
     } else {
         Err("Something went wrong, unable to save".critical())
     }
-}
-
-pub fn sys_save_test_flag(
-    mut res_save_data: ResMut<SaveMetadata>,
-) {
-    res_save_data.put(key::LEMONS, "Bag of bones".to_string());
 }

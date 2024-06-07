@@ -67,6 +67,8 @@ impl Plugin for NDitCorePlugin {
         )
         .add_plugins((
             bam::BamPlugin,
+            player::PlayerPlugin,
+            saving::SavePlugin,
             board::BoardPlugin,
             card::CardPlugin,
             dialog::DialogPlugin,
@@ -74,8 +76,7 @@ impl Plugin for NDitCorePlugin {
             entity_grid::EntityGridSupportPlugin,
             node::NodePlugin::default(),
             op::OpExecutorPlugin::<CoreOps>::new(Update, Some(NDitCoreSet::ProcessCommands)),
-            player::PlayerPlugin,
-            saving::SavePlugin,
+            quest::QuestPlugin,
             shop::ShopPlugin,
             registry::RegistryPlugin,
         ));
