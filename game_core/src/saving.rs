@@ -7,6 +7,8 @@ use bevy::ecs::schedule::ScheduleLabel;
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
+
+
 #[derive(Debug)]
 pub struct SavePlugin;
 
@@ -24,7 +26,7 @@ pub struct CurrentSaveFile(Cow<'static, Path>);
 
 impl Default for CurrentSaveFile {
     fn default() -> Self {
-        Self(Cow::Borrowed(Path::new("default.cq.sav")))
+        Self(Cow::Borrowed(Path::new("default.sav.json")))
     }
 }
 

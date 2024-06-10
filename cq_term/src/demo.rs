@@ -139,7 +139,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 
     let app_type_registry = world.resource::<AppTypeRegistry>().clone();
     let entities: Vec<Entity> = world
-        .query_filtered::<Entity, Or<(With<Node>, With<StyleTty>)>>()
+        .query_filtered::<Entity, Or<(With<Player>, With<Node>)>>()
         .iter(world)
         .collect();
     let scene = DynamicSceneBuilder::from_world(world)
@@ -243,6 +243,7 @@ fn demo_startup(
     // silence.
     // See issue: https://github.com/bevyengine/bevy/issues/9798
     // NOTE: This unfortunately did not work when playing a silent audio file, trying a real audio file with 0 volume
+    // NOTE: Yeah it didn't work with music either.
     commands.spawn(AudioBundle {
         source: asset_server.load("tmp/audio/mixkit-coins-sound-2003.wav"),
         settings: PlaybackSettings {

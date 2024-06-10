@@ -5,7 +5,9 @@ use getset::CopyGetters;
 use self::daddy::Daddy;
 use crate::card::{Action, Card, CardDefinition, Deck, Nickname};
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
+use crate::player::Player;
 use crate::prelude::*;
+use crate::saving::{LoadData, LoadSchedule, SaveData, SaveSchedule};
 
 pub const MAX_MON: u32 = 100_000_000;
 
@@ -15,6 +17,10 @@ pub mod key {
 
     pub const CARD_ID: Key<Entity> = typed_key!("card_id");
     pub const NEW_CARD: Key<bool> = typed_key!("new_card");
+    pub mod save {
+        use super::*;
+        pub const WALLET: Key<u32> = typed_key!("wallet");
+    }
 }
 
 #[derive(Debug, Default)]
@@ -24,7 +30,9 @@ impl Plugin for ItemPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Daddy<Card>>()
             .register_type::<Item>()
-            .add_plugins(OpPlugin::<ItemOp>::default());
+            .add_plugins(OpPlugin::<ItemOp>::default())
+            .add_systems(SaveSchedule, sys_save_wallet)
+            .add_systems(LoadSchedule, sys_load_wallet);
     }
 }
 
@@ -42,6 +50,10 @@ impl Wallet {
     pub fn with_mon(mut self, mon: u32) -> Self {
         self.mon = mon;
         self
+    }
+
+    pub fn set_mon(&mut self, mon: u32) {
+        self.mon = mon;
     }
 
     pub fn increase_mon(&mut self, mon: u32) {
@@ -197,5 +209,25 @@ pub fn opsys_add_item(
         }
     } else {
         Err(OpError::MismatchedOpSystem)
+    }
+}
+
+pub fn sys_save_wallet(
+    mut res_save_data: ResMut<SaveData>,
+    q_player: Query<&Wallet, With<Player>>,
+) {
+    for wallet in q_player.iter() {
+        res_save_data.put(key::save::WALLET, wallet.mon());
+    }
+}
+
+pub fn sys_load_wallet(
+    res_load_data: ResMut<LoadData>,
+    mut q_player: Query<&mut Wallet, With<Player>>,
+) {
+    for mut wallet in q_player.iter_mut() {
+        if let Ok(Some(load_wallet)) = res_load_data.get_optional(key::save::WALLET) {
+            wallet.set_mon(load_wallet)
+        }
     }
 }

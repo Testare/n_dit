@@ -1,8 +1,10 @@
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 
-use crate::node::PreventNoOp;
+use crate::player::Player;
+use crate::{node::PreventNoOp, saving::LoadData};
 use crate::prelude::*;
+use crate::saving::{LoadSchedule, SaveData, SaveSchedule};
 use crate::NDitCoreSet;
 
 mod card_action;
@@ -16,6 +18,14 @@ pub use card_action::{
 };
 pub use card_as_asset::{CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};
+
+// TODO better key architecture
+pub mod save_key {
+    use typed_key::*;
+
+    use super::*;
+    pub const DECK: Key<Deck> = typed_key!("deck");
+}
 
 #[derive(Debug, Default)]
 pub struct CardPlugin;
@@ -43,7 +53,10 @@ impl Plugin for CardPlugin {
                 (sys_load_cards, sys_sort_decks)
                     .chain()
                     .in_set(NDitCoreSet::PostProcessCommands),
-            );
+            )
+            .add_systems(SaveSchedule, sys_save_deck)
+            .add_systems(LoadSchedule, sys_load_deck)
+        ;
     }
 }
 
@@ -107,7 +120,7 @@ impl CardQueryItem<'_> {
 }
 
 // TODO MapEntities?
-#[derive(Component, Debug, Default, Deserialize, Reflect, Serialize)]
+#[derive(Component, Debug, Default, Deserialize, Eq, PartialEq, Reflect, Serialize)]
 #[reflect(Component, Deserialize, Serialize)]
 pub struct Deck {
     cards: HashMap<Entity, NonZeroU32>,
@@ -271,6 +284,26 @@ pub fn sys_load_cards(
             if card_def.prevent_no_op() {
                 card.insert(PreventNoOp);
             }
+        }
+    }
+}
+
+pub fn sys_save_deck(
+    mut res_save_data: ResMut<SaveData>,
+    q_player: Query<&Deck, With<Player>>,
+) {
+    for deck in q_player.iter() {
+        res_save_data.put(save_key::DECK, deck);
+    }
+}
+
+pub fn sys_load_deck(
+    res_load_data: ResMut<LoadData>,
+    mut q_player: Query<&mut Deck, With<Player>>,
+) {
+    for mut deck in q_player.iter_mut() {
+        if let Ok(Some(load_deck)) = res_load_data.get_optional(save_key::DECK) {
+            deck.set_if_neq(load_deck);
         }
     }
 }
