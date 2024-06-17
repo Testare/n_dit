@@ -173,19 +173,17 @@ impl AssetLoader for RegistryTomlAssetLoader {
     type Settings = ();
     type Error = RegistryLoadError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
-        _: &Self::Settings,
-        load_context: &'a mut LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut value_str = String::new();
-            reader.read_to_string(&mut value_str).await?;
-            let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str.as_str())?;
-            registry_file.source_file = load_context.path().to_path_buf();
-            Ok(registry_file)
-        })
+        reader: &'a mut Reader<'_>,
+        _: &'a Self::Settings,
+        load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut value_str = String::new();
+        reader.read_to_string(&mut value_str).await?;
+        let mut registry_file = toml::from_str::<RegistryTomlFile>(value_str.as_str())?;
+        registry_file.source_file = load_context.path().to_path_buf();
+        Ok(registry_file)
     }
 
     fn extensions(&self) -> &[&str] {

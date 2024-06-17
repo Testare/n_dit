@@ -76,7 +76,7 @@ impl TerminalRendering {
 
     fn update_from(&mut self, tr: &TerminalRendering) {
         self.rendering = tr.rendering.clone();
-        self.render_cache = tr.render_cache.clone();
+        self.render_cache.clone_from(&tr.render_cache);
     }
 
     pub fn string_rendering(&self) -> &[String] {

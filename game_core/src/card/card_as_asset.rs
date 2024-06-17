@@ -78,44 +78,42 @@ impl AssetLoader for ActionAssetLoader {
     type Settings = ();
     type Error = std::io::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
-        _: &Self::Settings,
-        load_context: &'a mut LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = vec![];
-            reader.read_to_end(&mut bytes).await?;
-            let asset_map: HashMap<String, ActionAssetDef> = serde_json::from_slice(&bytes[..])?;
-            for (id, def) in asset_map.into_iter() {
-                let ActionAssetDef {
-                    effects,
-                    prereqs,
-                    range,
-                    self_effects,
-                    tags,
-                    target,
-                    description,
-                } = def;
-                let def = Action {
-                    id: id.clone(),
-                    range: Some(range.into()),
-                    tags,
-                    effects,
-                    target,
-                    self_effects,
-                    prereqs,
-                    description,
-                };
-                if let Err(err_msg) = validations::validate_action_effects_match_target(&def) {
-                    log::error!("{}", err_msg);
-                } else {
-                    load_context.labeled_asset_scope(id, |_| def);
-                }
+        reader: &'a mut Reader<'_>,
+        _: &'a Self::Settings,
+        load_context: &'a mut LoadContext<'_>,
+    ) -> Result<(), Self::Error> {
+        let mut bytes = vec![];
+        reader.read_to_end(&mut bytes).await?;
+        let asset_map: HashMap<String, ActionAssetDef> = serde_json::from_slice(&bytes[..])?;
+        for (id, def) in asset_map.into_iter() {
+            let ActionAssetDef {
+                effects,
+                prereqs,
+                range,
+                self_effects,
+                tags,
+                target,
+                description,
+            } = def;
+            let def = Action {
+                id: id.clone(),
+                range: Some(range.into()),
+                tags,
+                effects,
+                target,
+                self_effects,
+                prereqs,
+                description,
+            };
+            if let Err(err_msg) = validations::validate_action_effects_match_target(&def) {
+                log::error!("{}", err_msg);
+            } else {
+                load_context.labeled_asset_scope(id, |_| def);
             }
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
     fn extensions(&self) -> &[&str] {
@@ -131,37 +129,35 @@ impl AssetLoader for CardAssetLoader {
     type Settings = ();
     type Error = std::io::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
-        _: &Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = vec![];
-            reader.read_to_end(&mut bytes).await?;
-            let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(&bytes[..])?;
-            for (id, def) in asset_map.into_iter() {
-                load_context.labeled_asset_scope(id.clone(), |lc| {
-                    let mut actions = Vec::new();
-                    for action_path in def.actions.into_iter() {
-                        actions.push(lc.load(action_path.to_string()));
-                    }
-                    CardDefinition {
-                        id: id.clone(),
-                        actions,
-                        short_name: def.short_name.unwrap_or(id),
-                        description: def.description,
-                        max_size: def.max_size,
-                        movement_speed: def.speed,
-                        prevent_no_op: def.prevent_no_op,
-                        tags: def.tags,
-                    }
-                });
-            }
+        reader: &'a mut Reader<'_>,
+        _: &'a Self::Settings,
+        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    ) -> Result<(), Self::Error> {
+        let mut bytes = vec![];
+        reader.read_to_end(&mut bytes).await?;
+        let asset_map: HashMap<String, CardAssetDef> = serde_json::from_slice(&bytes[..])?;
+        for (id, def) in asset_map.into_iter() {
+            load_context.labeled_asset_scope(id.clone(), |lc| {
+                let mut actions = Vec::new();
+                for action_path in def.actions.into_iter() {
+                    actions.push(lc.load(action_path.to_string()));
+                }
+                CardDefinition {
+                    id: id.clone(),
+                    actions,
+                    short_name: def.short_name.unwrap_or(id),
+                    description: def.description,
+                    max_size: def.max_size,
+                    movement_speed: def.speed,
+                    prevent_no_op: def.prevent_no_op,
+                    tags: def.tags,
+                }
+            });
+        }
 
-            Ok(())
-        })
+        Ok(())
     }
 
     fn extensions(&self) -> &[&str] {

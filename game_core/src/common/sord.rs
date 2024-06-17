@@ -74,10 +74,6 @@ where
     }
 }
 
-trait SeDeAny {}
-
-impl<T: Serialize + DeserializeOwned> SeDeAny for T {}
-
 #[derive(Debug)]
 pub struct Sord<S: SeDe> {
     se: OnceLock<Result<String, SordError<S::Error>>>,

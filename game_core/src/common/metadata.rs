@@ -38,7 +38,7 @@ impl Metadata {
     }
 
     pub fn get_optional<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<Option<T>> {
-        if let Some(value_str) = self.0.get(&key.name().to_string()) {
+        if let Some(value_str) = self.0.get(key.name()) {
             Ok(Some(serde_json::from_str(value_str)?))
         } else {
             Ok(None)
@@ -50,7 +50,7 @@ impl Metadata {
     }
 
     pub fn get_required<'a, T: Deserialize<'a>>(&'a self, key: Key<T>) -> Result<T> {
-        if let Some(value_str) = self.0.get(&key.name().to_string()) {
+        if let Some(value_str) = self.0.get(key.name()) {
             Ok(serde_json::from_str(value_str)?)
         } else {
             Err(MetadataErr::RequiredKeyNotFound(key.name().to_owned()))
@@ -58,7 +58,7 @@ impl Metadata {
     }
 
     pub fn get_field_optional<'a, T: Deserialize<'a>>(&'a self, field: &str) -> Result<Option<T>> {
-        if let Some(value_str) = self.0.get(&field.to_string()) {
+        if let Some(value_str) = self.0.get(field) {
             Ok(Some(serde_json::from_str(value_str)?))
         } else {
             Ok(None)
@@ -69,7 +69,7 @@ impl Metadata {
         &'a self,
         field: &str,
     ) -> Result<T> {
-        if let Some(value_str) = self.0.get(&field.to_string()) {
+        if let Some(value_str) = self.0.get(field) {
             Ok(serde_json::from_str(value_str)?)
         } else {
             Ok(Default::default())

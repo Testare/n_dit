@@ -165,14 +165,14 @@ fn render_grid(
             // Other ideas: "██", if we replace the arrow borders with █ too
             sprite_map
                 .entry(from_pt)
-                .and_modify(|(_, s)| *s = arrow.clone())
+                .and_modify(|(_, s)| s.clone_from(&arrow))
                 .or_insert((ContentStyle::default().blue().on_dark_grey(), arrow.clone()));
         }
         if i == path_to_grid_point.len() - 1 {
             // Other ideas: "⟪⟫"  "⧒ " "⧑ "  "⮛ "  ⧨ ⧩ 🮶🮶  "🭦🭛"  "\" 🮝🮜  "⟪⟫"  "✖ "
             sprite_map
                 .entry(to_pt)
-                .and_modify(|(_, s)| *s = arrow.clone())
+                .and_modify(|(_, s)| s.clone_from(&arrow))
                 .or_insert((ContentStyle::default().blue().on_black(), arrow.clone()));
         }
     }

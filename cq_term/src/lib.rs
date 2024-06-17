@@ -233,7 +233,7 @@ fn exit_key(
 ) {
     for input_event::KeyEvent { code, .. } in ev_key.read() {
         if *code == input_event::KeyCode::Char(term_config.exit_key) {
-            exit.send(bevy::app::AppExit);
+            exit.send(bevy::app::AppExit::Success);
         }
     }
 }

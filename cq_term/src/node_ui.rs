@@ -240,7 +240,7 @@ fn sys_react_to_node_op(
 
                             for (_, _, in_node, mut telegraphed_action) in q_player_ui.iter_mut() {
                                 if in_node == node {
-                                    **telegraphed_action = action_handle.clone();
+                                    (*telegraphed_action).clone_from(&action_handle);
                                 }
                             }
                         },

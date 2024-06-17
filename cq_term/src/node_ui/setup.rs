@@ -135,7 +135,7 @@ impl FromWorld for ButtonContextActions {
             .id();
         let quit_game = world
             .spawn(ContextAction::new("Quit game".to_string(), |_, world| {
-                world.send_event(AppExit);
+                world.send_event(AppExit::Success);
             }))
             .id();
         let quit_battle = world

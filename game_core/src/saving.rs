@@ -92,7 +92,6 @@ impl CurrentSaveFile {
 #[derive(Debug, Default, Resource, Deref)]
 pub struct LoadData(Metadata);
 
-///
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
 pub struct LoadSchedule;
 

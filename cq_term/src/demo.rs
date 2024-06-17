@@ -137,7 +137,7 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
         return;
     }
 
-    let type_registry = world.resource::<AppTypeRegistry>().clone();
+    let app_type_registry = world.resource::<AppTypeRegistry>().clone();
     let entities: Vec<Entity> = world
         .query_filtered::<Entity, Or<(With<Node>, With<StyleTty>)>>()
         .iter(world)
@@ -148,7 +148,8 @@ fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
         .allow::<Node>()
         .extract_entities(entities.into_iter())
         .build();
-    match scene.serialize_ron(&type_registry) {
+    let type_registry = app_type_registry.read();
+    match scene.serialize(&type_registry) {
         Ok(scene_serialized) => {
             log::info!("Serialization successful");
             File::create("debug.scn.ron")
@@ -246,7 +247,7 @@ fn demo_startup(
         source: asset_server.load("tmp/audio/mixkit-coins-sound-2003.wav"),
         settings: PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
-            volume: Volume::new(0.2),
+            volume: Volume::new(0.0),
             ..default()
         },
     });

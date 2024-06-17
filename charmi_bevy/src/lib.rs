@@ -45,9 +45,9 @@ impl RegisterCharmiFunctions for App {
     where
         F: IntoSystem<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static,
     {
-        let sys_id = self.world.register_system(function);
+        let sys_id = self.world_mut().register_system(function);
         let mut registry = self
-            .world
+            .world_mut()
             .get_resource_or_insert_with(CharmiFunctionRegistry::default);
         registry.cell_functions.insert(name.to_string(), sys_id);
     }
@@ -56,9 +56,9 @@ impl RegisterCharmiFunctions for App {
     where
         F: IntoSystem<FreeformToml, bool, M> + 'static,
     {
-        let sys_id = self.world.register_system(function);
+        let sys_id = self.world_mut().register_system(function);
         let mut registry = self
-            .world
+            .world_mut()
             .get_resource_or_insert_with(CharmiFunctionRegistry::default);
         registry.timing_functions.insert(name.to_string(), sys_id);
     }

@@ -212,8 +212,6 @@ impl Square {
     }
 }
 
-/// Convenience trait to allow Square to passed to [`EntityGrid::item()`]
-/// Simply converts a Square to the optional item_key.
 impl From<Square> for Option<Entity> {
     fn from(sqr: Square) -> Option<Entity> {
         sqr.item_key()

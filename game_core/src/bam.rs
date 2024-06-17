@@ -29,29 +29,27 @@ impl AssetLoader for BevyAssetManifestLoader {
     type Asset = BevyAssetManifest;
     type Error = std::io::Error;
     type Settings = ();
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut bevy::asset::io::Reader,
+        reader: &'a mut bevy::asset::io::Reader<'_>,
         _: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut file_contents = String::new();
-            reader.read_to_string(&mut file_contents).await?;
-            let mut root_path_buf = load_context.path().to_owned();
-            root_path_buf.pop();
-            let root_path: Arc<Path> = root_path_buf.as_path().into();
-            let asset_handles = file_contents
-                .lines()
-                .map(|line| {
-                    let mut pathbuf = root_path.to_path_buf();
-                    pathbuf.push(line);
-                    log::trace!("BAM asset: {:?}", pathbuf);
-                    load_context.load_untyped(pathbuf)
-                })
-                .collect();
-            Ok(BevyAssetManifest(asset_handles))
-        })
+        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut file_contents = String::new();
+        reader.read_to_string(&mut file_contents).await?;
+        let mut root_path_buf = load_context.path().to_owned();
+        root_path_buf.pop();
+        let root_path: Arc<Path> = root_path_buf.as_path().into();
+        let asset_handles = file_contents
+            .lines()
+            .map(|line| {
+                let mut pathbuf = root_path.to_path_buf();
+                pathbuf.push(line);
+                log::trace!("BAM asset: {:?}", pathbuf);
+                load_context.loader().untyped().load(pathbuf)
+            })
+            .collect();
+        Ok(BevyAssetManifest(asset_handles))
     }
 
     fn extensions(&self) -> &[&str] {

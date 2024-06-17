@@ -50,7 +50,7 @@ pub struct MouseEventListener;
 #[derive(Component, Debug)]
 pub struct MouseEventTtyDisabled;
 
-#[derive(Component, Clone, Copy, CopyGetters, Debug, Event, Getters)]
+#[derive(Clone, Copy, CopyGetters, Debug, Event, Getters)]
 pub struct MouseEventTty {
     #[getset(get_copy = "pub")]
     entity: Entity,

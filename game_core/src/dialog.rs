@@ -68,7 +68,7 @@ pub fn sys_dialog_view(
     for PresentOptionsEvent { options, source } in evr_dialogue_options.read() {
         if let Ok((Some(mut dialog), _dialogue_runner)) = q_dialogue_runner.get_mut(*source) {
             dialog.line = dialog.next_line.take();
-            dialog.options = options.clone();
+            dialog.options.clone_from(options);
         }
     }
     for NodeCompleteEvent {

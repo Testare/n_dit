@@ -2,7 +2,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bevy::ecs::query::QueryEntityError;
-use bevy::ecs::system::{Command, SystemId};
+use bevy::ecs::system::SystemId;
+use bevy::ecs::world::Command;
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::time::{Time, Timer, TimerMode};
 use charmi::CharacterMapImage;

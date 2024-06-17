@@ -80,7 +80,7 @@ fn sys_load_curios(
 ) {
     for (id, mut lcfc) in curios_from_card.iter_mut() {
         let handle = lcfc.get_handle(&asset_server);
-        if let Some(card_def) = assets.get(handle) {
+        if let Some(card_def) = assets.get(&handle) {
             commands
                 .entity(id)
                 .insert((
