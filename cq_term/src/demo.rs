@@ -90,9 +90,12 @@ pub fn sys_demo_shader(
         for y in 0..size.height() {
             let row = charmi.new_row();
             for cell_style in (0..size.width()).map(|x| {
-                ContentStyle::new().on(Color::AnsiValue(
-                    ds.color.wrapping_add(((x + y) % 256) as u8),
-                ))
+                let color_val = ds.color.wrapping_add(((x + y) % 256) as u8);
+
+                ContentStyle::new()
+                    .on(Color::AnsiValue(color_val))
+                    .with(Color::AnsiValue(color_val)) // Remove or change this if you want to see rainbow
+                                                       // affect applied OVER game text
             }) {
                 row.add_effect(1, &cell_style);
             }
