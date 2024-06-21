@@ -14,6 +14,8 @@ pub mod nf; // This should become a plugin in n_dit later once we no longer depe
 pub mod node_ui;
 mod render;
 
+use bevy::core::FrameCount;
+use bevy::time::{Real, Stopwatch, Time};
 use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
 
@@ -227,12 +229,26 @@ impl Drop for TerminalWindow {
 /// Systems
 
 fn exit_key(
+    res_time: Res<Time<Real>>,
+    res_framecount: Res<FrameCount>,
     term_config: Res<TermConfig>,
     mut ev_key: EventReader<KeyEvent>,
     mut exit: EventWriter<bevy::app::AppExit>,
+    mut local_stopwatch: Local<Option<Stopwatch>>,
 ) {
+    let stopwatch = local_stopwatch.get_or_insert_with(Stopwatch::new);
+    stopwatch.tick(res_time.delta());
+
     for input_event::KeyEvent { code, .. } in ev_key.read() {
         if *code == input_event::KeyCode::Char(term_config.exit_key) {
+            let time = stopwatch.elapsed();
+            let framecount = res_framecount.0;
+            let time_per_frame = time / framecount;
+            log::debug!(
+                "Total time: {} second/{framecount} frames ({} FPS)",
+                time.as_secs_f64(),
+                1.0 / time_per_frame.as_secs_f64()
+            );
             exit.send(bevy::app::AppExit::Success);
         }
     }

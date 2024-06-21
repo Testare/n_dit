@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::time::Duration;
 
+use bevy::app::RunMode;
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
 use clap::Parser;
@@ -26,6 +27,9 @@ struct CqCliPlugin {
     /// Applies "demo shader" affect, a sliding rainbow
     #[arg(long = "rainbow", value_name = "RAINBOW HEIGHT")]
     demo_shader: Option<u32>,
+    /// Runs game without a frame
+    #[arg(short, long = "uncapped")]
+    uncapped_fps: bool,
 }
 
 impl Plugin for CqCliPlugin {
@@ -44,6 +48,14 @@ impl Plugin for CqCliPlugin {
 
 fn main() {
     let cq_cli = CqCliPlugin::parse();
+
+    let schedule_runner = if cq_cli.uncapped_fps {
+        bevy::app::ScheduleRunnerPlugin {
+            run_mode: RunMode::Loop { wait: None },
+        }
+    } else {
+        bevy::app::ScheduleRunnerPlugin::run_loop(Duration::from_millis(25))
+    };
     setup_logging(&cq_cli);
     App::new()
         .add_plugins((
@@ -55,7 +67,7 @@ fn main() {
             ScenePlugin,
             TypeRegistrationPlugin,
             bevy::time::TimePlugin,
-            bevy::app::ScheduleRunnerPlugin::run_loop(Duration::from_millis(25)),
+            schedule_runner,
             FrameCountPlugin,
             game_core::NDitCorePlugin,
             cq_term::CharmiePlugin,
