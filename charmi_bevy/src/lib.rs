@@ -66,7 +66,7 @@ impl RegisterCharmiFunctions for App {
 
 #[cfg(test)]
 mod test {
-    use charmi::ColorDef;
+    use charmi::ColorValue;
     use typed_key::{typed_key, Key};
 
     use super::*;
@@ -87,7 +87,7 @@ mod test {
             CharmiCell {
                 character: None,
                 fg: None,
-                bg: Some(charmi::ColorDef::Ansi(shader_val)),
+                bg: Some(charmi::ColorValue::Ansi(shader_val)),
             }
         })
     }
@@ -117,19 +117,19 @@ mod test {
                 result_cells,
                 vec![
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(6u8)),
+                        bg: Some(ColorValue::Ansi(6u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(9u8)),
+                        bg: Some(ColorValue::Ansi(9u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(8u8)),
+                        bg: Some(ColorValue::Ansi(8u8)),
                         ..default()
                     },
                     CharmiCell {
-                        bg: Some(ColorDef::Ansi(11u8)),
+                        bg: Some(ColorValue::Ansi(11u8)),
                         ..default()
                     },
                 ]

@@ -21,6 +21,7 @@ pub enum ColorDef {
     // Rgba -> ???
 }
 
+
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct CharmieDef {
     text: Option<String>,
