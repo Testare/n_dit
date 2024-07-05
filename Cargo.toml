@@ -19,12 +19,12 @@ type_complexity = "allow"
 
 [workspace.dependencies]
 freeform = { version = "0.3", features = ["toml"]  }
-bevy_query_ext = "0.4.0-rc.3"
-bevy_yarnspinner = "0.3.0-rc"
+bevy_query_ext = "0.4.0"
+bevy_yarnspinner = "0.3"
 toml = "0.8.12"
 
 [workspace.dependencies.bevy]
-version = "0.14.0-rc.3"
+version = "0.14.0"
 default-features = false
 features = [
     "bevy_asset",
