@@ -28,5 +28,4 @@ impl CharmiCell {
             bg: None,
         }
     }
-
 }

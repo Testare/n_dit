@@ -5,12 +5,15 @@ use bevy::utils::HashMap;
 use crossterm::style::{Color, ContentStyle, Stylize};
 use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize, Serializer};
-use unicode_width::UnicodeWidthChar;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use super::charmie_actor::{CharmieActor, CharmieAnimation, CharmieAnimationFrame};
 use super::{CharacterMapImage, CharmieSegment, CharmieString};
+use crate::fixed::CharmiFixed;
+use crate::{CharmiCell, ColorValue};
 
 static COLOR_NAMES: OnceLock<HashMap<String, Color>> = OnceLock::new();
+static COLOR_VALUE_NAMES: OnceLock<HashMap<String, ColorValue>> = OnceLock::new();
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
@@ -20,7 +23,6 @@ pub enum ColorDef {
     Rgb(u8, u8, u8),
     // Rgba -> ???
 }
-
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct CharmieDef {
@@ -122,6 +124,58 @@ impl CharmieAnimationDef {
             (None, None) => None,
         };
         self
+    }
+}
+
+impl TryFrom<&ColorDef> for ColorValue {
+    type Error = ();
+    fn try_from(value: &ColorDef) -> Result<Self, Self::Error> {
+        match value {
+            ColorDef::Ansi(ansi) => Ok(ColorValue::Ansi(*ansi)),
+            ColorDef::Rgb(r, g, b) => Ok(ColorValue::Rgb(*r, *g, *b)),
+            ColorDef::Named(name) => COLOR_VALUE_NAMES
+                .get_or_init(|| {
+                    [
+                        ("black", ColorValue::BLACK),
+                        ("dark red", ColorValue::DARK_RED),
+                        ("darkred", ColorValue::DARK_RED),
+                        ("dark green", ColorValue::DARK_GREEN),
+                        ("darkgreen", ColorValue::DARK_GREEN),
+                        ("dark yellow", ColorValue::DARK_YELLOW),
+                        ("darkyellow", ColorValue::DARK_YELLOW),
+                        ("dark blue", ColorValue::DARK_BLUE),
+                        ("darkblue", ColorValue::DARK_BLUE),
+                        ("navy", ColorValue::DARK_BLUE),
+                        ("dark magenta", ColorValue::DARK_MAGENTA),
+                        ("darkmagenta", ColorValue::DARK_MAGENTA),
+                        ("purple", ColorValue::DARK_MAGENTA),
+                        ("dark cyan", ColorValue::DARK_CYAN),
+                        ("darkcyan", ColorValue::DARK_CYAN),
+                        ("teal", ColorValue::DARK_CYAN),
+                        ("grey", ColorValue::GREY),
+                        ("gray", ColorValue::GREY),
+                        ("dark grey", ColorValue::DARK_GREY),
+                        ("darkgrey", ColorValue::DARK_GREY),
+                        ("dark gray", ColorValue::DARK_GREY),
+                        ("darkgray", ColorValue::DARK_GREY),
+                        ("red", ColorValue::RED),
+                        ("green", ColorValue::GREEN),
+                        ("lime", ColorValue::GREEN),
+                        ("yellow", ColorValue::YELLOW),
+                        ("blue", ColorValue::BLUE),
+                        ("magenta", ColorValue::MAGENTA),
+                        ("cyan", ColorValue::CYAN),
+                        ("aqua", ColorValue::CYAN),
+                        ("white", ColorValue::WHITE),
+                    ]
+                    .into_iter()
+                    .map(|(k, v)| (k.to_owned(), v))
+                    .collect()
+                })
+                .get(&name.to_lowercase())
+                .copied()
+                .ok_or(()),
+        }
     }
 }
 
@@ -403,6 +457,80 @@ impl From<CharacterMapImage> for CharmieDef {
             values,
             attr: None,
         }
+    }
+}
+
+impl From<&CharmieDef> for CharmiFixed {
+    fn from(value: &CharmieDef) -> Self {
+        let values = value.values.clone().unwrap_or_default();
+        let gap_ch = values.gap.unwrap_or(' ');
+        let empty_cell = if gap_ch == ' ' {
+            CharmiCell::new_empty()
+        } else {
+            CharmiCell::new_blank()
+        };
+        let color_map: HashMap<char, ColorValue> = values
+            .colors
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|(k, v)| Some((*k, v.try_into().ok()?)))
+            .collect();
+        let text_lines: Vec<&str> = value
+            .text
+            .as_ref()
+            .map(|text| text.lines().collect())
+            .unwrap_or_default();
+        let fg_lines: Vec<&str> = value
+            .fg
+            .as_ref()
+            .map(|text| text.lines().collect())
+            .unwrap_or_default();
+        let bg_lines: Vec<&str> = value
+            .bg
+            .as_ref()
+            .map(|text| text.lines().collect())
+            .unwrap_or_default();
+
+        let height = text_lines.len().max(bg_lines.len()).max(fg_lines.len());
+        let width = text_lines
+            .iter()
+            .chain(fg_lines.iter())
+            .chain(bg_lines.iter())
+            .map(|s| s.width()) //UNICODE WIDTH
+            .max()
+            .unwrap_or_default();
+        let mut cell_vec = vec![Some(empty_cell); width * height];
+
+        for y in 0..height {
+            let mut x = 0;
+            let mut chars = text_lines[y].chars();
+            let mut fgs = fg_lines[y].chars();
+            let mut bgs = bg_lines[y].chars();
+            while x < width {
+                let i = x + y * width;
+                let ch = chars.next().unwrap_or(' ');
+                let ch_width = ch.width().unwrap_or_default();
+                if ch_width > 0 {
+                    cell_vec[i] = Some(CharmiCell {
+                        character: (ch != gap_ch).then_some(ch),
+                        fg: fgs
+                            .next()
+                            .and_then(|color_ch| color_map.get(&color_ch))
+                            .copied(),
+                        bg: bgs
+                            .next()
+                            .and_then(|color_ch| color_map.get(&color_ch))
+                            .copied(),
+                    });
+                }
+                if ch_width == 2 {
+                    cell_vec[i + 1] = None;
+                }
+                x += ch_width;
+            }
+        }
+
+        CharmiFixed::from_vec(width, height, cell_vec)
     }
 }
 
@@ -807,6 +935,23 @@ mod test {
             expected.debug_string(),
             charmi.debug_string()
         );
+        assert_eq!(charmi, expected)
+    }
+
+    #[test]
+    fn load_test_charmi_file_fixed() {
+        let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        test_charmi.push("tests/data/test.charmi");
+        let result_str = std::fs::read_to_string(test_charmi).expect("test file should exist");
+        log::debug!("CHARMI STR: {:?}", result_str);
+
+        let charmie_def: CharmieDef =
+            toml::from_str(result_str.as_str()).expect("test definition should parse successfully");
+
+        let charmi: CharmiFixed = (&charmie_def).into();
+        let expected: CharmiFixed = CharmiFixed::from_slice(0, 0, &[]);
+
+        println!("EXPECTED\n{:?}\n\nACTUAL\n{:?}", expected, charmi);
         assert_eq!(charmi, expected)
     }
 

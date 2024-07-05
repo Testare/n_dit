@@ -7,8 +7,6 @@ use bevy::ecs::schedule::ScheduleLabel;
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
-
-
 #[derive(Debug)]
 pub struct SavePlugin;
 

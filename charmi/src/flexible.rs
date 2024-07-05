@@ -6,9 +6,10 @@ use std::sync::OnceLock;
 
 use bevy::prelude::Asset;
 use bevy::reflect::TypePath;
-use crate::charmie_def::CharmieDef;
 use crossterm::style::{ContentStyle, StyledContent};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+use crate::charmie_def::CharmieDef;
 
 #[derive(Asset, Clone, Debug, Default, PartialEq, TypePath)]
 pub struct CharacterMapImage {

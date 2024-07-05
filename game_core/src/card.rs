@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 
+use crate::node::PreventNoOp;
 use crate::player::Player;
-use crate::{node::PreventNoOp, saving::LoadData};
 use crate::prelude::*;
-use crate::saving::{LoadSchedule, SaveData, SaveSchedule};
+use crate::saving::{LoadData, LoadSchedule, SaveData, SaveSchedule};
 use crate::NDitCoreSet;
 
 mod card_action;
@@ -55,8 +55,7 @@ impl Plugin for CardPlugin {
                     .in_set(NDitCoreSet::PostProcessCommands),
             )
             .add_systems(SaveSchedule, sys_save_deck)
-            .add_systems(LoadSchedule, sys_load_deck)
-        ;
+            .add_systems(LoadSchedule, sys_load_deck);
     }
 }
 
@@ -288,10 +287,7 @@ pub fn sys_load_cards(
     }
 }
 
-pub fn sys_save_deck(
-    mut res_save_data: ResMut<SaveData>,
-    q_player: Query<&Deck, With<Player>>,
-) {
+pub fn sys_save_deck(mut res_save_data: ResMut<SaveData>, q_player: Query<&Deck, With<Player>>) {
     for deck in q_player.iter() {
         res_save_data.put(save_key::DECK, deck);
     }

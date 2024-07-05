@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "charmi",
-    "charmi_bevy",
+    "charmi_bevy", "charmi_macros",
     "cq_term",
     "game_core"
 ]
