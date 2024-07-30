@@ -57,11 +57,12 @@ impl CharmiStr {
 #[cfg(test)]
 mod test {
     use super::*;
-    static CHARMI_STR_TEST: CharmiStr = CharmiStr(Cow::Borrowed(&[Some(CharmiCell::new_blank())]));
-
-    static CHARMI_STR_TEST_2: CharmiStr = CharmiStr::from_slice(&[Some(CharmiCell::new_blank())]);
 
     fn test() {
+        static CHARMI_STR_TEST: CharmiStr = CharmiStr(Cow::Borrowed(&[Some(CharmiCell::new_blank())]));
+        static CHARMI_STR_TEST_2: CharmiStr = CharmiStr::from_slice(&[Some(CharmiCell::new_blank())]);
         let charmstr: CharmiStr = CharmiStr(Cow::Owned(vec![]));
+        assert_eq!(CHARMI_STR_TEST, CHARMI_STR_TEST_2);
+        assert_eq!(CHARMI_STR_TEST, charmstr);
     }
 }

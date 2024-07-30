@@ -1,7 +1,9 @@
+#![allow(dead_code)] // TODO REMOVE THIS BEFORE PUBLISHING, ONCE CHARMI API REDUX IS COMPLETE
+
 mod charmi_cell;
 mod charmie_actor;
 mod charmie_def;
-mod fixed;
+pub mod fixed;
 mod flexible;
 mod loader;
 pub mod sized;
