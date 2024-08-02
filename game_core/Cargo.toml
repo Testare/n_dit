@@ -16,6 +16,7 @@ bevy.workspace = true
 bevy_query_ext.workspace = true
 bevy_yarnspinner.workspace = true
 bitvec = "1"
+freeform.workspace = true
 getset = "0.1.1"
 homedir = "0.2.1"
 lazy_static = "1.4.0"

@@ -6,6 +6,7 @@ use bevy::ecs::schedule::ScheduleLabel;
 
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
+use crate::saving2::SaveFilter;
 
 #[derive(Debug)]
 pub struct SavePlugin;
@@ -13,6 +14,7 @@ pub struct SavePlugin;
 impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CurrentSaveFile>()
+            .init_resource::<SaveFilter>()
             .init_schedule(SaveSchedule)
             .init_schedule(LoadSchedule)
             .add_plugins(OpPlugin::<SaveOp>::default());
@@ -98,6 +100,7 @@ pub struct LoadSchedule;
 #[derive(Debug, Default, Resource, Deref, DerefMut)]
 pub struct SaveData(Metadata);
 
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
 pub struct SaveSchedule;
 
@@ -129,12 +132,17 @@ pub fn opsys_save_op(In((_source, op)): In<(Entity, SaveOp)>, world: &mut World)
         return Err(OpError::MismatchedOpSystem);
     }
     world.insert_resource(SaveData::default());
+    world.insert_resource(super::saving2::SaveData::default()); // NOCOMMIT
     let current_save_file = world
         .get_resource::<CurrentSaveFile>()
         .cloned()
         .ok_or_else(|| "No save file configured".critical())?;
     let file = current_save_file.create().critical()?;
     world.run_schedule(SaveSchedule);
+    if let Some(save_data) = world.remove_resource::<super::saving2::SaveData>() {
+        let save_metadata = save_data.process(world);
+        log::debug!("NOCOMMIT A results: {save_metadata:?}");
+    }
     if let Some(SaveData(metadata)) = world.remove_resource::<SaveData>() {
         // TODO return different metadata
         // TODO more importantly, this writing should be async instead of in-frame

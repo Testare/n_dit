@@ -96,6 +96,15 @@ impl Metadata {
         Ok(())
     }
 
+
+    ///
+    /// # Safety
+    ///
+    /// If the data is not valid JSON, this will lead to serialization/deserialization errors
+    pub unsafe fn put_field_directly(&mut self, field: &str, data_str: String) {
+        self.0.insert(field.to_string(), data_str);
+    }
+
     /// Puts the data if the option is Some, else it does nothing
     pub fn put_optional<T: Serialize, O: Borrow<Option<T>>>(
         &mut self,

@@ -2151,6 +2151,7 @@ dependencies = [
  "bevy_query_ext",
  "bevy_yarnspinner",
  "bitvec",
+ "freeform",
  "getset",
  "homedir",
  "lazy_static",

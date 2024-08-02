@@ -13,6 +13,7 @@ pub mod prelude;
 pub mod quest;
 pub mod registry;
 pub mod saving;
+pub mod saving2;
 pub mod shop;
 
 use op::CoreOps;

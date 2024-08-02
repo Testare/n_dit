@@ -287,9 +287,13 @@ pub fn sys_load_cards(
     }
 }
 
-pub fn sys_save_deck(mut res_save_data: ResMut<SaveData>, q_player: Query<&Deck, With<Player>>) {
+pub fn sys_save_deck(
+    mut res_save_data: ResMut<SaveData>,
+    res_save_data_2: Res<game_core::saving2::SaveData>,
+    q_player: Query<&Deck, With<Player>>) {
     for deck in q_player.iter() {
         res_save_data.put(save_key::DECK, deck);
+
     }
 }
 
