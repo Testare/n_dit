@@ -45,7 +45,7 @@ impl QuestStatus {
 }
 
 pub fn sys_save_quest_status(
-    mut res_save_data: ResMut<SaveData>,
+    res_save_data: Res<SaveData>,
     q_player: Query<&QuestStatus, (With<Player>, With<Ncp>)>,
 ) {
     for quest_status in q_player.iter() {

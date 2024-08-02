@@ -212,12 +212,11 @@ pub fn opsys_add_item(
     }
 }
 
-pub fn sys_save_wallet(
-    mut res_save_data: ResMut<SaveData>,
-    q_player: Query<&Wallet, With<Player>>,
-) {
+pub fn sys_save_wallet(res_save_data: Res<SaveData>, q_player: Query<&Wallet, With<Player>>) {
     for wallet in q_player.iter() {
-        res_save_data.put(key::save::WALLET, wallet.mon());
+        res_save_data
+            .put(key::save::WALLET, wallet.mon())
+            .expect("wallet should be pretty simple to serialize");
     }
 }
 

@@ -96,7 +96,6 @@ impl Metadata {
         Ok(())
     }
 
-
     ///
     /// # Safety
     ///
