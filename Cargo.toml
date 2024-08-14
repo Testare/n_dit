@@ -39,7 +39,7 @@ features = [
 [workspace.package]
 version = "0.1.0"
 authors = ["Testare <testare.i9z@gmail.com>"]
-repository = "https://github.com/Testare/n_dit_secret"
+repository = "https://github.com/Testare/n_dit"
 rust-version = "1.78"
 edition = "2021"
 
