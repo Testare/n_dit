@@ -4,11 +4,13 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
-use bevy::ecs::entity::EntityHashSet;
+use bevy::ecs::entity::{EntityHashMap, EntityHashSet, MapEntities};
 use bevy::ecs::reflect::AppTypeRegistry;
 use bevy::ecs::schedule::ScheduleLabel;
+use bevy::scene::serde::SceneDeserializer;
 use bevy::scene::{ron, SceneFilter};
 use freeform::SerdeScheme;
+use serde::de::DeserializeSeed;
 use serde::Serialize;
 use typed_key::Key;
 
@@ -105,7 +107,33 @@ impl CurrentSaveFile {
 /// from running in the wrong schedules this is kept separate and you
 /// can't deref it as mut.
 #[derive(Debug, Default, Resource, Deref)]
-pub struct LoadData(Metadata);
+pub struct LoadData {
+    #[deref]
+    data: Metadata,
+    entity_map: EntityHashMap<Entity>,
+}
+
+impl LoadData {
+    pub fn map_entities<M: MapEntities>(&self, m: &mut M) {
+        m.map_entities(&mut LoadDataMapper(&self.entity_map))
+    }
+}
+
+struct LoadDataMapper<'a>(&'a EntityHashMap<Entity>);
+
+impl<'a> EntityMapper for LoadDataMapper<'a> {
+    fn map_entity(&mut self, entity: Entity) -> Entity {
+        if let Some(&out_entity) = self.0.get(&entity) {
+            out_entity
+        } else {
+            log::error!(
+                "Error: Enable to get entity {entity:?} from load data (mapping is {:?})",
+                self.0
+            );
+            entity
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ScheduleLabel)]
 pub struct LoadSchedule;
@@ -230,7 +258,7 @@ pub struct SaveFilter(SceneFilter);
 
 impl Default for SaveFilter {
     fn default() -> Self {
-        Self(SceneFilter::deny_all())
+        Self(SceneFilter::deny_all().allow::<Name>())
     }
 }
 
@@ -294,7 +322,21 @@ pub fn opsys_load_op(In((_source, op)): In<(Entity, SaveOp)>, world: &mut World)
         .ok_or_else(|| "No save file configured".critical())?;
     let file = current_save_file.open().critical()?;
     let data: Metadata = serde_json::from_reader(file).critical()?;
-    world.insert_resource(LoadData(data));
+    let scene_ron = data.get_required(key::SCENE).critical()?;
+
+    let registry = world.resource::<AppTypeRegistry>();
+    let mut scene_de = ron::Deserializer::from_str(&scene_ron).critical()?;
+    let scene = (SceneDeserializer {
+        type_registry: &registry.read(),
+    })
+    .deserialize(&mut scene_de)
+    .critical()?;
+
+    let mut entity_map = EntityHashMap::<Entity>::default();
+
+    scene.write_to_world(world, &mut entity_map).critical()?;
+
+    world.insert_resource(LoadData { data, entity_map });
     world.run_schedule(LoadSchedule);
     world.remove_resource::<LoadData>();
     Ok(default())

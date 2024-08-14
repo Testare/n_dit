@@ -4,12 +4,13 @@ use std::num::NonZeroU32;
 use crate::node::PreventNoOp;
 use crate::player::Player;
 use crate::prelude::*;
-use crate::saving::{LoadData, LoadSchedule, SaveData, SaveSchedule};
+use crate::saving::{LoadData, LoadSchedule, SaveData, SaveFilter, SaveSchedule};
 use crate::NDitCoreSet;
 
 mod card_action;
 mod card_as_asset;
 
+use bevy::ecs::entity::MapEntities;
 use bevy::ecs::query::QueryData;
 use bevy::prelude::AssetApp;
 pub use card_action::{
@@ -34,6 +35,8 @@ impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<CardDefinition>()
             .init_asset::<Action>()
+            .register_type::<Action>()
+            .register_type::<Actions>()
             .register_type::<BaseName>()
             .register_type::<Card>()
             .register_type::<Deck>()
@@ -48,6 +51,7 @@ impl Plugin for CardPlugin {
             .register_type::<Vec<Entity>>()
             .init_asset_loader::<card_as_asset::CardAssetLoader>()
             .init_asset_loader::<card_as_asset::ActionAssetLoader>()
+            .add_systems(Startup, sys_startup_save_filter)
             .add_systems(
                 Update,
                 (sys_load_cards, sys_sort_decks)
@@ -216,6 +220,21 @@ impl Deck {
     }
 }
 
+impl MapEntities for Deck {
+    fn map_entities<M: bevy::prelude::EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.cards = self
+            .cards
+            .drain()
+            .map(|(id, count)| (entity_mapper.map_entity(id), count))
+            .collect();
+        self.ordering = self
+            .ordering
+            .drain(..)
+            .map(|id| entity_mapper.map_entity(id))
+            .collect();
+    }
+}
+
 #[derive(Clone, Component, Debug, Default, Deref, Reflect)]
 #[reflect(Component)]
 pub struct Description(String);
@@ -287,6 +306,20 @@ pub fn sys_load_cards(
     }
 }
 
+pub fn sys_startup_save_filter(mut filter: ResMut<SaveFilter>) {
+    **filter = filter
+        .clone()
+        // .allow::<Actions>() // TODO figure out how to serialize this type given that handles
+        // cannot be serialized
+        .allow::<Nickname>()
+        .allow::<PreventNoOp>()
+        .allow::<Card>()
+        .allow::<Description>()
+        .allow::<MaximumSize>()
+        .allow::<MovementSpeed>()
+        .allow::<BaseName>()
+}
+
 pub fn sys_save_deck(res_save_data: Res<SaveData>, q_player: Query<&Deck, With<Player>>) {
     for deck in q_player.iter() {
         res_save_data
@@ -297,13 +330,12 @@ pub fn sys_save_deck(res_save_data: Res<SaveData>, q_player: Query<&Deck, With<P
     }
 }
 
-pub fn sys_load_deck(
-    res_load_data: ResMut<LoadData>,
-    mut q_player: Query<&mut Deck, With<Player>>,
-) {
+pub fn sys_load_deck(res_load_data: Res<LoadData>, mut q_player: Query<&mut Deck, With<Player>>) {
     for mut deck in q_player.iter_mut() {
-        if let Ok(Some(load_deck)) = res_load_data.get_optional(save_key::DECK) {
+        if let Ok(Some(mut load_deck)) = res_load_data.get_optional(save_key::DECK) {
+            res_load_data.map_entities(&mut load_deck);
             deck.set_if_neq(load_deck);
+            // TODO Despawn old deck
         }
     }
 }
