@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use getset::CopyGetters;
 
 use self::daddy::Daddy;
-use crate::card::{Action, Card, CardDefinition, Deck, Nickname};
+use crate::card::{Action, Card, CardDefinition, CardHandle, Deck, Nickname};
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
@@ -183,10 +183,11 @@ pub fn opsys_add_item(
                         metadata.put(key::NEW_CARD, false).invalid()?;
                         existing_card_id
                     } else {
+                        let card_handle_savable = CardHandle::try_from(&card_handle)?;
                         metadata.put(key::NEW_CARD, true).invalid()?;
                         // TODO source individual parent or component
                         commands
-                            .spawn((card_handle,))
+                            .spawn((card_handle, card_handle_savable))
                             .set_parent(**res_daddy_card)
                             .id()
                     };

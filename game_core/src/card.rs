@@ -39,6 +39,7 @@ impl Plugin for CardPlugin {
             .register_type::<Actions>()
             .register_type::<BaseName>()
             .register_type::<Card>()
+            .register_type::<CardHandle>()
             .register_type::<Deck>()
             .register_type::<Description>()
             .register_type::<MaximumSize>()
@@ -54,12 +55,12 @@ impl Plugin for CardPlugin {
             .add_systems(Startup, sys_startup_save_filter)
             .add_systems(
                 Update,
-                (sys_load_cards, sys_sort_decks)
+                (sys_apply_card_handle, sys_load_cards, sys_sort_decks)
                     .chain()
                     .in_set(NDitCoreSet::PostProcessCommands),
             )
             .add_systems(SaveSchedule, sys_save_deck)
-            .add_systems(LoadSchedule, sys_load_deck);
+            .add_systems(LoadSchedule, sys_loadsave_deck);
     }
 }
 
@@ -91,6 +92,18 @@ impl CardBundle {
             movement_speed: MovementSpeed(card_def.movement_speed()),
             base_name: BaseName(card_def.id().to_owned()),
         }
+    }
+}
+
+/// Until handles can be saved directly, we need this
+#[derive(Component, Debug, Default, Deref, Reflect)]
+#[reflect(Component)]
+pub struct CardHandle(pub String);
+
+impl TryFrom<&Handle<CardDefinition>> for CardHandle {
+    type Error = String;
+    fn try_from(card_handle: &Handle<CardDefinition>) -> Result<CardHandle, Self::Error> {
+        Ok(CardHandle(card_handle.path().ok_or_else(||"Card does not have path: Required for cards to have paths in order to save them".to_string())?.to_string()))
     }
 }
 
@@ -290,6 +303,18 @@ pub fn sys_sort_decks(cards: Query<CardQuery>, mut decks: Query<&mut Deck, Chang
     }
 }
 
+pub fn sys_apply_card_handle(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    q_adjusted_card_handles: Query<(Entity, AsDeref<CardHandle>), Changed<CardHandle>>,
+) {
+    for (id, card_asset_path) in q_adjusted_card_handles.iter() {
+        commands
+            .entity(id)
+            .insert(asset_server.load::<CardDefinition>(card_asset_path));
+    }
+}
+
 pub fn sys_load_cards(
     ast_card_defs: Res<Assets<CardDefinition>>,
     mut commands: Commands,
@@ -307,17 +332,8 @@ pub fn sys_load_cards(
 }
 
 pub fn sys_startup_save_filter(mut filter: ResMut<SaveFilter>) {
-    **filter = filter
-        .clone()
-        // .allow::<Actions>() // TODO figure out how to serialize this type given that handles
-        // cannot be serialized
-        .allow::<Nickname>()
-        .allow::<PreventNoOp>()
-        .allow::<Card>()
-        .allow::<Description>()
-        .allow::<MaximumSize>()
-        .allow::<MovementSpeed>()
-        .allow::<BaseName>()
+    **filter = filter.clone().allow::<Nickname>().allow::<CardHandle>() // Only save the card definition: This allows us to change card
+                                                                        // definitions between updates, reduces size, and allows us to load everything else
 }
 
 pub fn sys_save_deck(res_save_data: Res<SaveData>, q_player: Query<&Deck, With<Player>>) {
@@ -330,7 +346,10 @@ pub fn sys_save_deck(res_save_data: Res<SaveData>, q_player: Query<&Deck, With<P
     }
 }
 
-pub fn sys_load_deck(res_load_data: Res<LoadData>, mut q_player: Query<&mut Deck, With<Player>>) {
+pub fn sys_loadsave_deck(
+    res_load_data: Res<LoadData>,
+    mut q_player: Query<&mut Deck, With<Player>>,
+) {
     for mut deck in q_player.iter_mut() {
         if let Ok(Some(mut load_deck)) = res_load_data.get_optional(save_key::DECK) {
             res_load_data.map_entities(&mut load_deck);

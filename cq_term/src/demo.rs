@@ -10,7 +10,7 @@ use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
-use game_core::card::{CardDefinition, Deck, Nickname};
+use game_core::card::{CardDefinition, CardHandle, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
@@ -228,6 +228,7 @@ fn demo_startup(
     let stabby_boi = commands
         .spawn((
             asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"),
+            CardHandle("nightfall/lvl1.cards.json#Hack".to_string()),
             Nickname::new("Stabby boi"),
         ))
         .id();
