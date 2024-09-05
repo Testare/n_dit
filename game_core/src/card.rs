@@ -12,7 +12,6 @@ mod card_as_asset;
 
 use bevy::ecs::entity::MapEntities;
 use bevy::ecs::query::QueryData;
-use bevy::prelude::AssetApp;
 pub use card_action::{
     key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
     RangeShape,
@@ -234,7 +233,7 @@ impl Deck {
 }
 
 impl MapEntities for Deck {
-    fn map_entities<M: bevy::prelude::EntityMapper>(&mut self, entity_mapper: &mut M) {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.cards = self
             .cards
             .drain()

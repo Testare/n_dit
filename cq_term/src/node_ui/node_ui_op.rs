@@ -30,7 +30,7 @@ pub enum FocusTarget {
 impl Op for NodeUiOp {
     fn register_systems(mut registrar: game_core::op::OpRegistrar<Self>)
     where
-        Self: Sized + bevy::prelude::TypePath + FromReflect,
+        Self: Sized + TypePath + FromReflect,
     {
         registrar
             .register_op(opsys_nodeui_focus)

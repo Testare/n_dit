@@ -1,6 +1,7 @@
-use bevy::prelude::Resource;
 use crossterm::style::{Attribute, Attributes, Color, ContentStyle};
 use getset::{CopyGetters, Getters};
+
+use crate::prelude::*;
 
 #[derive(Clone, Debug, CopyGetters, Getters, Resource)]
 pub struct DrawConfiguration {

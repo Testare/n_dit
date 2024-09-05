@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use bevy::asset::io::Reader;
 use bevy::asset::{AssetLoader, LoadContext, LoadedUntypedAsset};
-use bevy::prelude::AssetApp;
 use bevy::reflect::TypePath;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};

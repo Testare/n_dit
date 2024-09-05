@@ -4,7 +4,6 @@ use std::io::Write;
 use bevy::audio::Volume;
 use bevy::ecs::system::SystemState;
 use bevy::hierarchy::ChildBuilder;
-use bevy::prelude::AppTypeRegistry;
 use bevy::scene::DynamicSceneBuilder;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};

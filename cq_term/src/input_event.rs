@@ -1,13 +1,12 @@
 use std::collections::VecDeque;
 
 use bevy::ecs::entity::EntityHashSet;
-use bevy::prelude::HierarchyQueryExt;
 pub use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
-use game_core::prelude::*;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 
 use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, LayoutUpdatedEvent};
+use crate::prelude::*;
 use crate::render::RenderOrder;
 use crate::TerminalWindow;
 

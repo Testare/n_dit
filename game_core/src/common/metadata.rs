@@ -2,11 +2,12 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bevy::prelude::Reflect;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 use typed_key::Key;
+
+use crate::prelude::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize, Reflect)]
 #[serde(from = "HashMap<String, Value>", into = "HashMap<String, Value>")]

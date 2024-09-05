@@ -7,10 +7,11 @@ use std::str::FromStr;
 
 use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter, WorldQuery};
 use bevy::ecs::system::SystemParam;
-use bevy::prelude::{Component, Entity, Query, Reflect, UVec2};
 use bevy::reflect::{ReflectDeserialize, ReflectSerialize};
 pub use metadata::Metadata;
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
 
 /// Unique identifier for a member of a set of 32 things or less.
 /// See [crate::node::NodeId], which will probably be replaced with this later
