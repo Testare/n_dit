@@ -1,8 +1,12 @@
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::item::Wallet;
+use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
+use game_core::saving::SaveOp;
+use getset::CopyGetters;
 
+use crate::linkage::base_ui_game_core::context_action_from_op;
 use crate::prelude::*;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -20,7 +24,7 @@ impl Default for HudPlugin {
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
         if self.mon_display {
-            app.add_systems(
+            app.init_resource::<HudContextActions>().add_systems(
                 RENDER_TTY_SCHEDULE,
                 sys_render_mon_display.in_set(RenderTtySet::PostCalculateLayout),
             );
@@ -28,8 +32,30 @@ impl Plugin for HudPlugin {
     }
 }
 
+#[derive(Debug, Resource, CopyGetters)]
+pub struct HudContextActions {
+    #[getset(get_copy = "pub")]
+    save: Entity,
+}
+
+impl FromWorld for HudContextActions {
+    fn from_world(world: &mut World) -> Self {
+        HudContextActions {
+            save: world
+                .spawn((
+                    Name::new("Save button CA"),
+                    context_action_from_op::<CoreOps, _>("Save button", SaveOp::Save),
+                ))
+                .id(),
+        }
+    }
+}
+
 #[derive(Component, Debug, Default, Deref, DerefMut)]
 pub struct MonDisplay(u32);
+
+#[derive(Component, Debug, Default)]
+pub struct SaveButton;
 
 // TODO slow down this system
 // TODO handle when size is too small for mon

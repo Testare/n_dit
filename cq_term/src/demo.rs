@@ -27,7 +27,7 @@ use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{
-    ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline, HoverPoint, PopupMenu,
+    ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline, HoverPoint, PopupMenu, Tooltip,
 };
 use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::configuration::DrawConfiguration;
@@ -35,9 +35,9 @@ use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
-    self, ItemDetailsUiActions, ItemDetailsUiDescription, ItemDetailsUiStats, MainUiOp, MonDisplay,
-    ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton, ShopUiFinishShoppingButton,
-    ShopUiSelectedItem, UiOps,
+    self, HudContextActions, ItemDetailsUiActions, ItemDetailsUiDescription, ItemDetailsUiStats,
+    MainUiOp, MonDisplay, SaveButton, ShopListingUi, ShopNotification, ShopUi, ShopUiBuyButton,
+    ShopUiFinishShoppingButton, ShopUiSelectedItem, UiOps,
 };
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
@@ -77,7 +77,7 @@ impl Plugin for DemoPlugin {
                 demo_startup.after(main_ui::sys_startup_create_main_ui),
             )
             .add_systems(Update, sys_demo_shader)
-            .add_systems(PostUpdate, (debug_key, save_key, log_op_results));
+            .add_systems(PostUpdate, (debug_key, dump_key, log_op_results));
     }
 }
 
@@ -125,7 +125,7 @@ fn log_op_results(
     }
 }
 
-fn save_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent>>>) {
+fn dump_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent>>>) {
     let mut evr_keys = state.get(world);
     let save_button_pressed = evr_keys.read().any(|event| {
         matches!(
@@ -205,8 +205,6 @@ fn debug_key(
             for team_id in q_team.iter() {
                 commands.entity(team_id).log_components();
             }
-        } else if *code == KeyCode::Char('0') {
-            res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Save);
         } else if *code == KeyCode::Char('9') {
             res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Load);
         }
@@ -219,6 +217,7 @@ fn demo_startup(
     res_use_demo_shader: Res<UseDemoShader>,
     res_draw_config: Res<DrawConfiguration>,
     res_dialog_context_actions: Res<DialogUiContextActions>,
+    res_hud_context_actions: Res<HudContextActions>,
     asset_server: Res<AssetServer>,
     mut res_demo_state: ResMut<DemoState>,
     mut commands: Commands,
@@ -455,6 +454,30 @@ fn demo_startup(
                                 ..Default::default()
                             }),
                             TerminalRendering::new(vec!["$Mon Display".to_owned()]),
+                        ));
+
+                        title_bar.spawn((
+                            ForPlayer(player),
+                            SaveButton,
+                            ButtonUiBundle::new("Save", ContentStyle::new().green()),
+                            ContextActions::new(player, &[res_hud_context_actions.save()]),
+                            // ContextActions::new(player, &[res_button_context_actions.undo()]),
+                            // VisibilityTty::invisible(),
+                            /*StyleTty(taffy::style::Style {
+                                size: Size {
+                                    width: length(.0),
+                                    height: length(1.0),
+                                },
+                                padding: Rect {
+                                    bottom: length(1.0),
+                                    ..TaffyZero::ZERO
+                                },
+                                flex_direction: FlexDirection::Row,
+                                flex_grow: 1.0,
+                                flex_shrink: 0.0,
+                                ..Default::default()
+                            }),*/
+                            Tooltip::new("Save"),
                         ));
                     }
                 });
