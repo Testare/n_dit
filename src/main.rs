@@ -1,20 +1,19 @@
 use std::fs::File;
 use std::time::Duration;
+use std::borrow::Cow;
+use std::path::PathBuf;
 
 use bevy::app::RunMode;
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
 use clap::Parser;
-use cq_term::demo::{DemoNodeId, UseDemoShader};
-use game_core::node::NodeId;
+use cq_term::demo::{UseDemoShader};
+use game_core::saving::CurrentSaveFile;
 use simplelog::{LevelFilter, WriteLogger};
 
-#[derive(Parser)]
+#[derive(Clone, Parser, Resource)]
 #[command(author, version, about)]
 struct CqCliPlugin {
-    /// Select a demo node to load. Currently 0-3 supported
-    #[arg(short, long, value_name = "NODE #")]
-    node: Option<u8>,
     /// Activates logging and debuging to local file.
     #[arg(short, long)]
     debug: bool,
@@ -27,22 +26,28 @@ struct CqCliPlugin {
     /// Applies "demo shader" affect, a sliding rainbow
     #[arg(long = "rainbow", value_name = "RAINBOW HEIGHT")]
     demo_shader: Option<u32>,
-    /// Runs game without a frame
+    /// Runs game without a frame cap
     #[arg(short, long = "uncapped")]
     uncapped_fps: bool,
+    /// Specify save file to read from and write to.
+    ///
+    /// If no parent is specified, like `save.json`, the save file will be loaded from the default save directory.
+    ///
+    /// If a parent is specified, like `./save.json` or `/path/to/file/save.json`, the path will be
+    /// resolved as you would expected.
+    #[arg(short = 'f', long, value_name = "SAVE_FILE")]
+    save_file: Option<PathBuf>
 }
 
 impl Plugin for CqCliPlugin {
     fn build(&self, app: &mut App) {
-        let demo_node_id = DemoNodeId(self.node.and_then(|node_num| match node_num {
-            0 => Some(NodeId::new("node:demo", 0)),
-            1 => Some(NodeId::new("node:tutorial", 0)),
-            2 => Some(NodeId::new("node:area1", 0)),
-            3 => Some(NodeId::new("node:area1", 1)),
-            _ => None,
-        }));
+        app.insert_resource(self.clone());
         app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
-        app.insert_resource(demo_node_id);
+        if self.save_file.is_some() {
+            app.add_systems(Startup, move |mut save_file: ResMut<CurrentSaveFile>, cli_args: Res<CqCliPlugin>| {
+                **save_file = Cow::Owned(cli_args.save_file.clone().unwrap());
+            });
+        }
     }
 }
 

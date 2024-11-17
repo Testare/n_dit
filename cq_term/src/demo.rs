@@ -47,9 +47,6 @@ use crate::KeyMap;
 #[derive(Debug)]
 pub struct DemoPlugin;
 
-#[derive(Debug, Resource, Deref, DerefMut)]
-pub struct DemoNodeId(pub Option<NodeId>);
-
 #[derive(Clone, Component, Debug)]
 pub struct DebugEntityMarker;
 

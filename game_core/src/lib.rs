@@ -68,7 +68,7 @@ impl Plugin for NDitCorePlugin {
         .add_plugins((
             bam::BamPlugin,
             player::PlayerPlugin,
-            saving::SavePlugin,
+            saving::SavePlugin::default(),
             board::BoardPlugin,
             card::CardPlugin,
             dialog::DialogPlugin,

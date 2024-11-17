@@ -23,12 +23,17 @@ mod key {
     pub const SCENE: Key<String> = typed_key!("scene");
 }
 
-#[derive(Debug)]
-pub struct SavePlugin;
+#[derive(Debug, Default)]
+pub struct SavePlugin {
+   save_file: Option<Cow<'static, Path>>
+}
 
 impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CurrentSaveFile>()
+        let save_file_resource = self.save_file.clone()
+            .map(|path|CurrentSaveFile(path))
+            .unwrap_or_default();
+        app.insert_resource(save_file_resource)
             .init_resource::<SaveFilter>()
             .init_schedule(SaveSchedule)
             .init_schedule(LoadSchedule)
@@ -36,7 +41,7 @@ impl Plugin for SavePlugin {
     }
 }
 
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug, Deref, DerefMut, Resource)]
 pub struct CurrentSaveFile(Cow<'static, Path>);
 
 impl Default for CurrentSaveFile {
