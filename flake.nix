@@ -1,5 +1,5 @@
 {
-  description = "A very basic flake";
+  description = "A recreation of a favorite childhood flash game";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -12,6 +12,37 @@
         inherit system;
       };
     in {
+      formatter = pkgs.alejandra;
+
+      packages.default = with pkgs; with lib.fileset; stdenv.mkDerivation {
+        pname = "n_dit";
+        version = "0.1";
+        buildInputs = [pkgs.cargo];
+        src = toSource {
+          root = ./.;
+          fileset = unions [
+            ./assets # Might remove in long term
+            ./Cargo.lock
+            ./Cargo.toml
+            ./src
+            ./charmi/Cargo.toml
+            ./charmi/src
+            ./charmi_bevy/Cargo.toml
+            ./charmi_bevy/src
+            ./charmi_macros/Cargo.toml
+            ./charmi_macros/src
+            ./cq_term/Cargo.toml
+            ./cq_term/src
+            ./game_core/Cargo.toml
+            ./game_core/src
+          ];
+        };
+        buildPhase = ''
+          cargo build;
+          mv target/debug $out;
+        '';
+      };
+
       devShells.default = with pkgs; mkShell rec {
         nativeBuildInputs = [
           pkg-config
