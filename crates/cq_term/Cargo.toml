@@ -13,6 +13,7 @@ workspace = true
 bevy = {workspace = true, features = ["wav"]}
 bevy_query_ext.workspace = true
 bevy_yarnspinner.workspace = true
+workspace-hack.workspace = true
 charmi = { path = "../charmi" }
 charmi_macros = { path = "../charmi_macros" }
 charmi_bevy = { path = "../charmi_bevy" }

@@ -1,0 +1,24 @@
+[package]
+name = "n_dit"
+description = """
+A personal TUI game project inspired by Lego Spybotics: The Nightfall Incident
+and using the Bevy game engine."""
+version.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bevy.workspace = true
+clap = { version = "4.4.11", features = ["derive"] }
+cq_term = { path = "../cq_term" }
+game_core = { path = "../game_core" }
+simplelog = "^0.12.0"
+tracing = { version = "*", features = ["log"] }
+workspace-hack.workspace = true
+
+
+[dev-dependencies]
+test-log = "0.2.12"
+env_logger = "*"

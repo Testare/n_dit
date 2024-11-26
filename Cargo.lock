@@ -1320,6 +1320,7 @@ dependencies = [
  "thiserror",
  "toml",
  "unicode-width",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -1330,6 +1331,7 @@ dependencies = [
  "charmi",
  "freeform",
  "typed_key",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -1340,6 +1342,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.68",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -1630,6 +1633,7 @@ dependencies = [
  "textwrap",
  "thiserror",
  "unicode-width",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -2161,6 +2165,7 @@ dependencies = [
  "thiserror",
  "toml",
  "typed_key",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -2882,6 +2887,7 @@ dependencies = [
  "simplelog",
  "test-log",
  "tracing",
+ "workspace-hack",
 ]
 
 [[package]]
@@ -5098,6 +5104,41 @@ dependencies = [
  "serde",
  "thiserror",
  "windows 0.52.0",
+]
+
+[[package]]
+name = "workspace-hack"
+version = "0.1.0"
+dependencies = [
+ "anstream",
+ "bevy",
+ "bevy_audio",
+ "bevy_core",
+ "bevy_input",
+ "bevy_internal",
+ "bevy_math",
+ "bevy_time",
+ "bevy_transform",
+ "bevy_window",
+ "crossterm",
+ "either",
+ "getrandom",
+ "hashbrown",
+ "rand",
+ "rand_core",
+ "regex",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+ "rodio",
+ "ryu",
+ "serde",
+ "smallvec",
+ "smol_str",
+ "syn 2.0.68",
+ "toml_datetime",
+ "toml_edit 0.22.14",
+ "tracing",
+ "uuid 1.9.1",
 ]
 
 [[package]]
