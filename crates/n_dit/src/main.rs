@@ -11,7 +11,6 @@ use cq_term::demo::{UseDemoShader};
 use game_core::saving::CurrentSaveFile;
 use simplelog::{LevelFilter, WriteLogger};
 
-// NOCOMMIT delete this
 #[derive(Clone, Parser, Resource)]
 #[command(author, version, about)]
 struct CqCliPlugin {

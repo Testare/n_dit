@@ -87,7 +87,8 @@
           root = ./.;
           fileset = lib.fileset.unions ([
             ./Cargo.toml
-            ./Cargo.lock ]
+            ./Cargo.lock 
+            (craneLib.fileset.commonCargoSources ./crates/workspace-hack)] 
             ++ (builtins.map (crateName: craneLib.fileset.commonCargoSources workspaceCrates.${crateName}) crateNames));
         };
 
@@ -199,6 +200,7 @@
           inherit cq_term;
           inherit game_core;
           inherit n_dit;
+          default = n_dit;
         } // lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
           my-workspace-llvm-coverage = craneLibLLvmTools.cargoLlvmCov (commonArgs // {
             inherit cargoArtifacts;
