@@ -67,16 +67,16 @@ impl FromWorld for GridContextActions {
                             Some(())
                         })();
                     }
-                );
+                ).expect("CoreOps must be defined for these ops to work");
             })
         )).id();
-        let perform_action =
-            world
-                .spawn((
-                    Name::new("Perform action CA"),
-                    ContextAction::new("Perform action", |grid_id, world| {
-                        // Once we can run systems with input we make this a bit easier
-                        world.run_system_once(
+        let perform_action = world
+            .spawn((
+                Name::new("Perform action CA"),
+                ContextAction::new("Perform action", |grid_id, world| {
+                    // Once we can run systems with input we make this a bit easier
+                    // TODO run_system_cached
+                    world.run_system_once(
                         move |ast_action: Res<Assets<Action>>,
                               mut res_core_ops: ResMut<CoreOps>,
                               q_grid_ui: Query<(&ForPlayer, &LastGridHoverPoint), With<GridUi>>,
@@ -98,12 +98,12 @@ impl FromWorld for GridContextActions {
                                     res_core_ops.request(player_id, op);
                                     Some(())
                                 },
-                            );
+                            )
                         },
-                    )
-                    }),
-                ))
-                .id();
+                    ).expect("CoreOps and Assets<Action> must be defined for this to work");
+                }),
+            ))
+            .id();
         let select_piece = world
             .spawn((
                 Name::new("Select piece CA"),

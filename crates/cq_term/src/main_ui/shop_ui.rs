@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use bevy::hierarchy::{BuildWorldChildren, DespawnRecursiveExt};
+use bevy::hierarchy::{BuildChildren, DespawnRecursiveExt};
 use charmi::{CharacterMapImage, CharmieAnimation};
 use crossterm::style::{Color, ContentStyle, Stylize};
 use game_core::card::{Action, CardDefinition};

@@ -29,11 +29,11 @@ impl AssetLoader for BevyAssetManifestLoader {
     type Asset = BevyAssetManifest;
     type Error = std::io::Error;
     type Settings = ();
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut bevy::asset::io::Reader<'_>,
-        _: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn bevy::asset::io::Reader,
+        _: &Self::Settings,
+        load_context: &mut bevy::asset::LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut file_contents = String::new();
         reader.read_to_string(&mut file_contents).await?;
@@ -46,7 +46,7 @@ impl AssetLoader for BevyAssetManifestLoader {
                 let mut pathbuf = root_path.to_path_buf();
                 pathbuf.push(line);
                 log::trace!("BAM asset: {:?}", pathbuf);
-                load_context.loader().untyped().load(pathbuf)
+                load_context.loader().with_unknown_type().load(pathbuf)
             })
             .collect();
         Ok(BevyAssetManifest(asset_handles))

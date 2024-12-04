@@ -172,11 +172,11 @@ impl AssetLoader for RegistryTomlAssetLoader {
     type Settings = ();
     type Error = RegistryLoadError;
 
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _: &'a Self::Settings,
-        load_context: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _: &Self::Settings,
+        load_context: &mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut value_str = String::new();
         reader.read_to_string(&mut value_str).await?;

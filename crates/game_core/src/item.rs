@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use getset::CopyGetters;
 
 use self::daddy::Daddy;
-use crate::card::{Action, Card, CardDefinition, CardHandle, Deck, Nickname};
+use crate::card::{Action, Card, CardDefHandle, CardDefinition, CardHandle, Deck, Nickname};
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin, OpRegistrar};
 use crate::player::Player;
 use crate::prelude::*;
@@ -159,7 +159,7 @@ pub fn opsys_add_item(
     res_daddy_card: Res<Daddy<Card>>,
     mut q_deck: Query<&mut Deck>,
     mut q_wallet: Query<&mut Wallet>,
-    q_card: Query<&Handle<CardDefinition>, Without<Nickname>>,
+    q_card: Query<&CardDefHandle, Without<Nickname>>,
 ) -> OpImplResult {
     if let ItemOp::AddItem { item, refund } = op {
         match item {
@@ -171,7 +171,7 @@ pub fn opsys_add_item(
                         .cards_iter()
                         .filter_map(|card_id| {
                             let card = q_card.get(card_id).ok()?;
-                            if card == &card_handle {
+                            if card.0 == card_handle {
                                 Some(card_id)
                             } else {
                                 None
@@ -187,7 +187,7 @@ pub fn opsys_add_item(
                         metadata.put(key::NEW_CARD, true).invalid()?;
                         // TODO source individual parent or component
                         commands
-                            .spawn((card_handle, card_handle_savable))
+                            .spawn((CardDefHandle(card_handle), card_handle_savable))
                             .set_parent(**res_daddy_card)
                             .id()
                     };

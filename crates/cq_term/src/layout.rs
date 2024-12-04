@@ -66,7 +66,8 @@ pub struct UiFocusCycleOrder(pub u32);
 
 /// Part of a layout, defines the style
 #[derive(Clone, Component, Debug, Default, Deref, DerefMut, Serialize, Deserialize, Reflect)]
-#[reflect_value(Component, Serialize, Deserialize)]
+#[reflect(opaque)]
+#[reflect(Component, Serialize, Deserialize)]
 #[serde(default, transparent)]
 pub struct StyleTty(pub taffy::prelude::Style);
 
@@ -253,7 +254,7 @@ fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
     mut evw_layout_updated: EventWriter<LayoutUpdatedEvent>,
     window: Res<TerminalWindow>,
-    roots: Query<(Entity, &NodeTty, DebugName), Without<Parent>>,
+    roots: Query<(Entity, &NodeTty, NameOrEntity), Without<Parent>>,
     children: Query<&Children>,
     mut tui_nodes: Query<(
         &NodeTty,

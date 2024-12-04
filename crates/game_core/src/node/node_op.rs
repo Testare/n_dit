@@ -729,7 +729,7 @@ fn opsys_node_enter_battle(
             if let Some(path) = res_reg_nodes.get(node_sid.to_string().as_str()) {
                 let node_asset_handle: Handle<DynamicScene> = res_asset_server.load(path);
                 commands
-                    .spawn(node_asset_handle)
+                    .spawn(DynamicSceneRoot(node_asset_handle))
                     .set_parent(**res_daddy_node);
             } else {
                 log::error!("Unable to find scene file for [{node_sid}] in the registry ")

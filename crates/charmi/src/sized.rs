@@ -44,11 +44,11 @@ impl CharmiString {
         CharmiStringBuilder(Default::default(), Default::default())
     }
 
-    fn map_cell<B, F: Fn(CharmiCell) -> CharmiCell>(&self, f: F) -> Self {
+    fn map_cell<F: Fn(CharmiCell) -> CharmiCell>(&self, f: F) -> Self {
         Self(self.0.iter().copied().map(f).collect())
     }
 
-    fn for_each_cell<B, F: Fn(&mut CharmiCell)>(&mut self, f: F) {
+    fn for_each_cell<F: Fn(&mut CharmiCell)>(&mut self, f: F) {
         for cell in self.0.iter_mut() {
             f(cell);
         }

@@ -30,7 +30,7 @@ impl OpErrorUtils for &str {
     }
 }
 
-impl<T, E: std::error::Error + Send + Sync + 'static> OpErrorUtils for Result<T, E> {
+impl<T, E: std::error::Error> OpErrorUtils for Result<T, E> {
     type Error = Result<T, OpError>;
     fn critical(self) -> Result<T, OpError> {
         self.map_err(|e| OpError::OpFailureCritical(e.to_string()))
@@ -63,14 +63,14 @@ impl<T: Op + TypePath + FromReflect> Plugin for OpPlugin<T> {
 }
 
 #[derive(Default, Resource)]
-struct OpRegistry(HashMap<&'static str, Vec<SystemId<OpRequest>>>);
+struct OpRegistry(HashMap<&'static str, Vec<SystemId<In<OpRequest>>>>);
 
 impl OpRegistry {
-    fn add_op_system<T: TypePath>(&mut self, system_id: SystemId<OpRequest>) {
+    fn add_op_system<T: TypePath>(&mut self, system_id: SystemId<In<OpRequest>>) {
         self.0.entry(T::type_path()).or_default().push(system_id);
     }
 
-    fn get_op_system(&self, type_path: &str, index: usize) -> Option<SystemId<OpRequest>> {
+    fn get_op_system(&self, type_path: &str, index: usize) -> Option<SystemId<In<OpRequest>>> {
         self.0
             .get(type_path)
             .and_then(|system_ids| system_ids.get(index).copied())
@@ -83,7 +83,7 @@ pub struct OpRegistrar<'a, O: Op + TypePath + FromReflect>(&'a mut World, Phanto
 impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
     pub fn register_op<M: 'static, S>(&mut self, opsys: S) -> &mut Self
     where
-        S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+        S: SystemParamFunction<M, In = In<(Entity, O)>, Out = Result<Metadata, OpError>>,
     {
         let sys_id = self.0.register_system(wrap_op_system(opsys));
         let mut op_reg = self.0.get_resource_or_insert_with(OpRegistry::default);
@@ -93,7 +93,7 @@ impl<'a, O: Op + TypePath + FromReflect> OpRegistrar<'a, O> {
 
     pub fn register_op_exclusive<M: 'static, S>(&mut self, opsys: S) -> &mut Self
     where
-        S: ExclusiveSystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+        S: ExclusiveSystemParamFunction<M, In = In<(Entity, O)>, Out = Result<Metadata, OpError>>,
     {
         let sys = wrap_exclusive_op_system(self.0, opsys);
         let sys_id = self.0.register_system(sys);
@@ -107,7 +107,7 @@ fn wrap_op_system<S, M, O>(
     mut op_sys: S,
 ) -> impl FnMut(In<OpRequest>, StaticSystemParam<S::Param>, EventWriter<OpResult<O>>)
 where
-    S: SystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+    S: SystemParamFunction<M, In = In<(Entity, O)>, Out = Result<Metadata, OpError>>,
     O: Op + FromReflect,
 {
     move |In(OpRequest { op, source }), param, mut evw| {
@@ -131,7 +131,7 @@ fn wrap_exclusive_op_system<S, M, O>(
     op_sys: S,
 ) -> impl FnMut(In<OpRequest>, &mut World)
 where
-    S: ExclusiveSystemParamFunction<M, In = (Entity, O), Out = Result<Metadata, OpError>>,
+    S: ExclusiveSystemParamFunction<M, In = In<(Entity, O)>, Out = Result<Metadata, OpError>>,
     M: 'static,
     O: Op + FromReflect,
 {

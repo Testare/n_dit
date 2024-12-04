@@ -71,6 +71,11 @@ pub struct BaseName(String);
 #[reflect(Component)]
 pub struct Card;
 
+// TODO better plan would be to have this be a property on Card
+#[derive(Component, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct CardDefHandle(pub Handle<CardDefinition>);
+
 #[derive(Bundle, Debug)]
 pub struct CardBundle {
     actions: Actions,
@@ -308,19 +313,19 @@ pub fn sys_apply_card_handle(
     q_adjusted_card_handles: Query<(Entity, AsDeref<CardHandle>), Changed<CardHandle>>,
 ) {
     for (id, card_asset_path) in q_adjusted_card_handles.iter() {
-        commands
-            .entity(id)
-            .insert(asset_server.load::<CardDefinition>(card_asset_path));
+        commands.entity(id).insert(CardDefHandle(
+            asset_server.load::<CardDefinition>(card_asset_path),
+        ));
     }
 }
 
 pub fn sys_load_cards(
     ast_card_defs: Res<Assets<CardDefinition>>,
     mut commands: Commands,
-    unloaded_cards: Query<(Entity, &Handle<CardDefinition>), Without<Card>>,
+    unloaded_cards: Query<(Entity, &CardDefHandle), Without<Card>>,
 ) {
     for (id, card_handle) in unloaded_cards.iter() {
-        if let Some(card_def) = ast_card_defs.get(card_handle) {
+        if let Some(card_def) = ast_card_defs.get(&card_handle.0) {
             let mut card = commands.entity(id);
             card.insert(CardBundle::from_def(card_def));
             if card_def.prevent_no_op() {

@@ -1,4 +1,4 @@
-use bevy::audio::Volume;
+use bevy::audio::{AudioPlayer, Volume};
 use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use crossterm::style::Stylize;
 use game_core::node::{InNode, NodeOp, NodePiece};
@@ -103,14 +103,15 @@ pub fn sys_grid_animations(
                         target_pt,
                         pickup_display,
                     ));
-                    commands.spawn(AudioBundle {
-                        source: fx.pickup_sound.clone(),
-                        settings: PlaybackSettings {
+                    // Verify functionality
+                    commands.spawn((
+                        AudioPlayer::new(fx.pickup_sound.clone()),
+                        PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(13.0),
                             ..default()
                         },
-                    });
+                    ));
 
                     Some((node_id, animation_handle))
                 })

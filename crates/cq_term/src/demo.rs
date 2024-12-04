@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::Write;
 
-use bevy::audio::Volume;
 use bevy::ecs::system::SystemState;
 use bevy::hierarchy::ChildBuilder;
 use bevy::scene::DynamicSceneBuilder;
@@ -9,7 +8,7 @@ use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
-use game_core::card::{CardDefinition, CardHandle, Deck, Nickname};
+use game_core::card::{CardDefHandle, CardDefinition, CardHandle, Deck, Nickname};
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
@@ -63,6 +62,10 @@ pub struct UseDemoShader(pub u32);
 pub struct DemoShader {
     color: u8,
 }
+
+#[derive(Component, Debug)]
+#[allow(dead_code, reason = "The point is to load the data not use it")]
+pub struct KeepLoaded(Handle<()>);
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
@@ -143,8 +146,8 @@ fn dump_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
         .collect();
     let scene = DynamicSceneBuilder::from_world(world)
         .deny_all_resources()
-        .allow_all()
-        .allow::<Node>()
+        .allow_all_components()
+        .allow_component::<Node>()
         .extract_entities(entities.into_iter())
         .build();
     let type_registry = app_type_registry.read();
@@ -222,7 +225,7 @@ fn demo_startup(
 
     let stabby_boi = commands
         .spawn((
-            asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack"),
+            CardDefHandle(asset_server.load::<CardDefinition>("nightfall/lvl1.cards.json#Hack")),
             CardHandle("nightfall/lvl1.cards.json#Hack".to_string()),
             Nickname::new("Stabby boi"),
         ))
@@ -231,26 +234,21 @@ fn demo_startup(
     // TODO FIXME This is to reduce crashes from bevy issue
     // SEE https://github.com/bevyengine/bevy/issues/10820
     // When issue is resolved, remove these
-    commands.spawn(asset_server.load::<()>("nightfall/lvl1.cards.json"));
-    commands.spawn(asset_server.load::<()>("nightfall/lvl2.cards.json"));
-    commands.spawn(asset_server.load::<()>("nightfall/lvl3.cards.json"));
-    commands.spawn(asset_server.load::<()>("nightfall/lvl4.cards.json"));
-    commands.spawn(asset_server.load::<()>("nightfall/enemies.cards.json"));
-
-    // This is to fix bug where game "crashes" (spams console)
-    // if no audio is playing, we are adding "background music" of
-    // silence.
-    // See issue: https://github.com/bevyengine/bevy/issues/9798
-    // NOTE: This unfortunately did not work when playing a silent audio file, trying a real audio file with 0 volume
-    // NOTE: Yeah it didn't work with music either.
-    commands.spawn(AudioBundle {
-        source: asset_server.load("tmp/audio/mixkit-coins-sound-2003.wav"),
-        settings: PlaybackSettings {
-            mode: bevy::audio::PlaybackMode::Loop,
-            volume: Volume::new(0.0),
-            ..default()
-        },
-    });
+    commands.spawn(KeepLoaded(
+        asset_server.load::<()>("nightfall/lvl1.cards.json"),
+    ));
+    commands.spawn(KeepLoaded(
+        asset_server.load::<()>("nightfall/lvl2.cards.json"),
+    ));
+    commands.spawn(KeepLoaded(
+        asset_server.load::<()>("nightfall/lvl3.cards.json"),
+    ));
+    commands.spawn(KeepLoaded(
+        asset_server.load::<()>("nightfall/lvl4.cards.json"),
+    ));
+    commands.spawn(KeepLoaded(
+        asset_server.load::<()>("nightfall/enemies.cards.json"),
+    ));
 
     // Add demo cards
     let card_def_paths = [

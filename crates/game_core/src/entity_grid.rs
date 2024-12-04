@@ -57,7 +57,8 @@ pub struct Square {
 /// ordered. A square in the grid must be "open" in order to contain an item.
 
 #[derive(Clone, Component, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Reflect)]
-#[reflect_value(Component, Deserialize, MapEntities, Serialize)]
+#[reflect(opaque)]
+#[reflect(Component, Deserialize, MapEntities, Serialize)]
 #[serde(try_from = "EntityGridSeDe", into = "EntityGridSeDe")]
 pub struct EntityGrid {
     width: u32,
@@ -83,7 +84,8 @@ impl MapEntities for EntityGrid {
 
 /// Simple representation for Se/De
 #[derive(Clone, Debug, Default, Deserialize, Reflect, Serialize)]
-#[reflect_value(Deserialize, Serialize)]
+#[reflect(opaque)]
+#[reflect(Deserialize, Serialize)]
 struct EntityGridSeDe {
     pub shape: String,
     pub entities: HashMap<Entity, Vec<UVec2>>,
@@ -941,9 +943,8 @@ impl<'a> Iterator for SquareIter<'a> {
 
     /// Advances the iterator and returns the next value.
     fn next(&mut self) -> Option<Self::Item> {
-        self.next.and_then(|pt| self.map.square(pt)).map(|sqr| {
+        self.next.and_then(|pt| self.map.square(pt)).inspect(|sqr| {
             self.next = sqr.next;
-            sqr
         })
     }
 }

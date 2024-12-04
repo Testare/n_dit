@@ -155,6 +155,7 @@ pub fn opsys_leave(
     q_player: Query<Has<InShop>, With<Player>>,
 ) -> OpImplResult {
     if let ShopOp::Leave = shop_op {
+        let player_id: Entity = player_id;
         let in_shop = q_player.get(player_id).invalid()?;
         if !in_shop {
             Err("Player not in a shop".invalid())?;

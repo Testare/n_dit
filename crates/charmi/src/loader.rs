@@ -22,11 +22,11 @@ impl AssetLoader for CharmiaLoader {
     type Asset = CharmieActor;
     type Settings = ();
     type Error = LoaderError;
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _: &'a Self::Settings,
-        load_context: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _: &Self::Settings,
+        load_context: &mut LoadContext<'_>,
     ) -> Result<CharmieActor, Self::Error> {
         let mut toml_def = String::new();
         reader.read_to_string(&mut toml_def).await?;
@@ -48,11 +48,11 @@ impl AssetLoader for CharmiLoader {
     type Asset = CharacterMapImage;
     type Settings = ();
     type Error = LoaderError;
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _: &'a Self::Settings,
-        _: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _: &Self::Settings,
+        _: &mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut toml_def = String::new();
         reader.read_to_string(&mut toml_def).await?;

@@ -22,7 +22,7 @@ impl<'a> AddToGrid for EntityCommands<'a> {
             grid_entity,
             points: points.into_iter().map(|p| p.into()).collect(),
         };
-        self.add(command);
+        self.queue(command);
         self
     }
 }

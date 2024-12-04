@@ -47,7 +47,7 @@ pub fn sys_add_undo_queue(
 pub fn sys_record_node_ops(
     mut evr_node_op: EventReader<OpResult<NodeOp>>,
     q_player: Query<&OnTeam, With<Player>>,
-    mut q_team: Query<(DebugName, &mut NodeUndoStack), With<Team>>,
+    mut q_team: Query<(NameOrEntity, &mut NodeUndoStack), With<Team>>,
 ) {
     for op_result in evr_node_op.read() {
         (|| {

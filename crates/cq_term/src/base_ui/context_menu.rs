@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::SystemId;
 use bevy::ecs::world::Command;
 use bevy::hierarchy::DespawnRecursiveExt;
@@ -233,7 +232,7 @@ impl ContextAction {
         }
     }
 
-    pub fn from_system_id<S: ToString>(action_name: S, sys_id: SystemId<Entity>) -> Self {
+    pub fn from_system_id<S: ToString>(action_name: S, sys_id: SystemId<In<Entity>>) -> Self {
         let action_name_0 = action_name.to_string();
         let action_op = Arc::new(move |id, _, world: &mut World| {
             if let Err(e) = world.run_system_with_input(sys_id, id) {
@@ -249,7 +248,7 @@ impl ContextAction {
 
     pub fn from_system_id_with_mouse_event<S: ToString>(
         action_name: S,
-        sys_id: SystemId<(Entity, MouseEventTty)>,
+        sys_id: SystemId<In<(Entity, MouseEventTty)>>,
     ) -> Self {
         let action_name_0 = action_name.to_string();
         let action_op = Arc::new(move |id, mouse_event, world: &mut World| {
@@ -396,7 +395,8 @@ pub fn sys_context_actions(
                     },
                 };
                 let context_action_target = context_action_delegate.unwrap_or(id);
-                commands.add(move |w: &'_ mut World| action(context_action_target, mouse_event, w));
+                commands
+                    .queue(move |w: &'_ mut World| action(context_action_target, mouse_event, w));
                 Some(())
             },
         );
@@ -437,26 +437,28 @@ fn sys_display_context_menu(
         let (mut pane_style, pane_size) =
             context_menu_pane.expect("Should have been checked previously");
 
-        let context_menu_actions: Vec<_> = context_actions_q.get(context_actions_id).map(|context_actions|
-            context_actions.actions.iter().copied().filter_map(|context_action_id| {
-                match context_action_q.get(context_action_id) {
-                    Ok(context_action) => Some(ContextMenuItem(context_action.action_name.clone(), context_action_id)),
-                    Err(e) => {
-                        match e {
-                            QueryEntityError::NoSuchEntity(id) => {
-                                log::error!("Couldn't find context action, no entity: [Entity: {id:?}]");
+        let context_menu_actions: Vec<_> = context_actions_q
+            .get(context_actions_id)
+            .map(|context_actions| {
+                context_actions
+                    .actions
+                    .iter()
+                    .copied()
+                    .filter_map(
+                        |context_action_id| match context_action_q.get(context_action_id) {
+                            Ok(context_action) => Some(ContextMenuItem(
+                                context_action.action_name.clone(),
+                                context_action_id,
+                            )),
+                            Err(e) => {
+                                log::error!("Error finding context action: {e}");
+                                None
                             },
-                            QueryEntityError::QueryDoesNotMatch(id) => {
-                                log::error!("Couldn't find context action, not a match: [Entity: {id:?}], logging components");
-                                commands.entity(context_action_id).log_components();
-                            },
-                            QueryEntityError::AliasedMutability(_) => unreachable!("Should not be a possible result")
-                        }
-                        None
-                    }
-                }
-            }).collect()
-        ).unwrap_or_default();
+                        },
+                    )
+                    .collect()
+            })
+            .unwrap_or_default();
 
         if context_menu_actions.is_empty() {
             is_visible.set_if_neq(false);
@@ -592,7 +594,7 @@ pub fn sys_context_menu_item_click(
                     .mouse_event()
                     .expect("Should have a source mouse event if context menu is displayed");
                 let id = context_menu.actions_context?;
-                commands.add(move |w: &'_ mut World| {
+                commands.queue(move |w: &'_ mut World| {
                     if let Some(mut timer) = w.get_mut::<ContextMenuTimer>(cm_id) {
                         timer.unpause();
                         let duration = timer.duration();

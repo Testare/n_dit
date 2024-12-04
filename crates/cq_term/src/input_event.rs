@@ -17,7 +17,8 @@ pub struct CrosstermEvent(pub crossterm::event::Event);
 pub struct MouseEvent(pub crossterm::event::MouseEvent);
 
 #[derive(Clone, Copy, Debug, Deserialize, Event, PartialEq, Reflect, Serialize)]
-#[reflect_value(Deserialize, Serialize)]
+#[reflect(opaque)]
+#[reflect(Deserialize, Serialize)]
 pub struct KeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,

@@ -74,29 +74,31 @@ impl FromWorld for ButtonContextActions {
                 "Toggle Options menu",
                 |id, world: &mut World| {
                     if let Some(&ForPlayer(player_id)) = world.get::<ForPlayer>(id) {
-                        world.run_system_once(
-                            move |mut help_menu_q: Query<
-                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
-                                (With<HelpMenu>, Without<OptionsMenu>),
-                            >,
-                                  mut options_menu_q: Query<
-                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
-                                (With<OptionsMenu>, Without<HelpMenu>),
-                            >| {
-                                if let Some((_, mut help_vis)) = help_menu_q
-                                    .iter_mut()
-                                    .find(|(for_player, _)| *for_player == player_id)
-                                {
-                                    help_vis.set_if_neq(false);
-                                }
-                                if let Some((_, mut options_vis)) = options_menu_q
-                                    .iter_mut()
-                                    .find(|(for_player, _)| *for_player == player_id)
-                                {
-                                    *options_vis = !*options_vis;
-                                }
-                            },
-                        );
+                        world
+                            .run_system_once(
+                                move |mut help_menu_q: Query<
+                                    (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                    (With<HelpMenu>, Without<OptionsMenu>),
+                                >,
+                                      mut options_menu_q: Query<
+                                    (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                    (With<OptionsMenu>, Without<HelpMenu>),
+                                >| {
+                                    if let Some((_, mut help_vis)) = help_menu_q
+                                        .iter_mut()
+                                        .find(|(for_player, _)| *for_player == player_id)
+                                    {
+                                        help_vis.set_if_neq(false);
+                                    }
+                                    if let Some((_, mut options_vis)) = options_menu_q
+                                        .iter_mut()
+                                        .find(|(for_player, _)| *for_player == player_id)
+                                    {
+                                        *options_vis = !*options_vis;
+                                    }
+                                },
+                            )
+                            .expect("There should be no way for this system to fail");
                     }
                 },
             ),))
@@ -106,29 +108,31 @@ impl FromWorld for ButtonContextActions {
                 "Toggle Help",
                 |id, world: &mut World| {
                     if let Some(&ForPlayer(player_id)) = world.get::<ForPlayer>(id) {
-                        world.run_system_once(
-                            move |mut help_menu_q: Query<
-                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
-                                (With<HelpMenu>, Without<OptionsMenu>),
-                            >,
-                                  mut options_menu_q: Query<
-                                (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
-                                (With<OptionsMenu>, Without<HelpMenu>),
-                            >| {
-                                if let Some((_, mut help_vis)) = help_menu_q
-                                    .iter_mut()
-                                    .find(|(for_player, _)| *for_player == player_id)
-                                {
-                                    *help_vis = !*help_vis;
-                                }
-                                if let Some((_, mut options_vis)) = options_menu_q
-                                    .iter_mut()
-                                    .find(|(for_player, _)| *for_player == player_id)
-                                {
-                                    options_vis.set_if_neq(false);
-                                }
-                            },
-                        );
+                        world
+                            .run_system_once(
+                                move |mut help_menu_q: Query<
+                                    (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                    (With<HelpMenu>, Without<OptionsMenu>),
+                                >,
+                                      mut options_menu_q: Query<
+                                    (AsDerefCopied<ForPlayer>, AsDerefMut<VisibilityTty>),
+                                    (With<OptionsMenu>, Without<HelpMenu>),
+                                >| {
+                                    if let Some((_, mut help_vis)) = help_menu_q
+                                        .iter_mut()
+                                        .find(|(for_player, _)| *for_player == player_id)
+                                    {
+                                        *help_vis = !*help_vis;
+                                    }
+                                    if let Some((_, mut options_vis)) = options_menu_q
+                                        .iter_mut()
+                                        .find(|(for_player, _)| *for_player == player_id)
+                                    {
+                                        options_vis.set_if_neq(false);
+                                    }
+                                },
+                            )
+                            .expect("There should be no way for this system to fail");
                     }
                 },
             ),))

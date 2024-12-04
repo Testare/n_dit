@@ -489,7 +489,8 @@ pub enum TeamPhase {
 /// Lists the victory status of each team in the node.
 /// TODO Probably should be changd to a component on Team entities
 #[derive(Clone, Component, Debug, Deserialize, Default, Deref, DerefMut, Reflect, Serialize)]
-#[reflect_value(Component, Deserialize, MapEntities, Serialize)] // Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
+#[reflect(opaque)]
+#[reflect(Component, Deserialize, MapEntities, Serialize)] // Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
 pub struct TeamStatus(EntityHashMap<VictoryStatus>);
 
 impl MapEntities for TeamStatus {

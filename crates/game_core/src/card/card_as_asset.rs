@@ -78,11 +78,11 @@ impl AssetLoader for ActionAssetLoader {
     type Settings = ();
     type Error = std::io::Error;
 
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _: &'a Self::Settings,
-        load_context: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _: &Self::Settings,
+        load_context: &mut LoadContext<'_>,
     ) -> Result<(), Self::Error> {
         let mut bytes = vec![];
         reader.read_to_end(&mut bytes).await?;
@@ -129,11 +129,11 @@ impl AssetLoader for CardAssetLoader {
     type Settings = ();
     type Error = std::io::Error;
 
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _: &Self::Settings,
+        load_context: &mut bevy::asset::LoadContext<'_>,
     ) -> Result<(), Self::Error> {
         let mut bytes = vec![];
         reader.read_to_end(&mut bytes).await?;

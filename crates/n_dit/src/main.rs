@@ -1,13 +1,13 @@
-use std::fs::File;
-use std::time::Duration;
 use std::borrow::Cow;
+use std::fs::File;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use bevy::app::RunMode;
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
 use clap::Parser;
-use cq_term::demo::{UseDemoShader};
+use cq_term::demo::UseDemoShader;
 use game_core::saving::CurrentSaveFile;
 use simplelog::{LevelFilter, WriteLogger};
 
@@ -36,7 +36,7 @@ struct CqCliPlugin {
     /// If a parent is specified, like `./save.json` or `/path/to/file/save.json`, the path will be
     /// resolved as you would expected.
     #[arg(short = 'f', long, value_name = "SAVE_FILE")]
-    save_file: Option<PathBuf>
+    save_file: Option<PathBuf>,
 }
 
 impl Plugin for CqCliPlugin {
@@ -44,9 +44,12 @@ impl Plugin for CqCliPlugin {
         app.insert_resource(self.clone());
         app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
         if self.save_file.is_some() {
-            app.add_systems(Startup, move |mut save_file: ResMut<CurrentSaveFile>, cli_args: Res<CqCliPlugin>| {
-                **save_file = Cow::Owned(cli_args.save_file.clone().unwrap());
-            });
+            app.add_systems(
+                Startup,
+                move |mut save_file: ResMut<CurrentSaveFile>, cli_args: Res<CqCliPlugin>| {
+                    **save_file = Cow::Owned(cli_args.save_file.clone().unwrap());
+                },
+            );
         }
     }
 }

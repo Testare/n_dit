@@ -15,8 +15,8 @@ impl Plugin for CharmiPlugin {
 
 #[derive(Debug, Default, Resource)]
 pub struct CharmiFunctionRegistry {
-    cell_functions: HashMap<String, SystemId<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>>>,
-    timing_functions: HashMap<String, SystemId<FreeformToml, bool>>,
+    cell_functions: HashMap<String, SystemId<In<FreeformToml>, Box<dyn Fn(UVec2) -> CharmiCell>>>,
+    timing_functions: HashMap<String, SystemId<In<FreeformToml>, bool>>,
 }
 
 impl CharmiFunctionRegistry {
@@ -34,16 +34,16 @@ impl CharmiFunctionRegistry {
 pub trait RegisterCharmiFunctions {
     fn register_cell_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static;
+        F: IntoSystem<In<FreeformToml>, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static;
     fn register_timing_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<FreeformToml, bool, M> + 'static;
+        F: IntoSystem<In<FreeformToml>, bool, M> + 'static;
 }
 
 impl RegisterCharmiFunctions for App {
     fn register_cell_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<FreeformToml, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static,
+        F: IntoSystem<In<FreeformToml>, Box<dyn Fn(UVec2) -> CharmiCell>, M> + 'static,
     {
         let sys_id = self.world_mut().register_system(function);
         let mut registry = self
@@ -54,7 +54,7 @@ impl RegisterCharmiFunctions for App {
 
     fn register_timing_function<F, M>(&mut self, name: &str, function: F)
     where
-        F: IntoSystem<FreeformToml, bool, M> + 'static,
+        F: IntoSystem<In<FreeformToml>, bool, M> + 'static,
     {
         let sys_id = self.world_mut().register_system(function);
         let mut registry = self

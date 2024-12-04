@@ -173,7 +173,7 @@ fn sys_board_piece_lifetimes(
         (
             AsDerefCopied<BoardPosition>,
             AsDerefCopiedOfCopiedOrDefault<BoardSize>,
-            DebugName,
+            NameOrEntity,
         ),
         With<BoardPiece>,
     >,

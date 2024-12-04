@@ -25,13 +25,15 @@ mod key {
 
 #[derive(Debug, Default)]
 pub struct SavePlugin {
-   save_file: Option<Cow<'static, Path>>
+    save_file: Option<Cow<'static, Path>>,
 }
 
 impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
-        let save_file_resource = self.save_file.clone()
-            .map(|path|CurrentSaveFile(path))
+        let save_file_resource = self
+            .save_file
+            .clone()
+            .map(CurrentSaveFile)
             .unwrap_or_default();
         app.insert_resource(save_file_resource)
             .init_resource::<SaveFilter>()
@@ -203,7 +205,7 @@ impl SaveData {
         }
         let save_filter = world.resource::<SaveFilter>().deref().clone();
         let scene = bevy::scene::DynamicSceneBuilder::from_world(world)
-            .with_filter(save_filter.clone())
+            .with_component_filter(save_filter.clone())
             .with_resource_filter(save_filter)
             .extract_entities(entity_set.into_iter())
             .build();
