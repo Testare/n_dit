@@ -6,6 +6,8 @@ use std::time::Duration;
 use bevy::app::RunMode;
 use bevy::prelude::*;
 use bevy::scene::ScenePlugin;
+use bevy::remote::RemotePlugin;
+use bevy::remote::http::RemoteHttpPlugin;
 use clap::Parser;
 use cq_term::demo::UseDemoShader;
 use game_core::saving::CurrentSaveFile;
@@ -43,6 +45,12 @@ impl Plugin for CqCliPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(self.clone());
         app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
+        if self.debug {
+            app.add_plugins((
+                RemotePlugin::default(),
+                RemoteHttpPlugin::default()
+            ));
+        }
         if self.save_file.is_some() {
             app.add_systems(
                 Startup,
