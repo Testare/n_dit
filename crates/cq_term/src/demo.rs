@@ -231,9 +231,6 @@ fn demo_startup(
         ))
         .id();
 
-    // TODO FIXME This is to reduce crashes from bevy issue
-    // SEE https://github.com/bevyengine/bevy/issues/10820
-    // When issue is resolved, remove these
     commands.spawn(KeepLoaded(
         asset_server.load::<()>("nightfall/lvl1.cards.json"),
     ));

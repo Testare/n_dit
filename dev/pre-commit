@@ -5,8 +5,9 @@
 # it wants to stop the commit.
 #
 # To enable this hook, rename this file to "pre-commit".
-if [ -n "$(command -v rg)" ] && ( [ -n "$(rg NOCOMMIT . -g '!dev/')" ] ) ; then 
+NC_ADDS="$(git diff --cached -G"NOCOMMIT|nocommit" | grep '^+' | grep -i nocommit)"
+if [ -n "$NC_ADDS" ] ; then
     echo "ERROR: You have instances of NOCOMMIT statements"
-    rg NOCOMMIT . -g '!dev/'
+    git diff --cached -G"NOCOMMIT|nocommit"
     exit 2
 fi
