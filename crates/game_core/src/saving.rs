@@ -8,17 +8,17 @@ use bevy::ecs::entity::{EntityHashMap, EntityHashSet, MapEntities};
 use bevy::ecs::reflect::AppTypeRegistry;
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::scene::serde::SceneDeserializer;
-use bevy::scene::{ron, SceneFilter};
+use bevy::scene::{SceneFilter, ron};
 use freeform::SerdeScheme;
-use serde::de::DeserializeSeed;
 use serde::Serialize;
+use serde::de::DeserializeSeed;
 use typed_key::Key;
 
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
 mod key {
-    use typed_key::{typed_key, Key};
+    use typed_key::{Key, typed_key};
 
     pub const SCENE: Key<String> = typed_key!("scene");
 }
@@ -71,10 +71,7 @@ impl CurrentSaveFile {
                 let mut pathbuf = PathBuf::new();
                 let home = homedir::get_my_home()?;
                 if home.is_none() {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "No home directory",
-                    ));
+                    return Err(std::io::Error::other("No home directory"));
                 }
                 pathbuf.push(home.unwrap());
                 pathbuf.push(".local");

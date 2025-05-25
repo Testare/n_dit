@@ -10,7 +10,7 @@ use indoc::indoc;
 
 use crate::layout::{StyleTty, VisibilityTty};
 use crate::prelude::*;
-use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
+use crate::render::{RENDER_TTY_SCHEDULE, RenderTtySet, TerminalRendering};
 
 #[derive(Debug)]
 pub struct NodePopupsPlugin;
@@ -102,7 +102,7 @@ pub fn sys_render_status_screen(
                 let mut reward_mon = 0u32;
                 for (_, pickup) in q_victory_awards
                     .iter()
-                    .filter(|(&VictoryAward(v_node_id), _)| v_node_id == node_id)
+                    .filter(|&(&VictoryAward(v_node_id), _)| v_node_id == node_id)
                 {
                     match pickup {
                         Pickup::Mon(Mon(mon_val)) => {

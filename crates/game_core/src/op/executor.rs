@@ -87,13 +87,13 @@ impl OpExecutor {
 
     pub fn accept_request(&mut self, op_request: OpRequest) {
         match self {
-            Self::Local(ref mut queue) => queue.push(op_request),
+            Self::Local(queue) => queue.push(op_request),
             Self::Network => todo!("TODO network support"),
         }
     }
     pub fn accept_requests<E: Iterator<Item = OpRequest>>(&mut self, events: E) {
         match self {
-            Self::Local(ref mut queue) => {
+            Self::Local(queue) => {
                 queue.extend(events);
             },
             Self::Network => todo!("TODO Network support"),
@@ -102,7 +102,7 @@ impl OpExecutor {
 
     pub fn take_ops(&mut self) -> Vec<OpRequest> {
         match self {
-            Self::Local(ref mut queue) => {
+            Self::Local(queue) => {
                 let new_queue = Vec::new();
                 // In the future, might only implement X ops per frame
                 std::mem::replace(queue, new_queue)

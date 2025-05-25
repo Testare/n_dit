@@ -5,8 +5,8 @@ use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::sync::OnceLock;
 
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 pub trait SeDe {
     type Error;
@@ -58,8 +58,7 @@ where
 
     pub fn se(&self) -> Result<&str, &S::Error> {
         let de = &self.de;
-        let m = self
-            .se
+        self.se
             .get_or_init(|| {
                 let de = de
                     .get()
@@ -69,8 +68,7 @@ where
                 S::serialize(de)
             })
             .as_ref()
-            .map(|cow| cow.borrow());
-        m
+            .map(|cow| cow.borrow())
     }
 }
 

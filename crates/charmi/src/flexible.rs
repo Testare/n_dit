@@ -69,7 +69,7 @@ impl CharacterMapImage {
         }
         if self.rows.len() < height as usize {
             if let Some(fill_char) = fill_char {
-                let fill_str: String = std::iter::repeat(fill_char).take(width as usize).collect();
+                let fill_str: String = std::iter::repeat_n(fill_char, width as usize).collect();
                 for _ in self.rows.len()..(height as usize) {
                     self.new_row().add_plain_text(fill_str.as_str());
                 }
@@ -168,6 +168,8 @@ impl CharmieString {
         let mut image = CharacterMapImage::new();
         let mut row = CharmieString::new();
         let mut row_len = 0;
+        let section_regex = regex::Regex::new(r"(\s+|\S+)").unwrap();
+        let whitespace_regex = regex::Regex::new(r"\s.*").unwrap();
         for segment in self.segments.iter() {
             let seg_len = segment.len();
             let added_len = row_len + seg_len;
@@ -215,8 +217,6 @@ impl CharmieString {
                     CharmieSegment::Textual { text, style } => {
                         // Break down into break-apartable parts
                         // Should I just use textwrap crate? Just add a prefix of the row that already exists then textwrap, then remove the prefix?
-                        let section_regex = regex::Regex::new(r"(\s+|\S+)").unwrap();
-                        let whitespace_regex = regex::Regex::new(r"\s.*").unwrap();
 
                         for text_segment in section_regex.find_iter(text) {
                             let text_seg_len = text_segment.as_str().width() as u32;
@@ -522,9 +522,8 @@ impl CharmieString {
         match self_len.cmp(&len) {
             Ordering::Less => {
                 if let Some(fill_char) = fill_char {
-                    let fill_str: String = std::iter::repeat(fill_char)
-                        .take((len - self_len) as usize)
-                        .collect();
+                    let fill_str: String =
+                        std::iter::repeat_n(fill_char, (len - self_len) as usize).collect();
                     self.add_plain_text(fill_str);
                 } else {
                     self.add_gap(len - self_len);

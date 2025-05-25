@@ -1,11 +1,11 @@
-use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
+use game_core::player::{ForPlayer, Player};
 
 use super::{NodeUi, NodeUiQItem};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::prelude::*;
-use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
+use crate::render::{RENDER_TTY_SCHEDULE, RenderTtySet, TerminalRendering};
 use crate::{KeyMap, Submap};
 
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
@@ -29,7 +29,7 @@ pub fn kb_messages(
             {
                 for (mut msg_bar, ForPlayer(for_player)) in message_bar_ui.iter_mut() {
                     if *for_player == player {
-                        if msg_bar.len() > 0 {
+                        if !msg_bar.is_empty() {
                             msg_bar.0 = msg_bar.0[1..].into();
                         }
                         break;

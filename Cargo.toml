@@ -12,8 +12,8 @@ rust-version = "1.78"
 edition = "2021"
 
 [patch.crates-io]
-simplelog = { git = "https://github.com/aminya/simplelog.rs.git", branch="patch-1" }
-bevy_yarnspinner = { git = "https://github.com/wiggleforlife/YarnSpinner-Rust.git", branch="main" }
+simplelog = { git = "https://github.com/aminya/simplelog.rs.git", branch = "patch-1" }
+bevy_yarnspinner = { git = "https://github.com/wiggleforlife/YarnSpinner-Rust.git", branch = "main" }
 
 [workspace.lints.rust]
 missing_debug_implementations = "warn"
@@ -24,7 +24,7 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [workspace.dependencies]
-freeform = { version = "0.4", features = ["toml"]  }
+freeform = { version = "0.4", features = ["toml"] }
 bevy_query_ext = "0.5"
 bevy_yarnspinner = "0.4"
 toml = "0.8.12"
@@ -41,6 +41,5 @@ features = [
     "file_watcher",
     "mp3",
     "multi_threaded",
-    "dynamic_linking"
+    "dynamic_linking",
 ]
-

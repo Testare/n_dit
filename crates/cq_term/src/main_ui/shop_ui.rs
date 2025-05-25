@@ -3,12 +3,12 @@ use std::borrow::Cow;
 use bevy::hierarchy::{BuildChildren, DespawnRecursiveExt};
 use charmi::{CharacterMapImage, CharmieAnimation};
 use crossterm::style::{Color, ContentStyle, Stylize};
+use game_core::NDitCoreSet;
 use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::shop::{self, InShop, ShopId, ShopInventory, ShopOp};
-use game_core::NDitCoreSet;
 use getset::CopyGetters;
 
 use super::UiOps;
@@ -166,7 +166,7 @@ impl FromWorld for ShopUiContextActions {
                         |(&ForPlayer(player_id), mut flexible_text_ui)| {
                             let (_, mut shop_ui_selected_item) = q_shop_ui
                                 .iter_mut()
-                                .find(|(&ForPlayer(for_player), _)| player_id == for_player)?;
+                                .find(|&(&ForPlayer(for_player), _)| player_id == for_player)?;
                             let old_selected_id = *shop_ui_selected_item;
                             if old_selected_id != Some(id) {
                                 *shop_ui_selected_item = Some(id);
@@ -286,14 +286,14 @@ pub fn sys_open_shop_ui(
             // This means card selection and description stuff from node
             if let Some((_, mut is_visible)) = q_shop_ui
                 .iter_mut()
-                .find(|(&ForPlayer(for_player), _)| for_player == player_id)
+                .find(|&(&ForPlayer(for_player), _)| for_player == player_id)
             {
                 is_visible.set_if_neq(true);
             };
 
             q_shop_listing_ui
                 .iter()
-                .find(|(&ForPlayer(for_player), _)| for_player == player_id)
+                .find(|&(&ForPlayer(for_player), _)| for_player == player_id)
                 .and_then(|(_, ui_id)| {
                     let shop_inv = q_shop.get(shop_id).ok()?;
 
@@ -352,7 +352,7 @@ fn sys_leave_shop_ui(
             }
             if let Some((_, mut is_visible, mut selected_item)) = q_shop_ui
                 .iter_mut()
-                .find(|(&ForPlayer(for_player), _, _)| for_player == player_id)
+                .find(|&(&ForPlayer(for_player), _, _)| for_player == player_id)
             {
                 is_visible.set_if_neq(false);
                 selected_item.set_if_neq(None);
@@ -362,7 +362,7 @@ fn sys_leave_shop_ui(
             // to clean up after yourself.
             if let Some((_, ui_id)) = q_shop_listing_ui
                 .iter()
-                .find(|(&ForPlayer(for_player), _)| for_player == player_id)
+                .find(|&(&ForPlayer(for_player), _)| for_player == player_id)
             {
                 commands.entity(ui_id).despawn_descendants();
             }

@@ -17,9 +17,9 @@ use crate::card::{
 use crate::configuration::PlayerConfiguration;
 use crate::entity_grid::Square;
 use crate::node::{
-    key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
+    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
     IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
-    TeamPhase, TeamStatus, Teams, VictoryStatus,
+    TeamPhase, TeamStatus, Teams, VictoryStatus, key,
 };
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
 use crate::player::{Ncp, Player};
@@ -774,7 +774,7 @@ fn opsys_node_quit_battle(
             // Current implementation: All winners get a copy of victory pickups
             let victory_pickups = q_victory_pickup
                 .iter()
-                .filter(|(_, &VictoryAward(v_node_id))| v_node_id == node_id)
+                .filter(|&(_, &VictoryAward(v_node_id))| v_node_id == node_id)
                 .map(|(pickup, _)| pickup.clone());
             pickups.extend(victory_pickups);
         }
@@ -838,7 +838,7 @@ fn opsys_node_undo(
     }
     let (&OnTeam(team_id), &InNode(node_id)) = q_player.get(player_id).invalid()?;
     let mut undo_queue = q_team.get_mut(team_id).invalid()?;
-    if undo_queue.len() == 0 {
+    if undo_queue.is_empty() {
         Err("Not able to undo any more".invalid())?;
     }
     let (mut grid, mut active_curio, team_status) = q_node.get_mut(node_id).critical()?;

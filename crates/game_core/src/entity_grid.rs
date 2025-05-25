@@ -40,7 +40,7 @@ impl Plugin for EntityGridSupportPlugin {
 }
 
 /// Represents a point of space that may contain a square.
-
+///
 /// Internal representation of available space. Contains:
 /// * A reference to its location on the map
 /// * An id for an item in the containing EntityGrid, if the square is occupied.

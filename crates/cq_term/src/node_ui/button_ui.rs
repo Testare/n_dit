@@ -62,7 +62,7 @@ pub fn sys_ready_button_disable(
         } = node_op_result
         {
             let updates = match op {
-                NodeOp::EndTurn { .. } => get_assert!(*player, players, |(_, _, node)| {
+                NodeOp::EndTurn => get_assert!(*player, players, |(_, _, node)| {
                     let (_, current_turn) = get_assert!(node, nodes)?;
                     Some(
                         players
@@ -81,17 +81,19 @@ pub fn sys_ready_button_disable(
                 NodeOp::LoadAccessPoint { .. } => vec![(*player, Some(false), true)],
                 NodeOp::ReadyToGo => vec![(*player, Some(true), true)],
                 NodeOp::UnloadAccessPoint { .. } => {
-                    vec![get_assert!(*player, players, |(_, player_team, in_node)| {
-                        let (grid, _) = get_assert!(in_node, nodes)?;
-                        let still_can_go =
-                            access_points.iter().any(|(id, ap_team, access_point)| {
-                                grid.contains_key(id)
-                                    && ap_team == player_team
-                                    && access_point.card().is_some()
-                            });
-                        Some((*player, Some(false), still_can_go))
-                    })
-                    .unwrap_or((*player, None, false))]
+                    vec![
+                        get_assert!(*player, players, |(_, player_team, in_node)| {
+                            let (grid, _) = get_assert!(in_node, nodes)?;
+                            let still_can_go =
+                                access_points.iter().any(|(id, ap_team, access_point)| {
+                                    grid.contains_key(id)
+                                        && ap_team == player_team
+                                        && access_point.card().is_some()
+                                });
+                            Some((*player, Some(false), still_can_go))
+                        })
+                        .unwrap_or((*player, None, false)),
+                    ]
                 },
                 _ => continue,
             };

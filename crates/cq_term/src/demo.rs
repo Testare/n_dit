@@ -22,6 +22,7 @@ use game_core::quest::QuestStatus;
 use game_core::saving::SaveOp;
 use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
+use crate::KeyMap;
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{
@@ -40,7 +41,6 @@ use crate::main_ui::{
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
-use crate::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 #[derive(Debug)]
@@ -94,7 +94,7 @@ pub fn sys_demo_shader(
                 ContentStyle::new()
                     .on(Color::AnsiValue(color_val))
                     .with(Color::AnsiValue(color_val)) // Remove or change this if you want to see rainbow
-                                                       // affect applied OVER game text
+                // affect applied OVER game text
             }) {
                 row.add_effect(1, &cell_style);
             }
@@ -192,7 +192,10 @@ fn debug_key(
                 }
             }
         } else if *code == KeyCode::Char('p') {
-            log::debug!("Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it.");
+            log::debug!(
+                "Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it."
+            );
+            #[allow(clippy::zombie_processes)]
             std::process::Command::new("aseprite").spawn().unwrap();
         } else if *code == KeyCode::Char('i') {
             for (player_id, on_team, in_node) in q_player_ncp.iter() {

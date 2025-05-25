@@ -1,8 +1,8 @@
+use crate::NDitCoreSet;
 use crate::card::{Action, CardDefinition, Deck};
 use crate::item::{Item, ItemOp};
 use crate::op::{CoreOps, OpPlugin, OpResult};
 use crate::prelude::*;
-use crate::NDitCoreSet;
 
 mod ai;
 mod node_loading;
@@ -14,15 +14,15 @@ use bevy::ecs::entity::{EntityHashMap, EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
 pub use node_loading::NodeScene;
-pub use node_op::node_op_undo::NodeUndoStack;
 pub use node_op::NodeOp;
+pub use node_op::node_op_undo::NodeUndoStack;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
 
 use self::daddy::Daddy;
 
 pub mod key {
-    use typed_key::{typed_key, Key};
+    use typed_key::{Key, typed_key};
 
     use super::*;
 
@@ -446,7 +446,7 @@ impl PlayedCards {
             .flat_map(|(card_id, location_list)| {
                 let original_size = location_list.len();
                 location_list.retain(|loc| *loc != location);
-                std::iter::repeat(*card_id).take(original_size - location_list.len())
+                std::iter::repeat_n(*card_id, original_size - location_list.len())
             })
             .collect()
     }

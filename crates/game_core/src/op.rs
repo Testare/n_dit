@@ -129,7 +129,7 @@ where
 fn wrap_exclusive_op_system<S, M, O>(
     world: &mut World,
     op_sys: S,
-) -> impl FnMut(In<OpRequest>, &mut World)
+) -> impl FnMut(In<OpRequest>, &mut World) + use<S, M, O>
 where
     S: ExclusiveSystemParamFunction<M, In = In<(Entity, O)>, Out = Result<Metadata, OpError>>,
     M: 'static,

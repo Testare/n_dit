@@ -28,13 +28,13 @@ pub mod prelude {
 
 use std::io::stdout;
 use std::panic;
-use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
+use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::time::Duration;
 
 use charmi::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
-use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty, MouseLastPositionTty};
+use input_event::{CrosstermEvent, MouseEventTty, MouseLastPositionTty, sys_mouse_tty};
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
@@ -226,7 +226,7 @@ impl Drop for TerminalWindow {
     }
 }
 
-/// Systems
+// Systems
 
 fn exit_key(
     res_time: Res<Time<Real>>,
