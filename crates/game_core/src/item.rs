@@ -187,8 +187,11 @@ pub fn opsys_add_item(
                         metadata.put(key::NEW_CARD, true).invalid()?;
                         // TODO source individual parent or component
                         commands
-                            .spawn((CardDefHandle(card_handle), card_handle_savable))
-                            .set_parent(**res_daddy_card)
+                            .spawn((
+                                CardDefHandle(card_handle),
+                                card_handle_savable,
+                                ChildOf(**res_daddy_card),
+                            ))
                             .id()
                     };
                     metadata.put(key::CARD_ID, card_id).invalid()?;

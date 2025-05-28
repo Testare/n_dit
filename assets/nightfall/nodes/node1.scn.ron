@@ -13,13 +13,13 @@
         ]),
         "game_core::node::CurrentTurn": (10000000001),
         "game_core::node::rule::AccessPointLoadingRule": Staggered,
-        "game_core::node::TeamStatus": ({
+        "game_core::node::TeamStatus": (EntityHashMap({
           10000000001: Undecided,
           10000000002: Undecided,
-        }),
+        })),
         "game_core::node::ActiveCurio": (None),
-        "bevy_core::name::Name": "Demo Node",
-        "bevy_hierarchy::components::children::Children": ([
+        "bevy_ecs::name::Name": "Demo Node",
+        "bevy_ecs::hierarchy::Children": ([
           10000000004,
           10000000005,
           10000000006,
@@ -63,13 +63,16 @@
     // TEAMS
     10000000001: (
       components: {
+        "bevy_ecs::name::Name": "Player Team",
         "game_core::node::Team": (),
         "game_core::node::TeamColor": Blue,
         "game_core::node::TeamPhase": Setup,
+
       },
     ),
     10000000002: (
       components: {
+        "bevy_ecs::name::Name": "Enemy Team",
         "game_core::node::Team": (),
         "game_core::node::TeamColor": Red,
         "game_core::node::TeamPhase": Play,
@@ -78,7 +81,7 @@
     // ENEMY PLAYER
     10000000003: (
       components: {
-        "bevy_core::name::Name": "Enemy",
+        "bevy_ecs::name::Name": "Enemy",
         "game_core::node::OnTeam": (10000000002),
         "game_core::player::Player": (),
         "game_core::node::IsReadyToGo": (true),
@@ -94,7 +97,7 @@
         ),
         "game_core::node::Pickup": Mon((400)),
         "game_core::card::Description": ("Moneeeeey"),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000005: (
@@ -104,7 +107,7 @@
         ),
         "game_core::node::Pickup": Mon((1000)),
         "game_core::card::Description": ("Put food on the table, and cards in your deck"),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000006: (
@@ -114,7 +117,7 @@
         ),
         "game_core::node::Pickup": Mon((1000)),
         "game_core::card::Description": ("Put food on the table, and cards in your deck"),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     // ACCESS POINTS
@@ -127,7 +130,7 @@
           card: None,
         ),
         "game_core::node::OnTeam": (10000000001),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000008: (
@@ -139,7 +142,7 @@
           card: None,
         ),
         "game_core::node::OnTeam": (10000000001),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     // ENEMY CURIOS
@@ -151,7 +154,7 @@
         "game_core::node::OnTeam": (10000000002),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Watchman"),
         "game_core::node::ai::SimpleAiCurioOrder": (0),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000010: (
@@ -162,7 +165,7 @@
         "game_core::node::OnTeam": (10000000002),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Guard Pup"),
         "game_core::node::ai::SimpleAiCurioOrder": (1),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000011: (
@@ -173,7 +176,7 @@
         "game_core::node::OnTeam": (10000000002),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Sentinel"),
         "game_core::node::ai::SimpleAiCurioOrder": (1),
-        "bevy_hierarchy::components::parent::Parent": (10000000000),
+        "bevy_ecs::hierarchy::ChildOf": (10000000000),
       },
     ),
     10000000012: (

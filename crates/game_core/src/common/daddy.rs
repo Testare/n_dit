@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use bevy::hierarchy::BuildChildren as _;
 use bevy::reflect::TypePath;
 
 use crate::prelude::*;

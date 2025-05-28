@@ -135,11 +135,11 @@ pub fn sys_adjust_selected_entity(
         ),
     >,
     nodes: Query<(&EntityGrid, &CurrentTurn, AsDerefCopied<ActiveCurio>), With<Node>>,
-    teams: Query<(&TeamPhase,), With<Team>>,
+    teams: Query<(&TeamPhase, Entity, NameOrEntity), With<Team>>,
 ) {
     for (in_node, on_team, cursor, mut selected_action, mut selected_entity) in players.iter_mut() {
         get_assert!(**in_node, nodes, |(grid, current_turn, active_curio)| {
-            let (team_phase,) = get_assert!(**on_team, teams)?;
+            let (team_phase, _, _) = get_assert!(**on_team, teams)?;
             if selected_action.is_some() && selected_entity.is_none() {
                 selected_entity.set_if_neq(active_curio);
             } else if selected_action.is_none() {

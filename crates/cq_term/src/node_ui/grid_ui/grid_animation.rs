@@ -108,7 +108,7 @@ pub fn sys_grid_animations(
                         AudioPlayer::new(fx.pickup_sound.clone()),
                         PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(13.0),
+                            volume: Volume::Linear(13.0),
                             ..default()
                         },
                     ));

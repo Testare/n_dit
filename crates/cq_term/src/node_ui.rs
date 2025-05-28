@@ -10,8 +10,7 @@ mod node_ui_op;
 mod setup;
 mod titlebar_ui;
 
-use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
-use bevy::hierarchy::DespawnRecursiveExt;
+use bevy::ecs::query::{QueryData, QueryFilter};
 use bevy::reflect::Reflect;
 use game_core::board::BoardScreen;
 use game_core::card::{Action, Actions};
@@ -115,14 +114,14 @@ impl SelectedNodePiece {
     pub fn of<'a, Q: QueryData, R: QueryFilter>(
         &self,
         query: &'a Query<Q, R>,
-    ) -> Option<<<Q as QueryData>::ReadOnly as WorldQuery>::Item<'a>> {
+    ) -> Option<<<Q as QueryData>::ReadOnly as QueryData>::Item<'a>> {
         query.get(self.0?).ok()
     }
 
     pub fn of_mut<'a, Q: QueryData, R: QueryFilter>(
         &self,
         query: &'a mut Query<Q, R>,
-    ) -> Option<<Q as WorldQuery>::Item<'a>> {
+    ) -> Option<<Q as QueryData>::Item<'a>> {
         query.get_mut(self.0?).ok()
     }
 }
@@ -314,7 +313,7 @@ fn sys_react_to_node_op(
                         if let Some((_, node_screen_id)) =
                             ForPlayer::get(&mut q_node_screen, player)
                         {
-                            commands.entity(node_screen_id).despawn_recursive();
+                            commands.entity(node_screen_id).despawn();
                         }
                     }
                 },

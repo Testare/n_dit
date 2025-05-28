@@ -3,11 +3,11 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use bevy::app::RunMode;
 use bevy::prelude::*;
-use bevy::scene::ScenePlugin;
-use bevy::remote::RemotePlugin;
 use bevy::remote::http::RemoteHttpPlugin;
+use bevy::remote::RemotePlugin;
+use bevy::scene::ScenePlugin;
+use bevy::{app::RunMode, diagnostic::FrameCountPlugin};
 use clap::Parser;
 use cq_term::demo::UseDemoShader;
 use game_core::saving::CurrentSaveFile;
@@ -46,10 +46,7 @@ impl Plugin for CqCliPlugin {
         app.insert_resource(self.clone());
         app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
         if self.debug {
-            app.add_plugins((
-                RemotePlugin::default(),
-                RemoteHttpPlugin::default()
-            ));
+            app.add_plugins((RemotePlugin::default(), RemoteHttpPlugin::default()));
         }
         if self.save_file.is_some() {
             app.add_systems(
@@ -74,14 +71,13 @@ fn main() {
     };
     setup_logging(&cq_cli);
     App::new()
+        .register_type::<Name>()
         .add_plugins((
             cq_cli,
             AssetPlugin { ..default() },
-            HierarchyPlugin,
             bevy::audio::AudioPlugin::default(),
-            bevy::core::TaskPoolPlugin::default(),
+            TaskPoolPlugin::default(),
             ScenePlugin,
-            TypeRegistrationPlugin,
             bevy::time::TimePlugin,
             schedule_runner,
             FrameCountPlugin,

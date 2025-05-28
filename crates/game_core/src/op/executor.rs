@@ -136,7 +136,7 @@ pub fn sys_perform_ops<E: Resource + std::ops::DerefMut + std::ops::Deref<Target
                 log::warn!("Op has no registered system: {op_data:?}")
             },
             Some(op_sys) => {
-                if let Err(e) = world.run_system_with_input(op_sys, op_data) {
+                if let Err(e) = world.run_system_with(op_sys, op_data) {
                     log::error!("Error running op system [{op_sys:?}]: {e:?}");
                 }
             },

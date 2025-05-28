@@ -1,6 +1,6 @@
 use bevy::ecs::system::SystemId;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use charmi::CharmiCell;
 use freeform::FreeformToml;
 
@@ -27,7 +27,7 @@ impl CharmiFunctionRegistry {
     ) -> Option<Box<dyn Fn(UVec2) -> CharmiCell>> {
         let reg = world.get_resource::<Self>()?;
         let factory_id = reg.cell_functions.get(name)?;
-        world.run_system_with_input(*factory_id, freeform).ok()
+        world.run_system_with(*factory_id, freeform).ok()
     }
 }
 

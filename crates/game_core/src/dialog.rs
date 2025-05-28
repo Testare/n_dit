@@ -89,7 +89,7 @@ fn sys_setup_dialogue_runners(
     q_dialog_without_runner: Query<Entity, (With<Dialog>, Without<DialogueRunner>)>,
 ) {
     for id in q_dialog_without_runner.iter() {
-        let dialogue_runner = res_yarn.create_dialogue_runner();
+        let dialogue_runner = res_yarn.create_dialogue_runner(&mut commands);
         commands.entity(id).insert(dialogue_runner);
     }
 }

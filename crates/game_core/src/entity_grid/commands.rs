@@ -1,4 +1,7 @@
-use bevy::ecs::system::{EntityCommand, EntityCommands};
+use bevy::ecs::{
+    system::{EntityCommand, EntityCommands},
+    world::EntityWorldMut,
+};
 
 use super::EntityGrid;
 use crate::prelude::*;
@@ -28,20 +31,42 @@ impl<'a> AddToGrid for EntityCommands<'a> {
 }
 
 impl EntityCommand for AddToGridCommand {
-    fn apply(self, id: Entity, world: &mut World) {
+    fn apply(self, mut entity: EntityWorldMut) {
         let AddToGridCommand {
             grid_entity,
             points,
         } = self;
-        if let Some(mut map) = world.entity_mut(grid_entity).get_mut::<EntityGrid>() {
-            // TODO push item, then push_back any extra points
-            let mut pts_iter = points.iter();
-            if let Some(head) = pts_iter.next() {
-                if let Some(item_key) = map.put_item(*head, id) {
-                    // TODO modify grid_map not to need item keys
-                    for pt in pts_iter {
-                        map.push_back(*pt, item_key);
+        let id = entity.id();
+        entity.world_scope(|world| {
+            // TODO use entities_mut to simplify
+            if let Some(mut map) = world.entity_mut(grid_entity).get_mut::<EntityGrid>() {
+                // TODO push item, then push_back any extra points
+                let mut pts_iter = points.iter();
+                if let Some(head) = pts_iter.next() {
+                    if let Some(item_key) = map.put_item(*head, id) {
+                        // TODO modify grid_map not to need item keys
+                        for pt in pts_iter {
+                            map.push_back(*pt, item_key);
+                        }
                     }
+                } else {
+                    let grid_name = world
+                        .entity(self.grid_entity)
+                        .get::<Name>()
+                        .map(|name| name.as_str())
+                        .unwrap_or("unnamed");
+                    let my_name = world
+                        .entity(id)
+                        .get::<Name>()
+                        .map(|name| name.as_str())
+                        .unwrap_or("unnamed");
+                    log::error!(
+                    "{}[{:?}] cannot add [{}]{:?} to EntityGrid since it does not have any points",
+                    grid_name,
+                    self.grid_entity,
+                    my_name,
+                    id
+                );
                 }
             } else {
                 let grid_name = world
@@ -55,32 +80,14 @@ impl EntityCommand for AddToGridCommand {
                     .map(|name| name.as_str())
                     .unwrap_or("unnamed");
                 log::error!(
-                    "{}[{:?}] cannot add [{}]{:?} to EntityGrid since it does not have any points",
+                    "{}[{:?}] does not have an EntityGrid for [{}]{:?} to be added to",
                     grid_name,
                     self.grid_entity,
                     my_name,
                     id
                 );
             }
-        } else {
-            let grid_name = world
-                .entity(self.grid_entity)
-                .get::<Name>()
-                .map(|name| name.as_str())
-                .unwrap_or("unnamed");
-            let my_name = world
-                .entity(id)
-                .get::<Name>()
-                .map(|name| name.as_str())
-                .unwrap_or("unnamed");
-            log::error!(
-                "{}[{:?}] does not have an EntityGrid for [{}]{:?} to be added to",
-                grid_name,
-                self.grid_entity,
-                my_name,
-                id
-            );
-        }
+        });
     }
 }
 

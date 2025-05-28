@@ -16,26 +16,29 @@ publish = false
 ### BEGIN HAKARI SECTION
 [dependencies]
 anstream = { version = "0.6" }
-bevy = { version = "0.15", default-features = false, features = ["bevy_audio", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "wav"] }
-bevy_audio = { version = "0.15", default-features = false, features = ["mp3", "wav"] }
-bevy_core = { version = "0.15", features = ["serialize"] }
-bevy_input = { version = "0.15", features = ["serialize"] }
-bevy_internal = { version = "0.15", default-features = false, features = ["bevy_asset", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "wav"] }
-bevy_time = { version = "0.15", features = ["serialize"] }
-bevy_transform = { version = "0.15", features = ["serialize"] }
+bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "std", "wav"] }
+bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
+bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "wav"] }
 crossterm = { version = "0.20", features = ["event-stream", "serde"] }
-either = { version = "1" }
+derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
+disqualified = { version = "1" }
+either = { version = "1", default-features = false, features = ["use_std"] }
+erased-serde = { version = "0.4" }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
-hashbrown = { version = "0.14", features = ["raw", "serde"] }
+hashbrown = { version = "0.15", features = ["serde"] }
+indexmap = { version = "2", features = ["serde"] }
+lock_api = { version = "0.4", features = ["arc_lock"] }
 num-traits = { version = "0.2", default-features = false, features = ["libm", "std"] }
 once_cell = { version = "1" }
+parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 rand = { version = "0.8", features = ["small_rng"] }
 regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "unicode"] }
 regex-syntax = { version = "0.8" }
-rodio = { version = "0.19", default-features = false, features = ["mp3", "wav"] }
+rodio = { version = "0.20", default-features = false, features = ["mp3", "wav"] }
 ryu = { version = "1", default-features = false, features = ["small"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
+smallvec = { version = "1", default-features = false, features = ["const_new", "union"] }
 toml_datetime = { version = "0.6", default-features = false, features = ["serde"] }
 toml_edit = { version = "0.22", default-features = false, features = ["display", "parse", "serde"] }
 tracing = { version = "0.1", features = ["log"] }
@@ -43,26 +46,30 @@ uuid = { version = "1", features = ["serde", "v4"] }
 
 [build-dependencies]
 anstream = { version = "0.6" }
-bevy = { version = "0.15", default-features = false, features = ["bevy_audio", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "wav"] }
-bevy_audio = { version = "0.15", default-features = false, features = ["mp3", "wav"] }
-bevy_core = { version = "0.15", features = ["serialize"] }
-bevy_input = { version = "0.15", features = ["serialize"] }
-bevy_internal = { version = "0.15", default-features = false, features = ["bevy_asset", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "wav"] }
-bevy_time = { version = "0.15", features = ["serialize"] }
-bevy_transform = { version = "0.15", features = ["serialize"] }
+bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "serialize", "std", "wav"] }
+bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
+bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "dynamic_linking", "file_watcher", "mp3", "multi_threaded", "wav"] }
 crossterm = { version = "0.20", features = ["event-stream", "serde"] }
-either = { version = "1" }
+derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
+derive_more-impl = { version = "1", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"] }
+disqualified = { version = "1" }
+either = { version = "1", default-features = false, features = ["use_std"] }
+erased-serde = { version = "0.4" }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
-hashbrown = { version = "0.14", features = ["raw", "serde"] }
+hashbrown = { version = "0.15", features = ["serde"] }
+indexmap = { version = "2", features = ["serde"] }
+lock_api = { version = "0.4", features = ["arc_lock"] }
 num-traits = { version = "0.2", default-features = false, features = ["libm", "std"] }
 once_cell = { version = "1" }
+parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 rand = { version = "0.8", features = ["small_rng"] }
 regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "unicode"] }
 regex-syntax = { version = "0.8" }
-rodio = { version = "0.19", default-features = false, features = ["mp3", "wav"] }
+rodio = { version = "0.20", default-features = false, features = ["mp3", "wav"] }
 ryu = { version = "1", default-features = false, features = ["small"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
+smallvec = { version = "1", default-features = false, features = ["const_new", "union"] }
 syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 toml_datetime = { version = "0.6", default-features = false, features = ["serde"] }
 toml_edit = { version = "0.22", default-features = false, features = ["display", "parse", "serde"] }

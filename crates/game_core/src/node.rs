@@ -1,8 +1,8 @@
-use crate::NDitCoreSet;
 use crate::card::{Action, CardDefinition, Deck};
 use crate::item::{Item, ItemOp};
 use crate::op::{CoreOps, OpPlugin, OpResult};
 use crate::prelude::*;
+use crate::NDitCoreSet;
 
 mod ai;
 mod node_loading;
@@ -14,15 +14,15 @@ use bevy::ecs::entity::{EntityHashMap, EntityMapper, MapEntities};
 use bevy::ecs::reflect::ReflectMapEntities;
 use getset::CopyGetters;
 pub use node_loading::NodeScene;
-pub use node_op::NodeOp;
 pub use node_op::node_op_undo::NodeUndoStack;
+pub use node_op::NodeOp;
 pub use rule::AccessPointLoadingRule;
 use serde::{Deserialize, Serialize};
 
 use self::daddy::Daddy;
 
 pub mod key {
-    use typed_key::{Key, typed_key};
+    use typed_key::{typed_key, Key};
 
     use super::*;
 
@@ -115,18 +115,11 @@ impl Plugin for NodePlugin {
 
 /// Indicates a point a player can play cards
 #[derive(Component, CopyGetters, Debug, Default, Reflect)]
-#[reflect(Component, MapEntities)]
+#[reflect(Component)]
 pub struct AccessPoint {
+    #[entities]
     #[getset(get_copy = "pub")]
     card: Option<Entity>, // Display card data to load
-}
-
-impl MapEntities for AccessPoint {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        if let Some(id) = self.card {
-            self.card = Some(entity_mapper.map_entity(id))
-        }
-    }
 }
 
 /// Indicates the current curio performing moving and/or performing an action
@@ -136,25 +129,21 @@ pub struct ActiveCurio(pub Option<Entity>);
 
 /// Indicates a pickup has been claimed by a player
 #[derive(Component, CopyGetters, Debug, Reflect)]
-#[reflect(Component, MapEntities)]
+#[reflect(Component)]
 #[get_copy = "pub"]
 pub struct Claimed {
+    #[entities]
     node_id: Entity,
+    #[entities]
     player: Entity,
-}
-
-impl MapEntities for Claimed {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.node_id = entity_mapper.map_entity(self.node_id);
-        self.player = entity_mapper.map_entity(self.player);
-    }
 }
 
 /// Indicates a node piece capable of moving and performing actions
 #[derive(Component, Debug, Default, Reflect)]
-#[reflect(Component, MapEntities)]
+#[reflect(Component)]
 pub struct Curio {
     // owner: Entity, // Potential replacement for Team mechanism
+    #[entities]
     card: Option<Entity>,
     name: String,
 }
@@ -179,28 +168,14 @@ impl Curio {
     }
 }
 
-impl MapEntities for Curio {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        if let Some(id) = self.card {
-            self.card = Some(entity_mapper.map_entity(id))
-        }
-    }
-}
-
 /// Indicates the team whose turn it is
 #[derive(Component, Debug, Deref, DerefMut, Deserialize, Reflect, Serialize)]
-#[reflect(Component, Serialize, Deserialize, MapEntities)]
-pub struct CurrentTurn(pub Entity);
+#[reflect(Component, Serialize, Deserialize)]
+pub struct CurrentTurn(#[entities] pub Entity);
 
 impl FromWorld for CurrentTurn {
     fn from_world(world: &mut World) -> Self {
         CurrentTurn(world.spawn_empty().id())
-    }
-}
-
-impl MapEntities for CurrentTurn {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -216,18 +191,12 @@ pub struct ForNode(pub NodeId);
 
 /// Indicates this Player is in the specified node
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct InNode(pub Entity);
+#[reflect(Component)]
+pub struct InNode(#[entities] pub Entity);
 
 impl FromWorld for InNode {
     fn from_world(world: &mut World) -> Self {
         Self(world.spawn_empty().id())
-    }
-}
-
-impl MapEntities for InNode {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -350,18 +319,12 @@ impl FromWorld for NoOpAction {
 
 /// Indicates which team a node piece or player belongs to.
 #[derive(Clone, Component, Copy, Debug, Deref, DerefMut, Eq, PartialEq, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct OnTeam(pub Entity);
+#[reflect(Component)]
+pub struct OnTeam(#[entities] pub Entity);
 
 impl FromWorld for OnTeam {
     fn from_world(world: &mut World) -> Self {
         Self(world.spawn_empty().id())
-    }
-}
-
-impl MapEntities for OnTeam {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0)
     }
 }
 
@@ -490,7 +453,9 @@ pub enum TeamPhase {
 /// TODO Probably should be changd to a component on Team entities
 #[derive(Clone, Component, Debug, Deserialize, Default, Deref, DerefMut, Reflect, Serialize)]
 #[reflect(opaque)]
-#[reflect(Component, Deserialize, MapEntities, Serialize)] // Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
+#[reflect(Component, Deserialize, MapEntities, Serialize)]
+// Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
+#[component(entities)]
 pub struct TeamStatus(EntityHashMap<VictoryStatus>);
 
 impl MapEntities for TeamStatus {
@@ -498,7 +463,7 @@ impl MapEntities for TeamStatus {
         self.0 = self
             .0
             .drain()
-            .map(|(id, status)| (entity_mapper.map_entity(id), status))
+            .map(|(id, status)| (entity_mapper.get_mapped(id), status))
             .collect();
     }
 }
@@ -515,28 +480,12 @@ impl TeamStatus {
 
 /// Node component, listing the teams that belong to it
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct Teams(pub Vec<Entity>);
-
-impl MapEntities for Teams {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = self
-            .0
-            .iter()
-            .map(|id| entity_mapper.map_entity(*id))
-            .collect();
-    }
-}
+#[reflect(Component)]
+pub struct Teams(#[entities] pub Vec<Entity>);
 
 #[derive(Component, Debug, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct VictoryAward(pub Entity);
-
-impl MapEntities for VictoryAward {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0);
-    }
-}
+#[reflect(Component)]
+pub struct VictoryAward(#[entities] pub Entity);
 
 #[derive(Clone, Copy, Debug, Deserialize, Reflect, Serialize)]
 pub enum VictoryStatus {

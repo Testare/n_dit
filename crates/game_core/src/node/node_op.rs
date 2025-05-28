@@ -3,7 +3,6 @@ pub mod node_op_undo;
 use std::borrow::Cow;
 
 use bevy::ecs::query::QueryData;
-use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::reflect::TypePath;
 use bevy::scene::DynamicScene;
 
@@ -17,9 +16,9 @@ use crate::card::{
 use crate::configuration::PlayerConfiguration;
 use crate::entity_grid::Square;
 use crate::node::{
-    AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
+    key, AccessPoint, AccessPointLoadingRule, ActiveCurio, Curio, CurrentTurn, InNode, IsReadyToGo,
     IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
-    TeamPhase, TeamStatus, Teams, VictoryStatus, key,
+    TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
 use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
 use crate::player::{Ncp, Player};
@@ -61,7 +60,7 @@ pub enum NodeOp {
 #[query_data(mutable)]
 pub struct CurioQ {
     id: Entity,
-    in_node: AsDerefCopied<Parent>,
+    in_node: &'static ChildOf,
     team: &'static OnTeam,
     tapped: &'static mut IsTapped,
     moves_taken: &'static mut MovesTaken,
@@ -377,7 +376,7 @@ fn opsys_node_action(
         if remaining_teams.len() == 1 {
             let team = remaining_teams[0];
             let is_victory_flawed = curios.p0().iter().any(|curio_q| {
-                curio_q.in_node == node_id
+                curio_q.in_node.parent() == node_id
                     && **curio_q.team == team
                     && !grid.contains_key(curio_q.id)
             });
@@ -728,9 +727,10 @@ fn opsys_node_enter_battle(
         if !node_already_open {
             if let Some(path) = res_reg_nodes.get(node_sid.to_string().as_str()) {
                 let node_asset_handle: Handle<DynamicScene> = res_asset_server.load(path);
-                commands
-                    .spawn(DynamicSceneRoot(node_asset_handle))
-                    .set_parent(**res_daddy_node);
+                commands.spawn((
+                    DynamicSceneRoot(node_asset_handle),
+                    ChildOf(**res_daddy_node),
+                ));
             } else {
                 log::error!("Unable to find scene file for [{node_sid}] in the registry ")
             }
@@ -746,7 +746,7 @@ fn opsys_node_enter_battle(
 fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
-    q_node: Query<(AsDerefCopied<Parent>, &Node, &TeamStatus)>,
+    q_node: Query<(&ChildOf, &Node, &TeamStatus)>,
     mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards, &mut QuestStatus), With<Player>>,
     q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
     q_claimed_pickup: Query<(&Pickup, &Claimed)>,
@@ -808,7 +808,7 @@ fn opsys_node_quit_battle(
             .critical()?;
 
         if !node_still_in_use {
-            commands.entity(node_scene_id).despawn_recursive();
+            commands.entity(node_scene_id.parent()).despawn();
         }
 
         commands.entity(player_id).remove::<(InNode, OnTeam)>();

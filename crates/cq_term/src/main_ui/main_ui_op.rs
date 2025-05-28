@@ -23,7 +23,7 @@ fn opsys_switch_screen(
     mut q_main_ui: Query<(Entity, AsDerefMut<MainUi>)>,
 ) -> OpImplResult {
     let MainUiOp::SwitchScreen(next_screen) = op;
-    if let Ok((main_ui_id, mut last_screen)) = q_main_ui.get_single_mut() {
+    if let Ok((main_ui_id, mut last_screen)) = q_main_ui.single_mut() {
         let mut ui_id_commands = commands.entity(main_ui_id);
         if Some(next_screen) != *last_screen.deref() {
             if let Some(last_screen) = *last_screen {

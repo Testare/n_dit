@@ -60,6 +60,7 @@ pub struct Square {
 #[reflect(opaque)]
 #[reflect(Component, Deserialize, MapEntities, Serialize)]
 #[serde(try_from = "EntityGridSeDe", into = "EntityGridSeDe")]
+#[component(entities)]
 pub struct EntityGrid {
     width: u32,
     height: u32,
@@ -72,11 +73,11 @@ impl MapEntities for EntityGrid {
         self.entries = self
             .entries
             .drain()
-            .map(|(id, places)| (entity_mapper.map_entity(id), places))
+            .map(|(id, places)| (entity_mapper.get_mapped(id), places))
             .collect();
         for square in self.grid.iter_mut().flatten().flatten() {
             if let Some(square_entity) = &mut square.item {
-                *square_entity = entity_mapper.map_entity(*square_entity);
+                *square_entity = entity_mapper.get_mapped(*square_entity);
             }
         }
     }

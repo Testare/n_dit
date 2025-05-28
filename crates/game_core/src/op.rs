@@ -111,10 +111,9 @@ where
     O: Op + FromReflect,
 {
     move |In(OpRequest { op, source }), param, mut evw| {
-        // let OpRequest { op, source, .. } = op_request;
         let reflect_op = op.into_reflect();
         let op: O =
-            FromReflect::from_reflect(&*reflect_op.clone_value()).expect("Unwrap should be good?");
+            FromReflect::from_reflect(&*reflect_op.to_dynamic()).expect("Unwrap should be good?");
         // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
         let result = op_sys.run((source, op), param.into_inner());
         let res = OpResult {
@@ -122,7 +121,7 @@ where
             op: *reflect_op.downcast().unwrap(),
             result,
         };
-        evw.send(res);
+        evw.write(res);
     }
 }
 
@@ -140,10 +139,10 @@ where
         // let OpRequest { op, source, .. } = op_request;
         let reflect_op = op.into_reflect();
         let op: O =
-            FromReflect::from_reflect(&*reflect_op.clone_value()).expect("Unwrap should be good?");
+            FromReflect::from_reflect(&*reflect_op.to_dynamic()).expect("Unwrap should be good?");
         // It would be nice if we could pass a reference of Op to the system instead, but that isn't working
         let result = world
-            .run_system_with_input(inner_system_id, (source, op))
+            .run_system_with(inner_system_id, (source, op))
             .unwrap_or_else(|e| Err(OpError::FrameworkError(format!("{e:?}"))));
         let res: OpResult<O> = OpResult {
             source,

@@ -254,7 +254,7 @@ fn calculate_layouts(
     mut taffy: ResMut<Taffy>,
     mut evw_layout_updated: EventWriter<LayoutUpdatedEvent>,
     window: Res<TerminalWindow>,
-    roots: Query<(Entity, &NodeTty, NameOrEntity), Without<Parent>>,
+    roots: Query<(Entity, &NodeTty, NameOrEntity), Without<ChildOf>>,
     children: Query<&Children>,
     mut tui_nodes: Query<(
         &NodeTty,
@@ -289,7 +289,7 @@ fn calculate_layouts(
                 .unwrap();
         }
         if size_changed || (*taffy).dirty(**root).unwrap_or(false) {
-            evw_layout_updated.send(LayoutUpdatedEvent);
+            evw_layout_updated.write(LayoutUpdatedEvent);
             taffy.compute_layout(**root, space).unwrap();
             let mut render_order: u32 = 0;
             log::debug!("Recalculated Layouts [{root_debug_name:?}]");

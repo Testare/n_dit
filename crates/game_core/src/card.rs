@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 
-use crate::NDitCoreSet;
 use crate::node::PreventNoOp;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::saving::{LoadData, LoadSchedule, SaveData, SaveFilter, SaveSchedule};
+use crate::NDitCoreSet;
 
 mod card_action;
 mod card_as_asset;
@@ -13,8 +13,8 @@ mod card_as_asset;
 use bevy::ecs::entity::MapEntities;
 use bevy::ecs::query::QueryData;
 pub use card_action::{
-    Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite, RangeShape,
-    key,
+    key, Action, ActionEffect, ActionRange, ActionTarget, Actions, Prereqs, Prerequisite,
+    RangeShape,
 };
 pub use card_as_asset::{CardDefinition, NO_OP_ACTION_ID};
 use serde::{Deserialize, Serialize};
@@ -242,12 +242,12 @@ impl MapEntities for Deck {
         self.cards = self
             .cards
             .drain()
-            .map(|(id, count)| (entity_mapper.map_entity(id), count))
+            .map(|(id, count)| (entity_mapper.get_mapped(id), count))
             .collect();
         self.ordering = self
             .ordering
             .drain(..)
-            .map(|id| entity_mapper.map_entity(id))
+            .map(|id| entity_mapper.get_mapped(id))
             .collect();
     }
 }
@@ -337,7 +337,7 @@ pub fn sys_load_cards(
 
 pub fn sys_startup_save_filter(mut filter: ResMut<SaveFilter>) {
     **filter = filter.clone().allow::<Nickname>().allow::<CardHandle>() // Only save the card definition: This allows us to change card
-    // definitions between updates, reduces size, and allows us to load everything else
+                                                                        // definitions between updates, reduces size, and allows us to load everything else
 }
 
 pub fn sys_save_deck(res_save_data: Res<SaveData>, q_player: Query<&Deck, With<Player>>) {

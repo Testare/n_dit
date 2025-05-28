@@ -1,5 +1,4 @@
 use bevy::ecs::component::Component;
-use bevy::hierarchy::DespawnRecursiveExt;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::board::SimplePieceInfo;
@@ -124,7 +123,7 @@ pub fn sys_update_context_action_panel(
                 let mut height = 0.0;
                 commands
                     .entity(panel_id)
-                    .despawn_descendants()
+                    .despawn_related::<Children>()
                     .with_children(|panel| {
                         for ca_id in board_piece_ca.actions() {
                             // TODO add marker component to filter out certain actions
@@ -144,7 +143,7 @@ pub fn sys_update_context_action_panel(
 
                 // TODO create new children
             } else if selected_board_piece_ui.is_changed() {
-                commands.entity(panel_id).despawn_descendants();
+                commands.entity(panel_id).despawn_related::<Children>();
             }
         }
     }

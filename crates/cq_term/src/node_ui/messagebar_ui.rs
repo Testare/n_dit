@@ -1,11 +1,11 @@
-use game_core::NDitCoreSet;
 use game_core::player::{ForPlayer, Player};
+use game_core::NDitCoreSet;
 
 use super::{NodeUi, NodeUiQItem};
 use crate::key_map::NamedInput;
 use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::prelude::*;
-use crate::render::{RENDER_TTY_SCHEDULE, RenderTtySet, TerminalRendering};
+use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 use crate::{KeyMap, Submap};
 
 #[derive(Component, Debug, Default, Deref, DerefMut, Reflect)]
@@ -57,7 +57,7 @@ pub fn style_message_bar(mut ui: Query<(&CalculatedSizeTty, &MessageBarUi, &mut 
 pub fn render_message_bar(
     mut ui: Query<(&MessageBarUi, &CalculatedSizeTty, &mut TerminalRendering)>,
 ) {
-    if let Ok((msgbar, size, mut tr)) = ui.get_single_mut() {
+    if let Ok((msgbar, size, mut tr)) = ui.single_mut() {
         let mut rendered_text: Vec<String> = vec![format!("{0:─<1$}", "─Messages", size.width())];
         if let Some(msg) = msgbar.first() {
             for line in textwrap::wrap(msg.as_str(), size.width()).into_iter() {

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use bevy::utils::HashMap;
+use bevy::platform::collections::HashMap;
 use crossterm::style::{Color, ContentStyle, Stylize};
 use itertools::{EitherOrBoth, Itertools};
 use serde::{Deserialize, Serialize, Serializer};

@@ -1,14 +1,13 @@
 use std::borrow::Cow;
 
-use bevy::hierarchy::{BuildChildren, DespawnRecursiveExt};
 use charmi::{CharacterMapImage, CharmieAnimation};
 use crossterm::style::{Color, ContentStyle, Stylize};
-use game_core::NDitCoreSet;
 use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
 use game_core::shop::{self, InShop, ShopId, ShopInventory, ShopOp};
+use game_core::NDitCoreSet;
 use getset::CopyGetters;
 
 use super::UiOps;
@@ -191,8 +190,8 @@ impl FromWorld for ShopUiContextActions {
             .spawn((
                 Name::new("Buy item CA"),
                 ContextAction::from_system_id("Buy item", buy_item_sys),
+                ChildOf(daddy),
             ))
-            .set_parent(daddy)
             .id();
         let finish_shopping = world
             .spawn((
@@ -201,15 +200,15 @@ impl FromWorld for ShopUiContextActions {
                     "Finish shopping",
                     ShopOp::Leave,
                 ),
+                ChildOf(daddy),
             ))
-            .set_parent(daddy)
             .id();
         let select_item = world
             .spawn((
                 Name::new("Select item CA"),
                 ContextAction::from_system_id("Select item", select_item_sys),
+                ChildOf(daddy),
             ))
-            .set_parent(daddy)
             .id();
 
         let select_action = world
@@ -299,7 +298,7 @@ pub fn sys_open_shop_ui(
 
                     commands
                         .entity(ui_id)
-                        .despawn_descendants() // If any already exist
+                        .despawn_related::<Children>() // If any already exist
                         .with_children(|listing_ui| {
                             for (i, listing) in shop_inv.iter().enumerate() {
                                 // TODO Don't use ButtonUiBundle as shortcut, use custom render
@@ -364,7 +363,7 @@ fn sys_leave_shop_ui(
                 .iter()
                 .find(|&(&ForPlayer(for_player), _)| for_player == player_id)
             {
-                commands.entity(ui_id).despawn_descendants();
+                commands.entity(ui_id).despawn_related::<Children>();
             }
         }
     }
@@ -404,7 +403,7 @@ fn sys_update_item_details_actions(
             visibility.set_if_neq(item_actions.is_some());
             commands
                 .entity(item_details_actions_ui_id)
-                .despawn_descendants();
+                .despawn_related::<Children>();
             if let Some(item_actions) = item_actions {
                 commands.entity(item_details_actions_ui_id).with_children(
                     |item_details_actions_ui| {

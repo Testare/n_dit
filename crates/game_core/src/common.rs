@@ -5,7 +5,7 @@ pub mod sord;
 use std::ops::Deref;
 use std::str::FromStr;
 
-use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter, WorldQuery};
+use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter};
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{ReflectDeserialize, ReflectSerialize};
 pub use metadata::Metadata;
@@ -290,23 +290,18 @@ where
     pub fn get_for(
         &self,
         index: Entity,
-    ) -> Result<<<Q as QueryData>::ReadOnly as WorldQuery>::Item<'_>, QueryEntityError> {
-        if let Some(id) = self.id_for(index) {
-            self.1.get(id)
-        } else {
-            Err(QueryEntityError::NoSuchEntity(index))
-        }
+    ) -> Result<<<Q as QueryData>::ReadOnly as QueryData>::Item<'_>, QueryEntityError> {
+        // TODO with relationships, we should replace IndexedQuery's working. In the
+        let id = self.id_for(index).unwrap_or(Entity::PLACEHOLDER);
+        self.1.get(id)
     }
 
     pub fn get_for_mut(
         &mut self,
         index: Entity,
-    ) -> Result<<Q as WorldQuery>::Item<'_>, QueryEntityError> {
-        if let Some(id) = self.id_for(index) {
-            self.1.get_mut(id)
-        } else {
-            Err(QueryEntityError::NoSuchEntity(index))
-        }
+    ) -> Result<<Q as QueryData>::Item<'_>, QueryEntityError> {
+        let id = self.id_for(index).unwrap_or(Entity::PLACEHOLDER);
+        self.1.get_mut(id)
     }
 }
 

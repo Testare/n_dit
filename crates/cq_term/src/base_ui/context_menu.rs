@@ -1,9 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bevy::ecs::system::SystemId;
-use bevy::ecs::world::Command;
-use bevy::hierarchy::DespawnRecursiveExt;
+use bevy::ecs::system::{Command, SystemId};
 use bevy::time::{Time, Timer, TimerMode};
 use charmi::CharacterMapImage;
 use getset::CopyGetters;
@@ -235,7 +233,7 @@ impl ContextAction {
     pub fn from_system_id<S: ToString>(action_name: S, sys_id: SystemId<In<Entity>>) -> Self {
         let action_name_0 = action_name.to_string();
         let action_op = Arc::new(move |id, _, world: &mut World| {
-            if let Err(e) = world.run_system_with_input(sys_id, id) {
+            if let Err(e) = world.run_system_with(sys_id, id) {
                 log::error!("Error executing context action [{action_name_0}]: {e:?}")
             }
         });
@@ -252,7 +250,7 @@ impl ContextAction {
     ) -> Self {
         let action_name_0 = action_name.to_string();
         let action_op = Arc::new(move |id, mouse_event, world: &mut World| {
-            if let Err(e) = world.run_system_with_input(sys_id, (id, mouse_event)) {
+            if let Err(e) = world.run_system_with(sys_id, (id, mouse_event)) {
                 log::error!("Error executing context action [{action_name_0}]: {e:?}")
             }
         });
@@ -409,7 +407,7 @@ fn sys_display_context_menu(
     mut context_menu_q: Query<(
         Entity,
         &ContextMenu,
-        AsDerefCopied<Parent>,
+        &ChildOf,
         AsDerefMut<VisibilityTty>,
         &mut TerminalRendering,
     )>,
@@ -429,7 +427,7 @@ fn sys_display_context_menu(
         let context_actions_id = context_menu
             .actions_context
             .expect("should have been checked before this step");
-        let context_menu_pane = context_menu_pane.get_mut(parent_id);
+        let context_menu_pane = context_menu_pane.get_mut(parent_id.parent());
         if context_menu_pane.is_err() {
             log::error!("Entity [{parent_id:?} is parent of ContextMenu, but does not have required components.");
             continue;
@@ -494,7 +492,7 @@ fn sys_display_context_menu(
             .add_char('┑', &cm_style);
         commands
             .entity(cm_id)
-            .despawn_descendants()
+            .despawn_related::<Children>()
             .with_children(|cm_commands| {
                 for (context_menu_item, row) in context_menu_actions.into_iter().zip(2..) {
                     charmi
@@ -553,17 +551,17 @@ fn sys_context_menu_fade(
     for (cm_id, mut cm_timer, hover_point, mut is_visible) in query.iter_mut() {
         if *is_visible {
             cm_timer.tick(time.delta());
-            if cm_timer.finished() {
+            if cm_timer.is_finished() {
                 *is_visible = false;
                 cm_timer.pause();
                 cm_timer.reset();
-                commands.entity(cm_id).despawn_descendants();
+                commands.entity(cm_id).despawn_related::<Children>();
             } else if hover_point.is_some() {
-                if !cm_timer.paused() {
+                if !cm_timer.is_paused() {
                     cm_timer.pause();
                     cm_timer.reset();
                 }
-            } else if cm_timer.paused() {
+            } else if cm_timer.is_paused() {
                 cm_timer.unpause()
             }
         }
@@ -574,7 +572,7 @@ pub fn sys_context_menu_item_click(
     mut commands: Commands,
     mut evr_mouse: EventReader<MouseEventTty>,
     context_menu: Query<&ContextMenu>,
-    context_menu_item: Query<(AsDerefCopied<ContextMenuItem>, AsDerefCopied<Parent>)>,
+    context_menu_item: Query<(AsDerefCopied<ContextMenuItem>, &ChildOf)>,
     context_action_q: Query<&ContextAction>, // TODO w/o disabled
 ) {
     for mouse_event in evr_mouse.read() {
@@ -587,7 +585,7 @@ pub fn sys_context_menu_item_click(
         context_menu_item
             .get(mouse_event.entity())
             .ok()
-            .and_then(|(ca_id, cm_id)| {
+            .and_then(|(ca_id, &ChildOf(cm_id))| {
                 let action = context_action_q.get(ca_id).ok()?.action_op.clone();
                 let context_menu = context_menu.get(cm_id).ok()?;
                 let mouse_event = context_menu

@@ -8,17 +8,17 @@ use bevy::ecs::entity::{EntityHashMap, EntityHashSet, MapEntities};
 use bevy::ecs::reflect::AppTypeRegistry;
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::scene::serde::SceneDeserializer;
-use bevy::scene::{SceneFilter, ron};
+use bevy::scene::{ron, SceneFilter};
 use freeform::SerdeScheme;
-use serde::Serialize;
 use serde::de::DeserializeSeed;
+use serde::Serialize;
 use typed_key::Key;
 
 use crate::op::{Op, OpError, OpErrorUtils, OpImplResult, OpPlugin};
 use crate::prelude::*;
 
 mod key {
-    use typed_key::{Key, typed_key};
+    use typed_key::{typed_key, Key};
 
     pub const SCENE: Key<String> = typed_key!("scene");
 }
@@ -126,16 +126,20 @@ impl LoadData {
 struct LoadDataMapper<'a>(&'a EntityHashMap<Entity>);
 
 impl<'a> EntityMapper for LoadDataMapper<'a> {
-    fn map_entity(&mut self, entity: Entity) -> Entity {
-        if let Some(&out_entity) = self.0.get(&entity) {
+    fn get_mapped(&mut self, source: Entity) -> Entity {
+        if let Some(&out_entity) = self.0.get(&source) {
             out_entity
         } else {
             log::error!(
-                "Error: Enable to get entity {entity:?} from load data (mapping is {:?})",
+                "Error: Enable to get entity {source:?} from load data (mapping is {:?})",
                 self.0
             );
-            entity
+            source
         }
+    }
+
+    fn set_mapped(&mut self, _source: Entity, _target: Entity) {
+        panic!("Cannot update entities mapped in load data")
     }
 }
 

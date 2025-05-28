@@ -1,8 +1,8 @@
 use std::fs::File;
 use std::io::Write;
 
+use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
-use bevy::hierarchy::ChildBuilder;
 use bevy::scene::DynamicSceneBuilder;
 use charmi::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
@@ -22,7 +22,6 @@ use game_core::quest::QuestStatus;
 use game_core::saving::SaveOp;
 use game_core::shop::{ShopId, ShopInventory, ShopListing, ShopOp};
 
-use crate::KeyMap;
 use crate::animation::AnimationPlayer;
 use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{
@@ -41,6 +40,7 @@ use crate::main_ui::{
 use crate::nf::{NFNode, NFShop, NfPlugin, RequiredNodes, VictoryDialogue};
 use crate::prelude::KeyEvent;
 use crate::render::TerminalRendering;
+use crate::KeyMap;
 
 /// Plugin to set up temporary entities and systems while I get the game set up
 #[derive(Debug)]
@@ -94,7 +94,7 @@ pub fn sys_demo_shader(
                 ContentStyle::new()
                     .on(Color::AnsiValue(color_val))
                     .with(Color::AnsiValue(color_val)) // Remove or change this if you want to see rainbow
-                // affect applied OVER game text
+                                                       // affect applied OVER game text
             }) {
                 row.add_effect(1, &cell_style);
             }
@@ -598,7 +598,7 @@ pub fn build_popup_menu(
     res_draw_config: Res<DrawConfiguration>,
     player: Entity,
     say_this_ca: Entity,
-    popup_menu_pane: &mut ChildBuilder,
+    popup_menu_pane: &mut RelatedSpawnerCommands<ChildOf>,
 ) {
     use taffy::prelude::*;
     popup_menu_pane

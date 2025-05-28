@@ -112,7 +112,7 @@ pub fn sys_mouse_tty(
     mut evr_layout_update: EventReader<LayoutUpdatedEvent>,
     res_terminal_window: Res<TerminalWindow>,
     children: Query<&Children>,
-    parent_q: Query<&Parent>,
+    parent_q: Query<&ChildOf>,
     layout_elements: Query<
         (
             Entity,
@@ -224,7 +224,7 @@ pub fn sys_mouse_tty(
                     Some((entity, relative_pos))
                 } else if entered_entities.contains(&entity) {
                     entered_entities.remove(&entity);
-                    evw_mouse_tty.send(MouseEventTty {
+                    evw_mouse_tty.write(MouseEventTty {
                         entity,
                         absolute_pos,
                         relative_pos: default(), // In this case, we don't really have a helpful value for relative pos
@@ -245,7 +245,7 @@ pub fn sys_mouse_tty(
             .unwrap_or_default();
         // TODO store top_entity and ancestors in some sort of resource?
         for (entity, relative_pos) in event_entities {
-            evw_mouse_tty.send(MouseEventTty {
+            evw_mouse_tty.write(MouseEventTty {
                 entity,
                 relative_pos,
                 absolute_pos,

@@ -1,9 +1,9 @@
 use std::borrow::Borrow;
 use std::ops::AddAssign;
 
+use bevy::platform::collections::HashMap;
 use bevy::prelude::Asset;
 use bevy::reflect::TypePath;
-use bevy::utils::HashMap;
 
 use super::CharacterMapImage;
 

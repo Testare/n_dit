@@ -1,5 +1,4 @@
-use bevy::ecs::entity::{EntityMapper, MapEntities};
-use bevy::ecs::query::{QueryData, QueryFilter, WorldQuery};
+use bevy::ecs::query::{QueryData, QueryFilter};
 use bevy::ecs::system::QueryLens;
 
 use crate::prelude::*;
@@ -14,7 +13,7 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Clone, Component, Copy, Debug, Deref, Reflect)]
-pub struct ForPlayer(pub Entity);
+pub struct ForPlayer(#[entities] pub Entity);
 
 impl ForPlayer {
     /// Until entity relations comes up with a better API, this will help
@@ -23,7 +22,7 @@ impl ForPlayer {
     pub fn get<'a, Q: QueryData, F: QueryFilter>(
         query: &'a mut Query<Q, F>,
         player_id: Entity,
-    ) -> Option<<<Q as QueryData>::ReadOnly as WorldQuery>::Item<'a>> {
+    ) -> Option<<<Q as QueryData>::ReadOnly as QueryData>::Item<'a>> {
         let mut lens: QueryLens<&ForPlayer> = query.transmute_lens();
         let index = lens
             .query()
@@ -40,7 +39,7 @@ impl ForPlayer {
     pub fn get_mut<'a, Q: QueryData, F: QueryFilter>(
         query: &'a mut Query<Q, F>,
         player_id: Entity,
-    ) -> Option<<Q as WorldQuery>::Item<'a>> {
+    ) -> Option<<Q as QueryData>::Item<'a>> {
         let mut lens: QueryLens<&ForPlayer> = query.transmute_lens();
         let index = lens
             .query()
@@ -49,12 +48,6 @@ impl ForPlayer {
         Some(query.iter_mut().nth(index).expect(
             "lens was created out of this query, should have the same data in the same places",
         ))
-    }
-}
-
-impl MapEntities for ForPlayer {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0);
     }
 }
 

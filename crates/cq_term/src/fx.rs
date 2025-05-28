@@ -1,5 +1,4 @@
 use bevy::asset::Handle;
-use bevy::ecs::system::Resource;
 use charmi::CharmieActor;
 use game_core::prelude::*;
 

@@ -167,7 +167,7 @@ fn sys_board_piece_lifetimes(
         AsDerefCopied<BoardUi>,
         Option<AsDerefCopied<ForPlayer>>,
     )>,
-    created_pieces: Query<(Entity, AsDerefCopied<Parent>), Added<BoardPiece>>,
+    created_pieces: Query<(Entity, &ChildOf), Added<BoardPiece>>,
     boards: Query<Option<AsDeref<Children>>, With<Board>>,
     board_pieces: Query<
         (
@@ -196,7 +196,7 @@ fn sys_board_piece_lifetimes(
     {
         let (new_pieces, _): (Vec<_>, Vec<_>) = group.unzip();
         for (board_ui_id, board_ui_tracks, for_player) in board_uis.iter() {
-            if board_ui_tracks != board_id {
+            if board_ui_tracks != board_id.parent() {
                 continue;
             }
             new_uis.extend(

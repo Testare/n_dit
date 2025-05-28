@@ -83,7 +83,7 @@ impl<R: Registry> Reg<R> {
     ) {
         if !self.values.contains_key(&key) {
             if <R as Registry>::emit_change_events() {
-                evw_key_updates.send(UpdatedRegistryKey::new(key.clone()));
+                evw_key_updates.write(UpdatedRegistryKey::new(key.clone()));
             }
             self.values.insert(key, (priority, value));
             return;
@@ -101,7 +101,7 @@ impl<R: Registry> Reg<R> {
         *current_value = value;
 
         if R::emit_change_events() {
-            evw_key_updates.send(UpdatedRegistryKey::new(key));
+            evw_key_updates.write(UpdatedRegistryKey::new(key));
         }
     }
 }

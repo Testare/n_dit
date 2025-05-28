@@ -14,7 +14,7 @@ pub mod nf; // This should become a plugin in n_dit later once we no longer depe
 pub mod node_ui;
 mod render;
 
-use bevy::core::FrameCount;
+use bevy::diagnostic::FrameCount;
 use bevy::time::{Real, Stopwatch, Time};
 use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
@@ -28,13 +28,13 @@ pub mod prelude {
 
 use std::io::stdout;
 use std::panic;
-use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::sync::Mutex;
 use std::time::Duration;
 
 use charmi::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
-use input_event::{CrosstermEvent, MouseEventTty, MouseLastPositionTty, sys_mouse_tty};
+use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty, MouseLastPositionTty};
 use prelude::*;
 
 use self::configuration::DrawConfiguration;
@@ -249,7 +249,7 @@ fn exit_key(
                 time.as_secs_f64(),
                 1.0 / time_per_frame.as_secs_f64()
             );
-            exit.send(bevy::app::AppExit::Success);
+            exit.write(bevy::app::AppExit::Success);
         }
     }
 }
@@ -270,13 +270,13 @@ fn term_event_listener(
             loop {
                 match rx.try_recv() {
                     Ok(crossterm::event::Event::Mouse(mouse_event)) => {
-                        ev_mouse.send(MouseEvent(mouse_event));
+                        ev_mouse.write(MouseEvent(mouse_event));
                     },
                     Ok(crossterm::event::Event::Key(key_event)) => {
-                        ev_key.send(key_event.into());
+                        ev_key.write(key_event.into());
                     },
                     Ok(event) => {
-                        ev_crossterm.send(CrosstermEvent(event));
+                        ev_crossterm.write(CrosstermEvent(event));
                     },
                     Err(TryRecvError::Empty) => {
                         break;

@@ -13,7 +13,8 @@ edition = "2021"
 
 [patch.crates-io]
 simplelog = { git = "https://github.com/aminya/simplelog.rs.git", branch = "patch-1" }
-bevy_yarnspinner = { git = "https://github.com/wiggleforlife/YarnSpinner-Rust.git", branch = "main" }
+bevy = { path = "../bevy" }
+# bevy_yarnspinner = { git = "https://github.com/wiggleforlife/YarnSpinner-Rust.git", branch = "main" }
 
 [workspace.lints.rust]
 missing_debug_implementations = "warn"
@@ -25,13 +26,13 @@ type_complexity = "allow"
 
 [workspace.dependencies]
 freeform = { version = "0.4", features = ["toml"] }
-bevy_query_ext = "0.5"
-bevy_yarnspinner = "0.4"
+bevy_query_ext = "0.6"
+bevy_yarnspinner = "0.5"
 toml = "0.8.12"
 workspace-hack = { version = "0.1", path = "crates/workspace-hack" }
 
 [workspace.dependencies.bevy]
-version = "0.15.0"
+version = "0.16.0-dev"
 default-features = false
 features = [
     "bevy_asset",
