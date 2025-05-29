@@ -16,6 +16,7 @@ mod render;
 
 use bevy::diagnostic::FrameCount;
 use bevy::time::{Real, Stopwatch, Time};
+use charmi::CharmiImage;
 use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
 
@@ -42,6 +43,7 @@ use self::configuration::DrawConfiguration;
 #[derive(Debug)]
 pub struct CharmiePlugin;
 
+// TODO split between charmi/bevy and rename to CqTermPlugin
 impl Plugin for CharmiePlugin {
     fn build(&self, app: &mut App) {
         // TODO atty check
@@ -307,4 +309,62 @@ fn terminal_size_adjustment(
             });
         }
     }
+}
+
+fn mk_charmi_old(charmi: &CharmiImage) -> CharacterMapImage {
+    let mut old_charmi: CharacterMapImage = CharacterMapImage::new();
+    if charmi.width() == 0 {
+        return old_charmi;
+    }
+    for cells in charmi.cells().chunks(charmi.width()) {
+        let row = old_charmi.new_row();
+
+        for text in cells
+            .chunk_by(|a, b| {
+                a.ch() == CharmiImage::SUPPRESSED_CHAR || (a.fg() == b.fg() && a.bg() == b.bg())
+            })
+            .map(|cells| {
+                use crossterm::style::Color;
+                use crossterm::style::Stylize;
+                let fg = cells[0].fg();
+                let fg = if fg == CharmiImage::NO_COLOR {
+                    Color::Reset
+                } else if fg > CharmiImage::TRUE_COLOR {
+                    Color::Rgb {
+                        r: (fg << 16) as u8,
+                        g: (fg << 8) as u8,
+                        b: fg as u8,
+                    }
+                } else {
+                    Color::AnsiValue(fg as u8)
+                };
+                let bg = cells[0].bg();
+                let bg = if bg == CharmiImage::NO_COLOR {
+                    Color::Reset
+                } else if bg > CharmiImage::TRUE_COLOR {
+                    Color::Rgb {
+                        r: (bg << 16) as u8,
+                        g: (bg << 8) as u8,
+                        b: bg as u8,
+                    }
+                } else {
+                    Color::AnsiValue(bg as u8)
+                };
+                let text: String = cells
+                    .iter()
+                    .flat_map(|cell| {
+                        if cell.ch == 0 {
+                            Some(' ')
+                        } else {
+                            <char>::try_from(cell.ch).ok()
+                        }
+                    })
+                    .collect();
+                text.with(fg).on(bg)
+            })
+        {
+            row.add_styled_text(text);
+        }
+    }
+    old_charmi
 }

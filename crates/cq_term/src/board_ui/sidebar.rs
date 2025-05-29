@@ -1,5 +1,5 @@
 use bevy::ecs::component::Component;
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::board::SimplePieceInfo;
 use game_core::player::{ForPlayer, Player};
@@ -81,26 +81,25 @@ pub fn sys_render_info_panel(
     >,
 ) {
     for (player_id, size, mut tr) in q_info_panel.iter_mut() {
+        // TODO consider why I'm duplicating the work in node_ui::menu_ui::description
         let info = get_assert!(player_id, q_player, |selected_board_piece| {
             let bp_ui_id = selected_board_piece?;
             let bp_id = q_board_piece_ui.get(bp_ui_id).ok()?;
             q_board_piece.get(bp_id).ok()
         });
-        if let Some(info) = info {
-            // TODO consider why I'm duplicating the work in node_ui::menu_ui::description
-            let width = size.width();
-            let title = format!("{0:─<1$}", "─Info", width);
-            let wrapped_desc: CharacterMapImage = std::iter::once(title)
-                .chain(
-                    textwrap::wrap(info, width)
-                        .into_iter()
-                        .map(|s| s.into_owned()),
-                )
-                .collect();
-            tr.update_charmie(wrapped_desc)
-        } else {
-            tr.update(vec![]);
-        }
+        tr.update_charmi(
+            info.map(|info| {
+                let width = size.width();
+                let mut charmi = CharmiImage::build_fixed_width(width as u32);
+                let title = format!("{0:─<1$}", "─Info", width);
+                charmi.add_line(&title);
+                for line in textwrap::wrap(info, width).into_iter() {
+                    charmi.add_line(&line);
+                }
+                charmi.build()
+            })
+            .unwrap_or_default(),
+        );
     }
 }
 

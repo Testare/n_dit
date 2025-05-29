@@ -2,12 +2,13 @@ use std::io::{stdout, Write};
 use std::ops::Deref;
 use std::time::{Duration, Instant};
 
+use charmi::CharmiImage;
 use charmi_old::CharacterMapImage;
 use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 
 use super::TerminalWindow;
-use crate::prelude::*;
+use crate::{mk_charmi_old, prelude::*};
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
 
@@ -62,6 +63,10 @@ impl TerminalRendering {
         if *rendering.deref().charmie() != new_rendering {
             rendering.update_charmie(new_rendering);
         }
+    }
+
+    pub fn update_charmi(&mut self, new_rendering: CharmiImage) {
+        self.update_charmie(mk_charmi_old(&new_rendering));
     }
 
     pub fn update_charmie(&mut self, new_rendering: CharacterMapImage) {
