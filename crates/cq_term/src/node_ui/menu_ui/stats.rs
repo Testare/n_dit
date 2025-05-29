@@ -1,5 +1,5 @@
 use bevy::ecs::system::SystemParam;
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use game_core::node::{InNode, Node};
 use game_core::player::Player;
 use game_core::prelude::*;

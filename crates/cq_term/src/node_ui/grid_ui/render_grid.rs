@@ -1,6 +1,6 @@
 use std::cmp;
 
-use charmi::{CharacterMapImage, CharmieString};
+use charmi_old::{CharacterMapImage, CharmieString};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
@@ -313,7 +313,7 @@ fn render_grid(
                                     (&default_style, OPEN_SQUARE)
                                 }
                             });
-                        let combined_style = charmi::add_content_styles(&space_style, square_style);
+                        let combined_style = charmi_old::add_content_styles(&space_style, square_style);
                         if square.chars().count() == 1 {
                             space_line.add_char(draw_config.half_char(), &combined_style);
                         } else {
@@ -363,7 +363,7 @@ fn render_grid(
                                 }
                             });
 
-                        let combined_style = charmi::add_content_styles(&space_style, square_style);
+                        let combined_style = charmi_old::add_content_styles(&space_style, square_style);
                         space_line.add_text(square, &combined_style);
                     }
                 }

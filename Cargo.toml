@@ -28,7 +28,7 @@ type_complexity = "allow"
 freeform = { version = "0.4", features = ["toml"] }
 bevy_query_ext = "0.6"
 bevy_yarnspinner = "0.5"
-toml = "0.8.12"
+toml = "0.8.22"
 workspace-hack = { version = "0.1", path = "crates/workspace-hack" }
 
 [workspace.dependencies.bevy]
@@ -42,5 +42,8 @@ features = [
     "file_watcher",
     "mp3",
     "multi_threaded",
-    "dynamic_linking",
+
+    "bevy_render",        # Needed for charmi render
+    "shader_format_glsl", # Needed for charmi render
+    "bevy_window",        # Required for render for some reason
 ]

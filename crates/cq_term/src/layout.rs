@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use game_core::player::ForPlayer;
 use pad::PadStr;
 use serde::{Deserialize, Serialize};

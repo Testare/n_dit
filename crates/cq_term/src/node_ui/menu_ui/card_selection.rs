@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use charmi::{CharacterMapImage, CharmieString};
+use charmi_old::{CharacterMapImage, CharmieString};
 use crossterm::style::Stylize;
 use game_core::card::{Card, CardQuery, Deck};
 use game_core::node::{AccessPoint, NodeOp, PlayedCards};

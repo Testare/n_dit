@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
 use bevy::scene::DynamicSceneBuilder;
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};

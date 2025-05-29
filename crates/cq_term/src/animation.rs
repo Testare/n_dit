@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use charmi::{CharmieAnimation, CharmieAnimationFrame};
+use charmi_old::{CharmieAnimation, CharmieAnimationFrame};
 use game_core::NDitCoreSet;
 use getset::CopyGetters;
 

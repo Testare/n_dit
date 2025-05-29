@@ -1,4 +1,4 @@
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::item::Wallet;
 use game_core::op::CoreOps;

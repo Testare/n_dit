@@ -32,7 +32,7 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::Mutex;
 use std::time::Duration;
 
-use charmi::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
+use charmi_old::{CharacterMapImage, CharmiLoader, CharmiaLoader, CharmieActor, CharmieAnimation};
 use crossterm::execute;
 use input_event::{sys_mouse_tty, CrosstermEvent, MouseEventTty, MouseLastPositionTty};
 use prelude::*;

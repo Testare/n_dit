@@ -2,7 +2,7 @@ use std::io::{stdout, Write};
 use std::ops::Deref;
 use std::time::{Duration, Instant};
 
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 

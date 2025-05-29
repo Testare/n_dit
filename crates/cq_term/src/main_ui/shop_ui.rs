@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use charmi::{CharacterMapImage, CharmieAnimation};
+use charmi_old::{CharacterMapImage, CharmieAnimation};
 use crossterm::style::{Color, ContentStyle, Stylize};
 use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;

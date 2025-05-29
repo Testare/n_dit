@@ -1,5 +1,5 @@
 use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::common::daddy::Daddy;
 use game_core::dialog::Dialog;

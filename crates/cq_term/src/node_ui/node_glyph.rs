@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use charmi::ColorDef;
+use charmi_old::ColorDef;
 use crossterm::style::{Color, ContentStyle, StyledContent, Stylize};
 use game_core::registry::Registry;
 use serde::{Deserialize, Serialize};

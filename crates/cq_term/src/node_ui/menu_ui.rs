@@ -9,7 +9,7 @@ pub use actions::MenuUiActions;
 use bevy::ecs::query::QueryData;
 use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 pub use description::MenuUiDescription;
 use game_core::card::{Actions, Description, MaximumSize, MovementSpeed};
 use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Pickup, Team};

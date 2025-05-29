@@ -1,5 +1,5 @@
 use bevy::asset::Handle;
-use charmi::CharmieActor;
+use charmi_old::CharmieActor;
 use game_core::prelude::*;
 
 pub const FX_ACTOR: &str = "cq_term/fx.charmia";

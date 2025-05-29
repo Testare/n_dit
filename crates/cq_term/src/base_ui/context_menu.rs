@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use bevy::ecs::system::{Command, SystemId};
 use bevy::time::{Time, Timer, TimerMode};
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use getset::CopyGetters;
 
 use super::HoverPoint;

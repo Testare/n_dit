@@ -1,5 +1,5 @@
 use bevy::ecs::component::Component;
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::board::SimplePieceInfo;
 use game_core::player::{ForPlayer, Player};

@@ -1,5 +1,5 @@
 use bevy::audio::{AudioPlayer, Volume};
-use charmi::{CharacterMapImage, CharmieActor, CharmieAnimation};
+use charmi_old::{CharacterMapImage, CharmieActor, CharmieAnimation};
 use crossterm::style::Stylize;
 use game_core::node::{InNode, NodeOp, NodePiece};
 use game_core::op::OpResult;

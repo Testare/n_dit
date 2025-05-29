@@ -1,4 +1,4 @@
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use game_core::node::{Curio, Pickup};
 use game_core::prelude::*;
 use game_core::registry::Reg;

@@ -5,7 +5,7 @@ mod popup;
 use std::borrow::{Borrow, Cow};
 
 use bevy::ecs::query::Has;
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::NDitCoreSet;
 use pad::PadStr;

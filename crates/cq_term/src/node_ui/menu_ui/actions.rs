@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::ops::Deref;
 
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use game_core::card::{Action, ActionTarget, Actions};
 use game_core::common::daddy::Daddy;
 use game_core::node::{IsTapped, NodeOp, NodePiece, OnTeam, Team, TeamPhase};

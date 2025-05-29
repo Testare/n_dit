@@ -1,0 +1,35 @@
+text = """
+  ygb
+ o   i
+r =0  v
+"""
+fg = """
+  y b
+ o   i
+r  BB v
+"""
+bg = """
+  bgy
+ i   o
+v  ww r
+"""
+att = """
+
+
+  bb
+"""
+# underline none
+
+[values.colors]
+r = "red"
+o = 208
+y = "yellow"
+g = "green"
+b = "blue"
+i = "dark blue"
+v = "purple"
+w = [255, 255, 255]
+B = "black"
+
+[values.attr]
+b = "bold"

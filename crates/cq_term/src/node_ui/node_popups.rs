@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use charmi::CharacterMapImage;
+use charmi_old::CharacterMapImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{
     Claimed, InNode, Mon, Node, OnTeam, Pickup, TeamStatus, VictoryAward, VictoryStatus,
