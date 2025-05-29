@@ -7,7 +7,7 @@ use bevy::render::render_asset::RenderAssets;
 use bevy::render::render_resource::{BindGroup, BindGroupEntries, BufferUsages};
 use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::{GpuShaderStorageBuffer, ShaderStorageBuffer};
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::{Render, RenderApp, RenderSystems};
 
 use crate::{CharmiBindGroupLayouts, CharmiImage, TransformCh, TransformChUniforms};
 
@@ -22,7 +22,7 @@ impl Plugin for ViewPlugin {
         let render_app = app.sub_app_mut(RenderApp);
         render_app.add_systems(
             Render,
-            rsys_prepare_view_bind_groups.in_set(RenderSet::PrepareBindGroups),
+            rsys_prepare_view_bind_groups.in_set(RenderSystems::PrepareBindGroups),
         );
     }
 }

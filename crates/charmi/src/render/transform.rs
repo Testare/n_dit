@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin};
 use bevy::render::render_resource::{BufferUsages, DynamicUniformBuffer, ShaderType};
 use bevy::render::renderer::{RenderDevice, RenderQueue};
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::{Render, RenderApp, RenderSystems};
 
 pub struct CharmiTransformPlugin;
 
@@ -18,7 +18,7 @@ impl Plugin for CharmiTransformPlugin {
             .init_resource::<TransformChUniforms>()
             .add_systems(
                 Render,
-                rsys_update_transforms.in_set(RenderSet::PrepareResources),
+                rsys_update_transforms.in_set(RenderSystems::PrepareResources),
             );
     }
 }

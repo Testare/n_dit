@@ -15,35 +15,21 @@ publish = false
 
 ### BEGIN HAKARI SECTION
 [dependencies]
-accesskit = { version = "0.19", default-features = false, features = ["serde"] }
 anstream = { version = "0.6" }
 bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
-bevy_a11y = { path = "../../../bevy/crates/bevy_a11y", features = ["serialize"] }
 bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
-bevy_diagnostic = { path = "../../../bevy/crates/bevy_diagnostic" }
-bevy_ecs = { path = "../../../bevy/crates/bevy_ecs", features = ["multi_threaded", "serialize"] }
-bevy_image = { path = "../../../bevy/crates/bevy_image", features = ["serialize"] }
-bevy_input = { path = "../../../bevy/crates/bevy_input", default-features = false, features = ["serialize", "std"] }
 bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
-bevy_reflect = { path = "../../../bevy/crates/bevy_reflect", features = ["glam", "smol_str", "uuid"] }
-bevy_scene = { path = "../../../bevy/crates/bevy_scene", features = ["bevy_render"] }
-bevy_time = { path = "../../../bevy/crates/bevy_time", features = ["serialize"] }
-bevy_transform = { path = "../../../bevy/crates/bevy_transform", features = ["serialize"] }
-bevy_utils = { path = "../../../bevy/crates/bevy_utils", features = ["wgpu_wrapper"] }
-bevy_window = { path = "../../../bevy/crates/bevy_window", features = ["serialize"] }
-bytemuck = { version = "1", default-features = false, features = ["derive", "extern_crate_alloc", "must_cast"] }
 crossterm = { version = "0.20", features = ["event-stream", "serde"] }
 derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
 disqualified = { version = "1" }
 either = { version = "1", default-features = false, features = ["use_std"] }
+env_filter = { version = "0.1", default-features = false, features = ["regex"] }
+env_logger = { version = "0.11" }
 erased-serde = { version = "0.4" }
-fixedbitset = { version = "0.5" }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
 hashbrown = { version = "0.15", features = ["serde"] }
 indexmap = { version = "2", features = ["serde"] }
 lock_api = { version = "0.4", features = ["arc_lock"] }
-nonmax = { version = "0.5" }
-num-traits = { version = "0.2", features = ["libm"] }
 once_cell = { version = "1" }
 parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 rand = { version = "0.8", features = ["small_rng"] }
@@ -54,7 +40,6 @@ rodio = { version = "0.20", default-features = false, features = ["mp3", "wav"] 
 ryu = { version = "1", default-features = false, features = ["small"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 smallvec = { version = "1", default-features = false, features = ["const_new", "union"] }
-thiserror = { version = "2" }
 tinyvec = { version = "1", features = ["std"] }
 toml_datetime = { version = "0.6", default-features = false, features = ["serde"] }
 toml_edit = { version = "0.22", default-features = false, features = ["display", "parse", "serde"] }
@@ -62,34 +47,22 @@ tracing = { version = "0.1", features = ["log"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 
 [build-dependencies]
-accesskit = { version = "0.19", default-features = false, features = ["serde"] }
 anstream = { version = "0.6" }
 bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
-bevy_a11y = { path = "../../../bevy/crates/bevy_a11y", features = ["serialize"] }
 bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
-bevy_diagnostic = { path = "../../../bevy/crates/bevy_diagnostic" }
-bevy_ecs = { path = "../../../bevy/crates/bevy_ecs", features = ["multi_threaded", "serialize"] }
-bevy_image = { path = "../../../bevy/crates/bevy_image", features = ["serialize"] }
-bevy_input = { path = "../../../bevy/crates/bevy_input", default-features = false, features = ["serialize", "std"] }
 bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
-bevy_reflect = { path = "../../../bevy/crates/bevy_reflect", features = ["glam", "smol_str", "uuid"] }
-bevy_scene = { path = "../../../bevy/crates/bevy_scene", features = ["bevy_render"] }
-bevy_time = { path = "../../../bevy/crates/bevy_time", features = ["serialize"] }
-bevy_transform = { path = "../../../bevy/crates/bevy_transform", features = ["serialize"] }
-bevy_utils = { path = "../../../bevy/crates/bevy_utils", features = ["wgpu_wrapper"] }
-bevy_window = { path = "../../../bevy/crates/bevy_window", features = ["serialize"] }
-bytemuck = { version = "1", default-features = false, features = ["derive", "extern_crate_alloc", "must_cast"] }
+crossterm = { version = "0.20", features = ["event-stream", "serde"] }
 derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
+derive_more-impl = { version = "1", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"] }
 disqualified = { version = "1" }
 either = { version = "1", default-features = false, features = ["use_std"] }
+env_filter = { version = "0.1", default-features = false, features = ["regex"] }
+env_logger = { version = "0.11" }
 erased-serde = { version = "0.4" }
-fixedbitset = { version = "0.5" }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
 hashbrown = { version = "0.15", features = ["serde"] }
 indexmap = { version = "2", features = ["serde"] }
 lock_api = { version = "0.4", features = ["arc_lock"] }
-nonmax = { version = "0.5" }
-num-traits = { version = "0.2", features = ["libm"] }
 once_cell = { version = "1" }
 parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 rand = { version = "0.8", features = ["small_rng"] }
@@ -101,7 +74,6 @@ ryu = { version = "1", default-features = false, features = ["small"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 smallvec = { version = "1", default-features = false, features = ["const_new", "union"] }
 syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
-thiserror = { version = "2" }
 tinyvec = { version = "1", features = ["std"] }
 toml_datetime = { version = "0.6", default-features = false, features = ["serde"] }
 toml_edit = { version = "0.22", default-features = false, features = ["display", "parse", "serde"] }

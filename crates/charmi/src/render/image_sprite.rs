@@ -9,7 +9,7 @@ use bevy::render::render_resource::{
 };
 use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::ShaderStorageBuffer;
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::{Render, RenderApp, RenderSystems};
 
 use crate::{
     CharmiBindGroupLayouts, CharmiFunction, CharmiFunctionError, CharmiFunctionId, CharmiFunctions,
@@ -30,8 +30,8 @@ impl Plugin for ImageSpritePlugin {
         render_app.init_resource::<DrawImageFunction>().add_systems(
             Render,
             (
-                rsys_queue_charmi_image_sprites.in_set(RenderSet::Queue),
-                rsys_prepare_image_sprite_bind_groups.in_set(RenderSet::PrepareBindGroups),
+                rsys_queue_charmi_image_sprites.in_set(RenderSystems::Queue),
+                rsys_prepare_image_sprite_bind_groups.in_set(RenderSystems::PrepareBindGroups),
             ),
         );
     }

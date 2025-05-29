@@ -9,7 +9,7 @@ use bevy::render::render_graph::{
 };
 use bevy::render::render_resource::{BindGroupEntries, ComputePass, ComputePassDescriptor};
 use bevy::render::renderer::{RenderContext, RenderDevice};
-use bevy::render::{define_atomic_id, Render, RenderApp, RenderSet};
+use bevy::render::{define_atomic_id, Render, RenderApp, RenderSystems};
 
 use crate::{
     CharmiBindGroupLayouts, CharmiGlobalsBindGroup, TransformChOffset, TransformChUniforms, ViewCh,
@@ -30,9 +30,9 @@ impl Plugin for CharmiRenderPipelinePlugin {
                 (
                     (rsys_prepare_charmi_globals_bind_group
                         .run_if(not(resource_exists::<CharmiGlobalsBindGroup>)),)
-                        .in_set(RenderSet::PrepareBindGroups),
-                    rsys_clear_charmi_phase.in_set(RenderSet::Cleanup),
-                    rsys_sort_charmi_phase.in_set(RenderSet::PhaseSort),
+                        .in_set(RenderSystems::PrepareBindGroups),
+                    rsys_clear_charmi_phase.in_set(RenderSystems::Cleanup),
+                    rsys_sort_charmi_phase.in_set(RenderSystems::PhaseSort),
                 ),
             );
 

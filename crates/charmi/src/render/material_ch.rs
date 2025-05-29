@@ -10,7 +10,7 @@ use bevy::render::render_resource::{
     ComputePass, ComputePipelineDescriptor, PipelineCache, ShaderRef,
 };
 use bevy::render::renderer::RenderDevice;
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::{Render, RenderApp, RenderSystems};
 
 use crate::{
     CharmiBindGroupLayouts, CharmiFunction, CharmiFunctionError, CharmiFunctionId, CharmiFunctions,
@@ -49,7 +49,7 @@ impl<M: MaterialCh> Plugin for MaterialChPlugin<M> {
             .init_resource::<MaterialChPipeline<M>>()
             .add_systems(
                 Render,
-                rsys_queue_charmi_material_sprites::<M>.in_set(RenderSet::Queue),
+                rsys_queue_charmi_material_sprites::<M>.in_set(RenderSystems::Queue),
             );
     }
 }
