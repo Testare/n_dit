@@ -3,19 +3,21 @@ use core::fmt;
 use bevy::prelude::Deref;
 use unicode_width::UnicodeWidthChar;
 
+use crate::style::CharmiStyle;
+
 use super::{CharCell, CharmiImage};
 
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Deref)]
 pub struct SanitizedText(Vec<CharCell>);
 
 impl SanitizedText {
-    pub fn from_text(text: &str, base_cell: Option<CharCell>) -> Self {
+    pub fn from_text(text: &str, base_cell: Option<CharmiStyle>) -> Self {
         Self::from_text_full(text, base_cell, None, None)
     }
 
     pub fn from_text_full(
         text: &str,
-        base_cell: Option<CharCell>,
+        base_cell: Option<CharmiStyle>,
         split_chars: Option<(u32, u32)>,
         empty_char: Option<char>,
     ) -> Self {
@@ -29,22 +31,16 @@ impl SanitizedText {
             }
             match ch.width() {
                 Some(2) => {
-                    sanitized_text.push(CharCell {
-                        ch: ch as u32,
-                        ..base_cell
-                    });
+                    sanitized_text.push(base_cell.of_ch(ch as u32));
                     sanitized_text.push(CharCell {
                         ch: CharmiImage::SUPPRESSED_CHAR,
                         bg: split_char.0,
                         fg: split_char.1,
-                        ..base_cell
+                        attr: base_cell.attr,
                     });
                 },
                 Some(1) => {
-                    sanitized_text.push(CharCell {
-                        ch: ch as u32,
-                        ..base_cell
-                    });
+                    sanitized_text.push(base_cell.of_ch(ch as u32));
                 },
                 None | Some(0) => {},
                 _ => panic!("Unexpected result for character width"),

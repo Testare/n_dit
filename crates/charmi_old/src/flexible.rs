@@ -911,7 +911,7 @@ pub fn add_content_styles(lhs: &ContentStyle, rhs: &ContentStyle) -> ContentStyl
         foreground_color: rhs.foreground_color.or(lhs.foreground_color),
         background_color: rhs.background_color.or(lhs.background_color),
         attributes: rhs.attributes | lhs.attributes,
-        // underline_color
+        underline_color: None,
     }
 }
 

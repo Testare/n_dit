@@ -105,6 +105,7 @@ pub fn style(fg: Option<Color>, bg: Option<Color>, attr: Option<Attribute>) -> C
         foreground_color: fg,
         background_color: bg,
         attributes,
+        underline_color: None,
     }
 }
 

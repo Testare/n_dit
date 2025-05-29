@@ -10,7 +10,7 @@ use crate::prelude::*;
 use crate::render::RenderOrder;
 use crate::TerminalWindow;
 
-#[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
+#[derive(Clone, Debug, Deref, DerefMut, Event)]
 pub struct CrosstermEvent(pub crossterm::event::Event);
 
 #[derive(Clone, Copy, Debug, Deref, DerefMut, Event)]
@@ -171,6 +171,7 @@ pub fn sys_mouse_tty(
                 MEK::ScrollDown => MouseEventTtyKind::ScrollDown,
                 MEK::ScrollUp => MouseEventTtyKind::ScrollUp,
                 MEK::Drag(_mb) => drag_data.unwrap_or(MouseEventTtyKind::Moved), // TODO drag events
+                MEK::ScrollLeft | MEK::ScrollRight => continue,
             }
         };
 

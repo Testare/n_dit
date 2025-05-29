@@ -95,3 +95,32 @@ impl CharmiColor for Option<u32> {
         CharmiImage::NO_COLOR
     }
 }
+
+impl CharmiColor for crossterm::style::Color {
+    fn as_color_u32(&self) -> u32 {
+        use crossterm::style::Color;
+        match self {
+            Color::AnsiValue(ansi) => *ansi as u32,
+            Color::Rgb { r, g, b } => {
+                (*r as u32) << 16 | (*g as u32) << 8 | (*b as u32) | CharmiImage::TRUE_COLOR
+            },
+            Color::Reset => CharmiImage::NO_COLOR,
+            Color::Black => 0,
+            Color::DarkRed => 1,
+            Color::DarkGreen => 2,
+            Color::DarkYellow => 3,
+            Color::DarkBlue => 4,
+            Color::DarkMagenta => 5,
+            Color::DarkCyan => 6,
+            Color::Grey => 7,
+            Color::DarkGrey => 8,
+            Color::Red => 9,
+            Color::Green => 10,
+            Color::Yellow => 11,
+            Color::Blue => 12,
+            Color::Magenta => 13,
+            Color::Cyan => 14,
+            Color::White => 15,
+        }
+    }
+}

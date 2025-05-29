@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use super::color::CharmiColor;
+use super::{color::CharmiColor, style::CharmiStyle};
 use crate::{CharCell, CharmiFill, CharmiImage, SanitizedText};
 
 #[derive(Clone, Debug)]
@@ -28,7 +28,7 @@ impl Default for CharmiBuilderMode {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CharmiBuilderSettings {
-    cell: CharCell,
+    style: CharmiStyle,
     cursor: (usize, usize),
     empty_char: Option<char>,
     split_char: (u32, u32),
@@ -40,8 +40,7 @@ pub struct CharmiBuilderSettings {
 impl Default for CharmiBuilderSettings {
     fn default() -> Self {
         Self {
-            cell: CharCell {
-                ch: 0x00,
+            style: CharmiStyle {
                 fg: 0x0F, // TODO BEFOREMERGE default should be NC to match definition API
                 bg: 0x00,
                 attr: 0x00,
@@ -336,8 +335,8 @@ impl CharmiBuilder {
     pub fn add_style_effect(&mut self, n: usize) -> &mut Self {
         let effect_cell = CharCell {
             ch: 0,
-            fg: self.settings.cell.fg,
-            bg: self.settings.cell.bg,
+            fg: self.settings.style.fg,
+            bg: self.settings.style.bg,
             attr: 0,
         };
         let range = self.crack_range(n);
@@ -348,7 +347,7 @@ impl CharmiBuilder {
     }
 
     pub fn apply_style(&mut self, n: usize) -> &mut Self {
-        let style_cell = self.settings.cell;
+        let style_cell = self.settings.style;
         let range = self.crack_range(n);
         for cell in range {
             let ch = if cell.ch == Self::FILL_INDICATOR {
@@ -356,7 +355,7 @@ impl CharmiBuilder {
             } else {
                 cell.ch
             };
-            *cell = CharCell { ch, ..style_cell }
+            *cell = style_cell.of_ch(ch);
         }
         self
     }
@@ -445,8 +444,8 @@ impl CharmiBuilder {
         let max_width = self.max_width().unwrap_or(usize::MAX);
         let space = [CharCell {
             ch: ' ' as u32,
-            fg: self.settings.cell.fg,
-            bg: self.settings.cell.bg,
+            fg: self.settings.style.fg,
+            bg: self.settings.style.bg,
             attr: 0,
         }];
         for (i, word) in words.iter().enumerate() {
@@ -489,7 +488,7 @@ impl CharmiBuilder {
     /// Sets the fill. If the fill is just a character, will use CURRENT fg/bg.
     /// Fill is applied at build step.
     pub fn with_fill<F: CharmiFill>(&mut self, fill: F) -> &mut Self {
-        self.settings.fill = fill.as_fill(&self.settings.cell);
+        self.settings.fill = fill.as_fill(&self.settings.style.of_ch(0));
         self
     }
 
@@ -531,22 +530,27 @@ impl CharmiBuilder {
     }
 
     pub fn fg(&mut self, color: impl CharmiColor) -> &mut Self {
-        self.settings.cell.fg = color.as_color_u32();
+        self.settings.style.fg = color.as_color_u32();
         self
     }
 
     pub fn no_fg(&mut self) -> &mut Self {
-        self.settings.cell.fg = CharmiImage::NO_COLOR;
+        self.settings.style.fg = CharmiImage::NO_COLOR;
         self
     }
 
     pub fn bg(&mut self, color: impl CharmiColor) -> &mut Self {
-        self.settings.cell.bg = color.as_color_u32();
+        self.settings.style.bg = color.as_color_u32();
         self
     }
 
     pub fn no_bg(&mut self) -> &mut Self {
-        self.settings.cell.bg = CharmiImage::NO_COLOR;
+        self.settings.style.bg = CharmiImage::NO_COLOR;
+        self
+    }
+
+    pub fn style<S: Into<CharmiStyle>>(&mut self, style: S) -> &mut Self {
+        self.settings.style = style.into();
         self
     }
 
@@ -621,7 +625,7 @@ impl CharmiBuilder {
     /// Sanitizes text
     fn sanitize_text(&self, text: &str) -> Vec<CharCell> {
         let CharmiBuilderSettings {
-            cell,
+            style: cell,
             split_char,
             empty_char,
             ..

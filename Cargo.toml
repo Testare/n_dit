@@ -30,6 +30,7 @@ bevy_query_ext = "0.6"
 bevy_yarnspinner = "0.5"
 toml = "0.8.22"
 workspace-hack = { version = "0.1", path = "crates/workspace-hack" }
+crossterm = { version = "0.28.1", features = ["event-stream", "serde"] }
 
 [workspace.dependencies.bevy]
 version = "0.16.0-dev"

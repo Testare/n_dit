@@ -3,7 +3,10 @@
 pub mod builder;
 pub mod color;
 pub mod definition;
+pub mod style;
 
 pub use builder::{CharmiBuilder, CharmiBuilderSettings};
 pub use color::CharmiColor;
-pub use definition::{CharmiActorDef, CharmiAnimationDef, CharmiDef, CharmiFrameDef, ColorDef, Values};
+pub use definition::{
+    CharmiActorDef, CharmiAnimationDef, CharmiDef, CharmiFrameDef, ColorDef, Values,
+};

@@ -10,13 +10,13 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+crossterm.workspace = true
 bevy = { workspace = true, features = ["wav"] }
 bevy_query_ext.workspace = true
 bevy_yarnspinner.workspace = true
 workspace-hack.workspace = true
 charmi_old = { path = "../charmi_old" }
 charmi = { path = "../charmi" }
-crossterm = { version = "0.20.0", features = ["event-stream", "serde"] }
 game_core = { path = "../game_core" }
 getset = "0.1.1"
 indoc = "2.0.4"

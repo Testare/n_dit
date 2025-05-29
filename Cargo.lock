@@ -1630,7 +1630,7 @@ name = "charmi_old"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "crossterm 0.20.0",
+ "crossterm 0.28.1",
  "env_logger",
  "freeform",
  "itertools 0.10.5",
@@ -1931,7 +1931,7 @@ dependencies = [
  "bevy_yarnspinner",
  "charmi",
  "charmi_old",
- "crossterm 0.20.0",
+ "crossterm 0.28.1",
  "game_core",
  "getset",
  "indoc",
@@ -2003,9 +2003,11 @@ checksum = "829d955a0bb380ef178a640b91779e3987da38c9aea133b20614cfed8cdea9c6"
 dependencies = [
  "bitflags 2.9.1",
  "crossterm_winapi 0.9.1",
+ "futures-core",
  "mio 1.0.4",
  "parking_lot 0.12.3",
  "rustix 0.38.44",
+ "serde",
  "signal-hook",
  "signal-hook-mio",
  "winapi",

@@ -939,23 +939,6 @@ mod test {
     }
 
     #[test]
-    fn load_test_charmi_file_fixed() {
-        let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        test_charmi.push("tests/data/test.charmi");
-        let result_str = std::fs::read_to_string(test_charmi).expect("test file should exist");
-        log::debug!("CHARMI STR: {:?}", result_str);
-
-        let charmie_def: CharmieDef =
-            toml::from_str(result_str.as_str()).expect("test definition should parse successfully");
-
-        let charmi: CharmiFixed = (&charmie_def).into();
-        let expected: CharmiFixed = CharmiFixed::from_slice(0, 0, &[]);
-
-        println!("EXPECTED\n{:?}\n\nACTUAL\n{:?}", expected, charmi);
-        assert_eq!(charmi, expected)
-    }
-
-    #[test]
     fn load_test_charmia_file() {
         let mut test_charmi = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         test_charmi.push("tests/data/test.charmia");

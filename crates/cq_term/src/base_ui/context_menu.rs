@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use bevy::ecs::system::{Command, SystemId};
 use bevy::time::{Time, Timer, TimerMode};
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use getset::CopyGetters;
 
 use super::HoverPoint;
@@ -481,27 +481,24 @@ fn sys_display_context_menu(
             context_menu.position.y.saturating_sub(target_height - 1)
         };
 
-        let mut charmi = CharacterMapImage::new();
+        let mut charmi = CharmiImage::build_fixed_width(target_width);
         let cm_style = res_draw_config.color_scheme().context_menu();
 
         use taffy::prelude::*;
         charmi
-            .new_row()
-            .add_char('┍', &cm_style)
-            .add_text("━".repeat((target_width - 2) as usize), &cm_style)
-            .add_char('┑', &cm_style);
+            .style(&cm_style)
+            .add_text("┍")
+            .add_text(&"━".repeat((target_width - 2) as usize))
+            .add_line("┑");
+        // Not adding a gap - don't want this see-through
+        // If I ever add merging effects to charmi, might do some slightly opaque
+        let row_text = format!("│{}│", " ".repeat((target_width - 2) as usize));
         commands
             .entity(cm_id)
             .despawn_related::<Children>()
             .with_children(|cm_commands| {
                 for (context_menu_item, row) in context_menu_actions.into_iter().zip(2..) {
-                    charmi
-                        .new_row()
-                        .add_char('│', &cm_style)
-                        // Not adding a gap - don't want this see-through
-                        // If I ever add merging effects to charmi, might do some slightly opaque
-                        .add_text(" ".repeat((target_width - 2) as usize), &cm_style)
-                        .add_char('│', &cm_style);
+                    charmi.add_line(&row_text);
                     cm_commands.spawn((
                         StyleTty(Style {
                             max_size: Size {
@@ -521,11 +518,10 @@ fn sys_display_context_menu(
                 }
             });
         charmi
-            .new_row()
-            .add_char('└', &cm_style)
-            .add_text("─".repeat((target_width - 2) as usize), &cm_style)
-            .add_char('┘', &cm_style);
-        rendering.update_charmie(charmi);
+            .add_text("└")
+            .add_text(&"─".repeat((target_width - 2) as usize))
+            .add_text("┘");
+        rendering.update_charmi(charmi.build());
 
         pane_style.grid_template_rows =
             vec![length(target_pos_y as f32), length(target_height as f32)];
@@ -610,14 +606,21 @@ fn sys_render_context_items(
     mut cmi_q: Query<(&ContextMenuItem, &HoverPoint, &mut TerminalRendering)>,
 ) {
     for (context_menu_item, hover_point, mut rendering) in cmi_q.iter_mut() {
-        let mut charmi: CharacterMapImage = CharacterMapImage::new();
-        let charmi_row = charmi.new_row();
+        // let mut charmi: CharacterMapImage = CharacterMapImage::new();
+
+        // let charmi_row = charmi.new_row();
         let style = if hover_point.is_some() {
             res_draw_config.color_scheme().context_menu_item_hover()
         } else {
             res_draw_config.color_scheme().context_menu_item()
         };
-        charmi_row.add_text(context_menu_item.0.as_str(), &style);
-        rendering.update_charmie(charmi);
+        rendering.update_charmi(
+            CharmiImage::build_dynamic()
+                .style(&style)
+                .add_text(context_menu_item.0.as_str())
+                .build(),
+        );
+        //charmi_row.add_text(context_menu_item.0.as_str(), &style);
+        // rendering.update_charmie(charmi);
     }
 }
