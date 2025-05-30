@@ -606,9 +606,6 @@ fn sys_render_context_items(
     mut cmi_q: Query<(&ContextMenuItem, &HoverPoint, &mut TerminalRendering)>,
 ) {
     for (context_menu_item, hover_point, mut rendering) in cmi_q.iter_mut() {
-        // let mut charmi: CharacterMapImage = CharacterMapImage::new();
-
-        // let charmi_row = charmi.new_row();
         let style = if hover_point.is_some() {
             res_draw_config.color_scheme().context_menu_item_hover()
         } else {
@@ -620,7 +617,5 @@ fn sys_render_context_items(
                 .add_text(context_menu_item.0.as_str())
                 .build(),
         );
-        //charmi_row.add_text(context_menu_item.0.as_str(), &style);
-        // rendering.update_charmie(charmi);
     }
 }

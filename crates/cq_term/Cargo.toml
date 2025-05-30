@@ -19,7 +19,6 @@ charmi_old = { path = "../charmi_old" }
 charmi = { path = "../charmi" }
 game_core = { path = "../game_core" }
 getset = "0.1.1"
-indoc = "2.0.4"
 itertools = "0.10.1"
 log = "0.4"
 pad = { git = "https://github.com/Testare/rust-pad" }

@@ -1934,7 +1934,6 @@ dependencies = [
  "crossterm 0.28.1",
  "game_core",
  "getset",
- "indoc",
  "itertools 0.10.5",
  "log",
  "pad",
@@ -3072,12 +3071,6 @@ dependencies = [
  "hashbrown 0.15.3",
  "serde",
 ]
-
-[[package]]
-name = "indoc"
-version = "2.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
 
 [[package]]
 name = "inotify"

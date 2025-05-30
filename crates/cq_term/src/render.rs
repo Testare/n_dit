@@ -98,6 +98,23 @@ impl TerminalRendering {
     }
 }
 
+impl From<CharmiImage> for TerminalRendering {
+    fn from(rendering: CharmiImage) -> Self {
+        Self::from(&rendering)
+    }
+}
+
+impl From<&CharmiImage> for TerminalRendering {
+    fn from(rendering: &CharmiImage) -> Self {
+        let rendering = mk_charmi_old(rendering);
+        let render_cache = (&rendering).into();
+        Self {
+            rendering,
+            render_cache,
+        }
+    }
+}
+
 impl From<CharacterMapImage> for TerminalRendering {
     fn from(rendering: CharacterMapImage) -> Self {
         let render_cache = (&rendering).into();

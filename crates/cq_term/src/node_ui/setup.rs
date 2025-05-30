@@ -24,7 +24,7 @@ use crate::node_ui::grid_ui::{GridUi, GridUiAnimation};
 use crate::node_ui::menu_ui::{
     MenuUiActions, MenuUiCardSelection, MenuUiDescription, MenuUiLabel, MenuUiStats,
 };
-use crate::node_ui::node_popups::{help_msg, HelpMenu, OptionsMenu, StatusScreen};
+use crate::node_ui::node_popups::{HelpMenu, OptionsMenu, StatusScreen, HELP_MSG_CHARMI};
 use crate::node_ui::{
     AvailableActionTargets, AvailableMoves, CursorIsHidden, HasNodeUi, NodeUi, NodeUiScreen,
     SelectedAction, SelectedNodePiece, TelegraphedAction,
@@ -526,7 +526,7 @@ pub fn create_node_ui(
                                             TerminalRendering::default(),
                                             VisibilityTty(true),
                                         ));
-                                        let help_msg = help_msg();
+                                        let help_msg = &*HELP_MSG_CHARMI;
                                         popup_menu.spawn((
                                             ForPlayer(player),
                                             HelpMenu,
@@ -538,7 +538,7 @@ pub fn create_node_ui(
                                                 },
                                                 ..default()
                                             }),
-                                            TerminalRendering::from(help_msg.clone()),
+                                            TerminalRendering::from(help_msg),
                                             VisibilityTty(false),
                                         ));
                                         popup_menu.spawn((

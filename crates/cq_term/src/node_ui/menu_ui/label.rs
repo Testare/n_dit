@@ -1,4 +1,4 @@
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use game_core::node::{Curio, Pickup};
 use game_core::prelude::*;
 use game_core::registry::Reg;
@@ -24,7 +24,7 @@ impl SimpleSubmenu for MenuUiLabel {
         selected: &NodePieceQItem,
         _size: &CalculatedSizeTty,
         glyph_registry: &Res<Reg<NodeGlyph>>,
-    ) -> Option<CharacterMapImage> {
+    ) -> Option<CharmiImage> {
         let display_id = selected.piece.display_id();
         let glyph = (**glyph_registry).get(display_id).unwrap_or_default();
 
@@ -32,41 +32,37 @@ impl SimpleSubmenu for MenuUiLabel {
             .is_tapped
             .map(|is_tapped| **is_tapped)
             .unwrap_or(false);
-        let label = CharacterMapImage::new()
-            .with_row(|row| {
-                let row = row
-                    .with_plain_text("[")
-                    .with_styled_text(glyph.styled_glyph())
-                    .with_plain_text("]");
-                if is_tapped {
-                    row.with_plain_text(" (tapped)")
-                } else {
-                    row
-                }
+        let mut charmi = CharmiImage::build_dynamic();
+        charmi
+            .add_text("[")
+            .style(glyph.style())
+            .add_text(&glyph.glyph())
+            .no_style()
+            .add_text("]");
+        if is_tapped {
+            charmi.add_text(" (tapped)");
+        }
+        charmi.next_line();
+        if selected.access_point.is_some() {
+            charmi.add_line("Access Point");
+        } else if let Some(name) = selected
+            .curio
+            .map(Curio::name)
+            .or_else(|| {
+                selected.pickup.map(|pickup| match pickup {
+                    Pickup::Mon(_) => "Mon",
+                    Pickup::Card(_) => "Card: ??",
+                    Pickup::Item(_) => "Item: ??",
+                    Pickup::MacGuffin => "Intelligence", // TODO Need to configure these labels
+                })
             })
-            .with_row(|row| {
-                if selected.access_point.is_some() {
-                    row.with_plain_text("Access Point")
-                } else if let Some(name) = selected
-                    .curio
-                    .map(Curio::name)
-                    .or_else(|| {
-                        selected.pickup.map(|pickup| match pickup {
-                            Pickup::Mon(_) => "Mon",
-                            Pickup::Card(_) => "Card: ??",
-                            Pickup::Item(_) => "Item: ??",
-                            Pickup::MacGuffin => "Intelligence", // TODO Need to configure these labels
-                        })
-                    })
-                    .map(str::to_owned)
-                {
-                    row.with_text(name, &glyph.style())
-                } else {
-                    row
-                }
-            });
-
-        Some(label)
+            .map(str::to_owned)
+        {
+            charmi.style(&glyph.style()).add_line(&name).no_style();
+        } else {
+            charmi.next_line();
+        }
+        Some(charmi.build())
     }
 
     fn ui_bundle_extras() -> Self::UiBundleExtras {}

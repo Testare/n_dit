@@ -1,6 +1,5 @@
 use bevy_yarnspinner::prelude::{DialogueRunner, OptionId};
-use charmi_old::CharacterMapImage;
-use crossterm::style::{ContentStyle, Stylize};
+use charmi::CharmiImage;
 use game_core::common::daddy::Daddy;
 use game_core::dialog::Dialog;
 use game_core::player::{ForPlayer, Player};
@@ -160,28 +159,27 @@ pub fn sys_render_dialog_line_ui(
     q_player: Query<&Dialog, With<Player>>,
 ) {
     for (&ForPlayer(player_id), size, mut tr) in q_dialog_ui.iter_mut() {
-        let rendering = q_player.get(player_id).ok().and_then(|dialog| {
-            let mut charmi = CharacterMapImage::new();
-            let width = size.width().checked_sub(2)?; // Margin
-            let line = dialog.line().as_ref()?;
-            if let Some(char_name) = line.character_name() {
-                // TODO map character name to full name
-                charmi
-                    .new_row()
-                    .add_text(char_name, &ContentStyle::new().cyan());
-            }
-            // TODO configure at game level: Use text_without_character_name
-            for line_segment in textwrap::wrap(line.text.as_str(), width) {
-                charmi.new_row().add_gap(1).add_plain_text(line_segment);
-            }
-            Some(charmi)
-        });
-
-        if let Some(rendering) = rendering {
-            tr.update_charmie(rendering);
-        } else {
-            tr.update(default());
-        }
+        let rendering = q_player
+            .get(player_id)
+            .ok()
+            .and_then(|dialog| {
+                let width = size.width().checked_sub(2)?; // Margin
+                let line = dialog.line().as_ref()?;
+                let dialog = CharmiImage::build_dynamic()
+                    .add_lines(textwrap::wrap(line.text.as_str(), width))
+                    .build();
+                Some(
+                    CharmiImage::build_fixed_width(size.width32())
+                        .fg("cyan")
+                        // TODO configure at game level: Use text_without_character_name
+                        .add_line_option(line.character_name())
+                        .skip_cells(1)
+                        .draw(&dialog)
+                        .build(),
+                )
+            })
+            .unwrap_or_default();
+        tr.update_charmi(rendering);
     }
 }
 
@@ -198,25 +196,25 @@ pub fn sys_render_dialog_option_ui(
     for (&ForPlayer(player_id), &DialogOptionUi(opt_index), size, hover_point, mut tr) in
         q_dialog_ui.iter_mut()
     {
-        let rendering = q_player.get(player_id).ok().and_then(|dialog| {
-            let mut charmi = CharacterMapImage::new();
-            let width = size.width().checked_sub(2)?; // Margin
-            let line = &dialog.options().get(opt_index)?.line;
-            let style = if hover_point.is_some() {
-                ContentStyle::new().blue()
-            } else {
-                ContentStyle::new().red()
-            };
-            for line_segment in textwrap::wrap(line.text.as_str(), width) {
-                charmi.new_row().add_gap(1).add_text(line_segment, &style);
-            }
-            Some(charmi)
-        });
-
-        if let Some(rendering) = rendering {
-            tr.update_charmie(rendering);
-        } else {
-            tr.update(default());
-        }
+        let rendering = q_player
+            .get(player_id)
+            .ok()
+            .and_then(|dialog| {
+                let width = size.width().checked_sub(2)?; // Margin
+                let line = &dialog.options().get(opt_index)?.line;
+                let fg = if hover_point.is_some() { "blue" } else { "red" };
+                let text_image = CharmiImage::build_dynamic()
+                    .fg(fg)
+                    .add_lines(textwrap::wrap(line.text.as_str(), width))
+                    .build();
+                Some(
+                    CharmiImage::build_fixed_width(size.width32())
+                        .skip_cells(1)
+                        .draw(&text_image)
+                        .build(),
+                )
+            })
+            .unwrap_or_default();
+        tr.update_charmi(rendering);
     }
 }

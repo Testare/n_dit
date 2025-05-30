@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
 use bevy::scene::DynamicSceneBuilder;
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
@@ -83,23 +83,16 @@ impl Plugin for DemoPlugin {
 pub fn sys_demo_shader(
     mut q_demo_shader: Query<(&CalculatedSizeTty, &mut DemoShader, &mut TerminalRendering)>,
 ) {
-    use crossterm::style::*;
     for (size, mut ds, mut tr) in q_demo_shader.iter_mut() {
-        let mut charmi = CharacterMapImage::new();
+        let mut charmi = CharmiImage::build_dynamic();
         for y in 0..size.height() {
-            let row = charmi.new_row();
-            for cell_style in (0..size.width()).map(|x| {
-                let color_val = ds.color.wrapping_add(((x + y) % 256) as u8);
-
-                ContentStyle::new()
-                    .on(Color::AnsiValue(color_val))
-                    .with(Color::AnsiValue(color_val)) // Remove or change this if you want to see rainbow
-                                                       // affect applied OVER game text
-            }) {
-                row.add_effect(1, &cell_style);
+            for x in 0..size.width() {
+                let color_val = ds.color.wrapping_add(((x + y) % 256) as u8) as u32;
+                charmi.fg(color_val).bg(color_val).add_style_effect(1);
             }
+            charmi.next_line();
         }
-        tr.update_charmie(charmi);
+        tr.update_charmi(charmi.build());
         ds.color = ds.color.wrapping_add(1);
     }
 }

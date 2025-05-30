@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use charmi_old::{CharacterMapImage, CharmieString};
-use crossterm::style::Stylize;
+use charmi::CharmiImage;
 use game_core::card::{Card, CardQuery, Deck};
 use game_core::node::{AccessPoint, NodeOp, PlayedCards};
 use game_core::op::CoreOps;
@@ -320,16 +319,17 @@ impl MenuUiCardSelection {
                 .as_ref()
                 .filter(|pt| pt.x > 0)
                 .and_then(|pt| (card_selection.scroll + pt.y as usize).checked_sub(1));
-            let mut rendering = players
+            let rendering = players
                 .get(*player)
                 .ok()
                 .and_then(|(player_deck, selected_entity, played_cards, focus)| {
                     let access_point = selected_entity.of(&access_points)?;
 
-                    let cards: Vec<CharmieString> = player_deck
+                    let cards: Vec<CharmiImage> = player_deck
                         .cards_with_count()
                         .enumerate()
                         .map(|(num, (id, _))| {
+                            let mut card_charmi = CharmiImage::build_sized(size.width32(), 1);
                             let remaining_count = played_cards.remaining_count(player_deck, id);
                             let is_selected = Some(id) == access_point.card();
                             let is_hover = **selected_item == Some(num);
@@ -340,22 +340,23 @@ impl MenuUiCardSelection {
                                     ShortName::nickname_or_short_name(short_name, card)
                                 })
                                 .unwrap_or(Cow::Borrowed("NotACard"));
-                            let mut row = CharmieString::new();
                             if is_hover {
-                                row.add_styled_text("▷".green());
+                                card_charmi.fg("green").add_text("▷");
                             } else if is_selected {
-                                row.add_plain_text("▶");
+                                card_charmi.add_text("▶");
                             }
 
                             let style = is_mouse_hover
                                 .then(|| res_draw_config.color_scheme().menu_hover())
                                 .unwrap_or_default();
+                            card_charmi
+                                .style(&style)
+                                .add_text(&name)
+                                .no_style()
+                                .set_cursor(size.width() - 4, 0)
+                                .add_text(&format!(" {}  ", remaining_count));
 
-                            row.add_text(name, &style)
-                                .fit_to_len(size.width32() - 4, Some(' '))
-                                .add_plain_text(" ")
-                                .add_plain_text(remaining_count.to_string());
-                            row
+                            card_charmi.build()
                         })
                         .collect();
 
@@ -379,7 +380,7 @@ impl MenuUiCardSelection {
                     .min((player_deck.different_cards_len() + 1 + padding).saturating_sub(height));
                     let no_scroll_bar_needed = height > cards.len();
                     let scroll_bar = (0..height).map(|i| {
-                        CharmieString::of_plain_text(if no_scroll_bar_needed {
+                        if no_scroll_bar_needed {
                             " "
                         } else if i <= 1 {
                             "↑"
@@ -387,36 +388,32 @@ impl MenuUiCardSelection {
                             "↓"
                         } else {
                             "│"
-                        })
+                        }
                     });
+                    let mut charmi = CharmiImage::build_sized(size.width32(), size.height32());
 
-                    let mut cards_menu = CharacterMapImage::new();
                     let title_style = if Some(id) == **focus {
                         res_draw_config.color_scheme().menu_title_hover()
                     } else {
                         res_draw_config.color_scheme().menu_title()
                     };
-                    let title_bar = CharmieString::of_text(
-                        format!("{0:═<1$}", "═Cards", size.width()).as_str(),
-                        &title_style,
-                    );
-                    cards_menu.push_row(title_bar);
+                    charmi.style(title_style).add_line(&format!(
+                        "{0:═<1$}",
+                        "═Cards",
+                        size.width()
+                    ));
                     for (scroll_bar, card) in scroll_bar.zip(
                         cards
                             .into_iter()
                             .skip(card_selection.scroll)
                             .take(size.height() - 1 - padding),
                     ) {
-                        let mut row = scroll_bar;
-                        row += card;
-                        cards_menu.push_row(row);
-                        // cards_menu.push(format!("{}{}", scroll_bar, card));
+                        charmi.add_text(scroll_bar).draw(&card).next_line();
                     }
-                    Some(cards_menu)
+                    Some(charmi.build())
                 })
                 .unwrap_or_default();
-            rendering.fit_to_size(size.width32(), size.height32(), Some(' '));
-            tr.update_charmie(rendering);
+            tr.update_charmi(rendering);
         }
     }
 }

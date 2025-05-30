@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use charmi_old::{CharacterMapImage, CharmieAnimation};
-use crossterm::style::{Color, ContentStyle, Stylize};
+use charmi::CharmiImage;
+use charmi_old::CharmieAnimation;
 use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
@@ -16,8 +16,8 @@ use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline};
 use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
-use crate::linkage;
 use crate::prelude::*;
+use crate::{linkage, mk_charmi_old};
 
 #[derive(Debug)]
 pub struct ShopUiPlugin;
@@ -554,22 +554,14 @@ pub fn generate_buy_notification_animation(name: &str) -> CharmieAnimation {
         .iter()
         .zip(shade_timing)
         .map(|(&timing, shade)| {
-            let mut frame_img = CharacterMapImage::new();
-            let basic_color = ContentStyle::new().with(Color::Rgb {
-                r: shade,
-                g: shade,
-                b: shade,
-            });
-            let emphasis_color = ContentStyle::new().with(Color::Rgb {
-                r: shade / 2,
-                g: shade,
-                b: 0,
-            });
-            frame_img
-                .new_row()
-                .add_text("Bought ", &basic_color)
-                .add_text(name, &emphasis_color);
-            // .add_text("", &basic_color);
+            let frame_img = mk_charmi_old(
+                &CharmiImage::build_dynamic()
+                    .fg((shade, shade, shade))
+                    .add_text("Bought ")
+                    .fg((shade / 2, shade, 0))
+                    .add_text(name)
+                    .build(),
+            );
             (timing, frame_img)
         })
         .collect()

@@ -40,7 +40,7 @@ impl ToTokens for CharmiDynamic {
                         CharmiDynamicKey::VColors => Some(quote!(values.colors = #value;)),
                         CharmiDynamicKey::VColorKey(k) => {
                             Some(quote!(if let Some(v) = #value {
-                                values.colors.get_or_insert_default().insert(#k, charmi_core::ColorDef::from(v));
+                                values.colors.get_or_insert_default().insert(#k, charmi::ColorDef::from(v));
                             }))
                         }
                         CharmiDynamicKey::VGap => Some(quote!(values.gap = #value;)),
@@ -52,7 +52,7 @@ impl ToTokens for CharmiDynamic {
                     None
                 } else {
                     Some(quote!({
-                        let mut values = charmi_core::definition::Values {
+                        let mut values = charmi::definition::Values {
                             gap: None,
                             colors: None,
                             attr: None,
@@ -71,7 +71,7 @@ impl ToTokens for CharmiDynamic {
         let split = map.get(&CharmiDynamicKey::Split).unwrap_or(&none);
 
         quote!({
-            let charmi_def = charmi_core::CharmiDef {
+            let charmi_def = charmi::CharmiDef {
                 fg: #fg,
                 bg: #bg,
                 attr: #attr,
@@ -79,7 +79,7 @@ impl ToTokens for CharmiDynamic {
                 split: #split,
                 values: #values
             };
-            charmi_core::CharmiImage::from(&charmi_def)
+            charmi::CharmiImage::from(&charmi_def)
         })
         .to_tokens(tokens)
     }
@@ -101,7 +101,7 @@ impl ToTokens for CharmiStatic {
         // let height = image.height();
         // let text = self.0
         quote!(
-            unsafe { charmi_core::CharmiImage::from_raw_u32(#width, #height, &[#(#cells),*])}
+            unsafe { charmi::CharmiImage::from_raw_u32(#width, #height, &[#(#cells),*])}
         )
         .to_tokens(tokens);
     }

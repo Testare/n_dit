@@ -1,16 +1,14 @@
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
-use charmi_old::CharacterMapImage;
-use crossterm::style::{ContentStyle, Stylize};
+use charmi::{charmi_toml, CharmiImage};
 use game_core::node::{
     Claimed, InNode, Mon, Node, OnTeam, Pickup, TeamStatus, VictoryAward, VictoryStatus,
 };
 use game_core::player::{ForPlayer, Player};
-use indoc::indoc;
 
 use crate::layout::{StyleTty, VisibilityTty};
 use crate::prelude::*;
-use crate::render::{RENDER_TTY_SCHEDULE, RenderTtySet, TerminalRendering};
+use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
 #[derive(Debug)]
 pub struct NodePopupsPlugin;
@@ -33,36 +31,29 @@ pub struct OptionsMenu;
 #[derive(Component, Debug, Default)]
 pub struct StatusScreen {}
 
-static HELP_MSG_IMAGE: OnceLock<CharacterMapImage> = OnceLock::new();
-
-pub fn help_msg() -> &'static CharacterMapImage {
-    // Maybe use embedded assets instead?
-    HELP_MSG_IMAGE.get_or_init(|| {
-        CharacterMapImage::from_toml(indoc!(
-            r#"
-            text = """
-                        [Click help button again to close]
-            -> Click on the \"@@\" spots to be able to choose cards
-            -> When you have choosen cards, click ready to play!
-            -> Each card has two stats, size and speed
-            -> You can move a piece a number of squares equal to speed
-               (Right click or use WASD to move pieces)
-            -> Your piece grows as it moves up to its max size
-            -> Attack to reduce size of enemy pieces, deleting squares
-            equal to damage
-            -> Remove all enemy pieces to win!
-            """
-            fg = """
-                        yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-            """
-            values.gap = "+"
-            [values.colors]
-            y = "yellow"
-            "#,
-        ))
-        .expect("help message should be valid toml")
-    })
-}
+pub static HELP_MSG_CHARMI: LazyLock<CharmiImage> = LazyLock::new(|| {
+    charmi_toml![
+        r#"
+        text = """
+                    [Click help button again to close]
+        -> Click on the \"@@\" spots to be able to choose cards
+        -> When you have choosen cards, click ready to play!
+        -> Each card has two stats, size and speed
+        -> You can move a piece a number of squares equal to speed
+           (Right click or use WASD to move pieces)
+        -> Your piece grows as it moves up to its max size
+        -> Attack to reduce size of enemy pieces, deleting squares
+        equal to damage
+        -> Remove all enemy pieces to win!
+        """
+        fg = """
+                    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+        """
+        values.gap = "+"
+        [values.colors]
+        y = "yellow""#
+    ]
+});
 
 pub fn sys_render_status_screen(
     mut q_status_screen: Query<
@@ -92,10 +83,12 @@ pub fn sys_render_status_screen(
                 VictoryStatus::Undecided => return None,
             };
             is_visible.set_if_neq(true);
-            let mut charmi = CharacterMapImage::new();
+            let mut charmi = CharmiImage::build_dynamic();
             charmi
-                .new_row()
-                .add_text(message, &ContentStyle::new().magenta().bold());
+                .fg("magenta")
+                // .bold()
+                .add_line(message)
+                .no_fg();
             // Victory pickups
             if victory_status.is_victorious() {
                 let mut item_count = 0u32;
@@ -115,19 +108,15 @@ pub fn sys_render_status_screen(
                     }
                 }
                 if reward_mon > 0 {
-                    charmi
-                        .new_row()
-                        .add_plain_text(format!("* Victory credits: {}", reward_mon));
+                    charmi.add_line(&format!("* Victory credits: {}", reward_mon));
                 }
                 match item_count {
                     0 => {},
                     1 => {
-                        charmi.new_row().add_plain_text("* Got an item for winning");
+                        charmi.add_line("* Got an item for winning");
                     },
                     _ => {
-                        charmi
-                            .new_row()
-                            .add_plain_text(format!("* Got {} items for winning", item_count));
+                        charmi.add_line(&format!("* Got {} items for winning", item_count));
                     },
                 }
             }
@@ -149,27 +138,22 @@ pub fn sys_render_status_screen(
                 }
             }
             if reward_mon > 0 {
-                charmi
-                    .new_row()
-                    .add_plain_text(format!("* Picked up credits: {}", reward_mon));
+                charmi.add_line(&format!("* Picked up credits: {}", reward_mon));
             }
             match item_count {
                 0 => {},
                 1 => {
-                    charmi.new_row().add_plain_text("* Picked up an item");
+                    charmi.add_line("* Picked up an item");
                 },
                 _ => {
-                    charmi
-                        .new_row()
-                        .add_plain_text(format!("* Picked up {} items", item_count));
+                    charmi.add_line(&format!("* Picked up {} items", item_count));
                 },
             }
-            charmi
-                .new_row()
-                .add_plain_text("(Press \"Quit\" to return to network map)");
+            charmi.add_line("(Press \"Quit\" to return to network map)");
+            let charmi = charmi.build();
             style.size.height = taffy::style_helpers::length(charmi.height() as f32);
             style.max_size.height = taffy::style_helpers::length(charmi.height() as f32);
-            tr.update_charmie(charmi);
+            tr.update_charmi(charmi);
 
             Some(())
         })();

@@ -5,7 +5,8 @@ mod popup;
 use std::borrow::{Borrow, Cow};
 
 use bevy::ecs::query::Has;
-use charmi_old::CharacterMapImage;
+use charmi::style::CharmiStyle;
+use charmi::CharmiImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::NDitCoreSet;
 use pad::PadStr;
@@ -202,14 +203,22 @@ pub fn sys_render_flexible_text(
             Some(TextUiBorder::Brackets) => format!("[{}]", render_text),
             Some(TextUiBorder::Parenthesis) => format!("[{}]", render_text),
         };
-        let mut next_rendering =
-            CharacterMapImage::new().with_row(|row| row.with_text(render_text, &text_ui.style));
-        if let (true, Some(effect)) = (disabled, disabled_text_effect) {
-            next_rendering.apply_effect(effect);
-        } else if matches!(hover_point, Some(Some(_))) {
-            next_rendering.apply_effect(&ContentStyle::new().reverse());
-        }
-        rendering.update_charmie(next_rendering)
+        let text_style: CharmiStyle = (&text_ui.style).into();
+        let text_style =
+            if let (true, Some(DisabledTextEffect(effect))) = (disabled, disabled_text_effect) {
+                text_style + effect
+            } else if matches!(hover_point, Some(Some(_))) {
+                text_style + ContentStyle::new().black().on_white()
+                // TODO when attr works for charmi, try reverse again
+                // text_style + ContentStyle::new().reverse()
+            } else {
+                text_style
+            };
+        let charmi = CharmiImage::build_dynamic()
+            .style(text_style)
+            .add_text(&render_text)
+            .build();
+        rendering.update_charmi(charmi);
     }
     // TODO allow configuring short buttons to be always on
 }
@@ -244,27 +253,24 @@ pub fn sys_render_flexible_text_multiline(
         }
         let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
         let wrapped_desc = textwrap::wrap(text_ui.text.as_str(), size.width() - borders_len);
-        let mut charmi = CharacterMapImage::new();
         let title_len = 0;
+        let text_style = CharmiStyle::from(&text_ui.style);
+        let text_style =
+            if let (true, Some(&DisabledTextEffect(effect))) = (disabled, disabled_text_effect) {
+                text_style + effect
+            } else if matches!(hover_point, Some(Some(_))) {
+                text_style + ContentStyle::new().black().on_white()
+            } else {
+                text_style
+            };
+        let mut charmi = CharmiImage::build_fixed_width(size.width() as u32);
+        charmi.style(text_style);
         // TODO title info, adjust the following as well
         for desc_line in wrapped_desc.into_iter().take(size.height() - title_len) {
-            let row = charmi.new_row();
-            // TODO add borders
-            /*let render_text = text_ui.text.with_exact_width(text_len);
-            let render_text = match text_ui_border {
-                None => render_text,
-                Some(TextUiBorder::Brackets) => format!("[{}]", render_text),
-                Some(TextUiBorder::Parenthesis) => format!("[{}]", render_text),
-            };*/
-            row.add_text(desc_line, &text_ui.style);
+            // TODO add borders logic
+            charmi.add_text(&desc_line);
         }
-        if let (true, Some(effect)) = (disabled, disabled_text_effect) {
-            charmi.apply_effect(effect);
-        } else if matches!(hover_point, Some(Some(_))) {
-            // Why not?
-            charmi.apply_effect(&ContentStyle::new().reverse());
-        }
-        rendering.update_charmie(charmi)
+        rendering.update_charmi(charmi.build());
     }
 }
 

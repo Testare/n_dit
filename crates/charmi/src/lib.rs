@@ -1,4 +1,5 @@
 pub use charmi_core::*;
+pub use charmi_macro::*;
 mod bevy;
 mod render;
 

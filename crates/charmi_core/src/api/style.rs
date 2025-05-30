@@ -18,6 +18,54 @@ impl CharmiStyle {
     }
 }
 
+impl std::ops::Add<crossterm::style::ContentStyle> for CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: crossterm::style::ContentStyle) -> Self::Output {
+        self + &rhs
+    }
+}
+impl std::ops::Add<&crossterm::style::ContentStyle> for CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: &crossterm::style::ContentStyle) -> Self::Output {
+        let reverse = rhs.attributes.has(crossterm::style::Attribute::Reverse);
+        let add = self + CharmiStyle::from(rhs);
+        if reverse {
+            // Until we actually add attributes
+            CharmiStyle {
+                bg: add.fg,
+                fg: add.bg,
+                attr: add.attr,
+            }
+        } else {
+            add
+        }
+    }
+}
+
+impl std::ops::Add<CharmiStyle> for CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: CharmiStyle) -> Self::Output {
+        (&self) + rhs
+    }
+}
+
+impl std::ops::Add<CharmiStyle> for &CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: CharmiStyle) -> Self::Output {
+        CharmiStyle {
+            fg: (rhs.fg == CharmiImage::NO_COLOR)
+                .then_some(self.fg)
+                .unwrap_or(rhs.fg),
+            bg: (rhs.bg == CharmiImage::NO_COLOR)
+                .then_some(self.bg)
+                .unwrap_or(rhs.bg),
+            attr: (rhs.attr == CharmiImage::NO_COLOR)
+                .then_some(self.attr)
+                .unwrap_or(rhs.attr),
+        }
+    }
+}
+
 impl Default for CharmiStyle {
     fn default() -> Self {
         CharmiStyle {
@@ -25,6 +73,12 @@ impl Default for CharmiStyle {
             bg: CharmiImage::NO_COLOR,
             attr: 0,
         }
+    }
+}
+
+impl From<crossterm::style::ContentStyle> for CharmiStyle {
+    fn from(value: crossterm::style::ContentStyle) -> Self {
+        CharmiStyle::from(&value)
     }
 }
 

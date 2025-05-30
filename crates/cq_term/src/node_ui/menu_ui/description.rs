@@ -1,10 +1,11 @@
+use charmi::CharmiImage;
 use game_core::card::{Action, Actions, Description};
 use game_core::node::NodePiece;
 use game_core::player::{ForPlayer, Player};
 use game_core::prelude::*;
 
 use super::{NodePieceQ, NodeUi, SelectedAction, SelectedNodePiece};
-use crate::layout::{CalculatedSizeTty, FitToSize, StyleTty};
+use crate::layout::{CalculatedSizeTty, StyleTty};
 use crate::node_ui::NodeUiQItem;
 use crate::render::{RenderTtySet, TerminalRendering, RENDER_TTY_SCHEDULE};
 
@@ -73,14 +74,14 @@ impl MenuUiDescription {
                             })
                             .or_else(|| Some(selected.description?.as_str()))?;
                         let wrapped_desc = textwrap::wrap(desc_str, size.width());
-                        let mut menu = vec![format!("{0:─<1$}", "─Desc", size.width())];
-                        for desc_line in wrapped_desc.into_iter() {
-                            menu.push(desc_line.into_owned());
-                        }
+                        let menu = CharmiImage::build_sized(size.width32(), size.height32())
+                            .add_line(&format!("{0:─<1$}", "─Desc", size.width()))
+                            .add_lines(wrapped_desc)
+                            .build();
                         Some(menu)
                     })
                     .unwrap_or_default();
-                tr.update(rendering.fit_to_size(size));
+                tr.update_charmi(rendering);
             }
         }
     }

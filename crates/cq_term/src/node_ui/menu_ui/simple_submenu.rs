@@ -87,12 +87,11 @@ fn render_simple_submenu<T: SimpleSubmenu + Component>(
     let render_param = render_param.into_inner();
     for (size, ForPlayer(player), mut tr) in uis.iter_mut() {
         if let Ok(selected_entity) = players.get(*player) {
-            let mut rendering = selected_entity
+            let rendering = selected_entity
                 .of(&node_pieces)
                 .and_then(|selected| T::render(*player, &selected, size, &render_param))
                 .unwrap_or_default();
-            rendering.fit_to_size(size.x, size.y, Some(' '));
-            tr.update_charmie(rendering);
+            tr.update_charmi(rendering.resize(size.x, size.y, Some(' ')));
         }
     }
 }

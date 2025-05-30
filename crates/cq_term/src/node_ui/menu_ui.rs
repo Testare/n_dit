@@ -9,7 +9,7 @@ pub use actions::MenuUiActions;
 use bevy::ecs::query::QueryData;
 use bevy::ecs::system::SystemParam;
 pub use card_selection::MenuUiCardSelection;
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 pub use description::MenuUiDescription;
 use game_core::card::{Actions, Description, MaximumSize, MovementSpeed};
 use game_core::node::{AccessPoint, Curio, IsTapped, MovesTaken, NodePiece, Pickup, Team};
@@ -45,7 +45,7 @@ pub trait SimpleSubmenu {
         selected: &NodePieceQItem<'_>,
         size: &CalculatedSizeTty,
         sys_param: &<Self::RenderSystemParam as SystemParam>::Item<'_, '_>,
-    ) -> Option<CharacterMapImage>;
+    ) -> Option<CharmiImage>;
 
     fn ui_bundle_extras() -> Self::UiBundleExtras;
 }

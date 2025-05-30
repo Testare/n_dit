@@ -1,5 +1,5 @@
 mod tests {
-    use charmi_core::CharmiImage;
+    use charmi::CharmiImage;
     use charmi_macro::charmi_toml;
 
     #[test]

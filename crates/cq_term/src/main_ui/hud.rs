@@ -1,5 +1,4 @@
-use charmi_old::CharacterMapImage;
-use crossterm::style::{ContentStyle, Stylize};
+use charmi::CharmiImage;
 use game_core::item::Wallet;
 use game_core::op::CoreOps;
 use game_core::player::{ForPlayer, Player};
@@ -88,13 +87,12 @@ pub fn sys_render_mon_display(
                 }
             }
 
-            let next_rendering = CharacterMapImage::new().with_row(|row| {
-                row.with_text(
-                    format!("Mon: ${}", *mon_display),
-                    &ContentStyle::new().cyan(), // TODO use color_scheme
-                )
-            });
-            tr.update_charmie(next_rendering);
+            tr.update_charmi(
+                CharmiImage::build_dynamic()
+                    .fg("cyan")
+                    .add_text(&format!("Mon: ${}", *mon_display))
+                    .build(),
+            );
         }
     }
 }

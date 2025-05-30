@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::ops::Deref;
 
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use game_core::card::{Action, ActionTarget, Actions};
 use game_core::common::daddy::Daddy;
 use game_core::node::{IsTapped, NodeOp, NodePiece, OnTeam, Team, TeamPhase};
@@ -214,9 +214,9 @@ impl MenuUiActions {
                         let hover_index = hover_point
                             .as_ref()
                             .and_then(|pt| (pt.y as usize).checked_sub(1));
-                        let mut menu = CharacterMapImage::new();
+                        let mut charmi = CharmiImage::build_fixed_width(size.width() as u32);
                         let menu_title = format!("{0:─<1$}", "─Actions", size.width());
-                        menu.new_row().add_text(menu_title, &title_style);
+                        charmi.style(title_style).add_line(&menu_title);
 
                         for (idx, action) in piece_actions.iter().enumerate() {
                             if let Some(action) = ast_actions.get(action) {
@@ -228,13 +228,13 @@ impl MenuUiActions {
                                 } else {
                                     action.id().to_string()
                                 };
-                                menu.new_row().add_text(action_text, &style);
+                                charmi.style(&style).add_line(&action_text);
                             }
                         }
-                        menu
+                        charmi.build()
                     })
                     .unwrap_or_default();
-                tr.update_charmie(rendering);
+                tr.update_charmi(rendering);
             }
         }
     }

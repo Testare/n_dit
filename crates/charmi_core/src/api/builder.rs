@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
 use std::sync::Arc;
+use std::{cmp::Ordering, ops::Deref};
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -302,6 +302,23 @@ impl CharmiBuilder {
         self.add_sanitized_text(&text, false)
     }
 
+    pub fn add_lines<T: Deref<Target = str>>(
+        &mut self,
+        lines: impl IntoIterator<Item = T>,
+    ) -> &mut Self {
+        for line in lines.into_iter() {
+            self.add_line(&*line);
+        }
+        self
+    }
+
+    pub fn add_line_option<T: Deref<Target = str>>(&mut self, text: Option<T>) -> &mut Self {
+        if let Some(text) = text {
+            self.add_line(&*text);
+        }
+        self
+    }
+
     pub fn add_line(&mut self, text: &str) -> &mut Self {
         self.add_text(text);
         // We don't use self.next_line(), so that we don't expand image unless we desire to
@@ -551,6 +568,10 @@ impl CharmiBuilder {
 
     pub fn style<S: Into<CharmiStyle>>(&mut self, style: S) -> &mut Self {
         self.settings.style = style.into();
+        self
+    }
+    pub fn no_style(&mut self) -> &mut Self {
+        self.settings.style = Default::default();
         self
     }
 

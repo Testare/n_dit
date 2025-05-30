@@ -1,5 +1,5 @@
 use bevy::ecs::system::SystemParam;
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use game_core::node::{InNode, Node};
 use game_core::player::Player;
 use game_core::prelude::*;
@@ -36,23 +36,24 @@ impl SimpleSubmenu for MenuUiStats {
         selected: &NodePieceQItem,
         size: &CalculatedSizeTty,
         node_ui_data: &MenuUiStatsDataParam,
-    ) -> Option<CharacterMapImage> {
+    ) -> Option<CharmiImage> {
         if selected.max_size.is_some() || selected.speed.is_some() {
-            let mut stats = vec![format!("{0:─<1$}", "─Stats", size.width())];
+            let mut charmi = CharmiImage::build_fixed_width(size.width32());
+            charmi.add_line(&format!("{0:─<1$}", "─Stats", size.width()));
             if let Some(max_size) = selected.max_size {
                 let InNode(node_id) = node_ui_data.player_node.get(player).ok()?;
                 let grid = node_ui_data.node_grids.get(*node_id).ok()?;
                 let size = grid.len_of(selected.entity);
-                stats.push(format!("Size:  {}/{}", size, **max_size));
+                charmi.add_line(&format!("Size:  {}/{}", size, **max_size));
             }
             if let Some(speed) = selected.speed {
                 let moves_taken = selected
                     .moves_taken
                     .map(|moves_taken| **moves_taken)
                     .unwrap_or(0);
-                stats.push(format!("Moves: {}/{}", moves_taken, **speed));
+                charmi.add_line(&format!("Moves: {}/{}", moves_taken, **speed));
             }
-            Some(stats.into_iter().collect())
+            Some(charmi.build())
         } else {
             None
         }

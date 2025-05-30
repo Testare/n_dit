@@ -331,8 +331,8 @@ fn mk_charmi_old(charmi: &CharmiImage) -> CharacterMapImage {
                     Color::Reset
                 } else if fg > CharmiImage::TRUE_COLOR {
                     Color::Rgb {
-                        r: (fg << 16) as u8,
-                        g: (fg << 8) as u8,
+                        r: (fg >> 16) as u8,
+                        g: (fg >> 8) as u8,
                         b: fg as u8,
                     }
                 } else {
@@ -343,8 +343,8 @@ fn mk_charmi_old(charmi: &CharmiImage) -> CharacterMapImage {
                     Color::Reset
                 } else if bg > CharmiImage::TRUE_COLOR {
                     Color::Rgb {
-                        r: (bg << 16) as u8,
-                        g: (bg << 8) as u8,
+                        r: (bg >> 16) as u8,
+                        g: (bg >> 8) as u8,
                         b: bg as u8,
                     }
                 } else {
