@@ -1,6 +1,5 @@
 use bevy::audio::{AudioPlayer, Volume};
-use charmi_old::{CharacterMapImage, CharmieActor, CharmieAnimation};
-use crossterm::style::Stylize;
+use charmi::{charmi_toml, CharmiActor, CharmiAnimation, CharmiImage};
 use game_core::node::{InNode, NodeOp, NodePiece};
 use game_core::op::OpResult;
 use game_core::player::{ForPlayer, Player};
@@ -24,9 +23,9 @@ pub fn sys_grid_animations(
     fx: Res<Fx>,
     mut ev_node_op: EventReader<OpResult<NodeOp>>,
     players: Query<(Entity, &InNode), With<Player>>,
-    mut assets_animation: ResMut<Assets<CharmieAnimation>>,
+    mut assets_animation: ResMut<Assets<CharmiAnimation>>,
     mut grid_animation_player: Query<(&mut AnimationPlayer, &ForPlayer), With<GridUiAnimation>>,
-    assets_actor: Res<Assets<CharmieActor>>,
+    assets_actor: Res<Assets<CharmiActor>>,
     reg_glyph: Res<Reg<NodeGlyph>>,
     node_pieces: Query<&NodePiece>,
 ) {
@@ -87,8 +86,10 @@ pub fn sys_grid_animations(
                         .get(pickup.default_diplay_id())
                         .cloned()
                         .unwrap_or_default();
-                    let pickup_display = CharacterMapImage::new()
-                        .with_row(|row| row.with_styled_text(glyph.styled_glyph()));
+                    let pickup_display = CharmiImage::build_dynamic()
+                        .style(glyph.style())
+                        .add_text(&glyph.glyph())
+                        .build();
 
                     let base_animation = assets_actor
                         .get(&fx.charmia)
@@ -137,51 +138,68 @@ pub fn sys_grid_animations(
 
 fn generate_animation_from_damages(
     damages: &[UVec2],
-    base_animation: &CharmieAnimation,
+    base_animation: &CharmiAnimation,
     target: UVec2,
     target_head: Option<String>,
-) -> CharmieAnimation {
+) -> CharmiAnimation {
     let target = UVec2 {
         x: target.x * 3 + 1,
         y: target.y * 2 + 1,
     };
     let base_offset = UVec2 { x: 12, y: 8 };
-    let damage_cell = CharacterMapImage::new()
-        .with_row(|row| row.with_styled_text("[]".stylize().white().on_dark_red()));
+    let damage_cell = charmi_toml!(
+        r#"
+        text="[]"
+        fg="WW"
+        bg="rr"
+        [values.colors]
+        W="white"
+        r="dark red"
+        "#
+    );
     let target_head = target_head.map(|target_head_str| {
-        CharacterMapImage::new()
-            .with_row(|row| row.with_styled_text(target_head_str.stylize().white().on_dark_red()))
+        CharmiImage::build_dynamic()
+            .fg("white")
+            .bg("dark red")
+            .add_text(&target_head_str)
+            .build()
     });
-    let damages: CharmieAnimation = (0..damages.len())
+    let damages: CharmiAnimation = (0..damages.len())
         .map(|i| {
-            let mut frame = CharacterMapImage::default();
+            let mut frame = CharmiImage::build_dynamic();
             for (i, UVec2 { x, y }) in damages.iter().enumerate().skip(i) {
-                if let (Some(target_head), true) = (&target_head, i == damages.len() - 1) {
-                    frame = frame.draw(target_head, x * 3 + 1, y * 2 + 1, None);
+                let cell = if let (Some(target_head), true) = (&target_head, i == damages.len() - 1)
+                {
+                    &target_head
                 } else {
-                    frame = frame.draw(&damage_cell, x * 3 + 1, y * 2 + 1, None);
-                }
+                    &damage_cell
+                };
+                frame
+                    .set_cursor(*x as usize * 3 + 1, *y as usize * 2 + 1)
+                    .draw(cell);
             }
-            (DAMAGE_TIMING, frame)
+            (DAMAGE_TIMING, frame.with_fill(None).build())
         })
         .collect();
     let full_damage_charmi = damages.frame(0).cloned().unwrap_or_default().into_charmi();
     let mut generated_animation = base_animation
         .iter()
         .map(|(timing, frame)| {
-            let clipped_charmi = frame.charmi().clip(
+            let clipped_charmi = frame.charmi().clip_intersect(
                 base_offset.x.saturating_sub(target.x),
                 base_offset.y.saturating_sub(target.y),
                 1024,
                 1024,
-                Default::default(),
             );
-            let drawn_charmi = full_damage_charmi.draw(
-                &clipped_charmi,
-                target.x.saturating_sub(base_offset.x),
-                target.y.saturating_sub(base_offset.y),
-                Default::default(),
-            );
+            let drawn_charmi = full_damage_charmi
+                .edit()
+                .as_dynamic_size()
+                .set_cursor(
+                    target.x.saturating_sub(base_offset.x) as usize,
+                    target.y.saturating_sub(base_offset.y) as usize,
+                )
+                .draw(&clipped_charmi)
+                .apply();
             (timing, drawn_charmi)
         })
         .collect();
@@ -190,32 +208,31 @@ fn generate_animation_from_damages(
 }
 
 fn generate_pickup_animation(
-    base_animation: &CharmieAnimation,
+    base_animation: &CharmiAnimation,
     target: UVec2,
-    pickup_display: CharacterMapImage,
-) -> CharmieAnimation {
+    pickup_display: CharmiImage,
+) -> CharmiAnimation {
     let target = UVec2 {
         x: target.x * 3 + 1,
         y: target.y * 2 + 1,
     };
     let base_offset = UVec2 { x: 12, y: 8 };
-    let full_damage_charmi = CharacterMapImage::new();
     let mut generated_animation = base_animation
         .iter()
         .map(|(timing, frame)| {
-            let clipped_charmi = frame.charmi().clip(
+            let clipped_charmi = frame.charmi().clip_intersect(
                 base_offset.x.saturating_sub(target.x),
                 base_offset.y.saturating_sub(target.y),
                 1024,
                 1024,
-                Default::default(),
             );
-            let drawn_charmi = full_damage_charmi.draw(
-                &clipped_charmi,
-                target.x.saturating_sub(base_offset.x),
-                target.y.saturating_sub(base_offset.y),
-                Default::default(),
-            );
+            let drawn_charmi = CharmiImage::build_dynamic()
+                .set_cursor(
+                    target.x.saturating_sub(base_offset.x) as usize,
+                    target.y.saturating_sub(base_offset.y) as usize,
+                )
+                .draw(&clipped_charmi)
+                .build();
             (timing, drawn_charmi)
         })
         .collect();
@@ -224,7 +241,11 @@ fn generate_pickup_animation(
         .map(|y| {
             (
                 (1000.0 / target.y as f32),
-                CharacterMapImage::new().draw(&pickup_display, target.x, y, None),
+                CharmiImage::build_dynamic()
+                    .with_fill(None)
+                    .set_cursor(target.x as usize, y as usize)
+                    .draw(&pickup_display)
+                    .build(),
             )
         })
         .collect();

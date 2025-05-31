@@ -1,5 +1,5 @@
 use bevy::asset::Handle;
-use charmi_old::CharmieActor;
+use charmi::CharmiActor;
 use game_core::prelude::*;
 
 pub const FX_ACTOR: &str = "cq_term/fx.charmia";
@@ -8,7 +8,7 @@ pub const CARD_SOUND: &str = "tmp/audio/mixkit-poker-card-flick-2002.wav";
 
 #[derive(Resource, Default)]
 pub struct Fx {
-    pub charmia: Handle<CharmieActor>,
+    pub charmia: Handle<CharmiActor>,
     pub pickup_sound: Handle<AudioSource>,
     pub card_sound: Handle<AudioSource>,
 }

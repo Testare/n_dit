@@ -41,8 +41,8 @@ impl Default for CharmiBuilderSettings {
     fn default() -> Self {
         Self {
             style: CharmiStyle {
-                fg: 0x0F, // TODO BEFOREMERGE default should be NC to match definition API
-                bg: 0x00,
+                fg: CharmiImage::NO_COLOR, // TODO BEFOREMERGE default should be NC to match definition API
+                bg: CharmiImage::NO_COLOR,
                 attr: 0x00,
             },
             cursor: (0, 0),
@@ -135,22 +135,29 @@ impl CharmiBuilder {
             },
             CharmiBuilderMode::FixedSize { image } => {
                 let cells = std::mem::take(&mut image.cells);
-                CharmiBuilderMode::Dynamic {
-                    width: Some(new_width as usize),
-                    lines: cells
-                        .chunks(image.width as usize)
-                        .map(|src_line| {
-                            // Make sure each line is properly truncated and cracked
-                            let line_len = src_line.len().min(new_width as usize);
-                            let mut dst_line = Vec::from(&src_line[..line_len]);
-                            if line_len < src_line.len()
-                                && src_line[line_len].ch == CharmiImage::SUPPRESSED_CHAR
-                            {
-                                dst_line[line_len - 1].ch = src_line[line_len].bg;
-                            }
-                            dst_line
-                        })
-                        .collect(),
+                if cells.len() > 0 {
+                    CharmiBuilderMode::Dynamic {
+                        width: Some(new_width as usize),
+                        lines: vec![],
+                    }
+                } else {
+                    CharmiBuilderMode::Dynamic {
+                        width: Some(new_width as usize),
+                        lines: cells
+                            .chunks(image.width as usize)
+                            .map(|src_line| {
+                                // Make sure each line is properly truncated and cracked
+                                let line_len = src_line.len().min(new_width as usize);
+                                let mut dst_line = Vec::from(&src_line[..line_len]);
+                                if line_len < src_line.len()
+                                    && src_line[line_len].ch == CharmiImage::SUPPRESSED_CHAR
+                                {
+                                    dst_line[line_len - 1].ch = src_line[line_len].bg;
+                                }
+                                dst_line
+                            })
+                            .collect(),
+                    }
                 }
             },
         };
@@ -166,9 +173,16 @@ impl CharmiBuilder {
             },
             CharmiBuilderMode::FixedSize { image } => {
                 let cells = std::mem::take(&mut image.cells);
-                CharmiBuilderMode::Dynamic {
-                    width: None,
-                    lines: cells.chunks(image.width as usize).map(Vec::from).collect(),
+                if cells.len() > 0 {
+                    CharmiBuilderMode::Dynamic {
+                        width: None,
+                        lines: cells.chunks(image.width as usize).map(Vec::from).collect(),
+                    }
+                } else {
+                    CharmiBuilderMode::Dynamic {
+                        width: None,
+                        lines: vec![],
+                    }
                 }
             },
         };
@@ -614,7 +628,12 @@ impl CharmiBuilder {
                         if apply_fill {
                             for cell in line.iter_mut() {
                                 match cell.ch {
-                                    Self::FILL_INDICATOR => *cell = fill,
+                                    // TODO check if this should just be *cell = fill;
+                                    // Or if separate FILL_STYLED_INDICATOR is necessary
+                                    Self::FILL_INDICATOR => {
+                                        cell.set_ch(0);
+                                        *cell = cell.draw_to(&fill);
+                                    },
                                     Self::FILL_STYLED_INDICATOR => cell.ch = fill.ch,
                                     _ => {},
                                 }
@@ -632,7 +651,10 @@ impl CharmiBuilder {
                     let cells = Arc::make_mut(&mut image.cells);
                     for cell in cells.iter_mut() {
                         match cell.ch {
-                            Self::FILL_INDICATOR => *cell = fill,
+                            Self::FILL_INDICATOR => {
+                                cell.set_ch(0);
+                                *cell = cell.draw_to(&fill);
+                            },
                             Self::FILL_STYLED_INDICATOR => cell.ch = fill.ch,
                             _ => {},
                         }

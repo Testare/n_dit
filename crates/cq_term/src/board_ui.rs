@@ -3,7 +3,7 @@ mod sidebar;
 use std::ops::Deref;
 
 use bevy::ecs::system::EntityCommands;
-use charmi_old::{CharacterMapImage, CharmieActor, CharmieAnimation};
+use charmi::{CharmiActor, CharmiAnimation, CharmiImage};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::player::ForPlayer;
 use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
@@ -63,7 +63,7 @@ impl FromWorld for BoardUi {
 
 #[derive(Clone, Component, Debug, Default, Deref, DerefMut, Reflect)]
 #[reflect(Component)]
-pub struct BoardBackground(pub Handle<CharacterMapImage>);
+pub struct BoardBackground(pub Handle<CharmiImage>);
 
 /// Marker component. Can be added to BoardUI components before the
 /// `system_add_default_piece_rendering` to prevent adding the
@@ -81,13 +81,13 @@ pub struct SpriteKey(pub String);
 #[derive(Component, Clone, Debug, PartialEq)]
 pub enum Sprite {
     Image {
-        image: Handle<CharacterMapImage>,
+        image: Handle<CharmiImage>,
     },
     Animation {
-        animation: Handle<CharmieAnimation>,
+        animation: Handle<CharmiAnimation>,
     },
     Actor {
-        actor: Handle<CharmieActor>,
+        actor: Handle<CharmiActor>,
         starting_animation: Option<String>,
     },
 }
@@ -135,7 +135,7 @@ impl Registry for RegSprite {
 }
 
 fn sys_render_board(
-    ast_charmi: Res<Assets<CharacterMapImage>>,
+    ast_charmi: Res<Assets<CharmiImage>>,
     mut board_uis: Query<(
         AsDeref<BoardBackground>,
         &CalculatedSizeTty,
@@ -144,10 +144,8 @@ fn sys_render_board(
 ) {
     // TODO can probably optimize to only run when needed
     for (background_handle, size, mut tr) in board_uis.iter_mut() {
-        let charmi = ast_charmi.get(background_handle);
-        if let Some(mut charmi) = charmi.cloned() {
-            charmi.fit_to_size(size.width32(), size.height32(), None);
-            tr.update_charmie(charmi);
+        if let Some(charmi) = ast_charmi.get(background_handle).as_ref() {
+            tr.update_charmi(charmi.resize(size.width32(), size.height32(), None));
         }
     }
 }
@@ -266,14 +264,14 @@ fn sys_default_piece_sprites(
 }
 
 fn sys_render_sprites(
-    ast_charmi: Res<Assets<CharacterMapImage>>,
+    ast_charmi: Res<Assets<CharmiImage>>,
     mut sprites: Query<(&Sprite, &mut TerminalRendering)>,
 ) {
     for (sprite, mut tr) in sprites.iter_mut() {
         match sprite {
             Sprite::Image { image } => {
                 if let Some(img) = ast_charmi.get(image) {
-                    tr.update_charmie(img.clone());
+                    tr.update_charmi(img.clone());
                 }
             },
             _ => {},

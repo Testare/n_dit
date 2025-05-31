@@ -73,7 +73,7 @@ impl CharmiStringBuilder {
         // Optimize vec allocation
         for character in s.as_ref().chars() {
             // unicode_width
-            self.0.0.push(CharmiCell {
+            self.0 .0.push(CharmiCell {
                 character: Some(character),
                 fg: self.1.fg,
                 bg: self.1.bg,

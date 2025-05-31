@@ -5,8 +5,8 @@ use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::sync::OnceLock;
 
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub trait SeDe {
     type Error;

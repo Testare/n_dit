@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use charmi_old::{CharmieAnimation, CharmieAnimationFrame};
+use charmi::{CharmiAnimation, CharmiAnimationFrame};
 use game_core::NDitCoreSet;
 use getset::CopyGetters;
 
@@ -25,7 +25,7 @@ impl Plugin for AnimationPlugin {
 /// In the future, we might change this to a bundle of components instead?
 #[derive(Component, Debug, CopyGetters)]
 pub struct AnimationPlayer {
-    animation: Option<Handle<CharmieAnimation>>,
+    animation: Option<Handle<CharmiAnimation>>,
     last_update: Instant,
     #[getset(get_copy = "pub")]
     timing: f32,
@@ -59,7 +59,7 @@ impl AnimationPlayer {
         )
     }
 
-    fn handle(&self) -> Option<&Handle<CharmieAnimation>> {
+    fn handle(&self) -> Option<&Handle<CharmiAnimation>> {
         self.animation.as_ref()
     }
 
@@ -71,7 +71,7 @@ impl AnimationPlayer {
         self.load_state == AnimationLoadingState::LoadPending
     }
 
-    fn update_load_state(ap: &mut Mut<AnimationPlayer>, ast_animation: &Assets<CharmieAnimation>) {
+    fn update_load_state(ap: &mut Mut<AnimationPlayer>, ast_animation: &Assets<CharmiAnimation>) {
         if let Some(handle) = ap.animation.as_ref() {
             if let Some(loaded_animation) = ast_animation.get(handle) {
                 ap.duration = loaded_animation.duration();
@@ -84,7 +84,7 @@ impl AnimationPlayer {
         matches!(self.load_state, AnimationLoadingState::Loaded)
     }
 
-    pub fn load(&mut self, handle: Handle<CharmieAnimation>) -> &mut Self {
+    pub fn load(&mut self, handle: Handle<CharmiAnimation>) -> &mut Self {
         self.animation = Some(handle);
         self.last_update = Instant::now();
         self.load_state = AnimationLoadingState::LoadPending;
@@ -95,8 +95,8 @@ impl AnimationPlayer {
 
     pub fn frame(
         &self,
-        assets_animation: &Assets<CharmieAnimation>,
-    ) -> Option<CharmieAnimationFrame> {
+        assets_animation: &Assets<CharmiAnimation>,
+    ) -> Option<CharmiAnimationFrame> {
         assets_animation
             .get(self.animation.as_ref()?)?
             .frame_for_timing(self.timing)
@@ -183,8 +183,8 @@ pub enum AnimationPlayerState {
 }
 
 pub fn sys_update_animations(
-    mut evr_ast_animation: EventReader<AssetEvent<CharmieAnimation>>,
-    ast_animation: Res<Assets<CharmieAnimation>>,
+    mut evr_ast_animation: EventReader<AssetEvent<CharmiAnimation>>,
+    ast_animation: Res<Assets<CharmiAnimation>>,
     mut animation_player: Query<&mut AnimationPlayer>,
 ) {
     let changed_animation_assets = evr_ast_animation
@@ -211,7 +211,7 @@ pub fn sys_update_animations(
 }
 
 pub fn sys_render_animations(
-    ast_animation: Res<Assets<CharmieAnimation>>,
+    ast_animation: Res<Assets<CharmiAnimation>>,
     mut animation_player: Query<(
         &AnimationPlayer,
         Option<&CalculatedSizeTty>,
@@ -220,14 +220,16 @@ pub fn sys_render_animations(
 ) {
     for (animation_player, size, mut tr) in animation_player.iter_mut() {
         if animation_player.is_loaded() {
-            let mut frame_img = animation_player
+            let frame = animation_player
                 .frame(&ast_animation)
                 .map(|frame| frame.into_charmi())
                 .unwrap_or_default();
-            if let Some(size) = size {
-                frame_img.fit_to_size(size.width32(), size.height32(), None);
-            }
-            tr.update_charmie(frame_img);
+            let frame = if let Some(size) = size {
+                frame.resize(size.width32(), size.height32(), None)
+            } else {
+                frame
+            };
+            tr.update_charmi(frame);
         }
     }
 }

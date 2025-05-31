@@ -93,12 +93,12 @@ pub fn def_to_dyn_expr(span: Span, charmi_def: CharmiDef) -> Vec<CharmiDynamicEx
 
 fn color_def_to_tokens(span: Span, color: ColorDef) -> TokenStream {
     match color {
-        ColorDef::Ansi(ansi) => quote_spanned!(span=>Some(charmi_core::ColorDef::Ansi(#ansi))),
+        ColorDef::Ansi(ansi) => quote_spanned!(span=>Some(charmi::ColorDef::Ansi(#ansi))),
         ColorDef::Named(name) => {
-            quote_spanned!(span=>Some(charmi_core::ColorDef::Named(#name.to_string())))
+            quote_spanned!(span=>Some(charmi::ColorDef::Named(#name.to_string())))
         },
         ColorDef::Rgb(r, g, b) => {
-            quote_spanned!(span=>Some(charmi_core::ColorDef::Rgb(#r, #g, #b)))
+            quote_spanned!(span=>Some(charmi::ColorDef::Rgb(#r, #g, #b)))
         },
     }
 }

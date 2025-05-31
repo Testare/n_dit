@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use charmi::CharmiImage;
-use charmi_old::CharmieAnimation;
+use charmi::{CharmiAnimation, CharmiImage};
 use game_core::card::{Action, CardDefinition};
 use game_core::common::daddy::Daddy;
 use game_core::op::OpResult;
@@ -16,8 +15,8 @@ use crate::base_ui::context_menu::{ContextAction, ContextActions};
 use crate::base_ui::{ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline};
 use crate::configuration::DrawConfiguration;
 use crate::layout::VisibilityTty;
+use crate::linkage;
 use crate::prelude::*;
-use crate::{linkage, mk_charmi_old};
 
 #[derive(Debug)]
 pub struct ShopUiPlugin;
@@ -521,7 +520,7 @@ fn sys_update_item_details_description(
 
 fn sys_buy_notification_ui(
     mut evr_shop_op: EventReader<OpResult<ShopOp>>,
-    mut ast_animation: ResMut<Assets<CharmieAnimation>>,
+    mut ast_animation: ResMut<Assets<CharmiAnimation>>,
     mut q_shop_notification: Query<(&ForPlayer, &mut AnimationPlayer), With<ShopNotification>>,
 ) {
     for shop_op_result in evr_shop_op.read() {
@@ -547,22 +546,22 @@ fn sys_buy_notification_ui(
     }
 }
 
-pub fn generate_buy_notification_animation(name: &str) -> CharmieAnimation {
+pub fn generate_buy_notification_animation(name: &str) -> CharmiAnimation {
     let frame_timing = [1000.0, 130.0, 130.0, 130.0, 1000.0];
     let shade_timing = [255, 191, 127, 63, 0];
     frame_timing
         .iter()
         .zip(shade_timing)
         .map(|(&timing, shade)| {
-            let frame_img = mk_charmi_old(
-                &CharmiImage::build_dynamic()
+            (
+                timing,
+                CharmiImage::build_dynamic()
                     .fg((shade, shade, shade))
                     .add_text("Bought ")
                     .fg((shade / 2, shade, 0))
                     .add_text(name)
                     .build(),
-            );
-            (timing, frame_img)
+            )
         })
         .collect()
 }
