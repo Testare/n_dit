@@ -15,38 +15,61 @@ impl SanitizedText {
         Self::from_text_full(text, base_cell, None, None)
     }
 
-    pub fn from_text_full(
-        text: &str,
-        base_cell: Option<CharmiStyle>,
+    pub fn from_char_full(
+        ch: char,
+        style: Option<CharmiStyle>,
         split_chars: Option<(u32, u32)>,
         empty_char: Option<char>,
     ) -> Self {
-        let base_cell = base_cell.unwrap_or_default();
+        let style = style.unwrap_or_default();
+        let split_char = split_chars.unwrap_or((' ' as u32, ' ' as u32));
+        let mut sanitized_text = Vec::new();
+        Self::push_char_internal(&mut sanitized_text, ch, style, split_char, empty_char);
+        Self(sanitized_text)
+    }
+
+    pub fn from_text_full(
+        text: &str,
+        style: Option<CharmiStyle>,
+        split_chars: Option<(u32, u32)>,
+        empty_char: Option<char>,
+    ) -> Self {
+        let style = style.unwrap_or_default();
         let split_char = split_chars.unwrap_or((' ' as u32, ' ' as u32));
         let mut sanitized_text = Vec::new();
         for ch in text.chars() {
-            if Some(ch) == empty_char {
-                sanitized_text.push(CharCell::GAP);
-                continue;
-            }
-            match ch.width() {
-                Some(2) => {
-                    sanitized_text.push(base_cell.of_ch(ch as u32));
-                    sanitized_text.push(CharCell {
-                        ch: CharmiImage::SUPPRESSED_CHAR,
-                        bg: split_char.0,
-                        fg: split_char.1,
-                        attr: base_cell.attr,
-                    });
-                },
-                Some(1) => {
-                    sanitized_text.push(base_cell.of_ch(ch as u32));
-                },
-                None | Some(0) => {},
-                _ => panic!("Unexpected result for character width"),
-            }
+            Self::push_char_internal(&mut sanitized_text, ch, style, split_char, empty_char);
         }
         Self(sanitized_text)
+    }
+
+    fn push_char_internal(
+        sanitized_text: &mut Vec<CharCell>,
+        ch: char,
+        style: CharmiStyle,
+        split_char: (u32, u32),
+        empty_char: Option<char>,
+    ) {
+        if Some(ch) == empty_char {
+            sanitized_text.push(CharCell::GAP);
+            return;
+        }
+        match ch.width() {
+            Some(2) => {
+                sanitized_text.push(style.of_ch(ch as u32));
+                sanitized_text.push(CharCell {
+                    ch: CharmiImage::SUPPRESSED_CHAR,
+                    bg: split_char.0,
+                    fg: split_char.1,
+                    attr: style.attr,
+                });
+            },
+            Some(1) => {
+                sanitized_text.push(style.of_ch(ch as u32));
+            },
+            None | Some(0) => {},
+            _ => panic!("Unexpected result for character width"),
+        }
     }
 
     pub fn unwrap(self) -> Vec<CharCell> {

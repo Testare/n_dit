@@ -1,9 +1,7 @@
 use std::io::{stdout, Write};
-use std::ops::Deref;
 use std::time::{Duration, Instant};
 
 use charmi::CharmiImage;
-use charmi_old::CharacterMapImage;
 use game_core::NDitCoreSet;
 use itertools::{EitherOrBoth, Itertools};
 
@@ -27,7 +25,7 @@ pub enum RenderTtySet {
 #[derive(Clone, Component, Debug, Default)]
 pub struct TerminalRendering {
     render_cache: Vec<String>,
-    rendering: CharacterMapImage,
+    rendering: CharmiImage,
 }
 
 #[derive(Resource, Deref, DerefMut, Default)]
@@ -49,34 +47,29 @@ pub struct RenderOrder(pub(crate) u32);
 pub struct RenderTtyPlugin;
 
 impl TerminalRendering {
+    fn text_to_charmi(lines: &[String]) -> CharmiImage {
+        CharmiImage::build_dynamic().add_lines(lines).build()
+    }
+
+    fn charmi_to_text(charmi: &CharmiImage) -> Vec<String> {
+        (&mk_charmi_old(charmi)).into()
+    }
+
     pub fn new(rendering: Vec<String>) -> Self {
         TerminalRendering {
-            rendering: rendering.clone().into(),
+            rendering: Self::text_to_charmi(&rendering),
             render_cache: rendering,
         }
     }
 
-    pub fn update_if_changed(
-        mut rendering: Mut<TerminalRendering>,
-        new_rendering: CharacterMapImage,
-    ) {
-        if *rendering.deref().charmie() != new_rendering {
-            rendering.update_charmie(new_rendering);
-        }
-    }
-
     pub fn update_charmi(&mut self, new_rendering: CharmiImage) {
-        self.update_charmie(mk_charmi_old(&new_rendering));
-    }
-
-    pub fn update_charmie(&mut self, new_rendering: CharacterMapImage) {
-        self.render_cache = (&self.rendering).into();
+        self.render_cache = Self::charmi_to_text(&self.rendering);
         self.rendering = new_rendering;
     }
 
     pub fn update(&mut self, new_rendering: Vec<String>) {
-        self.rendering = new_rendering.into();
-        self.render_cache = (&self.rendering).into();
+        self.rendering = Self::text_to_charmi(&new_rendering);
+        self.render_cache = new_rendering;
     }
 
     fn update_from(&mut self, tr: &TerminalRendering) {
@@ -88,12 +81,12 @@ impl TerminalRendering {
         &self.render_cache
     }
 
-    pub fn charmie(&self) -> &CharacterMapImage {
+    pub fn charmi(&self) -> &CharmiImage {
         &self.rendering
     }
 
     pub fn clear(&mut self) {
-        self.rendering = CharacterMapImage::new();
+        self.rendering = CharmiImage::default();
         self.render_cache = Vec::new();
     }
 }
@@ -106,21 +99,9 @@ impl From<CharmiImage> for TerminalRendering {
 
 impl From<&CharmiImage> for TerminalRendering {
     fn from(rendering: &CharmiImage) -> Self {
-        let rendering = mk_charmi_old(rendering);
-        let render_cache = (&rendering).into();
         Self {
-            rendering,
-            render_cache,
-        }
-    }
-}
-
-impl From<CharacterMapImage> for TerminalRendering {
-    fn from(rendering: CharacterMapImage) -> Self {
-        let render_cache = (&rendering).into();
-        Self {
-            rendering,
-            render_cache,
+            rendering: rendering.clone(),
+            render_cache: Self::charmi_to_text(&rendering),
         }
     }
 }
@@ -193,8 +174,8 @@ pub fn write_rendering_to_terminal(
         }
 
         let render_result = render_with_cache(
-            &Into::<Vec<String>>::into(&tr.rendering)[..],
-            &Into::<Vec<String>>::into(&render_cache.rendering)[..],
+            &TerminalRendering::charmi_to_text(&tr.rendering)[..],
+            &TerminalRendering::charmi_to_text(&render_cache.rendering)[..],
             window.height(),
         );
         if let Result::Err(err) = render_result {

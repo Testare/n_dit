@@ -311,17 +311,26 @@ impl CharmiBuilder {
         self
     }
 
+    pub fn add_char(&mut self, ch: char) -> &mut Self {
+        let CharmiBuilderSettings {
+            style: cell,
+            split_char,
+            empty_char,
+            ..
+        } = self.settings;
+        let text =
+            SanitizedText::from_char_full(ch, Some(cell), Some(split_char), empty_char).unwrap();
+        self.add_sanitized_text(&text, false)
+    }
+
     pub fn add_text(&mut self, text: &str) -> &mut Self {
         let text = self.sanitize_text(text);
         self.add_sanitized_text(&text, false)
     }
 
-    pub fn add_lines<T: Deref<Target = str>>(
-        &mut self,
-        lines: impl IntoIterator<Item = T>,
-    ) -> &mut Self {
+    pub fn add_lines<T: AsRef<str>>(&mut self, lines: impl IntoIterator<Item = T>) -> &mut Self {
         for line in lines.into_iter() {
-            self.add_line(&*line);
+            self.add_line(line.as_ref());
         }
         self
     }

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use charmi_old::CharacterMapImage;
+use charmi::CharmiImage;
 use game_core::player::ForPlayer;
 use pad::PadStr;
 use serde::{Deserialize, Serialize};
@@ -363,7 +363,7 @@ pub fn render_layouts(
     for (root_size, root_children, mut rendering) in render_layouts.iter_mut() {
         let mut children: VecDeque<Entity> = VecDeque::from_iter(root_children.iter().copied());
 
-        let mut charmie = CharacterMapImage::new();
+        let mut charmi = CharmiImage::build_sized(root_size.width32(), root_size.height32());
         while let Some(id) = children.pop_back() {
             if matches!(visibility.get(id), Ok(false)) {
                 continue;
@@ -372,12 +372,12 @@ pub fn render_layouts(
                 children.extend(&**my_children);
             }
             if let Ok((rendering, pos)) = child_renderings.get(id) {
-                charmie = charmie.draw(rendering.charmie(), pos.x, pos.y, Default::default());
+                charmi
+                    .set_cursor(pos.x as usize, pos.y as usize)
+                    .draw(rendering.charmi());
             }
         }
-
-        charmie.fit_to_size(root_size.width32(), root_size.height32(), None);
-        rendering.update_charmie(charmie);
+        rendering.update_charmi(charmi.build());
     }
 }
 

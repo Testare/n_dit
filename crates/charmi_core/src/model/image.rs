@@ -311,6 +311,9 @@ impl CharmiImage {
     ) -> std::io::Result<()> {
         use crossterm::queue;
         use crossterm::style::*;
+        if self.width == 0 || self.height == 0 {
+            return Ok(());
+        }
         let initial_size = self.width * self.height * 21;
         let mut buffer = Vec::with_capacity(initial_size as usize);
         let cache_lines: Vec<_> = cache

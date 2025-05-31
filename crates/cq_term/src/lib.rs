@@ -56,7 +56,6 @@ impl Plugin for CharmiePlugin {
             .init_resource::<MouseLastPositionTty>()
             .init_asset::<CharmiAnimation>()
             .init_asset::<CharmiActor>()
-            .init_asset::<CharacterMapImage>()
             .init_asset::<CharmiImage>()
             .init_asset_loader::<CharmiaLoader>()
             .init_asset_loader::<CharmiLoader>()

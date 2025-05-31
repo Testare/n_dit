@@ -1,6 +1,6 @@
 use std::cmp;
 
-use charmi_old::{CharacterMapImage, CharmieString};
+use charmi::CharmiImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
@@ -71,7 +71,7 @@ pub fn render_grid_system(
                     grid_animation.unwrap(),
                 );
 
-                rendering.update_charmie(grid_rendering);
+                rendering.update_charmi(grid_rendering);
             }
         }
     }
@@ -89,7 +89,7 @@ fn render_grid(
     reg_glyph: &Reg<NodeGlyph>,
     draw_config: &DrawConfiguration,
     grid_animation: (&AnimationPlayer, &TerminalRendering, &ForPlayer),
-) -> CharacterMapImage {
+) -> CharmiImage {
     // TODO Break DrawConfiguration down into parts and resources
 
     let default_style = ContentStyle::new();
@@ -192,11 +192,10 @@ fn render_grid(
         })
         .collect();
 
-    let (border_lines, mut space_lines): (Vec<CharmieString>, Vec<CharmieString>) = (y_start
-        ..=y_end)
+    let (border_lines, mut space_lines): (Vec<CharmiImage>, Vec<CharmiImage>) = (y_start..=y_end)
         .map(|y| {
-            let mut border_line = CharmieString::new();
-            let mut space_line = CharmieString::new(); //String::with_capacity(str_width);
+            let mut border_line = CharmiImage::build_dynamic();
+            let mut space_line = CharmiImage::build_dynamic(); //String::with_capacity(str_width);
             let include_border = y != y_start || skip_y != 1;
             let include_space = y != height && (y != y_end || keep_last_space);
             for x in x_start..=x_end {
@@ -240,11 +239,13 @@ fn render_grid(
                             &border_x_range,
                             &border_y_range,
                         );
-                        border_line.add_styled_text(pivot_format.apply(intersection_for_pivot(
-                            &[left1, left2],
-                            &[right1, right2],
-                            draw_config,
-                        )));
+                        border_line
+                            .style(pivot_format)
+                            .add_char(intersection_for_pivot(
+                                &[left1, left2],
+                                &[right1, right2],
+                                draw_config,
+                            ));
                     }
                     if include_space {
                         // Add first vertical border
@@ -256,18 +257,17 @@ fn render_grid(
                             &border_x_range,
                             &(y..=y),
                         );
+                        space_line.style(border_style);
 
                         if let Some(dir) = draw_path_borders.get(&(pt, true)) {
-                            space_line.add_text(arrow_border(*dir, false), &border_style);
+                            space_line.add_text(arrow_border(*dir, false));
                         } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_horizontal()
                         }) {
-                            space_line.add_text(arrow_border(dir, false), &border_style);
+                            space_line.add_text(arrow_border(dir, false));
                         } else {
-                            space_line.add_styled_text(
-                                border_style.apply(
-                                    BorderType::of(left2, right2).vertical_border(draw_config),
-                                ),
+                            space_line.add_char(
+                                BorderType::of(left2, right2).vertical_border(draw_config),
                             );
                         };
                     }
@@ -282,22 +282,21 @@ fn render_grid(
                             &(x..=x),
                             &border_y_range,
                         );
+                        border_line.style(border_style);
 
                         if let Some(dir) = draw_path_borders.get(&(pt, false)) {
-                            border_line.add_text(arrow_border(*dir, true), &border_style);
+                            border_line.add_text(arrow_border(*dir, true));
                         } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
                         }) {
-                            border_line.add_text(arrow_border(dir, true), &border_style);
+                            border_line.add_text(arrow_border(dir, true));
                         } else {
-                            border_line.add_styled_text(
-                                border_style.apply(
-                                    BorderType::of(right1, right2)
-                                        .horizontal_border(draw_config)
-                                        .chars()
-                                        .next()
-                                        .unwrap(),
-                                ),
+                            border_line.add_char(
+                                BorderType::of(right1, right2)
+                                    .horizontal_border(draw_config)
+                                    .chars()
+                                    .next()
+                                    .unwrap(),
                             );
                         };
                     }
@@ -315,8 +314,9 @@ fn render_grid(
                             });
                         let combined_style =
                             charmi_old::add_content_styles(&space_style, square_style);
+                        space_line.style(combined_style);
                         if square.chars().count() == 1 {
-                            space_line.add_char(draw_config.half_char(), &combined_style);
+                            space_line.add_char(draw_config.half_char());
                         } else {
                             // Whether we are getting the left half or the right half
                             let char_index = if x == x_start { 1 } else { 0 };
@@ -325,7 +325,7 @@ fn render_grid(
                                 .nth(char_index)
                                 .expect("there should be at least 2 characters");
 
-                            space_line.add_char(half_char, &combined_style);
+                            space_line.add_char(half_char);
                         }
                     }
                 } else if render_full_space {
@@ -338,17 +338,18 @@ fn render_grid(
                             &(x..=x),
                             &border_y_range,
                         );
+                        border_line.style(border_style);
 
                         if let Some(dir) = draw_path_borders.get(&(pt, false)) {
-                            border_line.add_text(arrow_border(*dir, false), &border_style);
+                            border_line.add_text(arrow_border(*dir, false));
                         } else if let Some((_, dir)) = draw_arrow_border.filter(|(pt, dir)| {
                             x == pt.x as usize && y == pt.y as usize && dir.is_vertical()
                         }) {
-                            border_line.add_text(arrow_border(dir, false), &border_style);
+                            border_line.add_text(arrow_border(dir, false));
                         } else {
-                            border_line.add_styled_text(border_style.apply(
+                            border_line.add_text(
                                 BorderType::of(right1, right2).horizontal_border(draw_config),
-                            ));
+                            );
                         }
                     }
                     if include_space {
@@ -366,31 +367,32 @@ fn render_grid(
 
                         let combined_style =
                             charmi_old::add_content_styles(&space_style, square_style);
-                        space_line.add_text(square, &combined_style);
+                        space_line.style(combined_style).add_text(square);
                     }
                 }
             }
-            (border_line, space_line)
+            (border_line.build(), space_line.build())
         })
         .unzip();
     space_lines.truncate(height); // Still used for when the height isn't specified
-    let charmi: CharacterMapImage = Itertools::interleave(border_lines.into_iter(), space_lines)
+    let mut charmi = Itertools::interleave(border_lines.into_iter(), space_lines)
         .skip(skip_y)
         .take(size.height())
-        .collect();
+        .fold(CharmiImage::build_dynamic(), |mut builder, line| {
+            builder.draw(&line).next_line();
+            builder
+        });
 
     if grid_animation.0.is_playing() {
-        let clipped_attack = grid_animation.1.charmie().clip(
+        let clipped_attack = grid_animation.1.charmi().clip_intersect(
             scroll.x,
             scroll.y,
             size.width32(),
             size.height32(),
-            Default::default(),
         );
-        charmi.draw(&clipped_attack, 0, 0, Default::default())
-    } else {
-        charmi
+        charmi.set_cursor(0, 0).draw(&clipped_attack);
     }
+    charmi.build()
 }
 
 fn space_style_for(
