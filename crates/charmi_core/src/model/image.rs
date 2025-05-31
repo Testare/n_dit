@@ -321,29 +321,34 @@ impl CharmiImage {
             .filter(|cache_image| cache_image.width == self.width)
             .flat_map(|cache_image| cache_image.cells.chunks(cache_image.width as usize))
             .collect();
+        let mut last_line: Option<usize> = None;
         for (i, line) in self.cells.chunks(self.width as usize).enumerate() {
             if cache_lines.get(i) == Some(&line) {
                 continue;
             }
             let mut last_bg = None;
             let mut last_fg = None;
-            queue!(
-                buffer,
-                crossterm::cursor::MoveTo(0, i as u16),
-                crossterm::terminal::Clear(crossterm::terminal::ClearType::CurrentLine)
-            )?;
+            if i == 0 || last_line != Some(i - 1) {
+                queue!(buffer, crossterm::cursor::MoveTo(0, i as u16),)?;
+            }
+            last_line = Some(i);
             for datum in line.iter().take((self.width * self.height) as usize) {
                 // TODO BEFOREMERGE make sure view starts initialized with spaces, not empty
-                if datum.ch == 0 || datum.ch == Self::SUPPRESSED_CHAR {
+                if datum.ch == Self::SUPPRESSED_CHAR {
                     continue;
                 }
-                let Some(charmi_ch) = <char>::from_u32(datum.ch) else {
+                let Some(mut charmi_ch) = <char>::from_u32(datum.ch) else {
                     continue;
                 };
+                if charmi_ch == '\0' {
+                    charmi_ch = ' ';
+                }
 
                 if last_fg == Some(datum.fg) {
                 } else if datum.fg == CharmiImage::NO_COLOR {
                     // No Foreground, default to white
+                    last_fg = Some(datum.fg);
+
                     queue!(buffer, SetForegroundColor(crossterm::style::Color::White))?;
                 } else if datum.fg > CharmiImage::TRUE_COLOR {
                     last_fg = Some(datum.fg);
@@ -366,7 +371,8 @@ impl CharmiImage {
                 if last_bg == Some(datum.bg) {
                 } else if datum.bg == CharmiImage::NO_COLOR {
                     // No color, default to black
-                    queue!(buffer, SetForegroundColor(crossterm::style::Color::Black))?;
+                    last_bg = Some(datum.bg);
+                    queue!(buffer, SetBackgroundColor(crossterm::style::Color::Black))?;
                 } else if datum.bg >= CharmiImage::TRUE_COLOR {
                     last_bg = Some(datum.bg);
                     let r = ((datum.bg >> 16) & 255) as u8;
@@ -385,8 +391,13 @@ impl CharmiImage {
                 };
                 queue!(buffer, Print(charmi_ch))?;
             }
-            queue!(buffer, ResetColor)?;
+            queue!(
+                buffer,
+                ResetColor,
+                crossterm::terminal::Clear(crossterm::terminal::ClearType::UntilNewLine)
+            )?;
         }
+        queue!(buffer, crossterm::cursor::MoveTo(0, 0),)?;
         buffer.flush()?;
         out.write_all(&buffer)?;
         out.flush()?;

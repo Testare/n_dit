@@ -17,8 +17,6 @@ mod render;
 use bevy::diagnostic::FrameCount;
 use bevy::time::{Real, Stopwatch, Time};
 use charmi::{CharmiActor, CharmiAnimation, CharmiImage, CharmiLoader, CharmiaLoader};
-use charmi_old::CharacterMapImage;
-use crossterm::style::ContentStyle;
 use game_core::NDitCoreSet;
 pub use key_map::{KeyMap, Submap};
 
@@ -310,61 +308,4 @@ fn terminal_size_adjustment(
             });
         }
     }
-}
-
-fn mk_charmi_old(charmi: &CharmiImage) -> CharacterMapImage {
-    let mut old_charmi: CharacterMapImage = CharacterMapImage::new();
-    if charmi.width() == 0 {
-        return old_charmi;
-    }
-    for cells in charmi.cells().chunks(charmi.width()) {
-        let row = old_charmi.new_row();
-
-        for cells in cells.chunk_by(|a, b| {
-            a.ch() == CharmiImage::SUPPRESSED_CHAR || (a.fg() == b.fg() && a.bg() == b.bg())
-        }) {
-            use crossterm::style::Color;
-            let mut style = ContentStyle::new();
-            let fg = cells[0].fg();
-            style.foreground_color = if fg == CharmiImage::NO_COLOR {
-                None
-            } else if fg > CharmiImage::TRUE_COLOR {
-                Some(Color::Rgb {
-                    r: (fg >> 16) as u8,
-                    g: (fg >> 8) as u8,
-                    b: fg as u8,
-                })
-            } else {
-                Some(Color::AnsiValue(fg as u8))
-            };
-            let bg = cells[0].bg();
-            style.background_color = if bg == CharmiImage::NO_COLOR {
-                None
-            } else if bg > CharmiImage::TRUE_COLOR {
-                Some(Color::Rgb {
-                    r: (bg >> 16) as u8,
-                    g: (bg >> 8) as u8,
-                    b: bg as u8,
-                })
-            } else {
-                Some(Color::AnsiValue(bg as u8))
-            };
-
-            for cell in cells.iter() {
-                if cell.ch == CharmiImage::SUPPRESSED_CHAR {
-                    continue;
-                }
-                if cell.ch == 0 {
-                    if fg == 0 && bg == 0 {
-                        row.add_gap(1);
-                    } else {
-                        row.add_effect(1, &style);
-                    }
-                } else if let Some(ch) = <char>::try_from(cell.ch).ok() {
-                    row.add_char(ch, &style);
-                }
-            }
-        }
-    }
-    old_charmi
 }
