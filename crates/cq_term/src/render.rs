@@ -45,23 +45,16 @@ pub struct RenderOrder(pub(crate) u32);
 pub struct RenderTtyPlugin;
 
 impl TerminalRendering {
-    fn text_to_charmi(lines: &[String]) -> CharmiImage {
-        CharmiImage::build_dynamic().add_lines(lines).build()
+    pub fn new(rendering: CharmiImage) -> Self {
+        TerminalRendering { rendering }
     }
 
-    pub(crate) fn new(rendering: Vec<String>) -> Self {
-        TerminalRendering {
-            rendering: Self::text_to_charmi(&rendering),
-        }
-    }
-
-    pub(crate) fn update_charmi(&mut self, new_rendering: CharmiImage) {
+    pub fn update_charmi(&mut self, new_rendering: CharmiImage) {
         self.rendering = new_rendering;
     }
 
-    #[deprecated = "use charmi instead"]
-    pub(crate) fn update(&mut self, new_rendering: Vec<String>) {
-        self.rendering = Self::text_to_charmi(&new_rendering);
+    pub fn clear(&mut self) {
+        self.rendering = CharmiImage::default();
     }
 
     pub(crate) fn charmi(&self) -> &CharmiImage {

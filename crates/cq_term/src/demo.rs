@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
 use bevy::scene::DynamicSceneBuilder;
-use charmi::CharmiImage;
+use charmi::{charmi_toml, CharmiImage};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
@@ -365,7 +365,7 @@ fn demo_startup(
                 flex_direction: taffy::style::FlexDirection::Column,
                 ..default()
             }),
-            TerminalRendering::new(Vec::new()),
+            TerminalRendering::default(),
         ))
         .with_children(|board_ui_root| {
             use taffy::prelude::*;
@@ -420,7 +420,7 @@ fn demo_startup(
                                 flex_shrink: 0.0,
                                 ..Default::default()
                             }),
-                            TerminalRendering::new(vec!["Network Map".to_owned()]),
+                            TerminalRendering::new(charmi_toml!["text='Network Map'"]),
                         ));
                         title_bar.spawn((
                             Name::new("Mon Display"),
@@ -440,7 +440,7 @@ fn demo_startup(
                                 flex_shrink: 0.0,
                                 ..Default::default()
                             }),
-                            TerminalRendering::new(vec!["$Mon Display".to_owned()]),
+                            TerminalRendering::default(),
                         ));
 
                         title_bar.spawn((
@@ -575,7 +575,7 @@ fn demo_startup(
                             )],
                             ..default()
                         }),
-                        TerminalRendering::new(Vec::new()),
+                        TerminalRendering::default(),
                     ));
                 });
         })
@@ -791,7 +791,7 @@ pub fn build_popup_menu(
                         Name::new("Shop UI/Item Details/Actions"),
                         ItemDetailsUiActions,
                         VisibilityTty(true),
-                        TerminalRendering::new(vec!["--Actions--".to_string()]),
+                        TerminalRendering::new(charmi_toml!["text='--Actions--'"]),
                         ForPlayer(player),
                     ));
                     shop_ui.spawn((

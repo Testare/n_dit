@@ -1,3 +1,4 @@
+use charmi::CharmiImage;
 use game_core::player::{ForPlayer, Player};
 use game_core::NDitCoreSet;
 
@@ -58,14 +59,15 @@ pub fn render_message_bar(
     mut ui: Query<(&MessageBarUi, &CalculatedSizeTty, &mut TerminalRendering)>,
 ) {
     if let Ok((msgbar, size, mut tr)) = ui.single_mut() {
-        let mut rendered_text: Vec<String> = vec![format!("{0:─<1$}", "─Messages", size.width())];
+        let mut charmi = CharmiImage::build_fixed_width(size.width32());
+        charmi.add_line(&format!("{0:─<1$}", "─Messages", size.width()));
         if let Some(msg) = msgbar.first() {
             for line in textwrap::wrap(msg.as_str(), size.width()).into_iter() {
-                rendered_text.push(line.to_string());
+                charmi.add_line(&line);
             }
-            rendered_text.push("---Enter to continue---".to_owned());
+            charmi.add_line("---Enter to continue---");
         }
-        tr.update(rendered_text);
+        tr.update_charmi(charmi.build());
     }
 }
 

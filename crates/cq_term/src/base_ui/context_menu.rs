@@ -174,10 +174,7 @@ impl ContextMenuPane {
                         grid_template_columns: vec![length(1.), fr(1.), length(1.)],
                         ..default()
                     }),
-                    TerminalRendering::new(vec![
-                        "[You should not be]".to_string(),
-                        "[reading this.    ]".to_string(),
-                    ]),
+                    TerminalRendering::default(),
                     VisibilityTty(false),
                     ContextMenu::default(),
                     ContextMenuTimer::default(),
@@ -511,7 +508,11 @@ fn sys_display_context_menu(
                         }),
                         MouseEventListener,
                         Name::new(format!("Context Menu Item [{}]", &context_menu_item.0)),
-                        TerminalRendering::new(vec![context_menu_item.0.to_string()]), // Style to come later
+                        TerminalRendering::new(
+                            CharmiImage::build_dynamic()
+                                .add_line(&context_menu_item.0)
+                                .build(),
+                        ), // TODO Style to come later
                         HoverPoint::default(),
                         context_menu_item,
                     ));

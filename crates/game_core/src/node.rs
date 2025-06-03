@@ -10,8 +10,7 @@ mod node_op;
 mod rule;
 
 pub use ai::{AiThread, NodeBattleIntelligence, SimpleAiCurioOrder};
-use bevy::ecs::entity::{EntityHashMap, EntityMapper, MapEntities};
-use bevy::ecs::reflect::ReflectMapEntities;
+use bevy::ecs::entity::{EntityHashMap, EntityMapper};
 use getset::CopyGetters;
 pub use node_loading::NodeScene;
 pub use node_op::node_op_undo::NodeUndoStack;
@@ -453,19 +452,20 @@ pub enum TeamPhase {
 /// TODO Probably should be changd to a component on Team entities
 #[derive(Clone, Component, Debug, Deserialize, Default, Deref, DerefMut, Reflect, Serialize)]
 #[reflect(opaque)]
-#[reflect(Component, Deserialize, MapEntities, Serialize)]
+#[reflect(Component, Deserialize, Serialize)]
 // Has to be reflect_value until this issue is solved: https://github.com/bevyengine/bevy/issues/10995
-#[component(entities)]
+#[component(map_entities = map_entities_for_team_status)]
 pub struct TeamStatus(EntityHashMap<VictoryStatus>);
 
-impl MapEntities for TeamStatus {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = self
-            .0
-            .drain()
-            .map(|(id, status)| (entity_mapper.get_mapped(id), status))
-            .collect();
-    }
+fn map_entities_for_team_status<M: EntityMapper>(
+    team_status: &mut TeamStatus,
+    entity_mapper: &mut M,
+) {
+    team_status.0 = team_status
+        .0
+        .drain()
+        .map(|(id, status)| (entity_mapper.get_mapped(id), status))
+        .collect();
 }
 
 impl TeamStatus {

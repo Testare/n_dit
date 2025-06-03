@@ -60,7 +60,7 @@ pub struct Square {
 #[reflect(opaque)]
 #[reflect(Component, Deserialize, MapEntities, Serialize)]
 #[serde(try_from = "EntityGridSeDe", into = "EntityGridSeDe")]
-#[component(entities)]
+#[component(map_entities)]
 pub struct EntityGrid {
     width: u32,
     height: u32,

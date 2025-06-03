@@ -1,5 +1,6 @@
 use bevy::app::AppExit;
 use bevy::ecs::system::RunSystemOnce;
+use charmi::CharmiImage;
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::card::NO_OP_ACTION_ID;
 use game_core::node::{InNode, Node, NodeBattleIntelligence, NodeOp};
@@ -233,7 +234,7 @@ pub fn create_node_ui(
                                     flex_shrink: 1.0,
                                     ..default()
                                 }),
-                                TerminalRendering::new(vec![node_name.to_string()]),
+                                TerminalRendering::new(CharmiImage::build_dynamic().add_text(node_name).build()),
                                 Name::new("Node Title"),
                             ));
                             title_bar
@@ -552,7 +553,7 @@ pub fn create_node_ui(
                                                 },
                                                 ..default()
                                             }),
-                                            TerminalRendering::new(vec!["Options!".to_string()]),
+                                            TerminalRendering::default(),
                                             VisibilityTty(false),
                                         ));
                                     });

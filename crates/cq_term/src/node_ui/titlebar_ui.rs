@@ -1,3 +1,4 @@
+use charmi::charmi_toml;
 use game_core::prelude::*;
 
 use super::{NodeUi, NodeUiQItem};
@@ -10,9 +11,9 @@ pub struct TitleBarUi;
 pub fn render_title_bar_system(
     mut render_title_bar: Query<&mut TerminalRendering, With<TitleBarUi>>,
 ) {
-    let rendered_text = vec!["Common Quest".to_owned()];
+    let charmi = charmi_toml!["text='Common Quest'"];
     for mut tr in render_title_bar.iter_mut() {
-        tr.update(rendered_text.clone());
+        tr.update_charmi(charmi.clone());
     }
 }
 

@@ -249,7 +249,8 @@ pub fn sys_render_flexible_text_multiline(
     ) in buttons.iter_mut()
     {
         if size.is_empty() {
-            rendering.update(vec![]);
+            rendering.update_charmi(default());
+            continue;
         }
         let borders_len = if text_ui_border.is_some() { 2 } else { 0 };
         let wrapped_desc = textwrap::wrap(text_ui.text.as_str(), size.width() - borders_len);
@@ -268,7 +269,7 @@ pub fn sys_render_flexible_text_multiline(
         // TODO title info, adjust the following as well
         for desc_line in wrapped_desc.into_iter().take(size.height() - title_len) {
             // TODO add borders logic
-            charmi.add_text(&desc_line);
+            charmi.add_line(&desc_line);
         }
         rendering.update_charmi(charmi.build());
     }
