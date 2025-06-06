@@ -1,4 +1,4 @@
-use crossterm::style::ContentStyle;
+use charmi::style::CharmiStyle;
 use game_core::node::ActiveCurio;
 use game_core::prelude::*;
 use game_core::registry::Reg;
@@ -15,7 +15,7 @@ pub fn render_square(
     node_pieces: &Query<super::NodePieceQ>,
     reg_glyph: &Reg<NodeGlyph>,
     configuration: &DrawConfiguration,
-) -> (ContentStyle, String) {
+) -> (CharmiStyle, String) {
     let node_piece = node_pieces
         .get(entity)
         .expect("entities in Node EntityGrid should implement NodePiece");
@@ -27,14 +27,14 @@ pub fn render_square(
     let glyph_style = node_glyph.style();
 
     let chosen_format = if node_piece.access_point.is_some() {
-        configuration.color_scheme().access_point()
+        configuration.color_scheme().access_point().into()
     } else if node_piece.is_tapped.unwrap_or_default() {
-        configuration.color_scheme().player_team_tapped()
+        configuration.color_scheme().player_team_tapped().into()
     } else if active_curio
         .map(|curio_id| curio_id == entity && position == 0)
         .unwrap_or_default()
     {
-        configuration.color_scheme().player_team_active()
+        configuration.color_scheme().player_team_active().into()
     } else {
         glyph_style
     };

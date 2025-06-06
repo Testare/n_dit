@@ -16,6 +16,16 @@ impl CharmiStyle {
         let CharmiStyle { fg, bg, attr } = *self;
         CharCell { ch, fg, bg, attr }
     }
+
+    pub fn fg(mut self, fg: impl CharmiColor) -> Self {
+        self.fg = fg.as_color_u32();
+        self
+    }
+
+    pub fn bg(mut self, bg: impl CharmiColor) -> Self {
+        self.bg = bg.as_color_u32();
+        self
+    }
 }
 
 impl std::ops::Add<crossterm::style::ContentStyle> for CharmiStyle {
@@ -24,6 +34,7 @@ impl std::ops::Add<crossterm::style::ContentStyle> for CharmiStyle {
         self + &rhs
     }
 }
+
 impl std::ops::Add<&crossterm::style::ContentStyle> for CharmiStyle {
     type Output = CharmiStyle;
     fn add(self, rhs: &crossterm::style::ContentStyle) -> Self::Output {
@@ -39,6 +50,20 @@ impl std::ops::Add<&crossterm::style::ContentStyle> for CharmiStyle {
         } else {
             add
         }
+    }
+}
+
+impl std::ops::Add<&CharmiStyle> for &CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: &CharmiStyle) -> Self::Output {
+        self + (*rhs)
+    }
+}
+
+impl std::ops::Add<&CharmiStyle> for CharmiStyle {
+    type Output = CharmiStyle;
+    fn add(self, rhs: &CharmiStyle) -> Self::Output {
+        (&self) + (*rhs)
     }
 }
 

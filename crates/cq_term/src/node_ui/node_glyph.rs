@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
-use charmi_old::ColorDef;
-use crossterm::style::{Color, ContentStyle, StyledContent, Stylize};
+use charmi::style::CharmiStyle;
+use charmi::ColorDef;
 use game_core::registry::Registry;
 use serde::{Deserialize, Serialize};
 
@@ -36,28 +36,11 @@ impl NodeGlyph {
         }
     }
 
-    pub fn style(&self) -> ContentStyle {
+    pub fn style(&self) -> CharmiStyle {
         match self {
-            NodeGlyph::PlainGlyph(_) => ContentStyle::new(),
-            NodeGlyph::ColoredGlyph(_, fg) => {
-                ContentStyle::new().with(fg.try_into().unwrap_or(Color::White))
-            },
-            NodeGlyph::NameAndBothColors(_, fg, bg) => ContentStyle::new()
-                .with(fg.try_into().unwrap_or(Color::White))
-                .on(bg.try_into().unwrap_or(Color::Black)),
-        }
-    }
-
-    pub fn styled_glyph(&self) -> StyledContent<String> {
-        match self {
-            NodeGlyph::PlainGlyph(glyph) => glyph.clone().stylize(),
-            NodeGlyph::ColoredGlyph(glyph, fg) => {
-                glyph.clone().with(fg.try_into().unwrap_or(Color::White))
-            },
-            NodeGlyph::NameAndBothColors(glyph, fg, bg) => glyph
-                .clone()
-                .with(fg.try_into().unwrap_or(Color::White))
-                .on(bg.try_into().unwrap_or(Color::Black)),
+            NodeGlyph::PlainGlyph(_) => CharmiStyle::default(),
+            NodeGlyph::ColoredGlyph(_, fg) => CharmiStyle::default().fg(fg),
+            NodeGlyph::NameAndBothColors(_, fg, bg) => CharmiStyle::default().fg(fg).bg(bg),
         }
     }
 }

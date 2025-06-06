@@ -7,11 +7,11 @@ bg = """
 
 
 
-            rr   
+            rr
 
          rr oo rr
 
-            rr   
+            rr
 """
 
 [[a.attack.f]]
@@ -21,7 +21,7 @@ bg = """
 
 
 
-            rr   
+            rr
 
          rr oo rr
 
@@ -29,7 +29,7 @@ bg = """
 
          rr oo rr
 
-            rr   
+            rr
 """
 
 [[a.attack.f]]
@@ -127,7 +127,7 @@ bg = """
 
 
 
-            yy   
+            yy
 
          yy oo yy
 
@@ -135,7 +135,7 @@ bg = """
 
          yy oo yy
 
-            yy   
+            yy
 """
 
 [[a.pickup.f]]
@@ -147,11 +147,11 @@ bg = """
 
 
 
-            yy   
+            yy
 
          yy oo yy
 
-            yy   
+            yy
 """
 [[a.pickup.f]]
 timing = 50.0
@@ -160,4 +160,3 @@ timing = 50.0
 r = "red"
 o = "dark red"
 y = "yellow"
-

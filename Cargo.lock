@@ -1930,7 +1930,6 @@ dependencies = [
  "bevy_query_ext",
  "bevy_yarnspinner",
  "charmi",
- "charmi_old",
  "crossterm 0.28.1",
  "game_core",
  "getset",

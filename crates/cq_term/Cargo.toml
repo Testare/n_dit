@@ -15,7 +15,6 @@ bevy = { workspace = true, features = ["wav"] }
 bevy_query_ext.workspace = true
 bevy_yarnspinner.workspace = true
 workspace-hack.workspace = true
-charmi_old = { path = "../charmi_old" }
 charmi = { path = "../charmi" }
 game_core = { path = "../game_core" }
 getset = "0.1.1"

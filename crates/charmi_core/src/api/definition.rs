@@ -199,8 +199,8 @@ impl From<u32> for ColorDef {
             CharmiImage::NO_COLOR | 0..16 => {
                 ColorDef::Named(COLOR_CODE_TO_NAME[&value].to_string())
             },
-            x if x < 0x100 => ColorDef::Ansi(x as u8),
-            x => ColorDef::Rgb(x as u8, x as u8, x as u8),
+            x if x < CharmiImage::TRUE_COLOR => ColorDef::Ansi(x as u8),
+            x => ColorDef::Rgb((x >> 16) as u8, (x >> 8) as u8, x as u8),
         }
     }
 }

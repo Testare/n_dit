@@ -58,7 +58,7 @@ impl SimpleSubmenu for MenuUiLabel {
             })
             .map(str::to_owned)
         {
-            charmi.style(&glyph.style()).add_line(&name).no_style();
+            charmi.style(glyph.style()).add_line(&name).no_style();
         } else {
             charmi.next_line();
         }

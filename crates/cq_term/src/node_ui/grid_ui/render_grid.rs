@@ -1,7 +1,7 @@
 use std::cmp;
 
+use charmi::style::CharmiStyle;
 use charmi::CharmiImage;
-use crossterm::style::{ContentStyle, Stylize};
 use game_core::node::{ActiveCurio, Node};
 use game_core::player::{ForPlayer, Player};
 use game_core::registry::Reg;
@@ -92,7 +92,7 @@ fn render_grid(
 ) -> CharmiImage {
     // TODO Break DrawConfiguration down into parts and resources
 
-    let default_style = ContentStyle::new();
+    let default_style = CharmiStyle::default();
 
     let width = grid.width() as usize;
     let height = grid.height() as usize;
@@ -166,14 +166,17 @@ fn render_grid(
             sprite_map
                 .entry(from_pt)
                 .and_modify(|(_, s)| s.clone_from(&arrow))
-                .or_insert((ContentStyle::default().blue().on_dark_grey(), arrow.clone()));
+                .or_insert((
+                    CharmiStyle::default().fg("blue").bg("dark grey"),
+                    arrow.clone(),
+                ));
         }
         if i == path_to_grid_point.len() - 1 {
             // Other ideas: "⟪⟫"  "⧒ " "⧑ "  "⮛ "  ⧨ ⧩ 🮶🮶  "🭦🭛"  "\" 🮝🮜  "⟪⟫"  "✖ "
             sprite_map
                 .entry(to_pt)
                 .and_modify(|(_, s)| s.clone_from(&arrow))
-                .or_insert((ContentStyle::default().blue().on_black(), arrow.clone()));
+                .or_insert((CharmiStyle::default().fg("blue").bg("black"), arrow.clone()));
         }
     }
 
@@ -312,8 +315,7 @@ fn render_grid(
                                     (&default_style, OPEN_SQUARE)
                                 }
                             });
-                        let combined_style =
-                            charmi_old::add_content_styles(&space_style, square_style);
+                        let combined_style = space_style + square_style;
                         space_line.style(combined_style);
                         if square.chars().count() == 1 {
                             space_line.add_char(draw_config.half_char());
@@ -365,8 +367,7 @@ fn render_grid(
                                 }
                             });
 
-                        let combined_style =
-                            charmi_old::add_content_styles(&space_style, square_style);
+                        let combined_style = space_style + square_style;
                         space_line.style(combined_style).add_text(square);
                     }
                 }
@@ -400,13 +401,13 @@ fn space_style_for(
     y: usize,
     player_q: &PlayerUiQItem,
     draw_config: &DrawConfiguration,
-) -> ContentStyle {
+) -> CharmiStyle {
     if !player_q.cursor_is_hidden
         && x as u32 == player_q.node_cursor.x
         && y as u32 == player_q.node_cursor.y
     {
-        draw_config.color_scheme().selected_square()
+        draw_config.color_scheme().selected_square().into()
     } else {
-        ContentStyle::default()
+        CharmiStyle::default()
     }
 }

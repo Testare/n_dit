@@ -3,6 +3,8 @@ use std::sync::LazyLock;
 
 use crate::CharmiImage;
 
+use super::ColorDef;
+
 /// String identifiers for colors (or "no color")
 /// There might be multiple names for each color, but there shouldn't be multiple
 /// colors for each name.
@@ -93,6 +95,27 @@ impl CharmiColor for &str {
 impl CharmiColor for Option<u32> {
     fn as_color_u32(&self) -> u32 {
         CharmiImage::NO_COLOR
+    }
+}
+
+impl CharmiColor for &ColorDef {
+    fn as_color_u32(&self) -> u32 {
+        match self {
+            ColorDef::Ansi(ansi) => *ansi as u32,
+            ColorDef::Rgb(r, g, b) => {
+                CharmiImage::TRUE_COLOR | (*r as u32) << 16 | (*g as u32) << 8 | *b as u32
+            },
+            ColorDef::Named(name) => super::color::COLOR_NAME_TO_CODE
+                .get(&name.to_lowercase())
+                .copied()
+                .unwrap_or(CharmiImage::NO_COLOR),
+        }
+    }
+}
+
+impl CharmiColor for ColorDef {
+    fn as_color_u32(&self) -> u32 {
+        (&self).as_color_u32()
     }
 }
 
