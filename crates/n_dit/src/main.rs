@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::fs::File;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -11,8 +10,10 @@ use bevy::scene::ScenePlugin;
 use bevy::{app::RunMode, diagnostic::FrameCountPlugin};
 use clap::Parser;
 use cq_term::demo::UseDemoShader;
+use flexi_logger::{FileSpec, LogSpecification, Logger};
+use game_core::prelude::logging::std_log_fmt;
+use game_core::prelude::Log;
 use game_core::saving::CurrentSaveFile;
-use simplelog::{LevelFilter, WriteLogger};
 
 #[derive(Clone, Parser, Resource)]
 #[command(author, version, about)]
@@ -78,8 +79,7 @@ fn main() {
     } else {
         bevy::app::ScheduleRunnerPlugin::run_loop(Duration::from_millis(25))
     };
-    setup_logging(&cq_cli);
-    App::new()
+    setup_logging(&cq_cli, App::new())
         .register_type::<Name>()
         .add_plugins((
             cq_cli,
@@ -98,27 +98,32 @@ fn main() {
 }
 
 // Can set up more advanced CLI support in the future with clap
-fn setup_logging(cq_cli: &CqCliPlugin) {
-    if cq_cli.debug {
-        let file = if cq_cli.connect.is_some() {
-            "debug.connect.log"
-        } else {
-            "debug.log"
-        };
-        let log_level: LevelFilter = if cq_cli.trace {
-            LevelFilter::Trace
-        } else {
-            LevelFilter::Debug
-        };
-        WriteLogger::init(
-            log_level,
-            simplelog::ConfigBuilder::new()
-                .set_target_level(LevelFilter::Error)
-                .build(),
-            File::create(file).unwrap(),
-        )
-        .unwrap()
+fn setup_logging(cq_cli: &CqCliPlugin, mut app: App) -> App {
+    if !cq_cli.debug {
+        return app;
     }
+    let file = if cq_cli.connect.is_some() {
+        "debug.connect"
+    } else {
+        "debug"
+    };
+    let log_spec_str = if cq_cli.trace {
+        "bevy_app::app=trace, cq_term=trace, game_core=trace, charmi=trace"
+    } else {
+        "bevy_app::app=debug, cq_term=debug, game_core=debug, charmi=debug"
+    };
+    let log = Log(Logger::with(LogSpecification::parse(log_spec_str).unwrap())
+        .log_to_file(
+            FileSpec::default()
+                .basename(file)
+                .o_directory::<String>(None)
+                .suppress_timestamp(),
+        )
+        .format(std_log_fmt)
+        .start()
+        .unwrap());
+    app.insert_resource(log);
+    app
 }
 
 fn sys_kill_frame(

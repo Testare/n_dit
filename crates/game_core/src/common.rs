@@ -1,4 +1,5 @@
 pub mod daddy;
+pub mod logging;
 pub mod metadata;
 pub mod sord;
 
@@ -8,6 +9,7 @@ use std::str::FromStr;
 use bevy::ecs::query::{QueryData, QueryEntityError, QueryFilter};
 use bevy::ecs::system::SystemParam;
 use bevy::reflect::{ReflectDeserialize, ReflectSerialize};
+pub use logging::Log;
 pub use metadata::Metadata;
 use serde::{Deserialize, Serialize};
 

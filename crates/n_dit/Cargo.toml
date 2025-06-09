@@ -10,11 +10,11 @@ rust-version.workspace = true
 edition.workspace = true
 
 [dependencies]
+flexi_logger.workspace = true
 bevy.workspace = true
 clap = { version = "4.4.11", features = ["derive"] }
 cq_term = { path = "../cq_term" }
 game_core = { path = "../game_core" }
-simplelog = "^0.12.0"
 tracing = { version = "*", features = ["log"] }
 workspace-hack.workspace = true
 

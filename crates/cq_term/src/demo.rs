@@ -53,6 +53,7 @@ pub struct DebugEntityMarker;
 pub struct DemoState {
     board_ui_id: Option<Entity>,
     player_id: Option<Entity>,
+    bumped_logging: bool,
 }
 
 #[derive(Debug, Resource)]
@@ -162,9 +163,14 @@ fn debug_key(
     mut ev_keys: EventReader<KeyEvent>,
     mut q_quest_status: Query<&mut QuestStatus>,
     q_sprites: Query<(Entity, &TerminalRendering), With<Sprite>>,
+    mut res_log: ResMut<Log>,
+    mut res_demo_state: ResMut<DemoState>,
 ) {
+    let mut bump_log = false;
     for KeyEvent { code, .. } in ev_keys.read() {
         if *code == KeyCode::Char('n') {
+        } else if *code == KeyCode::Char('t') {
+            bump_log = true;
         } else if *code == KeyCode::Char('/') {
             for mut quest_status in q_quest_status.iter_mut() {
                 if let Some(nid) = [
@@ -192,6 +198,15 @@ fn debug_key(
         } else if *code == KeyCode::Char('9') {
             res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Load);
         }
+    }
+    if bump_log {
+        if !res_demo_state.bumped_logging {
+            res_log.push_spec("bevy_app::app=debug, cq_term=trace, game_core=trace, charmi=trace");
+            res_demo_state.bumped_logging = true;
+        }
+    } else if res_demo_state.bumped_logging {
+        res_log.pop_temp_spec();
+        res_demo_state.bumped_logging = false;
     }
 }
 
