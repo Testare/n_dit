@@ -28,8 +28,9 @@ impl Plugin for CharmiRenderPipelinePlugin {
             .add_systems(
                 Render,
                 (
-                    (rsys_prepare_charmi_globals_bind_group
-                        .run_if(not(resource_exists::<CharmiGlobalsBindGroup>)),)
+                    (rsys_prepare_charmi_globals_bind_group.run_if(
+                        |transforms: Res<TransformChUniforms>| transforms.buffer_recreated(),
+                    ),)
                         .in_set(RenderSystems::PrepareBindGroups),
                     rsys_clear_charmi_phase.in_set(RenderSystems::Cleanup),
                     rsys_sort_charmi_phase.in_set(RenderSystems::PhaseSort),

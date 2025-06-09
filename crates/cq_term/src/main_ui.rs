@@ -4,6 +4,7 @@ mod main_ui_op;
 mod shop_ui;
 
 pub use card_ui::ShortName;
+use charmi::CharmiImageSprite;
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
@@ -71,6 +72,7 @@ pub fn sys_startup_create_main_ui(
                 ..default()
             }),
             Name::new("Main Ui"),
+            CharmiImageSprite::default(),
             crate::layout::LayoutRoot,
             TerminalRendering::default(),
         ))

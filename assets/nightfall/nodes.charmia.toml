@@ -28,6 +28,7 @@ fg="wyyw"
 timing=1.0
 text="[&&]"
 fg="gggg"
+bg="bbbb"
 
 [[a.node_b.f]]
 timing=1.0

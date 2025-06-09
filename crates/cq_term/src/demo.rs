@@ -12,9 +12,7 @@ use game_core::card::{CardDefHandle, CardDefinition, CardHandle, Deck, Nickname}
 use game_core::configuration::{NodeConfiguration, PlayerConfiguration};
 use game_core::dialog::Dialog;
 use game_core::item::{Item, ItemOp, Wallet};
-use game_core::node::{
-    ForNode, InNode, Node, NodeId, NodeOp, OnTeam, PlayedCards, Team, TeamStatus,
-};
+use game_core::node::{ForNode, Node, NodeId, NodeOp, PlayedCards};
 use game_core::op::{CoreOps, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player, PlayerBundle};
 use game_core::prelude::*;
@@ -27,10 +25,12 @@ use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{
     ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline, HoverPoint, PopupMenu, Tooltip,
 };
-use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
+use crate::board_ui::{
+    ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi, Sprite,
+};
 use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
-use crate::input_event::{KeyCode, MouseEventListener, MouseEventTty};
+use crate::input_event::{KeyCode, MouseEventListener};
 use crate::layout::{CalculatedSizeTty, StyleTty, VisibilityTty};
 use crate::main_ui::{
     self, HudContextActions, ItemDetailsUiActions, ItemDetailsUiDescription, ItemDetailsUiStats,
@@ -158,20 +158,14 @@ fn dump_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 }
 
 fn debug_key(
-    mut commands: Commands,
     mut res_core_ops: ResMut<CoreOps>,
-    mut evr_mouse: EventReader<MouseEventTty>,
     mut ev_keys: EventReader<KeyEvent>,
     mut q_quest_status: Query<&mut QuestStatus>,
-    q_player_ncp: Query<(Entity, Option<&OnTeam>, &InNode), (With<Player>, With<Ncp>)>,
-    q_node: Query<(Entity, &TeamStatus), With<Node>>,
-    q_team: Query<Entity, With<Team>>,
+    q_sprites: Query<(Entity, &TerminalRendering), With<Sprite>>,
 ) {
-    for layout_event in evr_mouse.read() {
-        log::trace!("MOUSE EVENT: {:?}", layout_event);
-    }
     for KeyEvent { code, .. } in ev_keys.read() {
-        if *code == KeyCode::Char('/') {
+        if *code == KeyCode::Char('n') {
+        } else if *code == KeyCode::Char('/') {
             for mut quest_status in q_quest_status.iter_mut() {
                 if let Some(nid) = [
                     NodeId::new("node:tutorial", 0),
@@ -191,14 +185,9 @@ fn debug_key(
             #[allow(clippy::zombie_processes)]
             std::process::Command::new("aseprite").spawn().unwrap();
         } else if *code == KeyCode::Char('i') {
-            for (player_id, on_team, in_node) in q_player_ncp.iter() {
-                log::debug!("TEAM for [{player_id:?}]: {on_team:?} / Node {in_node:?}");
-            }
-            for (node_id, team_status) in q_node.iter() {
-                log::debug!("TEAM STATUS for [{node_id:?}]: {team_status:?}");
-            }
-            for team_id in q_team.iter() {
-                commands.entity(team_id).log_components();
+            log::debug!("SPRITES");
+            for (sprite_id, tr) in q_sprites.iter() {
+                log::debug!("SPRITE {:2} -> {:?}", sprite_id.index(), tr.charmi());
             }
         } else if *code == KeyCode::Char('9') {
             res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Load);

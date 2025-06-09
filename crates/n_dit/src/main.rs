@@ -3,6 +3,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use bevy::diagnostic::FrameCount;
 use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
 use bevy::remote::RemotePlugin;
@@ -39,6 +40,11 @@ struct CqCliPlugin {
     /// resolved as you would expected.
     #[arg(short = 'f', long, value_name = "SAVE_FILE")]
     save_file: Option<PathBuf>,
+
+    /// Specify a frame to exit the program.
+    /// If specified, kills the progrma after the specified frame.
+    #[arg(long, value_name = "FRAME_NUM")]
+    kill_frame: Option<u32>,
 }
 
 impl Plugin for CqCliPlugin {
@@ -55,6 +61,9 @@ impl Plugin for CqCliPlugin {
                     **save_file = Cow::Owned(cli_args.save_file.clone().unwrap());
                 },
             );
+        }
+        if self.kill_frame.is_some() {
+            app.add_systems(PostUpdate, sys_kill_frame);
         }
     }
 }
@@ -109,5 +118,15 @@ fn setup_logging(cq_cli: &CqCliPlugin) {
             File::create(file).unwrap(),
         )
         .unwrap()
+    }
+}
+
+fn sys_kill_frame(
+    res_frame_count: Res<FrameCount>,
+    res_cq_cli: Res<CqCliPlugin>,
+    mut evw_exit: EventWriter<AppExit>,
+) {
+    if res_frame_count.0 >= res_cq_cli.kill_frame.unwrap() {
+        evw_exit.write(AppExit::Success);
     }
 }

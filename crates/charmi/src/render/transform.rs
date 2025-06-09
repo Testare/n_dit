@@ -34,7 +34,16 @@ pub struct TransformCh {
 /// Render resource -
 #[derive(Resource, Deref, DerefMut)]
 pub struct TransformChUniforms {
+    #[deref]
     uniforms: DynamicUniformBuffer<TransformCh>,
+    last_offset: u32,
+    buffer_recreated: bool,
+}
+
+impl TransformChUniforms {
+    pub fn buffer_recreated(&self) -> bool {
+        self.buffer_recreated
+    }
 }
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
@@ -47,14 +56,18 @@ impl FromWorld for TransformChUniforms {
         uniforms.add_usages(BufferUsages::STORAGE);
         let device = world.resource::<RenderDevice>();
         let queue = world.resource::<RenderQueue>();
-        {
+        let last_offset = {
             let mut writer = uniforms
                 .get_writer(2, device, queue)
                 .expect("should work (Proper error handling TODO)");
-            writer.write(&TransformCh::default());
-        }
+            writer.write(&TransformCh::default())
+        };
 
-        Self { uniforms }
+        Self {
+            uniforms,
+            last_offset,
+            buffer_recreated: true,
+        }
     }
 }
 
@@ -70,13 +83,22 @@ fn rsys_update_transforms(
     let mut writer = res_transform_uniform
         .get_writer(count, res_render_device.as_ref(), res_render_queue.as_ref())
         .unwrap();
-    writer.write(&TransformCh::default());
+    let mut offset = writer.write(&TransformCh::default());
+    // Micro-optimization idea - Different TransformChUniform buffers based on frequency of transform changes,
+
     for (id, transform, offset_component) in q_transform.iter_mut() {
-        let offset = writer.write(transform);
+        offset = writer.write(transform);
         if let Some(mut offset_component) = offset_component {
             **offset_component = offset;
         } else {
-            commands.entity(id).insert(TransformChOffset(offset));
+            commands.entity(id).insert(TransformChOffset(offset)); // Perhaps use immutable components
         }
+    }
+    drop(writer);
+    if offset > res_transform_uniform.last_offset {
+        res_transform_uniform.last_offset = offset;
+        res_transform_uniform.buffer_recreated = true;
+    } else if res_transform_uniform.buffer_recreated {
+        res_transform_uniform.buffer_recreated = false;
     }
 }

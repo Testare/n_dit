@@ -37,7 +37,9 @@ impl Plugin for ImageSpritePlugin {
     }
 }
 
-#[derive(Clone, Component, Debug, Deref, DerefMut, ExtractComponent, AsBindGroup, TypePath)]
+#[derive(
+    Clone, Component, Debug, Default, Deref, DerefMut, ExtractComponent, AsBindGroup, TypePath,
+)]
 pub struct CharmiImageSprite {
     pub image: CharmiImage,
 }

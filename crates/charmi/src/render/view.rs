@@ -44,7 +44,7 @@ pub struct ViewCh {
 
 impl ViewCh {
     pub fn new(order: usize, size: UVec2, ast_buffers: &mut Assets<ShaderStorageBuffer>) -> Self {
-        let buffer = CharmiImage::new_blank(size.x, size.y);
+        let buffer = CharmiImage::new_empty(size.x, size.y);
         let mut buffer = ShaderStorageBuffer::from(buffer);
         // We need to enable the COPY_SRC usage so we can copy the buffer to the cpu
         buffer.buffer_description.usage |= BufferUsages::COPY_SRC;
@@ -79,9 +79,12 @@ fn rsys_prepare_view_bind_groups(
     globals_buffer: Res<GlobalsBuffer>,
     transform_uniforms: Res<TransformChUniforms>,
     buffers: Res<RenderAssets<GpuShaderStorageBuffer>>,
-    q_views: Query<(Entity, &ViewCh), Without<ViewChBindGroup>>,
+    mut q_views: ParamSet<(
+        Query<(Entity, &ViewCh), Without<ViewChBindGroup>>,
+        Query<(Entity, &ViewCh)>,
+    )>,
 ) {
-    for (id, view) in q_views.iter() {
+    let mut construct_bind_group = |id: Entity, view: &ViewCh| {
         let buffer = buffers.get(view.buffer()).unwrap();
         let transform_binding = transform_uniforms.binding().unwrap();
         let globals_binding = globals_buffer.buffer.binding().unwrap();
@@ -96,5 +99,16 @@ fn rsys_prepare_view_bind_groups(
             )),
         );
         commands.entity(id).insert(ViewChBindGroup(bind_group));
+    };
+
+    if transform_uniforms.buffer_recreated() {
+        // Transform uniform
+        for (id, view) in q_views.p1().iter() {
+            construct_bind_group(id, view);
+        }
+    } else {
+        for (id, view) in q_views.p0().iter() {
+            construct_bind_group(id, view);
+        }
     }
 }

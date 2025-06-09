@@ -65,7 +65,9 @@ impl Plugin for CharmiePlugin {
                 layout::TaffyTuiLayoutPlugin,
                 main_ui::MainUiPlugin,
                 node_ui::NodeUiPlugin,
-                render::RenderTtyPlugin,
+                render::RenderTtyPlugin {
+                    alternate_rendering: true,
+                },
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
