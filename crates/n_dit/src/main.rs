@@ -100,6 +100,10 @@ fn main() {
 // Can set up more advanced CLI support in the future with clap
 fn setup_logging(cq_cli: &CqCliPlugin, mut app: App) -> App {
     if !cq_cli.debug {
+        app.insert_resource(Log(Logger::with(flexi_logger::LevelFilter::Error)
+            .do_not_log()
+            .start()
+            .unwrap()));
         return app;
     }
     let file = if cq_cli.connect.is_some() {
@@ -108,9 +112,9 @@ fn setup_logging(cq_cli: &CqCliPlugin, mut app: App) -> App {
         "debug"
     };
     let log_spec_str = if cq_cli.trace {
-        "bevy_app::app=trace, cq_term=trace, game_core=trace, charmi=trace"
+        "debug"
     } else {
-        "bevy_app::app=debug, cq_term=debug, game_core=debug, charmi=debug"
+        "error, bevy_app::app=debug, bevy_ecs=info, cq_term=debug, game_core=debug, charmi=debug"
     };
     let log = Log(Logger::with(LogSpecification::parse(log_spec_str).unwrap())
         .log_to_file(

@@ -3,7 +3,7 @@ mod sidebar;
 use std::ops::Deref;
 
 use bevy::ecs::system::EntityCommands;
-use charmi::{CharmiActor, CharmiAnimation, CharmiImage};
+use charmi::{CharmiActor, CharmiAnimation, CharmiImage, CharmiImageSprite};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::player::ForPlayer;
 use game_core::registry::{Reg, Registry, UpdatedRegistryKey};
@@ -218,7 +218,7 @@ fn sys_board_piece_lifetimes(
                 };
                 let mut bp_ui = board_ui.spawn((
                     BoardPieceUi(bp_id),
-                    Name::new(format!("BoardPieceUi tracking {:?}", debug_name)),
+                    Name::new(format!("BoardPieceUi tracking '{}'", debug_name)),
                     StyleTty(Style {
                         grid_column,
                         grid_row,

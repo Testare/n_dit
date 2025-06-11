@@ -9,6 +9,7 @@ use bevy::render::render_resource::{
 };
 use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::ShaderStorageBuffer;
+use bevy::render::sync_world::MainEntity;
 use bevy::render::{Render, RenderApp, RenderSystems};
 
 use crate::{
@@ -30,8 +31,13 @@ impl Plugin for ImageSpritePlugin {
         render_app.init_resource::<DrawImageFunction>().add_systems(
             Render,
             (
+                (
+                    rsys_remove_unused_bind_groups,
+                    rsys_prepare_image_sprite_bind_groups,
+                )
+                    .chain()
+                    .in_set(RenderSystems::PrepareBindGroups),
                 rsys_queue_charmi_image_sprites.in_set(RenderSystems::Queue),
-                rsys_prepare_image_sprite_bind_groups.in_set(RenderSystems::PrepareBindGroups),
             ),
         );
     }
@@ -120,6 +126,14 @@ impl CharmiFunction for DrawImageFunction {
         };
         pass.set_bind_group(2, &image_sprite_bind_group.bind_group, &[]);
         pass.set_pipeline(init_pipeline);
+
+        log::trace!(
+            "Rendering sprite for entity {}",
+            world
+                .get::<MainEntity>(item.id)
+                .map(|me| format!("{:3}", me.index()))
+                .unwrap_or("".to_string())
+        );
         // TODO calculate clip and dispatch workgroups based on item size?
         pass.dispatch_workgroups(view_ch.buffer_len(), 1, 1);
         Ok(())
@@ -129,11 +143,18 @@ impl CharmiFunction for DrawImageFunction {
 fn sys_image_sprite_update_buffer(
     mut commands: Commands,
     mut ast_buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    q_buffers_without_sprites: Query<
+        Entity,
+        (With<CharmiImageSpriteBuffer>, Without<CharmiImageSprite>),
+    >,
     q_image_sprite: Query<
         (Entity, &CharmiImageSprite, Option<&CharmiImageSpriteBuffer>),
-        Changed<CharmiImageSprite>,
+        // Changed<CharmiImageSprite>,
     >,
 ) {
+    for id in q_buffers_without_sprites.iter() {
+        commands.entity(id).remove::<CharmiImageSpriteBuffer>();
+    }
     for (id, image_sprite, buffer) in q_image_sprite.iter() {
         if let Some(buffer) = buffer {
             let Some(buffer) = ast_buffers.get_mut(&**buffer) else {
@@ -163,6 +184,21 @@ fn rsys_queue_charmi_image_sprites(
             function: res_draw_image.function_id(),
             id,
         });
+    }
+}
+
+fn rsys_remove_unused_bind_groups(
+    mut commands: Commands,
+    q_charmi_material_rect: Query<
+        Entity,
+        (
+            With<CharmiImageSpriteBindGroup>,
+            Without<CharmiImageSpriteBuffer>,
+        ),
+    >,
+) {
+    for id in q_charmi_material_rect.iter() {
+        commands.entity(id).remove::<CharmiImageSpriteBindGroup>();
     }
 }
 

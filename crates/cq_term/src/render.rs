@@ -9,7 +9,7 @@ use charmi::{CharmiImage, CharmiImageSprite, CharmiRenderPlugin, MainView, Trans
 use game_core::NDitCoreSet;
 
 use super::TerminalWindow;
-use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, LayoutRoot};
 use crate::prelude::*;
 
 const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
@@ -47,9 +47,7 @@ pub struct RenderPause(Option<Instant>);
 pub struct RenderOrder(pub(crate) u32);
 
 #[derive(Debug, Default)]
-pub struct RenderTtyPlugin {
-    pub alternate_rendering: bool,
-}
+pub struct RenderTtyPlugin;
 
 impl TerminalRendering {
     pub fn new(rendering: CharmiImage) -> Self {
@@ -85,37 +83,28 @@ impl From<&CharmiImage> for TerminalRendering {
 
 impl Plugin for RenderTtyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RenderPause>().configure_sets(
-            RENDER_TTY_SCHEDULE,
-            (
-                NDitCoreSet::PostProcessUiOps,
-                RenderTtySet::AdjustLayoutStyle,
-                RenderTtySet::PreCalculateLayout,
-                RenderTtySet::CalculateLayout,
-                RenderTtySet::PostCalculateLayout,
-                RenderTtySet::RenderLayouts,
-                RenderTtySet::RenderToTerminal,
-            )
-                .chain(),
-        );
-        if self.alternate_rendering {
-            app.add_plugins(CharmiRenderPlugin)
-                // .register_required_components::<TerminalRendering, CharmiImageSprite>()
-                .register_required_components::<TerminalRendering, TransformCh>()
-                .add_systems(
-                    RENDER_TTY_SCHEDULE,
-                    sys_update_charmi_sprites.in_set(RenderTtySet::RenderToTerminal),
-                )
-                .add_systems(Startup, sys_startup_render);
-        } else {
-            app.add_systems(
+        app.init_resource::<RenderPause>()
+            .configure_sets(
                 RENDER_TTY_SCHEDULE,
-                (apply_deferred, write_rendering_to_terminal)
-                    .chain()
-                    .in_set(RenderTtySet::RenderToTerminal),
+                (
+                    NDitCoreSet::PostProcessUiOps,
+                    RenderTtySet::AdjustLayoutStyle,
+                    RenderTtySet::PreCalculateLayout,
+                    RenderTtySet::CalculateLayout,
+                    RenderTtySet::PostCalculateLayout,
+                    RenderTtySet::RenderLayouts,
+                    RenderTtySet::RenderToTerminal,
+                )
+                    .chain(),
             )
-            .add_systems(PreUpdate, pause_rendering_on_resize);
-        }
+            .add_plugins(CharmiRenderPlugin)
+            .register_required_components::<TerminalRendering, CharmiImageSprite>()
+            .register_required_components::<TerminalRendering, TransformCh>()
+            .add_systems(
+                RENDER_TTY_SCHEDULE,
+                sys_update_charmi_sprites.in_set(RenderTtySet::RenderToTerminal),
+            )
+            .add_systems(Startup, sys_startup_render);
     }
 }
 
@@ -162,6 +151,8 @@ pub fn sys_startup_render(
                  */
                 let charmi: CharmiImage = CharmiImage::from(trigger.event());
 
+                // TODO instead of logging debug, perhaps save to a file?
+                log::trace!("Current screen render: {charmi:?}");
                 if let Err(e) = charmi.write_out_ansi(std::io::stdout(), last_image.as_ref()) {
                     log::error!("IO error when attempting to display view {e:?}");
                 }
@@ -174,6 +165,7 @@ pub fn sys_startup_render(
 pub fn sys_update_charmi_sprites(
     mut q_terminal_renderings: Query<
         (
+            Entity,
             &mut CharmiImageSprite,
             &mut TransformCh,
             &TerminalRendering,
@@ -187,65 +179,11 @@ pub fn sys_update_charmi_sprites(
         )>,
     >,
 ) {
-    for (mut charmi_sprite, mut transform, tr, size, translation) in
+    for (id, mut charmi_sprite, mut transform, tr, size, translation) in
         q_terminal_renderings.iter_mut()
     {
         charmi_sprite.image = tr.charmi().clone();
         transform.position = translation.0.as_ivec2().extend(translation.1 as i32);
         transform.scale = **size;
-    }
-}
-
-pub fn pause_rendering_on_resize(
-    mut event_reader: EventReader<CrosstermEvent>,
-    mut render_pause: ResMut<RenderPause>,
-) {
-    for event in event_reader.read() {
-        if matches!(
-            event,
-            CrosstermEvent(crossterm::event::Event::Resize { .. })
-        ) {
-            **render_pause =
-                Some(Instant::now() + Duration::from_millis(PAUSE_RENDERING_ON_RESIZE_MILLIS));
-        }
-    }
-}
-
-pub fn write_rendering_to_terminal(
-    window: Res<TerminalWindow>,
-    renderings: Query<&CharmiImageSprite>,
-    mut render_cache: Local<Option<CharmiImage>>,
-    mut render_pause: ResMut<RenderPause>,
-) {
-    // Clear cache on resize
-    if let RenderPause(Some(pause_render_until)) = *render_pause {
-        let now = Instant::now();
-        if pause_render_until > now {
-            return; // Do not render
-        } else {
-            *render_cache = None;
-            crossterm::queue!(
-                stdout(),
-                crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
-            )
-            .unwrap();
-            **render_pause = None;
-        }
-    }
-    if let Some(tr) = window.render_target.and_then(|id| renderings.get(id).ok()) {
-        let tr = tr
-            .image
-            .resize(window.width() as u32, window.height() as u32, None);
-        if render_cache.as_ref() == Some(&tr) {
-            return;
-        }
-
-        let render_result = tr.write_out_ansi(stdout(), render_cache.as_ref());
-
-        if let Result::Err(err) = render_result {
-            log::error!("Error occurred in rendering: {:?}", err);
-            return;
-        }
-        *render_cache = Some(tr.clone());
     }
 }

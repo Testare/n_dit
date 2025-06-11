@@ -175,9 +175,7 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     )
                         .chain()
                         .in_set(RenderTtySet::CalculateLayout),
-                    (apply_deferred, render_layouts)
-                        .chain()
-                        .in_set(RenderTtySet::RenderLayouts),
+                    (apply_deferred).chain().in_set(RenderTtySet::RenderLayouts),
                 ),
             );
     }

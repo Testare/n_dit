@@ -72,9 +72,7 @@ pub fn sys_startup_create_main_ui(
                 ..default()
             }),
             Name::new("Main Ui"),
-            CharmiImageSprite::default(),
             crate::layout::LayoutRoot,
-            TerminalRendering::default(),
         ))
         .add_child(context_menu_pane)
         .id();

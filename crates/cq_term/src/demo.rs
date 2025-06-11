@@ -4,7 +4,7 @@ use std::io::Write;
 use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
 use bevy::scene::DynamicSceneBuilder;
-use charmi::{charmi_toml, CharmiImage};
+use charmi::{charmi_toml, CharmiImage, CharmiImageSprite, TransformCh};
 use crossterm::style::{ContentStyle, Stylize};
 use game_core::bam::BamHandle;
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardScreen, BoardSize, SimplePieceInfo};
@@ -25,9 +25,7 @@ use crate::base_ui::context_menu::ContextActions;
 use crate::base_ui::{
     ButtonUiBundle, FlexibleTextUi, FlexibleTextUiMultiline, HoverPoint, PopupMenu, Tooltip,
 };
-use crate::board_ui::{
-    ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi, Sprite,
-};
+use crate::board_ui::{ActionsPanel, BoardBackground, BoardUi, InfoPanel, SelectedBoardPieceUi};
 use crate::configuration::DrawConfiguration;
 use crate::dialog_ui::{DialogLineUi, DialogOptionUi, DialogUiContextActions};
 use crate::input_event::{KeyCode, MouseEventListener};
@@ -159,10 +157,15 @@ fn dump_key(world: &mut World, mut state: Local<SystemState<EventReader<KeyEvent
 }
 
 fn debug_key(
+    mut commands: Commands,
     mut res_core_ops: ResMut<CoreOps>,
     mut ev_keys: EventReader<KeyEvent>,
     mut q_quest_status: Query<&mut QuestStatus>,
-    q_sprites: Query<(Entity, &TerminalRendering), With<Sprite>>,
+    q_sprites: Query<(Entity, &CharmiImageSprite, Option<&TransformCh>)>,
+    q_unsprites: Query<
+        (Entity, Option<&Name>),
+        (With<TerminalRendering>, Without<CharmiImageSprite>),
+    >,
     mut res_log: ResMut<Log>,
     mut res_demo_state: ResMut<DemoState>,
 ) {
@@ -184,16 +187,34 @@ fn debug_key(
                     quest_status.record_node_done(nid);
                 }
             }
+        } else if *code == KeyCode::Char('?') {
+            if let Some((id, _, _)) = q_sprites.iter().last() {
+                commands.entity(id).remove::<CharmiImageSprite>();
+            }
         } else if *code == KeyCode::Char('p') {
             log::debug!(
                 "Testing launching aseprite process. Later this functionality will be used to share images when the terminal doesn't support it."
             );
             #[allow(clippy::zombie_processes)]
             std::process::Command::new("aseprite").spawn().unwrap();
+        } else if *code == KeyCode::Char('I') {
+            let unsprites: Vec<(Entity, String)> = q_unsprites
+                .iter()
+                .map(|(id, name)| (id, name.map(|name| name.to_string()).unwrap_or_default()))
+                .collect();
+            log::debug!("Unmigrated sprites [{}] {unsprites:?}", unsprites.len());
+            if let Some((last_entity, _)) = unsprites.last() {
+                commands.entity(*last_entity).log_components();
+            }
         } else if *code == KeyCode::Char('i') {
-            log::debug!("SPRITES");
-            for (sprite_id, tr) in q_sprites.iter() {
-                log::debug!("SPRITE {:2} -> {:?}", sprite_id.index(), tr.charmi());
+            log::debug!("Debug Info: Sprites");
+            for (sprite_id, charmi_sprite, transform_opt) in q_sprites.iter() {
+                log::debug!(
+                    "* Sprite {:2} [{:?}] -> {:?}",
+                    sprite_id.index(),
+                    transform_opt,
+                    charmi_sprite.image
+                );
             }
         } else if *code == KeyCode::Char('9') {
             res_core_ops.request(Entity::PLACEHOLDER, SaveOp::Load);
@@ -555,32 +576,34 @@ fn demo_startup(
                                 popup_menu_pane,
                             );
                         });
-                    content_pane.spawn((
-                        Name::new("Board background"),
-                        ForPlayer(player),
-                        BoardUi(board),
-                        BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
-                        CalculatedSizeTty::default(),
-                        StyleTty(taffy::style::Style {
-                            display: taffy::style::Display::Grid,
-                            max_size: Size {
-                                width: length(board_size.x),
-                                height: length(board_size.y),
-                            },
-                            grid_row: line(1),
-                            grid_column: line(2),
-                            grid_template_rows: vec![repeat(
-                                GridTrackRepetition::AutoFill,
-                                vec![length(1.0)],
-                            )],
-                            grid_template_columns: vec![repeat(
-                                GridTrackRepetition::AutoFill,
-                                vec![length(1.0)],
-                            )],
-                            ..default()
-                        }),
-                        TerminalRendering::default(),
-                    ));
+                    let board_pane = content_pane
+                        .spawn((
+                            Name::new("Board background"),
+                            ForPlayer(player),
+                            BoardUi(board),
+                            BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
+                            CalculatedSizeTty::default(),
+                            StyleTty(taffy::style::Style {
+                                display: taffy::style::Display::Grid,
+                                max_size: Size {
+                                    width: length(board_size.x),
+                                    height: length(board_size.y),
+                                },
+                                grid_row: line(1),
+                                grid_column: line(2),
+                                grid_template_rows: vec![repeat(
+                                    GridTrackRepetition::AutoFill,
+                                    vec![length(1.0)],
+                                )],
+                                grid_template_columns: vec![repeat(
+                                    GridTrackRepetition::AutoFill,
+                                    vec![length(1.0)],
+                                )],
+                                ..default()
+                            }),
+                            TerminalRendering::default(),
+                        ))
+                        .id();
                 });
         })
         .id();

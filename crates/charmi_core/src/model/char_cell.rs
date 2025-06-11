@@ -130,11 +130,15 @@ impl Debug for CharCell {
         }?;
         if self.fg == CharmiImage::NO_COLOR {
             write!(f, ",◇")?;
+        } else if self.fg > CharmiImage::TRUE_COLOR {
+            write!(f, ",#{:x}", self.fg % CharmiImage::TRUE_COLOR)?;
         } else {
             write!(f, ",{}", self.fg)?;
         };
         if self.bg == CharmiImage::NO_COLOR {
             write!(f, ",◇")?;
+        } else if self.bg > CharmiImage::TRUE_COLOR {
+            write!(f, ",#{:06x}", self.bg % CharmiImage::TRUE_COLOR)?;
         } else {
             write!(f, ",{}", self.bg)?;
         };

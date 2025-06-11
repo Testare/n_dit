@@ -323,6 +323,7 @@ impl CharmiImage {
             .collect();
         let mut last_line: Option<usize> = None;
         for (i, line) in self.cells.chunks(self.width as usize).enumerate() {
+            // TODO add argument to start i at some other number.
             if cache_lines.get(i) == Some(&line) {
                 continue;
             }

@@ -10,6 +10,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if pos.x < 0 {
         return; // Not part of the sprite
     }
+    if any(vec2u(pos) >= vec2(sprite.width, sprite.height)) {
+        return;
+    }
 
     /// Get the values for the src (sprite) and dest (view)
 

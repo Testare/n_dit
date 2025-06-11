@@ -75,6 +75,7 @@ impl MenuUiDescription {
                             .or_else(|| Some(selected.description?.as_str()))?;
                         let wrapped_desc = textwrap::wrap(desc_str, size.width());
                         let menu = CharmiImage::build_sized(size.width32(), size.height32())
+                            .fg("white")
                             .add_line(&format!("{0:─<1$}", "─Desc", size.width()))
                             .add_lines(wrapped_desc)
                             .build();

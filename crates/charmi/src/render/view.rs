@@ -9,7 +9,7 @@ use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::{GpuShaderStorageBuffer, ShaderStorageBuffer};
 use bevy::render::{Render, RenderApp, RenderSystems};
 
-use crate::{CharmiBindGroupLayouts, CharmiImage, TransformCh, TransformChUniforms};
+use crate::{CharCell, CharmiBindGroupLayouts, CharmiImage, TransformCh, TransformChUniforms};
 
 pub struct ViewPlugin;
 
@@ -44,7 +44,16 @@ pub struct ViewCh {
 
 impl ViewCh {
     pub fn new(order: usize, size: UVec2, ast_buffers: &mut Assets<ShaderStorageBuffer>) -> Self {
-        let buffer = CharmiImage::new_empty(size.x, size.y);
+        let buffer = CharmiImage::new_fill(
+            size.x,
+            size.y,
+            CharCell {
+                ch: ' ' as u32,
+                fg: 15,
+                bg: 0,
+                attr: 0,
+            },
+        );
         let mut buffer = ShaderStorageBuffer::from(buffer);
         // We need to enable the COPY_SRC usage so we can copy the buffer to the cpu
         buffer.buffer_description.usage |= BufferUsages::COPY_SRC;

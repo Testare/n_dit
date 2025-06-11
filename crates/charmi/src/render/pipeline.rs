@@ -136,11 +136,8 @@ impl render_graph::Node for MainPassChNode {
                     .unwrap_or(0);
                 pass.set_bind_group(0, &**view_bind_group, &[view_offset]);
                 pass.set_bind_group(1, &globals_bind_group.0, &[sprite_offset]);
-                if function
-                    .draw(world, &mut pass, view_id, charmi_phase_item)
-                    .is_err()
-                {
-                    log::error!("Charmi function error");
+                if let Err(e) = function.draw(world, &mut pass, view_id, charmi_phase_item) {
+                    log::error!("Charmi function error {e:?}");
                 }
             }
         }
