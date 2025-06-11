@@ -4,7 +4,6 @@ mod main_ui_op;
 mod shop_ui;
 
 pub use card_ui::ShortName;
-use charmi::CharmiImageSprite;
 use game_core::op::{OpExecutor, OpExecutorPlugin, OpPlugin};
 use game_core::player::ForPlayer;
 use game_core::NDitCoreSet;
@@ -20,7 +19,6 @@ use self::shop_ui::ShopUiContextActions;
 use crate::base_ui::context_menu::{ContextActions, ContextMenuPane};
 use crate::layout::StyleTty;
 use crate::prelude::*;
-use crate::render::TerminalRendering;
 use crate::TerminalWindow;
 
 #[derive(Debug, Default, Deref, DerefMut, Resource)]

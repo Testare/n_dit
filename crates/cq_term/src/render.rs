@@ -1,5 +1,4 @@
-use std::io::stdout;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use bevy::ecs::observer::Trigger;
 use bevy::math::IVec3;
@@ -9,10 +8,8 @@ use charmi::{CharmiImage, CharmiImageSprite, CharmiRenderPlugin, MainView, Trans
 use game_core::NDitCoreSet;
 
 use super::TerminalWindow;
-use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, LayoutRoot};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
 use crate::prelude::*;
-
-const PAUSE_RENDERING_ON_RESIZE_MILLIS: u64 = 500;
 
 pub const RENDER_TTY_SCHEDULE: Update = Update;
 
@@ -165,7 +162,6 @@ pub fn sys_startup_render(
 pub fn sys_update_charmi_sprites(
     mut q_terminal_renderings: Query<
         (
-            Entity,
             &mut CharmiImageSprite,
             &mut TransformCh,
             &TerminalRendering,
@@ -179,7 +175,7 @@ pub fn sys_update_charmi_sprites(
         )>,
     >,
 ) {
-    for (id, mut charmi_sprite, mut transform, tr, size, translation) in
+    for (mut charmi_sprite, mut transform, tr, size, translation) in
         q_terminal_renderings.iter_mut()
     {
         charmi_sprite.image = tr.charmi().clone();

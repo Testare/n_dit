@@ -3,7 +3,7 @@ mod sidebar;
 use std::ops::Deref;
 
 use bevy::ecs::system::EntityCommands;
-use charmi::{CharmiActor, CharmiAnimation, CharmiImage, CharmiImageSprite};
+use charmi::{CharmiActor, CharmiAnimation, CharmiImage};
 use game_core::board::{Board, BoardPiece, BoardPosition, BoardSize};
 use game_core::player::ForPlayer;
 use game_core::registry::{Reg, Registry, UpdatedRegistryKey};

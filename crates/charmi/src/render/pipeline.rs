@@ -7,7 +7,9 @@ use bevy::render::globals::GlobalsBuffer;
 use bevy::render::render_graph::{
     self, NodeRunError, RenderGraph, RenderGraphContext, RenderLabel,
 };
-use bevy::render::render_resource::{BindGroupEntries, ComputePass, ComputePassDescriptor};
+use bevy::render::render_resource::{
+    BindGroupEntries, ComputePass, ComputePassDescriptor, PipelineCache,
+};
 use bevy::render::renderer::{RenderContext, RenderDevice};
 use bevy::render::{define_atomic_id, Render, RenderApp, RenderSystems};
 
@@ -15,6 +17,8 @@ use crate::{
     CharmiBindGroupLayouts, CharmiGlobalsBindGroup, TransformChOffset, TransformChUniforms, ViewCh,
     ViewChBindGroup,
 };
+
+use super::ViewClearPipeline;
 
 pub struct CharmiRenderPipelinePlugin;
 impl Plugin for CharmiRenderPipelinePlugin {
@@ -112,10 +116,36 @@ impl render_graph::Node for MainPassChNode {
         let globals_bind_group = world.resource::<CharmiGlobalsBindGroup>();
         let charmi_phase = world.resource::<CharmiPhase>();
         let charmi_functions = world.resource::<CharmiFunctions>();
-
+        let pipeline_cache = world.resource::<PipelineCache>();
+        let view_clear_pipeline = world.resource::<ViewClearPipeline>();
         // TODO sort with view
-        for (view_id, _view, view_bind_group) in self.views.iter_manual(world) {
+        for (view_id, view, view_bind_group) in self.views.iter_manual(world) {
+            let view_offset = world
+                .get::<TransformChOffset>(view_id)
+                .map(|o| **o)
+                .unwrap_or(0);
+
+            if let Some(view_clear_pipeline) =
+                pipeline_cache.get_compute_pipeline(view_clear_pipeline.pipeline)
+            {
+                // TODO Possibly make view clear into its own phase/node
+                let mut clear_pass =
+                    render_context
+                        .command_encoder()
+                        .begin_compute_pass(&ComputePassDescriptor {
+                            label: Some("Charmi compute pass"),
+                            ..default()
+                        });
+
+                clear_pass.set_bind_group(0, &**view_bind_group, &[view_offset]);
+                clear_pass.set_pipeline(view_clear_pipeline);
+                clear_pass.dispatch_workgroups(view.buffer_len(), 1, 1);
+            }
+
             for charmi_phase_item in charmi_phase.iter() {
+                let Some(function) = charmi_functions.get(&charmi_phase_item.function) else {
+                    continue;
+                };
                 let mut pass =
                     render_context
                         .command_encoder()
@@ -123,13 +153,7 @@ impl render_graph::Node for MainPassChNode {
                             label: Some("Charmi compute pass"),
                             ..default()
                         });
-                let Some(function) = charmi_functions.get(&charmi_phase_item.function) else {
-                    continue;
-                };
-                let view_offset = world
-                    .get::<TransformChOffset>(view_id)
-                    .map(|o| **o)
-                    .unwrap_or(0);
+
                 let sprite_offset = world
                     .get::<TransformChOffset>(charmi_phase_item.id)
                     .map(|o| **o)

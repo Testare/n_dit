@@ -4,7 +4,10 @@ use bevy::prelude::*;
 use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin};
 use bevy::render::globals::GlobalsBuffer;
 use bevy::render::render_asset::RenderAssets;
-use bevy::render::render_resource::{BindGroup, BindGroupEntries, BufferUsages};
+use bevy::render::render_resource::{
+    BindGroup, BindGroupEntries, BufferUsages, CachedComputePipelineId, ComputePipelineDescriptor,
+    PipelineCache,
+};
 use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::{GpuShaderStorageBuffer, ShaderStorageBuffer};
 use bevy::render::{Render, RenderApp, RenderSystems};
@@ -20,7 +23,7 @@ impl Plugin for ViewPlugin {
 
     fn finish(&self, app: &mut App) {
         let render_app = app.sub_app_mut(RenderApp);
-        render_app.add_systems(
+        render_app.init_resource::<ViewClearPipeline>().add_systems(
             Render,
             rsys_prepare_view_bind_groups.in_set(RenderSystems::PrepareBindGroups),
         );
@@ -119,5 +122,29 @@ fn rsys_prepare_view_bind_groups(
         for (id, view) in q_views.p0().iter() {
             construct_bind_group(id, view);
         }
+    }
+}
+
+#[derive(Resource)]
+pub struct ViewClearPipeline {
+    pub pipeline: CachedComputePipelineId,
+}
+
+impl FromWorld for ViewClearPipeline {
+    fn from_world(world: &mut World) -> Self {
+        world.init_resource::<CharmiBindGroupLayouts>();
+        let charmi_layouts = world.resource::<CharmiBindGroupLayouts>();
+
+        let pipeline_cache = world.resource::<PipelineCache>();
+        let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: Some("View Clear Pipeline".into()),
+            layout: vec![charmi_layouts.view_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: super::CHARMI_VIEW_CLEAR_HANDLE,
+            shader_defs: Vec::new(),
+            entry_point: "main".into(),
+            zero_initialize_workgroup_memory: false,
+        });
+        ViewClearPipeline { pipeline }
     }
 }

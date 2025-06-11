@@ -32,6 +32,8 @@ const CHARMI_BOX_SHADER_HANDLE: Handle<Shader> =
     weak_handle!("3dfe1740-d746-469c-9077-d3f688862bae");
 const CHARMI_IMAGE_SPRITE_OPAQUE_SHADER_HANDLE: Handle<Shader> =
     weak_handle!("e52a0fe3-e8b1-438b-99e7-1346c629abd2");
+const CHARMI_VIEW_CLEAR_HANDLE: Handle<Shader> =
+    weak_handle!("ceeae3dc-8d00-4062-bd35-911c86ebac77");
 
 #[derive(Debug)]
 pub struct CharmiRenderPlugin;
@@ -78,6 +80,12 @@ impl Plugin for CharmiRenderPlugin {
             "shader_import/image_sprite.wgsl",
             Shader::from_wgsl
         );
+        load_internal_asset!(
+            app,
+            CHARMI_VIEW_CLEAR_HANDLE,
+            "shader_import/view_clear.wgsl",
+            Shader::from_wgsl
+        )
     }
 }
 

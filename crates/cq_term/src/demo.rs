@@ -576,34 +576,32 @@ fn demo_startup(
                                 popup_menu_pane,
                             );
                         });
-                    let board_pane = content_pane
-                        .spawn((
-                            Name::new("Board background"),
-                            ForPlayer(player),
-                            BoardUi(board),
-                            BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
-                            CalculatedSizeTty::default(),
-                            StyleTty(taffy::style::Style {
-                                display: taffy::style::Display::Grid,
-                                max_size: Size {
-                                    width: length(board_size.x),
-                                    height: length(board_size.y),
-                                },
-                                grid_row: line(1),
-                                grid_column: line(2),
-                                grid_template_rows: vec![repeat(
-                                    GridTrackRepetition::AutoFill,
-                                    vec![length(1.0)],
-                                )],
-                                grid_template_columns: vec![repeat(
-                                    GridTrackRepetition::AutoFill,
-                                    vec![length(1.0)],
-                                )],
-                                ..default()
-                            }),
-                            TerminalRendering::default(),
-                        ))
-                        .id();
+                    content_pane.spawn((
+                        Name::new("Board background"),
+                        ForPlayer(player),
+                        BoardUi(board),
+                        BoardBackground(asset_server.load("nightfall/net_map.charmi.toml")),
+                        CalculatedSizeTty::default(),
+                        StyleTty(taffy::style::Style {
+                            display: taffy::style::Display::Grid,
+                            max_size: Size {
+                                width: length(board_size.x),
+                                height: length(board_size.y),
+                            },
+                            grid_row: line(1),
+                            grid_column: line(2),
+                            grid_template_rows: vec![repeat(
+                                GridTrackRepetition::AutoFill,
+                                vec![length(1.0)],
+                            )],
+                            grid_template_columns: vec![repeat(
+                                GridTrackRepetition::AutoFill,
+                                vec![length(1.0)],
+                            )],
+                            ..default()
+                        }),
+                        TerminalRendering::default(),
+                    ));
                 });
         })
         .id();
