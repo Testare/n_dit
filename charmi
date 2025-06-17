@@ -1,0 +1,210 @@
+warning: unused import: `std::ops::Deref`
+ --> crates/charmi/src/render/image_sprite.rs:1:5
+  |
+1 | use std::ops::Deref;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `RenderedBy`
+  --> crates/charmi/src/render/image_sprite.rs:22:33
+   |
+22 | use super::{DefaultRenderLayer, RenderedBy, TranslatedRenderLayer, ViewLayers};
+   |                                 ^^^^^^^^^^
+
+warning: unnecessary parentheses around type
+   --> crates/charmi/src/render/image_sprite.rs:182:53
+    |
+182 |     q_charmi_sprites: Query<(Entity, &TransformCh), (With<CharmiImageSpriteBindGroup>)>,
+    |                                                     ^                                ^
+    |
+    = note: `#[warn(unused_parens)]` on by default
+help: remove these parentheses
+    |
+182 -     q_charmi_sprites: Query<(Entity, &TransformCh), (With<CharmiImageSpriteBindGroup>)>,
+182 +     q_charmi_sprites: Query<(Entity, &TransformCh), With<CharmiImageSpriteBindGroup>>,
+    |
+
+warning: unnecessary parentheses around type
+   --> crates/charmi/src/render/image_sprite.rs:186:28
+    |
+186 |     q_render_layers: Query<(&TranslatedRenderLayer)>,
+    |                            ^                      ^
+    |
+help: remove these parentheses
+    |
+186 -     q_render_layers: Query<(&TranslatedRenderLayer)>,
+186 +     q_render_layers: Query<&TranslatedRenderLayer>,
+    |
+
+warning: unused import: `std::collections::HashSet`
+ --> crates/charmi/src/render/layer.rs:1:5
+  |
+1 | use std::collections::HashSet;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ExtractComponentPlugin`
+ --> crates/charmi/src/render/layer.rs:5:57
+  |
+5 | use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin};
+  |                                                         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SyncToRenderWorld`
+ --> crates/charmi/src/render/layer.rs:8:46
+  |
+8 | use bevy::render::sync_world::{RenderEntity, SyncToRenderWorld};
+  |                                              ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `bevy::ecs::entity::EntityHashSet`
+ --> crates/charmi/src/render/view.rs:2:5
+  |
+2 | use bevy::ecs::entity::EntityHashSet;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `charmi` (lib) generated 8 warnings (run `cargo fix --lib -p charmi` to apply 8 suggestions)
+warning: unused import: `layout::VisibilityTty`
+ --> crates/cq_term/src/main_ui/main_ui_op.rs:4:13
+  |
+4 | use crate::{layout::VisibilityTty, prelude::*};
+  |             ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `cq_term` (lib) generated 1 warning (run `cargo fix --lib -p cq_term` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
+     Running `target/debug/n_dit --debug`
+[?25l[?1049h]0;Common Quest[?1000h[?1002h[?1003h[?1015h[?1006h[?25h[?1049l[?1006l[?1015l[?1003l[?1002l[?1000l
+thread 'main' panicked at /home/testare/arch/bevy/crates/bevy_ecs/src/world/mod.rs:351:57:
+called `Result::unwrap()` on an `Err` value: ArchetypeExists(ComponentId(223))
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/17067e9ac6d7ecb70e50f92c1944e545188d2359/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/17067e9ac6d7ecb70e50f92c1944e545188d2359/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/17067e9ac6d7ecb70e50f92c1944e545188d2359/library/core/src/result.rs:1704:5
+   3: core::result::Result<T,E>::unwrap
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/result.rs:1109:23
+   4: bevy_ecs::world::World::register_required_components
+             at /home/testare/arch/bevy/crates/bevy_ecs/src/world/mod.rs:351:9
+   5: bevy_app::app::App::register_required_components
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:841:9
+   6: <bevy_render::sync_component::SyncComponentPlugin<C> as bevy_app::plugin::Plugin>::build
+             at /home/testare/arch/bevy/crates/bevy_render/src/sync_component.rs:33:9
+   7: bevy_app::app::App::add_boxed_plugin::{{closure}}
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:481:37
+   8: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+   9: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/panic/unwind_safe.rs:272:9
+  10: std::panicking::try::do_call
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:589:40
+  11: __rust_try
+  12: std::panicking::try
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:552:19
+  13: std::panic::catch_unwind
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panic.rs:359:14
+  14: bevy_app::app::App::add_boxed_plugin
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:484:22
+  15: <P as bevy_app::plugin::sealed::Plugins<bevy_app::plugin::sealed::PluginMarker>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:148:17
+  16: <(S0,S1,S2) as bevy_app::plugin::sealed::Plugins<(bevy_app::plugin::sealed::PluginsTupleMarker,P0,P1,P2)>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:180:23
+  17: bevy_app::app::App::add_plugins
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:585:9
+  18: <charmi::render::layer::RenderLayerPlugin as bevy_app::plugin::Plugin>::build
+             at ./crates/charmi/src/render/layer.rs:49:9
+  19: bevy_app::app::App::add_boxed_plugin::{{closure}}
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:481:37
+  20: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+  21: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/panic/unwind_safe.rs:272:9
+  22: std::panicking::try::do_call
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:589:40
+  23: __rust_try
+  24: std::panicking::try
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:552:19
+  25: std::panic::catch_unwind
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panic.rs:359:14
+  26: bevy_app::app::App::add_boxed_plugin
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:484:22
+  27: <P as bevy_app::plugin::sealed::Plugins<bevy_app::plugin::sealed::PluginMarker>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:148:17
+  28: <(S0,S1,S2,S3,S4) as bevy_app::plugin::sealed::Plugins<(bevy_app::plugin::sealed::PluginsTupleMarker,P0,P1,P2,P3,P4)>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:180:23
+  29: bevy_app::app::App::add_plugins
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:585:9
+  30: <charmi::render::CharmiRenderPlugin as bevy_app::plugin::Plugin>::build
+             at ./crates/charmi/src/render.rs:60:9
+  31: bevy_app::app::App::add_boxed_plugin::{{closure}}
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:481:37
+  32: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+  33: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/panic/unwind_safe.rs:272:9
+  34: std::panicking::try::do_call
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:589:40
+  35: __rust_try
+  36: std::panicking::try
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:552:19
+  37: std::panic::catch_unwind
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panic.rs:359:14
+  38: bevy_app::app::App::add_boxed_plugin
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:484:22
+  39: <P as bevy_app::plugin::sealed::Plugins<bevy_app::plugin::sealed::PluginMarker>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:148:17
+  40: bevy_app::app::App::add_plugins
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:585:9
+  41: <cq_term::render::RenderTtyPlugin as bevy_app::plugin::Plugin>::build
+             at ./crates/cq_term/src/render.rs:83:9
+  42: bevy_app::app::App::add_boxed_plugin::{{closure}}
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:481:37
+  43: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+  44: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/panic/unwind_safe.rs:272:9
+  45: std::panicking::try::do_call
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:589:40
+  46: __rust_try
+  47: std::panicking::try
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:552:19
+  48: std::panic::catch_unwind
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panic.rs:359:14
+  49: bevy_app::app::App::add_boxed_plugin
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:484:22
+  50: <P as bevy_app::plugin::sealed::Plugins<bevy_app::plugin::sealed::PluginMarker>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:148:17
+  51: <(S0,S1,S2,S3,S4,S5,S6,S7) as bevy_app::plugin::sealed::Plugins<(bevy_app::plugin::sealed::PluginsTupleMarker,P0,P1,P2,P3,P4,P5,P6,P7)>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:180:23
+  52: bevy_app::app::App::add_plugins
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:585:9
+  53: <cq_term::CharmiePlugin as bevy_app::plugin::Plugin>::build
+             at ./crates/cq_term/src/lib.rs:49:9
+  54: bevy_app::app::App::add_boxed_plugin::{{closure}}
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:481:37
+  55: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+  56: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/panic/unwind_safe.rs:272:9
+  57: std::panicking::try::do_call
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:589:40
+  58: __rust_try
+  59: std::panicking::try
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panicking.rs:552:19
+  60: std::panic::catch_unwind
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/std/src/panic.rs:359:14
+  61: bevy_app::app::App::add_boxed_plugin
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:484:22
+  62: <P as bevy_app::plugin::sealed::Plugins<bevy_app::plugin::sealed::PluginMarker>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:148:17
+  63: <(S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10) as bevy_app::plugin::sealed::Plugins<(bevy_app::plugin::sealed::PluginsTupleMarker,P0,P1,P2,P3,P4,P5,P6,P7,P8,P9,P10)>>::add_to_app
+             at /home/testare/arch/bevy/crates/bevy_app/src/plugin.rs:180:23
+  64: bevy_app::app::App::add_plugins
+             at /home/testare/arch/bevy/crates/bevy_app/src/app.rs:585:9
+  65: n_dit::main
+             at ./crates/n_dit/src/main.rs:82:5
+  66: core::ops::function::FnOnce::call_once
+             at /nix/store/p35128f92b1hg1plb6gfs66q1fczqlw9-rust-default-1.87.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+[?25h[?1049l[?1006l[?1015l[?1003l[?1002l[?1000l

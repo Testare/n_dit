@@ -78,7 +78,7 @@ impl Debug for CharmiFunctions {
     }
 }
 
-#[derive(Debug, Default, Deref, DerefMut, Resource)]
+#[derive(Component, Debug, Default, Deref, DerefMut, Resource)]
 pub struct CharmiPhase(Vec<CharmiPhaseItem>);
 
 #[derive(Debug)]
@@ -91,7 +91,12 @@ pub struct CharmiPhaseItem {
 
 /// The node that will execute the compute shader
 struct MainPassChNode {
-    views: QueryState<(Entity, &'static ViewCh, &'static ViewChBindGroup)>,
+    views: QueryState<(
+        Entity,
+        &'static ViewCh,
+        &'static ViewChBindGroup,
+        &'static CharmiPhase,
+    )>,
 }
 
 impl FromWorld for MainPassChNode {
@@ -114,12 +119,12 @@ impl render_graph::Node for MainPassChNode {
         world: &World,
     ) -> Result<(), NodeRunError> {
         let globals_bind_group = world.resource::<CharmiGlobalsBindGroup>();
-        let charmi_phase = world.resource::<CharmiPhase>();
+        // let charmi_phase = world.resource::<CharmiPhase>();
         let charmi_functions = world.resource::<CharmiFunctions>();
         let pipeline_cache = world.resource::<PipelineCache>();
         let view_clear_pipeline = world.resource::<ViewClearPipeline>();
         // TODO sort with view
-        for (view_id, view, view_bind_group) in self.views.iter_manual(world) {
+        for (view_id, view, view_bind_group, charmi_phase) in self.views.iter_manual(world) {
             let view_offset = world
                 .get::<TransformChOffset>(view_id)
                 .map(|o| **o)
@@ -192,10 +197,22 @@ fn rsys_prepare_charmi_globals_bind_group(
     commands.insert_resource(CharmiGlobalsBindGroup(bind_group));
 }
 
-fn rsys_clear_charmi_phase(mut res_charmi_phase: ResMut<CharmiPhase>) {
+fn rsys_clear_charmi_phase(
+    mut res_charmi_phase: ResMut<CharmiPhase>,
+    mut q_charmi_phase: Query<&mut CharmiPhase>,
+) {
+    for mut charmi_phase in q_charmi_phase.iter_mut() {
+        charmi_phase.clear();
+    }
     res_charmi_phase.clear();
 }
 
-fn rsys_sort_charmi_phase(mut res_charmi_phase: ResMut<CharmiPhase>) {
+fn rsys_sort_charmi_phase(
+    mut res_charmi_phase: ResMut<CharmiPhase>,
+    mut q_charmi_phase: Query<&mut CharmiPhase>,
+) {
+    for mut charmi_phase in q_charmi_phase.iter_mut() {
+        charmi_phase.sort_by_key(|phase| phase.z);
+    }
     res_charmi_phase.sort_by_key(|phase| phase.z);
 }

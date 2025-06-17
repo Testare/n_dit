@@ -17,6 +17,8 @@ use crate::{
     CharmiImage, CharmiPhase, CharmiPhaseItem, TransformCh, ViewCh,
 };
 
+use super::{DefaultRenderLayer, TranslatedRenderLayer, ViewLayers};
+
 #[derive(Debug)]
 pub struct ImageSpritePlugin;
 
@@ -43,6 +45,7 @@ impl Plugin for ImageSpritePlugin {
     }
 }
 
+// TODO Consider if CharmiImageSprite could be split into RenderedImage component and CharmiSprite.
 #[derive(
     Clone, Component, Debug, Default, Deref, DerefMut, ExtractComponent, AsBindGroup, TypePath,
 )]
@@ -173,17 +176,31 @@ fn sys_image_sprite_update_buffer(
 }
 
 fn rsys_queue_charmi_image_sprites(
-    q_charmi_material_rect: Query<(Entity, &TransformCh), With<CharmiImageSpriteBindGroup>>,
-    mut res_charmi_phase: ResMut<CharmiPhase>,
+    res_default_layer: Res<DefaultRenderLayer>,
+    q_charmi_sprites: Query<(Entity, &TransformCh), With<CharmiImageSpriteBindGroup>>,
     res_draw_image: Res<DrawImageFunction>,
+    mut q_views: Query<(&mut CharmiPhase, Option<&ViewLayers>), With<ViewCh>>,
+    q_render_layers: Query<&TranslatedRenderLayer>,
 ) {
-    for (id, transform) in q_charmi_material_rect.iter() {
-        res_charmi_phase.push(CharmiPhaseItem {
-            z: transform.position.z,
-            asset_id: None,
-            function: res_draw_image.function_id(),
-            id,
-        });
+    for (mut charmi_phase, view_layers) in q_views.iter_mut() {
+        let view_layers = res_default_layer.unwrap(view_layers);
+        let render_layer_entities: Vec<_> = view_layers
+            .iter()
+            .flat_map(|id| q_render_layers.get(*id).ok())
+            .flat_map(|trl| trl.entities().iter())
+            .collect();
+
+        for (id, transform) in render_layer_entities
+            .into_iter()
+            .flat_map(|id| q_charmi_sprites.get(*id).ok())
+        {
+            charmi_phase.push(CharmiPhaseItem {
+                z: transform.position.z,
+                asset_id: None,
+                function: res_draw_image.function_id(),
+                id,
+            });
+        }
     }
 }
 

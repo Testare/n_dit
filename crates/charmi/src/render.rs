@@ -1,4 +1,5 @@
 pub mod image_sprite;
+pub mod layer;
 pub mod material_ch;
 pub mod pipeline;
 pub mod transform;
@@ -21,6 +22,7 @@ use bevy::time::TimePlugin;
 use bevy::window::{ExitCondition, WindowPlugin};
 
 pub use self::image_sprite::*;
+pub use self::layer::*;
 pub use self::material_ch::*;
 pub use self::pipeline::*;
 pub use self::transform::*;
@@ -56,6 +58,7 @@ impl Plugin for CharmiRenderPlugin {
             },
         );
         app.add_plugins((
+            self::layer::RenderLayerPlugin,
             self::view::ViewPlugin,
             self::image_sprite::ImageSpritePlugin,
             self::transform::CharmiTransformPlugin,

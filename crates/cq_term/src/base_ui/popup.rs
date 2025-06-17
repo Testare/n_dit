@@ -19,12 +19,12 @@ pub fn sys_render_popup_menu(
     for (size, mut tr) in popup_menus.iter_mut() {
         // Popup will usually have a padding of at least 1, so if the size is 2x2 then nothing is in it
         let rendering = if size.y > 2 && size.x > 2 {
-            // let top_border = "┌".to_owned() + "─".repeat((size.x - 2) as usize).as_str() + "┐";
-
             let top_border = format!("┌{0:─<1$}┐", "─", (size.x - 2) as usize);
             let middle = format!("│{0: <1$}│", " ", (size.x - 2) as usize);
             let bottom_border = format!("└{0:─<1$}┘", "─", (size.x - 2) as usize);
             CharmiImage::build_dynamic()
+                .fg("white")
+                .bg("black")
                 .add_line(&top_border)
                 .add_lines(std::iter::repeat_n(middle, (size.y - 2) as usize))
                 .add_line(&bottom_border)

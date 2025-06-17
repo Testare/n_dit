@@ -91,7 +91,7 @@ impl CalculatedSizeTty {
 #[reflect(Component)]
 pub struct VisibilityTty(pub bool);
 
-type IsVisibleTty = AsDerefOrBool<VisibilityTty, true>;
+pub type IsVisibleTty = AsDerefOrBool<VisibilityTty, true>;
 
 impl NodeTty {
     fn new(taffy: &mut Taffy, style: Style) -> Self {

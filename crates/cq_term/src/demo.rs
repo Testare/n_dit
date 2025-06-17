@@ -3,6 +3,7 @@ use std::io::Write;
 
 use bevy::ecs::relationship::RelatedSpawnerCommands;
 use bevy::ecs::system::SystemState;
+use bevy::render::sync_world::RenderEntity;
 use bevy::scene::DynamicSceneBuilder;
 use charmi::{charmi_toml, CharmiImage, CharmiImageSprite, TransformCh};
 use crossterm::style::{ContentStyle, Stylize};
@@ -161,7 +162,12 @@ fn debug_key(
     mut res_core_ops: ResMut<CoreOps>,
     mut ev_keys: EventReader<KeyEvent>,
     mut q_quest_status: Query<&mut QuestStatus>,
-    q_sprites: Query<(Entity, &CharmiImageSprite, Option<&TransformCh>)>,
+    q_sprites: Query<(
+        Entity,
+        &CharmiImageSprite,
+        Option<&TransformCh>,
+        Option<RenderEntity>,
+    )>,
     q_unsprites: Query<
         (Entity, Option<&Name>),
         (With<TerminalRendering>, Without<CharmiImageSprite>),
@@ -188,7 +194,7 @@ fn debug_key(
                 }
             }
         } else if *code == KeyCode::Char('?') {
-            if let Some((id, _, _)) = q_sprites.iter().last() {
+            if let Some((id, _, _, _)) = q_sprites.iter().last() {
                 commands.entity(id).remove::<CharmiImageSprite>();
             }
         } else if *code == KeyCode::Char('p') {
@@ -208,10 +214,11 @@ fn debug_key(
             }
         } else if *code == KeyCode::Char('i') {
             log::debug!("Debug Info: Sprites");
-            for (sprite_id, charmi_sprite, transform_opt) in q_sprites.iter() {
+            for (sprite_id, charmi_sprite, transform_opt, rid) in q_sprites.iter() {
                 log::debug!(
-                    "* Sprite {:2} [{:?}] -> {:?}",
+                    "* Sprite {:2}/[r:{}] [{:?}] -> {:?}",
                     sprite_id.index(),
+                    rid.map(|i| format!("{}", i.index())).unwrap_or_default(),
                     transform_opt,
                     charmi_sprite.image
                 );

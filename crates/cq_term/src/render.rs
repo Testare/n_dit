@@ -8,7 +8,7 @@ use charmi::{CharmiImage, CharmiImageSprite, CharmiRenderPlugin, MainView, Trans
 use game_core::NDitCoreSet;
 
 use super::TerminalWindow;
-use crate::layout::{CalculatedSizeTty, GlobalTranslationTty};
+use crate::layout::{CalculatedSizeTty, GlobalTranslationTty, IsVisibleTty, VisibilityTty};
 use crate::prelude::*;
 
 pub const RENDER_TTY_SCHEDULE: Update = Update;
@@ -167,19 +167,26 @@ pub fn sys_update_charmi_sprites(
             &TerminalRendering,
             &CalculatedSizeTty,
             &GlobalTranslationTty,
+            &RenderOrder,
+            IsVisibleTty,
         ),
         Or<(
             Changed<TerminalRendering>,
             Changed<CalculatedSizeTty>,
             Changed<GlobalTranslationTty>,
+            Changed<RenderOrder>,
+            Changed<VisibilityTty>,
         )>,
     >,
 ) {
-    for (mut charmi_sprite, mut transform, tr, size, translation) in
+    for (mut charmi_sprite, mut transform, tr, size, translation, render_order, is_visible) in
         q_terminal_renderings.iter_mut()
     {
         charmi_sprite.image = tr.charmi().clone();
-        transform.position = translation.0.as_ivec2().extend(translation.1 as i32);
-        transform.scale = **size;
+        transform.position = translation
+            .0
+            .as_ivec2()
+            .extend(render_order.0 as i32);
+        transform.scale = if is_visible { **size } else { UVec2::ZERO };
     }
 }

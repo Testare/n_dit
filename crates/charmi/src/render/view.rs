@@ -14,11 +14,13 @@ use bevy::render::{Render, RenderApp, RenderSystems};
 
 use crate::{CharCell, CharmiBindGroupLayouts, CharmiImage, TransformCh, TransformChUniforms};
 
+use super::CharmiPhase;
+
 pub struct ViewPlugin;
 
 impl Plugin for ViewPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ExtractComponentPlugin::<ViewCh>::default());
+        app.add_plugins((ExtractComponentPlugin::<ViewCh>::default(),));
     }
 
     fn finish(&self, app: &mut App) {
@@ -38,7 +40,7 @@ pub struct MainView;
 
 /// Represents a Charmi "view"
 #[derive(Clone, Component, Debug, ExtractComponent)]
-#[require(TransformCh)]
+#[require(TransformCh, CharmiPhase)]
 pub struct ViewCh {
     order: usize,
     size: UVec2,
