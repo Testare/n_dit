@@ -71,9 +71,11 @@ pub fn sys_startup_create_main_ui(
             }),
             Name::new("Main Ui"),
             crate::layout::LayoutRoot,
+            crate::layout::LayoutRenderTree,
         ))
         .add_child(context_menu_pane)
         .id();
+    log::info!("Main UI element: {main_ui_id:?}");
     terminal_window.set_render_target(Some(main_ui_id));
 }
 

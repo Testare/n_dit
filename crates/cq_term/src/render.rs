@@ -4,7 +4,9 @@ use bevy::ecs::observer::Trigger;
 use bevy::math::IVec3;
 use bevy::render::gpu_readback::{Readback, ReadbackComplete};
 use bevy::render::storage::ShaderStorageBuffer;
-use charmi::{CharmiImage, CharmiImageSprite, CharmiRenderPlugin, MainView, TransformCh, ViewCh};
+use charmi::{
+    CharmiImage, CharmiImageSprite, CharmiRenderPlugin, MainView, TransformCh, ViewCh, ViewLayers,
+};
 use game_core::NDitCoreSet;
 
 use super::TerminalWindow;
@@ -111,9 +113,15 @@ pub fn sys_startup_render(
     mut ast_buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
     let main_view = ViewCh::new(100, *res_window.size(), ast_buffers.as_mut());
+    let view_layers = [res_window
+        .render_target()
+        .expect("render target should always be some at this point (TODO ensure?)")]
+    .into_iter()
+    .collect();
     commands
         .spawn((
             MainView,
+            ViewLayers(view_layers),
             Readback::buffer(main_view.buffer().clone()),
             main_view,
             TransformCh {
@@ -148,6 +156,7 @@ pub fn sys_startup_render(
                  */
                 let charmi: CharmiImage = CharmiImage::from(trigger.event());
 
+                // TODO BEFOREMERGE clear last image on resize
                 // TODO instead of logging debug, perhaps save to a file?
                 log::trace!("Current screen render: {charmi:?}");
                 if let Err(e) = charmi.write_out_ansi(std::io::stdout(), last_image.as_ref()) {
@@ -183,10 +192,7 @@ pub fn sys_update_charmi_sprites(
         q_terminal_renderings.iter_mut()
     {
         charmi_sprite.image = tr.charmi().clone();
-        transform.position = translation
-            .0
-            .as_ivec2()
-            .extend(render_order.0 as i32);
+        transform.position = translation.0.as_ivec2().extend(render_order.0 as i32);
         transform.scale = if is_visible { **size } else { UVec2::ZERO };
     }
 }

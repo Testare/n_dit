@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 
-use charmi::CharmiImage;
+use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
+use bevy::ecs::query::Has;
+use charmi::{CharmiImage, RenderedBy};
 use game_core::player::ForPlayer;
 use pad::PadStr;
 use serde::{Deserialize, Serialize};
@@ -27,12 +29,20 @@ impl Default for Taffy {
 
 /// Hidden component, ties Entity to Taffy Node
 #[derive(Component, Debug, Deref, DerefMut)]
+#[component(immutable)]
 struct NodeTty(taffy::tree::NodeId);
 
 /// Root of a layout. Is fitted to terminal
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct LayoutRoot;
+
+/// Indicates this entity should become a render list, and all children should be rendered to that list.
+///
+/// If multiple nodes in a layout tree have this component, each node will be rendered to the nearest ancestor with this component.
+#[derive(Component, Debug, Default)]
+#[require(StyleTty)]
+pub struct LayoutRenderTree;
 
 /// Indicates a UI element that should be focused on
 /// when clicked on.
@@ -170,6 +180,7 @@ impl Plugin for TaffyTuiLayoutPlugin {
                         taffy_apply_style_updates,
                         taffy_new_style_components,
                         apply_deferred,
+                        sys_layout_roots_are_render_lists, // TODO is this the right place?
                         taffy_apply_hierarchy_updates,
                         calculate_layouts,
                     )
@@ -178,6 +189,79 @@ impl Plugin for TaffyTuiLayoutPlugin {
                     (apply_deferred).chain().in_set(RenderTtySet::RenderLayouts),
                 ),
             );
+    }
+}
+
+fn sys_layout_roots_are_render_lists(
+    mut commands: Commands,
+    mut orphaned_nodes: RemovedComponents<ChildOf>,
+    q_child_of: Query<&ChildOf>,
+    q_render_tree: Query<(), (With<NodeTty>, With<LayoutRenderTree>)>,
+    q_node_not_render_tree: Query<
+        (Option<&Children>, Option<&RenderedBy>),
+        (With<NodeTty>, Without<LayoutRenderTree>),
+    >,
+    q_node_rendered_by: Query<Option<&RenderedBy>, With<NodeTty>>,
+    q_hierarchy_changed: Query<Entity, (With<NodeTty>, Changed<ChildOf>)>,
+) {
+    let mut remappings: EntityHashMap<Option<Entity>> = EntityHashMap::new();
+    for id in q_hierarchy_changed {
+        if remappings.contains_key(&id) {
+            continue;
+        }
+        if q_render_tree.contains(id) {
+            // This is a layout node, we don't need to worry about updating renderings
+            continue;
+        }
+        // Get layout root or topmost node
+        let mut change_root = None;
+        let mut target_root = None;
+        let mut stack = vec![id];
+        for id in q_child_of.iter_ancestors(id) {
+            if !q_node_rendered_by.contains(id) {
+                change_root = stack.pop();
+                break;
+            }
+            if q_render_tree.contains(id) {
+                target_root = Some(id);
+                let rendered_by = RenderedBy(id);
+                let expected = Ok(Some(&rendered_by));
+                change_root = stack
+                    .iter()
+                    .rfind(|id| q_node_rendered_by.get(**id) != expected)
+                    .copied();
+            }
+            stack.push(id);
+        }
+        if let Some(change_root) = change_root {
+            remappings.insert(change_root, target_root);
+        }
+    }
+    for id in orphaned_nodes.read() {
+        if q_node_not_render_tree.contains(id) && !remappings.contains_key(&id) {
+            remappings.insert(id, None);
+        }
+    }
+    if remappings.is_empty() {
+        return;
+    }
+    let mut mapping_queue: Vec<(Entity, Option<Entity>)> = remappings.into_iter().collect();
+    while let Some((id, target_root)) = mapping_queue.pop() {
+        let Ok((children, rendered_by)) = q_node_not_render_tree.get(id) else {
+            continue;
+        };
+        if let Some(children) = children {
+            mapping_queue.extend(children.iter().map(|child| (*child, target_root)));
+        }
+        if let Some(target_root) = target_root {
+            let next_rendered_by = RenderedBy(target_root);
+            if rendered_by != Some(&next_rendered_by) {
+                log::debug!(id = id.index());
+                commands.entity(id).insert(next_rendered_by);
+            }
+        } else if rendered_by.is_some() {
+            commands.entity(id).remove::<RenderedBy>();
+        }
     }
 }
 

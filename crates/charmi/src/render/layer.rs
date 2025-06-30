@@ -27,7 +27,9 @@ impl TranslatedRenderLayer {
     }
 }
 
-#[derive(Clone, Copy, Component, Debug, Deref, ExtractComponent)]
+#[derive(
+    Clone, Copy, Component, Debug, Deref, ExtractComponent, PartialEq, Eq, PartialOrd, Ord,
+)]
 #[relationship(relationship_target=RenderLayer)]
 pub struct RenderedBy(pub Entity);
 
