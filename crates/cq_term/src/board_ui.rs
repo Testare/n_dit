@@ -224,6 +224,7 @@ fn sys_board_piece_lifetimes(
                         grid_row,
                         ..default()
                     }),
+                    TerminalRendering::default(),
                 ));
                 if let Some(for_player) = for_player {
                     bp_ui.insert(ForPlayer(for_player));
@@ -256,7 +257,7 @@ fn sys_default_piece_sprites(
             let sprite = reg_sprites.get(bp.0.as_str())?;
             let sprite_key = SpriteKey(bp.0.clone());
             let mut entity_commands = commands.entity(bp_ui_id);
-            entity_commands.insert((TerminalRendering::default(), sprite_key));
+            entity_commands.insert(sprite_key);
             sprite.update(&asset_server, entity_commands, None, None);
             Some(())
         });

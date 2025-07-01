@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
-use bevy::ecs::query::Has;
+use bevy::ecs::entity::EntityHashMap;
 use charmi::{CharmiImage, RenderedBy};
 use game_core::player::ForPlayer;
 use pad::PadStr;
@@ -256,7 +255,6 @@ fn sys_layout_roots_are_render_lists(
         if let Some(target_root) = target_root {
             let next_rendered_by = RenderedBy(target_root);
             if rendered_by != Some(&next_rendered_by) {
-                log::debug!(id = id.index());
                 commands.entity(id).insert(next_rendered_by);
             }
         } else if rendered_by.is_some() {
