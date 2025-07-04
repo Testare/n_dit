@@ -318,7 +318,11 @@ impl CharmiImage {
         let mut buffer = Vec::with_capacity(initial_size as usize);
         let cache_lines: Vec<_> = cache
             .iter()
-            .filter(|cache_image| cache_image.width == self.width)
+            .filter(|cache_image| {
+                // If width is different, will need to redraw line anyways
+                // If height is different, the placement of the old lines probably changed
+                cache_image.width == self.width && cache_image.height == self.height
+            })
             .flat_map(|cache_image| cache_image.cells.chunks(cache_image.width as usize))
             .collect();
         let mut last_line: Option<usize> = None;
@@ -334,7 +338,6 @@ impl CharmiImage {
             }
             last_line = Some(i);
             for datum in line.iter().take((self.width * self.height) as usize) {
-                // TODO BEFOREMERGE make sure view starts initialized with spaces, not empty
                 if datum.ch == Self::SUPPRESSED_CHAR {
                     continue;
                 }

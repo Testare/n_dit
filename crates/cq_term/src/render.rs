@@ -48,6 +48,9 @@ pub struct RenderOrder(pub(crate) u32);
 #[derive(Debug, Default)]
 pub struct RenderTtyPlugin;
 
+#[derive(Clone, Component, Debug, Default, Deref, DerefMut)]
+pub struct RenderCache(Option<CharmiImage>);
+
 impl TerminalRendering {
     pub fn new(rendering: CharmiImage) -> Self {
         TerminalRendering { rendering }
@@ -101,9 +104,36 @@ impl Plugin for RenderTtyPlugin {
             .register_required_components::<TerminalRendering, TransformCh>()
             .add_systems(
                 RENDER_TTY_SCHEDULE,
-                sys_update_charmi_sprites.in_set(RenderTtySet::RenderToTerminal),
+                (
+                    sys_update_charmi_sprites.in_set(RenderTtySet::RenderToTerminal),
+                    sys_handle_resize,
+                ),
             )
             .add_systems(Startup, sys_startup_render);
+    }
+}
+
+pub fn sys_handle_resize(
+    mut event_reader: EventReader<CrosstermEvent>,
+    mut q_main_view_render_cache: Query<
+        (&mut RenderCache, &mut TransformCh, &mut ViewCh),
+        With<MainView>,
+    >,
+    mut ast_buffers: ResMut<Assets<ShaderStorageBuffer>>,
+) {
+    for event in event_reader.read() {
+        let CrosstermEvent(crossterm::event::Event::Resize(width, height)) = event else {
+            continue;
+        };
+        for (mut render_cache, mut transform, mut view) in q_main_view_render_cache.iter_mut() {
+            **render_cache = None;
+            // Do these changes propogate?
+            transform.scale = UVec2 {
+                x: *width as u32,
+                y: *height as u32,
+            };
+            view.resize(transform.scale, ast_buffers.as_mut());
+        }
     }
 }
 
@@ -128,9 +158,14 @@ pub fn sys_startup_render(
                 scale: *res_window.size(),
                 position: IVec3 { x: 0, y: 0, z: 0 },
             },
+            RenderCache(None),
         ))
         .observe(
-            |trigger: Trigger<ReadbackComplete>, mut last_image: Local<Option<CharmiImage>>| {
+            |trigger: Trigger<ReadbackComplete>, mut render_cache: Query<&mut RenderCache>| {
+                let Ok(mut last_image) = render_cache.get_mut(trigger.target()) else {
+                    log::error!("Rendering with no render cache");
+                    return;
+                };
                 /*
                  * ## MAJOR OPTIMIZATION IDEA
                  *
@@ -159,10 +194,12 @@ pub fn sys_startup_render(
                 // TODO BEFOREMERGE clear last image on resize
                 // TODO instead of logging debug, perhaps save to a file?
                 log::trace!("Current screen render: {charmi:?}");
-                if let Err(e) = charmi.write_out_ansi(std::io::stdout(), last_image.as_ref()) {
+                if let Err(e) =
+                    charmi.write_out_ansi(std::io::stdout(), last_image.deref().as_ref())
+                {
                     log::error!("IO error when attempting to display view {e:?}");
                 }
-                *last_image = Some(charmi);
+                **last_image = Some(charmi);
             },
         );
     //

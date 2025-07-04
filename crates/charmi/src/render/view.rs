@@ -10,7 +10,8 @@ use bevy::render::render_resource::{
 };
 use bevy::render::renderer::RenderDevice;
 use bevy::render::storage::{GpuShaderStorageBuffer, ShaderStorageBuffer};
-use bevy::render::{Render, RenderApp, RenderSystems};
+use bevy::render::sync_world::RenderEntity;
+use bevy::render::{Extract, Render, RenderApp, RenderSystems};
 
 use crate::{CharCell, CharmiBindGroupLayouts, CharmiImage, TransformCh, TransformChUniforms};
 
@@ -25,10 +26,13 @@ impl Plugin for ViewPlugin {
 
     fn finish(&self, app: &mut App) {
         let render_app = app.sub_app_mut(RenderApp);
-        render_app.init_resource::<ViewClearPipeline>().add_systems(
-            Render,
-            rsys_prepare_view_bind_groups.in_set(RenderSystems::PrepareBindGroups),
-        );
+        render_app
+            .init_resource::<ViewClearPipeline>()
+            .add_systems(
+                Render,
+                rsys_prepare_view_bind_groups.in_set(RenderSystems::PrepareBindGroups),
+            )
+            .add_systems(ExtractSchedule, rsys_on_view_changed);
     }
 }
 
@@ -48,7 +52,26 @@ pub struct ViewCh {
 }
 
 impl ViewCh {
+    pub fn resize(&mut self, size: UVec2, ast_buffers: &mut Assets<ShaderStorageBuffer>) {
+        self.size = size;
+        Self::create_buffer(size, ast_buffers, &self.buffer);
+    }
+
     pub fn new(order: usize, size: UVec2, ast_buffers: &mut Assets<ShaderStorageBuffer>) -> Self {
+        let buffer = ast_buffers.reserve_handle();
+        Self::create_buffer(size, ast_buffers, &buffer);
+        Self {
+            order,
+            size,
+            buffer,
+        }
+    }
+
+    fn create_buffer(
+        size: UVec2,
+        ast_buffers: &mut Assets<ShaderStorageBuffer>,
+        handle: &Handle<ShaderStorageBuffer>,
+    ) {
         let buffer = CharmiImage::new_fill(
             size.x,
             size.y,
@@ -62,12 +85,7 @@ impl ViewCh {
         let mut buffer = ShaderStorageBuffer::from(buffer);
         // We need to enable the COPY_SRC usage so we can copy the buffer to the cpu
         buffer.buffer_description.usage |= BufferUsages::COPY_SRC;
-        let buffer = ast_buffers.add(buffer);
-        Self {
-            order,
-            size,
-            buffer,
-        }
+        ast_buffers.insert(handle.id(), buffer);
     }
 
     pub fn buffer(&self) -> &Handle<ShaderStorageBuffer> {
@@ -85,6 +103,15 @@ impl ViewCh {
 
 #[derive(Clone, Component, ExtractComponent, Deref)]
 pub struct ViewChBindGroup(pub BindGroup);
+
+fn rsys_on_view_changed(
+    mut commands: Commands,
+    eq_changed_views: Extract<Query<RenderEntity, Changed<ViewCh>>>,
+) {
+    for id in eq_changed_views.iter() {
+        commands.entity(id).remove::<ViewChBindGroup>();
+    }
+}
 
 fn rsys_prepare_view_bind_groups(
     mut commands: Commands,
