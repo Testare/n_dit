@@ -18,7 +18,7 @@
           210000000000: Undecided,
         })),
         "game_core::node::ActiveCurio": (None),
-        "bevy_ecs::name::Name": "Demo Node",
+        "bevy_ecs::name::Name": "Lucky Monkey Media - Tech Support",
         "bevy_ecs::hierarchy::Children": ([
             410000000000,
             510000000000,

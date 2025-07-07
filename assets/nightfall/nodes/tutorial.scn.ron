@@ -18,7 +18,7 @@
           10000000002: Undecided,
         })),
         "game_core::node::ActiveCurio": (None),
-        "bevy_ecs::name::Name": "Demo Node",
+        "bevy_ecs::name::Name": "Smart HQ",
         "bevy_ecs::hierarchy::Children": ([
           10000000004,
           10000000005,

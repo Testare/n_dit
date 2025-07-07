@@ -5,7 +5,7 @@
       components: {
         "game_core::node::Node": ((
           set: "node:area1",
-          num: 0,
+          num: 2,
         )),
         "game_core::node::Teams": ([
           10000000001,
@@ -18,7 +18,7 @@
           10000000002: Undecided,
         })),
         "game_core::node::ActiveCurio": (None),
-        "bevy_ecs::name::Name": "Pharmhaus - PR Database",
+        "bevy_ecs::name::Name": "Pharmhaus - Employee Records",
         "bevy_ecs::hierarchy::Children": ([
           10000000004,
           10000000005,
@@ -30,31 +30,49 @@
           10000000011,
         ]),
         "game_core::entity_grid::EntityGrid": (
-          shape: "AAwACAD/f/b/YG93/3/w9w==",
+          shape: "AA4ACwPgAAAAAAD//////8AAAAAAAfAA",
           entities: {
             10000000004: [ // Mon Pickup
-              (2, 2),
+              (6, 0),
             ],
             10000000005: [ // Mon Pickup
-              (9, 1),
+              (7, 0),
             ],
             10000000006: [ // Mon Pickup
-              (10, 5),
+              (9, 0),
             ],
-            10000000007: [ // AP
-              (5, 6),
+            10000000007: [ // Mon Pickup
+              (10, 0),
             ],
-            10000000008: [ // AP
-              (6, 5),
+            10000000008: [ // Mon Pickup
+              (3, 10),
             ],
-            10000000009: [ // Watchman
-              (1, 2),
+            10000000009: [ // Mon Pickup
+              (4, 10),
             ],
-            10000000010: [ // Dog
-              (10, 1),
+            10000000010: [ // Mon Pickup
+              (6, 10),
             ],
-            10000000011: [ // Sentinel
-              (10, 6),
+            10000000011: [ // Mon Pickup
+              (7, 10),
+            ],
+            10000000012: [ // AP
+              (0, 4),
+            ],
+            10000000013: [ // AP
+              (2, 5),
+            ],
+            10000000014: [ // AP
+              (0, 6),
+            ],
+            10000000015: [ // Guard Pup
+              (13, 4),
+            ],
+            10000000016: [ // Watchman
+              (12, 5),
+            ],
+            10000000017: [ // Guard Pup
+              (13, 6),
             ],
           },
         ),
@@ -96,7 +114,7 @@
           display_id: "pickup:mon",
         ),
         "game_core::node::Pickup": Mon((400)),
-        "game_core::card::Description": ("Moneeeeey"),
+        "game_core::card::Description": ("Credits"),
       },
     ),
     10000000005: (
@@ -104,8 +122,8 @@
         "game_core::node::NodePiece": (
           display_id: "pickup:mon",
         ),
-        "game_core::node::Pickup": Mon((1000)),
-        "game_core::card::Description": ("Put food on the table, and cards in your deck"),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
       },
     ),
     10000000006: (
@@ -113,12 +131,57 @@
         "game_core::node::NodePiece": (
           display_id: "pickup:mon",
         ),
-        "game_core::node::Pickup": Mon((1000)),
-        "game_core::card::Description": ("Put food on the table, and cards in your deck"),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
+      },
+    ),
+    10000000007: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
+      },
+    ),
+    10000000008: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
+      },
+    ),
+    10000000009: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
+      },
+    ),
+    10000000010: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
+      },
+    ),
+    10000000011: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "pickup:mon",
+        ),
+        "game_core::node::Pickup": Mon((400)),
+        "game_core::card::Description": ("Credits"),
       },
     ),
     // ACCESS POINTS
-    10000000007: (
+    10000000012: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "env:access_point",
@@ -129,7 +192,18 @@
         "game_core::node::OnTeam": (10000000001),
       },
     ),
-    10000000008: (
+    10000000013: (
+      components: {
+        "game_core::node::NodePiece": (
+          display_id: "env:access_point",
+        ),
+        "game_core::node::AccessPoint": (
+          card: None,
+        ),
+        "game_core::node::OnTeam": (10000000001),
+      },
+    ),
+    10000000014: (
       components: {
         "game_core::node::NodePiece": (
           display_id: "env:access_point",
@@ -141,33 +215,33 @@
       },
     ),
     // ENEMY CURIOS
-    10000000009: (
-      components: {
-        "game_core::node::NodePiece": (display_id: "",),
-        "game_core::node::OnTeam": (10000000002),
-        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Watchman"),
-        "game_core::node::ai::SimpleAiCurioOrder": (0),
-      },
-    ),
-    10000000010: (
+    10000000015: (
       components: {
         "game_core::node::NodePiece": (display_id: "",),
         "game_core::node::OnTeam": (10000000002),
         "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Guard Pup"),
-        "game_core::node::ai::SimpleAiCurioOrder": (1),
+        "game_core::node::ai::SimpleAiCurioOrder": (0),
       },
     ),
-    10000000011: (
+    10000000016: (
       components: {
         "game_core::node::NodePiece": (display_id: "",),
         "game_core::node::OnTeam": (10000000002),
-        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Sentinel"),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Watchman"),
         "game_core::node::ai::SimpleAiCurioOrder": (1),
       },
     ),
-    10000000012: (
+    10000000017: (
       components: {
-        "game_core::node::Pickup": Mon((250)),
+        "game_core::node::NodePiece": (display_id: "",),
+        "game_core::node::OnTeam": (10000000002),
+        "game_core::node::CurioFromCard": Path("nightfall/enemies.cards.json#Guard Pup"),
+        "game_core::node::ai::SimpleAiCurioOrder": (2),
+      },
+    ),
+    10000000018: (
+      components: {
+        "game_core::node::Pickup": Mon((400)),
         "game_core::node::VictoryAward": (10000000000)
       },
     ),

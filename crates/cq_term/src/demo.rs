@@ -186,6 +186,7 @@ fn debug_key(
                     NodeId::new("node:tutorial", 0),
                     NodeId::new("node:area1", 0),
                     NodeId::new("node:area1", 1),
+                    NodeId::new("node:area1", 2),
                 ]
                 .iter()
                 .find(|&nid| !quest_status.is_node_done(nid))
@@ -351,6 +352,17 @@ fn demo_startup(
                 RequiredNodes(vec![NodeId::new("node:tutorial", 0)]),
                 SimplePieceInfo("Lucky Monkey Media\nTech Support\nSecurity Level: 1".to_string()),
                 VictoryDialogue::new("lucky_monkey_0_tech_support"),
+            ));
+            board.spawn((
+                BoardPiece("Pharmhaus".to_owned()),
+                BoardPosition(Vec2 { x: 40.0, y: 25.0 }),
+                BoardSize(Vec2 { x: 4.0, y: 1.0 }),
+                ForNode(NodeId::new("node:area1", 2)),
+                Name::new("Pharmaus: Employee Records"),
+                NFNode,
+                RequiredNodes(vec![NodeId::new("node:area1", 0)]),
+                SimplePieceInfo("Pharmaus\nEmployee Records\nSecurity Level: 1".to_string()),
+                VictoryDialogue::new("pharmhaus_1_employee_records"),
             ));
         })
         .id();
