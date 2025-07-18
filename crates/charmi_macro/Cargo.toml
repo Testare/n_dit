@@ -13,6 +13,7 @@ quote = "1.0.40"
 syn = "2.0.101"
 toml = "0.8.22"
 unicode-width = "0.2.0"
+workspace-hack.workspace = true
 
 [dev-dependencies]
 trybuild = "1.0.104"

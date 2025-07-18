@@ -16,10 +16,9 @@ publish = false
 ### BEGIN HAKARI SECTION
 [dependencies]
 anstream = { version = "0.6" }
-bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
-bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
-bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
-crossterm = { version = "0.20", features = ["event-stream", "serde"] }
+bevy = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
+bevy_audio = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["mp3", "wav"] }
+bevy_internal = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
 derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
 disqualified = { version = "1" }
 either = { version = "1", default-features = false, features = ["use_std"] }
@@ -48,10 +47,9 @@ uuid = { version = "1", features = ["serde", "v4"] }
 
 [build-dependencies]
 anstream = { version = "0.6" }
-bevy = { path = "../../../bevy", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
-bevy_audio = { path = "../../../bevy/crates/bevy_audio", default-features = false, features = ["mp3", "wav"] }
-bevy_internal = { path = "../../../bevy/crates/bevy_internal", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
-crossterm = { version = "0.20", features = ["event-stream", "serde"] }
+bevy = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["bevy_audio", "bevy_log", "bevy_remote", "bevy_render", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "serialize", "shader_format_glsl", "std", "wav"] }
+bevy_audio = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["mp3", "wav"] }
+bevy_internal = { git = "https://github.com/Testare/bevy.git", branch = "bevy-0.16-bookmark", default-features = false, features = ["bevy_asset", "bevy_log", "bevy_remote", "bevy_scene", "bevy_window", "file_watcher", "mp3", "multi_threaded", "shader_format_glsl", "wav"] }
 derive_more = { version = "1", default-features = false, features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into", "std"] }
 derive_more-impl = { version = "1", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"] }
 disqualified = { version = "1" }
