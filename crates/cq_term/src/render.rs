@@ -146,6 +146,7 @@ pub fn sys_startup_render(
     let view_layers = [res_window
         .render_target()
         .expect("render target should always be some at this point (TODO ensure?)")]
+    // TODO Confirmed that the above can sometimes panic, should fix this
     .into_iter()
     .collect();
     commands

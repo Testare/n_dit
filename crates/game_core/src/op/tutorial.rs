@@ -12,19 +12,23 @@ pub struct TutorialPlugin;
 impl Plugin for TutorialPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<InTutorial>()
-            .register_type::<Tutorial>();
+            .register_type::<Tutorial>()
+            .register_type::<TutorialState>();
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct TutorialState(Vec<String>);
 
 #[derive(Component, Debug, Reflect)]
 #[relationship(relationship_target=Tutorial)]
+#[reflect(Component)]
 pub struct InTutorial(Entity);
 
 #[derive(Component, Debug, Reflect)]
 #[relationship_target(relationship=InTutorial)]
+#[reflect(Component)]
 pub struct Tutorial(EntityHashSet);
 
 pub trait TutorialOp: Op + Sized {

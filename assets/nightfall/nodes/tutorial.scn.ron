@@ -116,6 +116,14 @@
         components: {
             "game_core::debug::DemoTag": (),
             "game_core::node::PlayerStandinForNode": (10000000000),
+            "game_core::op::tutorial::InTutorial": (10000000009),
+        },
+    ),
+    // Tutorial
+    10000000009: (
+        components: {
+            "game_core::op::tutorial::Tutorial": (([10000000008])),
+            "game_core::op::tutorial::TutorialState": ([ "node", "undo" ]),
         },
     ),
   },
