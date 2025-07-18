@@ -99,7 +99,7 @@ fn sys_enter_node_when_ready(
                         .entity(player_standin.0)
                         .clone_with(player_id, |builder| {
                             // TODO Might want to crack down on this later, we only really want this to be relationship components. Maybe define a resource to define the list.
-                            builder.allow_all().deny::<PlayerStandinForNode>();
+                            builder.allow_all().deny::<PlayerStandinForNode>().deny::<ChildOf>();
                         });
                 }
             }

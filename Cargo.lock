@@ -451,7 +451,15 @@ checksum = "1795ebc740ea791ffbe6685e0688ab1effec16c2864e0476db40bfdf0c02cb3d"
 name = "bevy"
 version = "0.16.0"
 dependencies = [
- "bevy_internal",
+ "bevy_internal 0.16.0-dev",
+]
+
+[[package]]
+name = "bevy"
+version = "0.16.0"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_internal 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
 ]
 
 [[package]]
@@ -459,10 +467,23 @@ name = "bevy_a11y"
 version = "0.16.0-dev"
 dependencies = [
  "accesskit",
- "bevy_app",
- "bevy_derive",
- "bevy_ecs",
+ "bevy_app 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
+ "serde",
+]
+
+[[package]]
+name = "bevy_a11y"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "accesskit",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "serde",
 ]
 
@@ -470,12 +491,34 @@ dependencies = [
 name = "bevy_app"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_derive",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "cfg-if",
+ "console_error_panic_hook",
+ "ctrlc",
+ "downcast-rs 2.0.1",
+ "log",
+ "thiserror 2.0.12",
+ "variadics_please",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "bevy_app"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "cfg-if",
  "console_error_panic_hook",
  "ctrlc",
@@ -495,14 +538,54 @@ dependencies = [
  "async-fs",
  "async-lock",
  "atomicow",
- "bevy_app",
- "bevy_asset_macros",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset_macros 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "bitflags 2.9.1",
+ "blake3",
+ "crossbeam-channel",
+ "derive_more",
+ "disqualified",
+ "downcast-rs 2.0.1",
+ "either",
+ "futures-io",
+ "futures-lite",
+ "js-sys",
+ "notify-debouncer-full",
+ "parking_lot 0.12.3",
+ "ron",
+ "serde",
+ "stackfuture",
+ "thiserror 2.0.12",
+ "tracing",
+ "uuid 1.17.0",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "bevy_asset"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "async-broadcast",
+ "async-fs",
+ "async-lock",
+ "atomicow",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset_macros 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "blake3",
  "crossbeam-channel",
@@ -537,16 +620,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_asset_macros"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_audio"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_derive",
- "bevy_ecs",
- "bevy_math",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_transform",
+ "bevy_transform 0.16.0-dev",
+ "rodio",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_audio"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "rodio",
  "tracing",
 ]
@@ -555,8 +665,23 @@ dependencies = [
 name = "bevy_color"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_math",
+ "bevy_math 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
+ "bytemuck",
+ "derive_more",
+ "encase",
+ "serde",
+ "thiserror 2.0.12",
+ "wgpu-types",
+]
+
+[[package]]
+name = "bevy_color"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bytemuck",
  "derive_more",
  "encase",
@@ -569,20 +694,49 @@ dependencies = [
 name = "bevy_core_pipeline"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_derive",
- "bevy_diagnostic",
- "bevy_ecs",
- "bevy_image",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_diagnostic 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "nonmax",
+ "radsort",
+ "serde",
+ "smallvec",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_core_pipeline"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_diagnostic 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "nonmax",
@@ -603,15 +757,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_derive"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_diagnostic"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_platform",
- "bevy_tasks",
- "bevy_time",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
+ "bevy_tasks 0.16.0-dev",
+ "bevy_time 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "const-fnv1a-hash",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "bevy_diagnostic"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_time 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "const-fnv1a-hash",
  "log",
  "serde",
@@ -622,12 +802,39 @@ name = "bevy_ecs"
 version = "0.16.0-dev"
 dependencies = [
  "arrayvec",
- "bevy_ecs_macros",
- "bevy_platform",
+ "bevy_ecs_macros 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_ptr 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bumpalo",
+ "concurrent-queue",
+ "derive_more",
+ "disqualified",
+ "fixedbitset",
+ "indexmap",
+ "log",
+ "nonmax",
+ "serde",
+ "smallvec",
+ "thiserror 2.0.12",
+ "variadics_please",
+]
+
+[[package]]
+name = "bevy_ecs"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "arrayvec",
+ "bevy_ecs_macros 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ptr 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bumpalo",
  "concurrent-queue",
@@ -654,6 +861,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_ecs_macros"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_encase_derive"
 version = "0.16.0-dev"
 dependencies = [
@@ -662,22 +880,53 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_encase_derive"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "encase_derive_impl",
+]
+
+[[package]]
 name = "bevy_gizmos"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_core_pipeline",
- "bevy_ecs",
- "bevy_gizmos_macros",
- "bevy_image",
- "bevy_math",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_core_pipeline 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_gizmos_macros 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_time",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_time 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "bytemuck",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_gizmos"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_core_pipeline 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_gizmos_macros 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_time 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bytemuck",
  "tracing",
 ]
@@ -693,17 +942,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_gizmos_macros"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_image"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_ecs",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "futures-lite",
+ "guillotiere",
+ "half",
+ "image",
+ "rectangle-pack",
+ "serde",
+ "thiserror 2.0.12",
+ "tracing",
+ "wgpu-types",
+]
+
+[[package]]
+name = "bevy_image"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "futures-lite",
@@ -721,12 +1007,30 @@ dependencies = [
 name = "bevy_input"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "derive_more",
+ "log",
+ "serde",
+ "smol_str",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "bevy_input"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "derive_more",
  "log",
  "serde",
@@ -738,12 +1042,27 @@ dependencies = [
 name = "bevy_input_focus"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_input",
- "bevy_math",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_input 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "log",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "bevy_input_focus"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "log",
  "thiserror 2.0.12",
 ]
@@ -752,35 +1071,71 @@ dependencies = [
 name = "bevy_internal"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_a11y",
- "bevy_app",
- "bevy_asset",
- "bevy_audio",
- "bevy_color",
- "bevy_derive",
- "bevy_diagnostic",
- "bevy_ecs",
- "bevy_gizmos",
- "bevy_image",
- "bevy_input",
- "bevy_input_focus",
- "bevy_log",
- "bevy_math",
- "bevy_pbr",
- "bevy_platform",
+ "bevy_a11y 0.16.0-dev",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_audio 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_diagnostic 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_gizmos 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_input 0.16.0-dev",
+ "bevy_input_focus 0.16.0-dev",
+ "bevy_log 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_pbr 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_ptr 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_remote",
- "bevy_render",
- "bevy_scene",
- "bevy_state",
- "bevy_tasks",
- "bevy_time",
- "bevy_transform",
- "bevy_ui",
+ "bevy_remote 0.16.0-dev",
+ "bevy_render 0.16.0-dev",
+ "bevy_scene 0.16.0-dev",
+ "bevy_state 0.16.0-dev",
+ "bevy_tasks 0.16.0-dev",
+ "bevy_time 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
+ "bevy_ui 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
- "bevy_winit",
+ "bevy_window 0.16.0-dev",
+ "bevy_winit 0.16.0-dev",
+]
+
+[[package]]
+name = "bevy_internal"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_a11y 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_audio 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_diagnostic 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_gizmos 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input_focus 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_log 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_pbr 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ptr 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_remote 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_scene 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_state 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_time 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ui 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_winit 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
 ]
 
 [[package]]
@@ -788,10 +1143,27 @@ name = "bevy_log"
 version = "0.16.0-dev"
 dependencies = [
  "android_log-sys",
- "bevy_app",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "tracing",
+ "tracing-log",
+ "tracing-oslog",
+ "tracing-subscriber",
+ "tracing-wasm",
+]
+
+[[package]]
+name = "bevy_log"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "android_log-sys",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "tracing",
  "tracing-log",
  "tracing-oslog",
@@ -823,6 +1195,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_macro_utils"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "parking_lot 0.12.3",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "toml_edit",
+]
+
+[[package]]
 name = "bevy_math"
 version = "0.16.0-dev"
 dependencies = [
@@ -841,19 +1225,62 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_math"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "approx",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "derive_more",
+ "glam",
+ "itertools 0.14.0",
+ "libm",
+ "rand",
+ "rand_distr",
+ "serde",
+ "smallvec",
+ "thiserror 2.0.12",
+ "variadics_please",
+]
+
+[[package]]
 name = "bevy_mesh"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_asset",
- "bevy_derive",
- "bevy_ecs",
- "bevy_image",
- "bevy_math",
- "bevy_mikktspace",
- "bevy_platform",
+ "bevy_asset 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_mikktspace 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_transform",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "hexasphere",
+ "serde",
+ "thiserror 2.0.12",
+ "tracing",
+ "wgpu-types",
+]
+
+[[package]]
+name = "bevy_mesh"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_mikktspace 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "hexasphere",
@@ -871,24 +1298,65 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mikktspace"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "glam",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_core_pipeline",
- "bevy_derive",
- "bevy_diagnostic",
- "bevy_ecs",
- "bevy_image",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_core_pipeline 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_diagnostic 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "derive_more",
+ "fixedbitset",
+ "nonmax",
+ "offset-allocator",
+ "radsort",
+ "smallvec",
+ "static_assertions",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_pbr"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_core_pipeline 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_diagnostic 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "derive_more",
@@ -918,6 +1386,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_platform"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "critical-section",
+ "foldhash",
+ "getrandom 0.2.16",
+ "hashbrown 0.15.3",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde",
+ "spin",
+ "web-time",
+]
+
+[[package]]
 name = "bevy_ptr"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -928,12 +1412,17 @@ name = "bevy_ptr"
 version = "0.16.0-dev"
 
 [[package]]
+name = "bevy_ptr"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+
+[[package]]
 name = "bevy_query_ext"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21ae9637df287e37e30728e847185fd73144733305d4d30fd9a2ffdcebdf010f"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
 ]
 
 [[package]]
@@ -959,10 +1448,35 @@ name = "bevy_reflect"
 version = "0.16.0-dev"
 dependencies = [
  "assert_type_match",
- "bevy_platform",
+ "bevy_platform 0.16.0-dev",
  "bevy_ptr 0.16.0-dev",
  "bevy_reflect_derive 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "derive_more",
+ "disqualified",
+ "downcast-rs 2.0.1",
+ "erased-serde",
+ "foldhash",
+ "glam",
+ "serde",
+ "smallvec",
+ "smol_str",
+ "thiserror 2.0.12",
+ "uuid 1.17.0",
+ "variadics_please",
+ "wgpu-types",
+]
+
+[[package]]
+name = "bevy_reflect"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "assert_type_match",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ptr 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "derive_more",
  "disqualified",
  "downcast-rs 2.0.1",
@@ -1003,19 +1517,53 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_reflect_derive"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "uuid 1.17.0",
+]
+
+[[package]]
 name = "bevy_remote"
 version = "0.16.0-dev"
 dependencies = [
  "anyhow",
  "async-channel",
  "async-io",
- "bevy_app",
- "bevy_derive",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "http-body-util",
+ "hyper",
+ "serde",
+ "serde_json",
+ "smol-hyper",
+]
+
+[[package]]
+name = "bevy_remote"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "async-io",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "http-body-util",
  "hyper",
  "serde",
@@ -1028,24 +1576,73 @@ name = "bevy_render"
 version = "0.16.0-dev"
 dependencies = [
  "async-channel",
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_derive",
- "bevy_diagnostic",
- "bevy_ecs",
- "bevy_encase_derive",
- "bevy_image",
- "bevy_math",
- "bevy_mesh",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_diagnostic 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_encase_derive 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_mesh 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render_macros",
- "bevy_tasks",
- "bevy_time",
- "bevy_transform",
+ "bevy_render_macros 0.16.0-dev",
+ "bevy_tasks 0.16.0-dev",
+ "bevy_time 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "codespan-reporting",
+ "derive_more",
+ "downcast-rs 2.0.1",
+ "encase",
+ "fixedbitset",
+ "futures-lite",
+ "image",
+ "indexmap",
+ "js-sys",
+ "naga",
+ "naga_oil",
+ "nonmax",
+ "offset-allocator",
+ "serde",
+ "smallvec",
+ "thiserror 2.0.12",
+ "tracing",
+ "variadics_please",
+ "wasm-bindgen",
+ "web-sys",
+ "wgpu",
+]
+
+[[package]]
+name = "bevy_render"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "async-channel",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_diagnostic 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_encase_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_mesh 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render_macros 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_time 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "codespan-reporting",
@@ -1082,18 +1679,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_render_macros"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_scene"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_derive",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "derive_more",
+ "serde",
+ "thiserror 2.0.12",
+ "uuid 1.17.0",
+]
+
+[[package]]
+name = "bevy_scene"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "derive_more",
  "serde",
  "thiserror 2.0.12",
@@ -1104,19 +1732,46 @@ dependencies = [
 name = "bevy_sprite"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_core_pipeline",
- "bevy_derive",
- "bevy_ecs",
- "bevy_image",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_core_pipeline 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "bitflags 2.9.1",
+ "bytemuck",
+ "derive_more",
+ "fixedbitset",
+ "nonmax",
+ "radsort",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_sprite"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_core_pipeline 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bitflags 2.9.1",
  "bytemuck",
  "derive_more",
@@ -1130,12 +1785,27 @@ dependencies = [
 name = "bevy_state"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_state_macros",
+ "bevy_state_macros 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "log",
+ "variadics_please",
+]
+
+[[package]]
+name = "bevy_state"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_state_macros 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "log",
  "variadics_please",
 ]
@@ -1151,6 +1821,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_state_macros"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_macro_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_tasks"
 version = "0.16.0-dev"
 dependencies = [
@@ -1158,7 +1839,28 @@ dependencies = [
  "async-executor",
  "async-task",
  "atomic-waker",
- "bevy_platform",
+ "bevy_platform 0.16.0-dev",
+ "cfg-if",
+ "concurrent-queue",
+ "crossbeam-queue",
+ "derive_more",
+ "futures-channel",
+ "futures-lite",
+ "heapless",
+ "pin-project",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "bevy_tasks"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "async-channel",
+ "async-executor",
+ "async-task",
+ "atomic-waker",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "cfg-if",
  "concurrent-queue",
  "crossbeam-queue",
@@ -1174,21 +1876,50 @@ dependencies = [
 name = "bevy_text"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_derive",
- "bevy_ecs",
- "bevy_image",
- "bevy_log",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_log 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_sprite",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_sprite 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "cosmic-text",
+ "serde",
+ "smallvec",
+ "sys-locale",
+ "thiserror 2.0.12",
+ "tracing",
+ "unicode-bidi",
+]
+
+[[package]]
+name = "bevy_text"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_log 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_sprite 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "cosmic-text",
  "serde",
  "smallvec",
@@ -1202,10 +1933,24 @@ dependencies = [
 name = "bevy_time"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
+ "crossbeam-channel",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "bevy_time"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "crossbeam-channel",
  "log",
  "serde",
@@ -1215,13 +1960,30 @@ dependencies = [
 name = "bevy_transform"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_app",
- "bevy_ecs",
- "bevy_log",
- "bevy_math",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_log 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "derive_more",
+ "serde",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "bevy_transform"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_log 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "derive_more",
  "serde",
  "thiserror 2.0.12",
@@ -1232,24 +1994,58 @@ name = "bevy_ui"
 version = "0.16.0-dev"
 dependencies = [
  "accesskit",
- "bevy_a11y",
- "bevy_app",
- "bevy_asset",
- "bevy_color",
- "bevy_core_pipeline",
- "bevy_derive",
- "bevy_ecs",
- "bevy_image",
- "bevy_input",
- "bevy_math",
- "bevy_platform",
+ "bevy_a11y 0.16.0-dev",
+ "bevy_app 0.16.0-dev",
+ "bevy_asset 0.16.0-dev",
+ "bevy_color 0.16.0-dev",
+ "bevy_core_pipeline 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_image 0.16.0-dev",
+ "bevy_input 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_render",
- "bevy_sprite",
- "bevy_text",
- "bevy_transform",
+ "bevy_render 0.16.0-dev",
+ "bevy_sprite 0.16.0-dev",
+ "bevy_text 0.16.0-dev",
+ "bevy_transform 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "bytemuck",
+ "derive_more",
+ "nonmax",
+ "serde",
+ "smallvec",
+ "taffy 0.7.7",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "bevy_ui"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "accesskit",
+ "bevy_a11y 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_asset 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_color 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_core_pipeline 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_image 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_render 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_sprite 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_text 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_transform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bytemuck",
  "derive_more",
  "nonmax",
@@ -1279,7 +2075,17 @@ dependencies = [
 name = "bevy_utils"
 version = "0.16.0-dev"
 dependencies = [
- "bevy_platform",
+ "bevy_platform 0.16.0-dev",
+ "send_wrapper",
+ "thread_local",
+]
+
+[[package]]
+name = "bevy_utils"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "send_wrapper",
  "thread_local",
 ]
@@ -1300,13 +2106,32 @@ name = "bevy_window"
 version = "0.16.0-dev"
 dependencies = [
  "android-activity",
- "bevy_app",
- "bevy_ecs",
- "bevy_input",
- "bevy_math",
- "bevy_platform",
+ "bevy_app 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_input 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
+ "log",
+ "raw-window-handle",
+ "serde",
+ "smol_str",
+]
+
+[[package]]
+name = "bevy_window"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "android-activity",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "log",
  "raw-window-handle",
  "serde",
@@ -1320,19 +2145,50 @@ dependencies = [
  "accesskit",
  "accesskit_winit",
  "approx",
- "bevy_a11y",
- "bevy_app",
- "bevy_derive",
- "bevy_ecs",
- "bevy_input",
- "bevy_input_focus",
- "bevy_log",
- "bevy_math",
- "bevy_platform",
+ "bevy_a11y 0.16.0-dev",
+ "bevy_app 0.16.0-dev",
+ "bevy_derive 0.16.0-dev",
+ "bevy_ecs 0.16.0-dev",
+ "bevy_input 0.16.0-dev",
+ "bevy_input_focus 0.16.0-dev",
+ "bevy_log 0.16.0-dev",
+ "bevy_math 0.16.0-dev",
+ "bevy_platform 0.16.0-dev",
  "bevy_reflect 0.16.0-dev",
- "bevy_tasks",
+ "bevy_tasks 0.16.0-dev",
  "bevy_utils 0.16.0-dev",
- "bevy_window",
+ "bevy_window 0.16.0-dev",
+ "cfg-if",
+ "crossbeam-channel",
+ "raw-window-handle",
+ "serde",
+ "tracing",
+ "wasm-bindgen",
+ "web-sys",
+ "winit",
+]
+
+[[package]]
+name = "bevy_winit"
+version = "0.16.0-dev"
+source = "git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark#5a94164128591e7058f50bb80f4fef86c8f8ad30"
+dependencies = [
+ "accesskit",
+ "accesskit_winit",
+ "approx",
+ "bevy_a11y 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_app 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_derive 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_ecs 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_input_focus 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_log 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_math 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_platform 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_reflect 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_tasks 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_utils 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
+ "bevy_window 0.16.0-dev (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "cfg-if",
  "crossbeam-channel",
  "raw-window-handle",
@@ -1350,7 +2206,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ada714ebb1c93510d685fb6535524a77d61559062d6049e54a78116175135c9"
 dependencies = [
  "anyhow",
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "csv",
  "glob",
  "rand",
@@ -1587,7 +2443,7 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 name = "charmi"
 version = "0.1.0"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "charmi_core",
  "charmi_macro",
  "clap",
@@ -1603,7 +2459,7 @@ dependencies = [
 name = "charmi_core"
 version = "0.1.0"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "crossterm 0.28.1",
  "log",
  "serde",
@@ -1907,7 +2763,7 @@ dependencies = [
 name = "cq_term"
 version = "0.1.0"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bevy_query_ext",
  "bevy_yarnspinner",
  "charmi",
@@ -2568,7 +3424,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64 0.13.1",
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "bevy_query_ext",
  "bevy_yarnspinner",
  "bitvec",
@@ -3438,7 +4294,7 @@ dependencies = [
 name = "n_dit"
 version = "0.1.0"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "clap",
  "cq_term",
  "env_logger",
@@ -6094,9 +6950,9 @@ name = "workspace-hack"
 version = "0.1.0"
 dependencies = [
  "anstream",
- "bevy",
- "bevy_audio",
- "bevy_internal",
+ "bevy 0.16.0",
+ "bevy_audio 0.16.0-dev",
+ "bevy_internal 0.16.0-dev",
  "crossterm 0.20.0",
  "derive_more",
  "derive_more-impl",
@@ -6173,7 +7029,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a4da225729a678721e9fde702bf426ed435c688d0151580a5737b682899584e"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "log",
  "yarnspinner_compiler",
  "yarnspinner_core",
@@ -6189,7 +7045,7 @@ dependencies = [
  "annotate-snippets",
  "antlr-rust",
  "better_any",
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "instant",
  "rand",
  "regex",
@@ -6203,7 +7059,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16d44cad33c28c816dd33cbbb1293601c64b08b8c3faa32e28488c126a9dff82"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "hashbrown 0.15.3",
  "prost",
  "serde",
@@ -6216,7 +7072,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17a8926c724988817a05967d5d22ae72dc82d5f66dbb5bd9fc73a92a5b29d352"
 dependencies = [
- "bevy",
+ "bevy 0.16.0 (git+https://github.com/Testare/bevy.git?branch=bevy-0.16-bookmark)",
  "fixed_decimal",
  "icu_locid",
  "icu_plurals",
