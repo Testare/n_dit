@@ -20,7 +20,10 @@ use crate::node::{
     IsTapped, MovesTaken, NoOpAction, Node, NodePiece, OnTeam, Pickup, PlayedCards, Team,
     TeamPhase, TeamStatus, Teams, VictoryStatus,
 };
-use crate::op::{CoreOps, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar};
+use crate::op::{
+    CoreOps, InTutorial, Op, OpError, OpErrorUtils, OpImplResult, OpRegistrar, TutorialOp,
+    TutorialState,
+};
 use crate::player::{Ncp, Player};
 use crate::prelude::*;
 use crate::quest::QuestStatus;
@@ -106,6 +109,30 @@ impl Op for NodeOp {
     }
 }
 
+impl TutorialOp for NodeOp {
+    fn can_perform_during_tutorial(
+        &self,
+        state: &[String],
+        advanced_check: impl FnOnce(&Self, &[String]) -> bool,
+    ) -> bool {
+        match self {
+            Self::TelegraphAction { .. } => true,
+            Self::EnterNode(_) => false, // Not sure what this would mean
+            Self::QuitNode(_) => true,   // Always allow quitting during tutorial
+            _ if state.len() < 2 => false,
+            _ if state[0] != "node" => false,
+            Self::Undo => state[1] == "undo",
+            Self::EndTurn => state[1] == "end_turn",
+            Self::ReadyToGo { .. } => state[1] == "ready",
+            Self::MoveActiveCurio { .. } => state[1] == "move" && advanced_check(self, state),
+            Self::PerformCurioAction { .. } => state[1] == "perform" && advanced_check(self, state),
+            Self::ActivateCurio { .. } => state[1] == "activate" && advanced_check(self, state),
+            Self::LoadAccessPoint { .. } => state[1] == "load" && advanced_check(self, state),
+            Self::UnloadAccessPoint { .. } => state[1] == "unload" && advanced_check(self, state),
+        }
+    }
+}
+
 fn opsys_node_movement(
     In((player, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
@@ -120,16 +147,32 @@ fn opsys_node_movement(
         ),
         With<Node>,
     >,
-    players: Query<(AsDerefCopied<OnTeam>, AsDerefCopied<InNode>), With<Player>>,
+    q_tutorials: Query<&TutorialState>,
+    players: Query<
+        (
+            AsDerefCopied<OnTeam>,
+            AsDerefCopied<InNode>,
+            Option<&InTutorial>,
+        ),
+        With<Player>,
+    >,
     team_phases: Query<&TeamPhase, With<Team>>,
     mut curios: Query<CurioQ, With<Curio>>,
     pickups: Query<&Pickup>,
 ) -> OpImplResult {
     if let NodeOp::MoveActiveCurio { dir } = node_op {
         let mut metadata = Metadata::default();
-        let (player_team_id, node_id) = players.get(player).critical()?;
+        let (player_team_id, node_id, in_tutorial) = players.get(player).critical()?;
         let (mut grid, current_turn, active_curio, team_status) =
             nodes.get_mut(node_id).critical()?;
+
+        node_op.check_tutorial_advanced(&q_tutorials, in_tutorial, |_, path| {
+            if let [_, _, match_dir, ..] = path {
+                match_dir.parse() == Ok(dir)
+            } else {
+                true
+            }
+        })?;
 
         if team_status.is_decided(player_team_id) {
             Err("Cannot do any more".invalid())?;

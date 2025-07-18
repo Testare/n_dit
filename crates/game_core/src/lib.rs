@@ -79,6 +79,7 @@ impl Plugin for NDitCorePlugin {
             quest::QuestPlugin,
             shop::ShopPlugin,
             registry::RegistryPlugin,
+            op::tutorial::TutorialPlugin,
         ));
     }
 }

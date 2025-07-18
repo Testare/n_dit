@@ -1,4 +1,5 @@
 mod executor;
+pub mod tutorial;
 
 use std::marker::PhantomData;
 
@@ -6,6 +7,7 @@ use bevy::ecs::system::{ExclusiveSystemParamFunction, StaticSystemParam, SystemI
 use bevy::reflect::TypePath;
 pub use executor::{OpExecutor, OpExecutorPlugin, OpExecutorResource};
 use thiserror::Error;
+pub use tutorial::{InTutorial, Tutorial, TutorialOp, TutorialState};
 
 use crate::prelude::*;
 

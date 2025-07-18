@@ -17,9 +17,10 @@ Spinner: A little side business in data policing. It turns out Pharmhaus was tes
     Spinner: Great! I knew you were the agent for the job! I'm putting the node up on your netmap now. I'll see you when you're done. ░lastline
 
 -> Ready to receive net data.
-    <<reveal_node "06 - Pharmhaus - government affairs">>
+    <<reveal_node "area1:4 06 - Pharmhaus - government affairs">>
 ===
-title: pharmhaus_1_employee_records
+
+title: pharmhaus_0_employee_records
 ---
 Superphreak: Newbie, are you reading me?
 -> Sure, go ahead.
@@ -27,4 +28,12 @@ Superphreak: Great, I have some information for ░░░░░░░ ░░░�
 -> You're breaking up.
 Superphreak: ░░░░░ ░░░░ ░░░░░░░░░░░░░░░░░░ ░░ ░░░░░░░░░░░░ ░░░░░ ░░░░░░░░░ ░░ ░░░░░░ ░░░░░░░░░ ░░ ░░░░░░░░░░░░ ░░░░░░░ ░░░░░░░░ ░░░░░░░░░░░░░ ░░░░░░ ░░░░░░
 -> Close.
+===
+
+title: pharmhaus_0_government_affairs
+---
+Spinner: Hey, knew I could count on you! Pharmhaus is reporting everything all clear. Here's the software they promised.
+-> Ready to receive software transfer.
+received: Received program Clog.01
+<< add_item clog.01 >>
 ===

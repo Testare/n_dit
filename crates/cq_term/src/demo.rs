@@ -362,7 +362,7 @@ fn demo_startup(
                 NFNode,
                 RequiredNodes(vec![NodeId::new("node:area1", 0)]),
                 SimplePieceInfo("Pharmaus\nEmployee Records\nSecurity Level: 1".to_string()),
-                VictoryDialogue::new("pharmhaus_1_employee_records"),
+                VictoryDialogue::new("pharmhaus_0_employee_records"),
             ));
         })
         .id();

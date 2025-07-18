@@ -89,6 +89,7 @@ impl SetId {
     }
 }
 
+// Possibly replace with bevy's CompassQuadrant
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Reflect)]
 pub enum Compass {
     North = 1,
@@ -139,6 +140,20 @@ impl Compass {
         match self {
             Compass::North | Compass::South => false,
             Compass::East | Compass::West => true,
+        }
+    }
+}
+
+impl FromStr for Compass {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "North" | "north" | "NORTH" | "N" => Ok(Compass::North),
+            "East" | "east" | "EAST" | "E" => Ok(Compass::East),
+            "South" | "south" | "SOUTH" | "S" => Ok(Compass::South),
+            "West" | "west" | "WEST" | "W" => Ok(Compass::West),
+            _ => Err(()),
         }
     }
 }

@@ -11,3 +11,48 @@ Superphreak: You ▒▒▒▒▒▒ can find ▒▒▒▒▒▒ ▒▒ ▒▒▒
 Superphreak: ▒▒▒▒▒▒▒▒▒▒▒ ▒▒▒▒▒▒ ▒▒▒▒▒▒ ▒▒▒▒▒▒▒▒▒▒ ▒▒ ▒▒▒▒▒▒ ▒▒▒▒▒▒▒▒▒▒-BRK
 -> Close.
 ===
+
+title: cellular_automata_0_sydney_project
+---
+Superphreak: ▒▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒▒▒▒▒ Hold on ▒▒▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒▒▒▒▒▒▒ Trying to connect ▒▒▒▒ ▒▒▒▒▒▒▒
+-> Superphreak?
+Superphreak: Yeah, I'm back. I see you got the access codes. I'll think I'll have time to upgrade your status and show you a new warez node before I get cut off again.
+-> So what's up?
+-> Why did you get cut off before?
+Superphreak: Someone's been screwing around with S.M.A.R.T. Some kind of corrupt program got loose in our network and I got cut off. For a second, I thought it was 12am out here.
+-> 12AM?
+-> What was going on?
+Superphreak: 12AM = Midnight. That's what we call a total network blackout.  No access for anybody. It happened once a while ago during the worldwide power crisis. You wouldn't believe how bad it got before the network came back online.
+-> Got it.
+Superphreak: Anyway, someone directly sabotaged S.M.A.R.T. and it's crippling our agents. But it's not affecting you because we haven't  put your info into the S.M.A.R.T. system yet.
+-> Who's responsible for this?
+<<jump cellular_automata_1_sydney_project>>
+-> What can I do to help?
+<<jump cellular_automata_2_sydney_project>>
+===
+
+title: cellular_automata_1_sydney_project
+---
+Superphreak: I'm not sure yet. I'm going to keep looking into it. But with all of us popping in and out, I guess that leaves you are the only functional agent.
+-> I'm ready.
+-> Great
+<<jump cellular_automata_3_sydney_project>>
+===
+
+title: cellular_automata_2_sydney_project
+---
+Superphreak: Well. All of our agents keep getting shut out of the network. I'm busy just trying to stay online. So you'll need to get to work
+-> I'm ready.
+-> Do you have any more info?
+<<jump cellular_automata_3_sydney_project>>
+===
+
+title: cellular_automata_3_sydney_project
+---
+Superphreak: I ran a trace on the problem that led back to the Lucky Monkey eastern distribution site. Someone must have sent the corrupt program from there.
+-> Okay.
+Superphreak: I guess you should see if you can pick up the local records. I'll get back to you when I can.
+-> Ready for security level upgrade.
+received: New security level **2**
+<<reveal_node "warez:1">>
+===

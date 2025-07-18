@@ -17,7 +17,10 @@ impl Plugin for NodeLoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostUpdate, (sys_enter_node_when_ready, sys_load_curios))
             .add_plugins(Reg::<NodeScene>::default())
-            .register_type::<CurioFromCard>();
+            .register_type::<CurioFromCard>()
+            .register_type::<PlayerStandin>()
+            .register_type::<PlayerStandinForNode>()
+            .register_type::<DemoTag>();
     }
 }
 
@@ -28,6 +31,24 @@ impl Registry for NodeScene {
     const REGISTRY_NAME: &'static str = "core:node_scenes";
     type Value = String;
 }
+
+/// Components here are cloned to players when they join. /it is not deleted after though.
+#[derive(Component, Debug, Reflect)]
+#[type_path = "game_core::node"]
+#[relationship(relationship_target=PlayerStandin)]
+#[reflect(Component)]
+pub struct PlayerStandinForNode(Entity);
+
+#[derive(Component, Debug, Reflect)]
+#[type_path = "game_core::node"]
+#[relationship_target(relationship=PlayerStandinForNode)]
+#[reflect(Component)]
+pub struct PlayerStandin(Entity);
+
+#[derive(Component, Debug, Reflect)]
+#[type_path = "game_core::debug"]
+#[reflect(Component)]
+pub struct DemoTag;
 
 impl CurioFromCard {
     fn get_handle(&mut self, asset_server: &AssetServer) -> Handle<CardDefinition> {
@@ -53,11 +74,17 @@ impl Default for CurioFromCard {
 fn sys_enter_node_when_ready(
     mut commands: Commands,
     players_entering: Query<(Entity, AsDeref<EnteringNode>), With<Player>>,
-    nodes: Query<(&Node, Entity, AsDeref<Teams>, Has<EntityGrid>)>,
+    nodes: Query<(
+        &Node,
+        Entity,
+        AsDeref<Teams>,
+        Has<EntityGrid>,
+        Option<&PlayerStandin>,
+    )>,
 ) {
     // Note: Node loading kickoff should either happen here or in an op
     for (player_id, node_id) in players_entering.iter() {
-        if let Some((_, node_entity, teams, node_is_ready)) =
+        if let Some((_, node_entity, teams, node_is_ready, player_standin)) =
             nodes.iter().find(|node_q| node_q.0 .0 == *node_id)
         {
             // TODO check that all curios are loaded first
@@ -67,6 +94,14 @@ fn sys_enter_node_when_ready(
                     OnTeam(teams[0]),
                     IsReadyToGo(false),
                 ));
+                if let Some(player_standin) = player_standin {
+                    commands
+                        .entity(player_standin.0)
+                        .clone_with(player_id, |builder| {
+                            // TODO Might want to crack down on this later, we only really want this to be relationship components. Maybe define a resource to define the list.
+                            builder.allow_all().deny::<PlayerStandinForNode>();
+                        });
+                }
             }
         }
     }
