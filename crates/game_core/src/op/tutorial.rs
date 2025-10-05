@@ -18,16 +18,19 @@ impl Plugin for TutorialPlugin {
 }
 
 #[derive(Component, Debug, Reflect)]
+#[type_path = "game_core::tutorial"]
 #[reflect(Component)]
 pub struct TutorialState(Vec<String>);
 
 #[derive(Component, Debug, Reflect)]
 #[relationship(relationship_target=Tutorial)]
+#[type_path = "game_core::tutorial"]
 #[reflect(Component)]
 pub struct InTutorial(Entity);
 
 #[derive(Component, Debug, Reflect)]
 #[relationship_target(relationship=InTutorial)]
+#[type_path = "game_core::tutorial"]
 #[reflect(Component)]
 pub struct Tutorial(EntityHashSet);
 
@@ -35,8 +38,8 @@ pub trait TutorialOp: Op + Sized {
     fn can_perform_during_tutorial(
         &self,
         tutorial_state: &[String],
-        advanced_check: impl FnOnce(&Self, &[String]) -> bool,
-    ) -> bool;
+        advanced_check: impl FnOnce(&Self, &[String]) -> Result<bool, OpError>,
+    ) -> Result<bool, OpError>;
 
     fn check_tutorial_simple(
         &self,
@@ -45,7 +48,7 @@ pub trait TutorialOp: Op + Sized {
     ) -> Result<(), OpError> {
         self.check_tutorial_advanced(q_tutorials, in_tutorial, |_, _| {
             log::error!("Tutorial op check used simple check, but the TutorialOp invoked the advanced check");
-            false
+            Ok(false)
         })
     }
 
@@ -53,12 +56,12 @@ pub trait TutorialOp: Op + Sized {
         &self,
         q_tutorials: &Query<&TutorialState>,
         in_tutorial: Option<&InTutorial>,
-        advanced_check: impl FnOnce(&Self, &[String]) -> bool,
+        advanced_check: impl FnOnce(&Self, &[String]) -> Result<bool, OpError>,
     ) -> Result<(), OpError> {
         if let Some(expected_tutorial_op) =
             in_tutorial.and_then(|&InTutorial(tutorial_id)| q_tutorials.get(tutorial_id).ok())
         {
-            if !self.can_perform_during_tutorial(&expected_tutorial_op.0, advanced_check) {
+            if !self.can_perform_during_tutorial(&expected_tutorial_op.0, advanced_check)? {
                 return Err("Not the action the tutorial indicated".invalid());
             }
         }

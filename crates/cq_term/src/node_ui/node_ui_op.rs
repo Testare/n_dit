@@ -1,5 +1,7 @@
+use bevy::ecs::query::Has;
+use game_core::dialog::DialogTrigger;
 use game_core::node::{ActiveCurio, CurrentTurn, InNode, Node, OnTeam, Team, TeamPhase};
-use game_core::op::{Op, OpError, OpErrorUtils, OpImplResult};
+use game_core::op::{InTutorial, Op, OpError, OpErrorUtils, OpImplResult};
 use game_core::player::{ForPlayer, Player};
 
 use super::grid_ui::GridUi;
@@ -90,11 +92,21 @@ pub fn opsys_nodeui_selected_action(
 
 pub fn opsys_nodeui_move_cursor(
     In((player, op)): In<(Entity, NodeUiOp)>,
-    mut players: Query<(&InNode, AsDerefMut<NodeCursor>, AsDerefMut<CursorIsHidden>), With<Player>>,
+    mut evw_dialog_triggers: EventWriter<DialogTrigger>,
+    mut players: Query<
+        (
+            &InNode,
+            AsDerefMut<NodeCursor>,
+            AsDerefMut<CursorIsHidden>,
+            Has<InTutorial>,
+        ),
+        With<Player>,
+    >,
     nodes: Query<(&EntityGrid,), With<Node>>,
+    tutorial_names: Query<&Name>,
 ) -> OpImplResult {
     if let NodeUiOp::MoveNodeCursor(compass_or_point) = op {
-        let (InNode(node), mut cursor, mut cursor_is_hidden) =
+        let (InNode(node), mut cursor, mut cursor_is_hidden, in_tutorial) =
             players.get_mut(player).critical()?;
         let (grid,) = nodes.get(*node).critical()?;
         let next_pt = grid
@@ -102,6 +114,15 @@ pub fn opsys_nodeui_move_cursor(
             .min(compass_or_point.point_from(*cursor));
         *cursor = next_pt; // Specifically not using set_if_neq so we can detect when cursor is adjusted
         cursor_is_hidden.set_if_neq(false);
+        if in_tutorial {
+            evw_dialog_triggers.write(DialogTrigger(
+                player,
+                format!(
+                    "tutorial::node_ui::move_cursor::({}, {})",
+                    cursor.x, cursor.y
+                ),
+            ));
+        }
         Ok(default())
     } else {
         Err(OpError::MismatchedOpSystem)

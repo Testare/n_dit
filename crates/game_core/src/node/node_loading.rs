@@ -19,8 +19,7 @@ impl Plugin for NodeLoadingPlugin {
             .add_plugins(Reg::<NodeScene>::default())
             .register_type::<CurioFromCard>()
             .register_type::<PlayerStandin>()
-            .register_type::<PlayerStandinForNode>()
-            .register_type::<DemoTag>();
+            .register_type::<PlayerStandinForNode>();
     }
 }
 
@@ -44,11 +43,6 @@ pub struct PlayerStandinForNode(Entity);
 #[relationship_target(relationship=PlayerStandinForNode)]
 #[reflect(Component)]
 pub struct PlayerStandin(Entity);
-
-#[derive(Component, Debug, Reflect)]
-#[type_path = "game_core::debug"]
-#[reflect(Component)]
-pub struct DemoTag;
 
 impl CurioFromCard {
     fn get_handle(&mut self, asset_server: &AssetServer) -> Handle<CardDefinition> {

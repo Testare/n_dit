@@ -31,7 +31,7 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
 -> Tell me more.
     <<tutorial_indicate "something">>
     Superphreak: First you have to upload your programs. Start by clicking on this upload spot. `indicates lower access spot`
-    -> [clicked_indication /] #hidden
+    -> [trigger name="tutorial::node_ui::move_cursor::(3, 4)" /] #hidden
     Superphreak: Now click on this program to upload it. `Arrow indicates hack program`
     -> `click on Hack`
     Superphreak: Now click on the next upload spot `arrow indicates other access point`
@@ -41,10 +41,10 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
     Superphreak: Alright. Let's get this battle started. `indicates Begin Databattle button`
     -> `click Begin Databattle`
     Superphreak: All of your programs move and execute commands first. And then all of the enemy programs get their chance.
-    -> Next 
+    -> Next
     Superphreak: Click on this program to select it `indicates hack`
     Superphreak: The highlighted grid squares show how far this program can move. Before we move it, let's see what it can do.
-    `linebreaks` 
+    `linebreaks`
     Hack is a simple battle program with only one command. Click on the command to see what it does. `indicates slice`
     Superphreak: The red squares show you the range for this command. This program has to move next to an enemy program to attack so let's move it first. `linebreaks`
     Click on Undo to cancel the command. `indicates Undo`

@@ -140,6 +140,7 @@ where
     move |In(OpRequest { op, source }), world| {
         // let OpRequest { op, source, .. } = op_request;
         let reflect_op = op.into_reflect();
+        let reflect_type_path = reflect_op.reflect_type_path().to_string();
         let op: O =
             FromReflect::from_reflect(&*reflect_op.to_dynamic()).expect("Unwrap should be good?");
         // It would be nice if we could pass a reference of Op to the system instead, but that isn't working

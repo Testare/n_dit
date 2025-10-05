@@ -26,29 +26,13 @@ Superphreak: 12AM = Midnight. That's what we call a total network blackout.  No 
 -> Got it.
 Superphreak: Anyway, someone directly sabotaged S.M.A.R.T. and it's crippling our agents. But it's not affecting you because we haven't  put your info into the S.M.A.R.T. system yet.
 -> Who's responsible for this?
-<<jump cellular_automata_1_sydney_project>>
+    Superphreak: I'm not sure yet. I'm going to keep looking into it. But with all of us popping in and out, I guess that leaves you are the only functional agent.
+    -> I'm ready.
+    -> Great
 -> What can I do to help?
-<<jump cellular_automata_2_sydney_project>>
-===
-
-title: cellular_automata_1_sydney_project
----
-Superphreak: I'm not sure yet. I'm going to keep looking into it. But with all of us popping in and out, I guess that leaves you are the only functional agent.
--> I'm ready.
--> Great
-<<jump cellular_automata_3_sydney_project>>
-===
-
-title: cellular_automata_2_sydney_project
----
-Superphreak: Well. All of our agents keep getting shut out of the network. I'm busy just trying to stay online. So you'll need to get to work
--> I'm ready.
--> Do you have any more info?
-<<jump cellular_automata_3_sydney_project>>
-===
-
-title: cellular_automata_3_sydney_project
----
+    Superphreak: Well. All of our agents keep getting shut out of the network. I'm busy just trying to stay online. So you'll need to get to work
+    -> I'm ready.
+    -> Do you have any more info?
 Superphreak: I ran a trace on the problem that led back to the Lucky Monkey eastern distribution site. Someone must have sent the corrupt program from there.
 -> Okay.
 Superphreak: I guess you should see if you can pick up the local records. I'll get back to you when I can.

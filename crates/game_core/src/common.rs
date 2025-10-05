@@ -149,10 +149,10 @@ impl FromStr for Compass {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "North" | "north" | "NORTH" | "N" => Ok(Compass::North),
-            "East" | "east" | "EAST" | "E" => Ok(Compass::East),
-            "South" | "south" | "SOUTH" | "S" => Ok(Compass::South),
-            "West" | "west" | "WEST" | "W" => Ok(Compass::West),
+            "North" | "north" | "NORTH" | "N" | "n" => Ok(Compass::North),
+            "East" | "east" | "EAST" | "E" | "e" => Ok(Compass::East),
+            "South" | "south" | "SOUTH" | "S" | "s" => Ok(Compass::South),
+            "West" | "west" | "WEST" | "W" | "w" => Ok(Compass::West),
             _ => Err(()),
         }
     }

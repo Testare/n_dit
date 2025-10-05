@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use bevy::ecs::query::QueryData;
 use bevy::reflect::TypePath;
 use bevy::scene::DynamicScene;
+use bevy_yarnspinner::prelude::DialogueRunner;
 
 use self::daddy::Daddy;
 use self::node_op_undo::NodeUndoStack;
@@ -113,9 +114,9 @@ impl TutorialOp for NodeOp {
     fn can_perform_during_tutorial(
         &self,
         state: &[String],
-        advanced_check: impl FnOnce(&Self, &[String]) -> bool,
-    ) -> bool {
-        match self {
+        advanced_check: impl FnOnce(&Self, &[String]) -> Result<bool, OpError>,
+    ) -> Result<bool, OpError> {
+        Ok(match self {
             Self::TelegraphAction { .. } => true,
             Self::EnterNode(_) => false, // Not sure what this would mean
             Self::QuitNode(_) => true,   // Always allow quitting during tutorial
@@ -124,12 +125,14 @@ impl TutorialOp for NodeOp {
             Self::Undo => state[1] == "undo",
             Self::EndTurn => state[1] == "end_turn",
             Self::ReadyToGo { .. } => state[1] == "ready",
-            Self::MoveActiveCurio { .. } => state[1] == "move" && advanced_check(self, state),
-            Self::PerformCurioAction { .. } => state[1] == "perform" && advanced_check(self, state),
-            Self::ActivateCurio { .. } => state[1] == "activate" && advanced_check(self, state),
-            Self::LoadAccessPoint { .. } => state[1] == "load" && advanced_check(self, state),
-            Self::UnloadAccessPoint { .. } => state[1] == "unload" && advanced_check(self, state),
-        }
+            Self::MoveActiveCurio { .. } => state[1] == "move" && advanced_check(self, state)?,
+            Self::PerformCurioAction { .. } => {
+                state[1] == "perform" && advanced_check(self, state)?
+            },
+            Self::ActivateCurio { .. } => state[1] == "activate" && advanced_check(self, state)?,
+            Self::LoadAccessPoint { .. } => state[1] == "load" && advanced_check(self, state)?,
+            Self::UnloadAccessPoint { .. } => state[1] == "unload" && advanced_check(self, state)?,
+        })
     }
 }
 
@@ -168,9 +171,13 @@ fn opsys_node_movement(
 
         node_op.check_tutorial_advanced(&q_tutorials, in_tutorial, |_, path| {
             if let [_, _, match_dir, ..] = path {
-                match_dir.parse() == Ok(dir)
+                Ok(dir
+                    == match_dir
+                        .parse()
+                        .map_err(|_| "Unable to parse {match_dir} as direction".invalid())?)
+                // match_dir.parse() == Ok(dir)
             } else {
-                true
+                Ok(true)
             }
         })?;
 
@@ -790,7 +797,16 @@ fn opsys_node_quit_battle(
     In((player_id, node_op)): In<(Entity, NodeOp)>,
     mut commands: Commands,
     q_node: Query<(&ChildOf, &Node, &TeamStatus)>,
-    mut q_player: Query<(&InNode, &OnTeam, &mut PlayedCards, &mut QuestStatus), With<Player>>,
+    mut q_player: Query<
+        (
+            &InNode,
+            &OnTeam,
+            &mut PlayedCards,
+            &mut QuestStatus,
+            Option<&mut DialogueRunner>,
+        ),
+        With<Player>,
+    >,
     q_ncp_players: Query<(Entity, &InNode), (With<Player>, With<Ncp>)>,
     q_claimed_pickup: Query<(&Pickup, &Claimed)>,
     q_victory_pickup: Query<(&Pickup, &VictoryAward)>,
@@ -798,8 +814,14 @@ fn opsys_node_quit_battle(
     if let NodeOp::QuitNode(node_sid) = node_op {
         // TODO When the player is able to join multiple games and leave midway through,
         // we'll need to find the node that was actually quit.
-        let (&InNode(node_id), OnTeam(team_id), mut played_cards, mut quest_status) =
+        let (&InNode(node_id), OnTeam(team_id), mut played_cards, mut quest_status, runner) =
             q_player.get_mut(player_id).invalid()?;
+
+        // Quit on-going dialogue
+        if let Some(mut runner) = runner {
+            runner.stop();
+        }
+
         // ASSUMES THAT THE NODE HAS NO PARENTS OTHER THAN THE SCENE
         let (node_scene_id, node, team_status) = q_node.get(node_id).invalid()?;
         if node.0 != node_sid {

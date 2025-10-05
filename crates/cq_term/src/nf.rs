@@ -3,7 +3,7 @@ use bevy_yarnspinner::prelude::DialogueRunner;
 use game_core::board::BoardPiece;
 use game_core::dialog::Dialog;
 use game_core::node::{self, ForNode, NodeId, NodeOp, VictoryStatus};
-use game_core::op::{CoreOps, OpResult};
+use game_core::op::{CoreOps, InTutorial, OpResult};
 use game_core::player::{ForPlayer, Ncp, Player};
 use game_core::quest::QuestStatus;
 use game_core::shop::InShop;
@@ -60,6 +60,13 @@ impl FromWorld for NfContextActions {
                         let &ForPlayer(player_id) = world.get(id)?;
                         let &BoardPieceUi(bp_id) = world.get(id)?;
                         let node_sid: NodeId = world.get::<ForNode>(bp_id)?.0.clone();
+
+                        // TODO this shouldn't be in the context action - It should be in the node op
+                        if node_sid == NodeId::new("node:tutorial", 0) {
+                            let mut runner = world.get_mut::<DialogueRunner>(player_id)?;
+                            runner.stop();
+                            runner.start_node("tutorial");
+                        }
                         world
                             .resource_mut::<CoreOps>()
                             .request(player_id, NodeOp::EnterNode(node_sid));
@@ -100,8 +107,11 @@ impl FromWorld for NfContextActions {
                     (|| {
                         // try
                         let &ForPlayer(player_id) = world.get(id)?;
-                        // Do not allow selecting pieces while in dialog
-                        if let Some(dialog) = world.get::<Dialog>(player_id) {
+                        // Do not allow selecting pieces while in dialog, except in tutorial
+                        if let (Some(dialog), None) = (
+                            world.get::<Dialog>(player_id),
+                            world.get::<InTutorial>(player_id),
+                        ) {
                             if dialog.line().is_some() {
                                 return None;
                             }
