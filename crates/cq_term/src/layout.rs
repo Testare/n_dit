@@ -379,7 +379,7 @@ fn calculate_layouts(
                 {
                     let layout = taffy.layout(**node).unwrap();
                     if let Some(name) = name_opt {
-                        log::trace!("{}[{id:?}] layout: {:?}", name.as_str(), layout);
+                        log::debug!("{}[{id:?}] layout: {:?}", name.as_str(), layout);
                     }
                     let mut translation = translation.map_unchanged(|t| &mut t.0);
                     let mut size = size.map_unchanged(|s| &mut s.0);

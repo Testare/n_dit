@@ -194,7 +194,7 @@ pub fn sys_startup_render(
 
                 // TODO BEFOREMERGE clear last image on resize
                 // TODO instead of logging debug, perhaps save to a file?
-                log::trace!("Current screen render: {charmi:?}");
+                // log::trace!("Current screen render: {charmi:?}");
                 if let Err(e) =
                     charmi.write_out_ansi(std::io::stdout(), last_image.deref().as_ref())
                 {

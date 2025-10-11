@@ -112,7 +112,7 @@ fn setup_logging(cq_cli: &CqCliPlugin, mut app: App) -> App {
         "debug"
     };
     let log_spec_str = if cq_cli.trace {
-        "debug"
+        "debug, bevy_render::renderer=none, naga=error, cq_term=trace"
     } else {
         "error, bevy_app::app=debug, bevy_ecs=info, cq_term=debug, game_core=debug, charmi=debug"
     };

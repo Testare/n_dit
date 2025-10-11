@@ -431,8 +431,9 @@ pub fn create_node_ui(
                                 ).with_children(|grid_ui_center| {
                                     grid_ui_center.spawn(StyleTty::buffer());
                                     grid_ui_center.spawn((
-                                        TerminalRendering::default(),
+                                        PopupMenu,
                                         Name::new("Node popup menu"),
+                                        TerminalRendering::default(),
                                         StyleTty(taffy::prelude::Style {
                                             flex_grow: 0.0,
                                             padding: length(1.0),
@@ -440,25 +441,7 @@ pub fn create_node_ui(
                                             ..default()
                                         }),
                                         MouseEventListener, // To prevent grid from interacting
-                                        PopupMenu,
                                     )).with_children(|popup_menu| {
-                                        popup_menu.spawn((
-                                            StyleTty(taffy::prelude::Style {
-                                                max_size: Size {
-                                                    width: length(40.0),
-                                                    height: length(8.0),
-                                                },
-                                                size: Size {
-                                                    width: length(0.0),
-                                                    height: length(0.0)
-                                                },
-                                                ..default()
-                                            }),
-                                            DialogLineUi::default(),
-                                            ForPlayer(player),
-                                            TerminalRendering::default(),
-                                            VisibilityTty(true),
-                                        ));
                                         popup_menu.spawn((
                                             StyleTty(taffy::prelude::Style {
                                                 max_size: Size {
@@ -475,57 +458,6 @@ pub fn create_node_ui(
                                             ForPlayer(player),
                                             TerminalRendering::default(),
                                             VisibilityTty(false),
-                                        ));
-                                        popup_menu.spawn((
-                                            StyleTty(taffy::prelude::Style {
-                                                max_size: Size {
-                                                    width: length(40.0),
-                                                    height: length(4.0),
-                                                },
-                                                size: zero(),
-                                                ..default()
-                                            }),
-                                            HoverPoint::default(),
-                                            DialogOptionUi(0),
-                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
-                                            MouseEventListener,
-                                            ForPlayer(player),
-                                            TerminalRendering::default(),
-                                            VisibilityTty(true),
-                                        ));
-                                        popup_menu.spawn((
-                                            StyleTty(taffy::prelude::Style {
-                                                max_size: Size {
-                                                    width: length(40.0),
-                                                    height: length(4.0),
-                                                },
-                                                size: zero(),
-                                                ..default()
-                                            }),
-                                            HoverPoint::default(),
-                                            DialogOptionUi(1),
-                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
-                                            MouseEventListener,
-                                            ForPlayer(player),
-                                            TerminalRendering::default(),
-                                            VisibilityTty(true),
-                                        ));
-                                        popup_menu.spawn((
-                                            StyleTty(taffy::prelude::Style {
-                                                max_size: Size {
-                                                    width: length(40.0),
-                                                    height: length(4.0),
-                                                },
-                                                size: zero(),
-                                                ..default()
-                                            }),
-                                            HoverPoint::default(),
-                                            DialogOptionUi(2),
-                                            ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
-                                            MouseEventListener,
-                                            ForPlayer(player),
-                                            TerminalRendering::default(),
-                                            VisibilityTty(true),
                                         ));
                                         let help_msg = &*HELP_MSG_CHARMI;
                                         popup_menu.spawn((
@@ -561,6 +493,7 @@ pub fn create_node_ui(
                                 });
                                 grid_ui.spawn(StyleTty::buffer());
                             });
+                        content_pane.spawn(right_dialog_pane(player, &res_dialog_context_actions));
                     });
                 })
                 .id();
@@ -587,4 +520,108 @@ pub fn create_node_ui(
             res_ui_ops.request(player, MainUiOp::SwitchScreen(render_root));
         }
     }
+}
+
+fn right_dialog_pane(
+    player: Entity,
+    res_dialog_context_actions: &Res<DialogUiContextActions>,
+) -> impl Bundle {
+    use taffy::prelude::*;
+    (
+        Name::new("Right pane"),
+        StyleTty(taffy::prelude::Style {
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 1.0,
+            padding: Rect {
+                left: length(1.0),
+                right: length(0.0),
+                top: length(0.0),
+                bottom: length(0.0),
+            },
+            ..default()
+        }),
+        children![
+            (
+                Name::new("Dialog menu"),
+                PopupMenu,
+                TerminalRendering::default(),
+                StyleTty(taffy::prelude::Style {
+                    flex_direction: FlexDirection::Column,
+                    padding: length(1.0),
+                    ..default()
+                }),
+                children![
+                    (
+                        DialogLineUi::default(),
+                        StyleTty(taffy::prelude::Style {
+                            max_size: Size {
+                                width: length(40.0),
+                                height: length(8.0),
+                            },
+                            size: Size {
+                                width: length(0.0),
+                                height: length(0.0)
+                            },
+                            ..default()
+                        }),
+                        ForPlayer(player),
+                        TerminalRendering::default(),
+                        VisibilityTty(true),
+                    ),
+                    (
+                        DialogOptionUi(0),
+                        StyleTty(taffy::prelude::Style {
+                            max_size: Size {
+                                width: length(40.0),
+                                height: length(4.0),
+                            },
+                            size: zero(),
+                            ..default()
+                        }),
+                        HoverPoint::default(),
+                        ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
+                        MouseEventListener,
+                        ForPlayer(player),
+                        TerminalRendering::default(),
+                        VisibilityTty(true),
+                    ),
+                    (
+                        DialogOptionUi(1),
+                        StyleTty(taffy::prelude::Style {
+                            max_size: Size {
+                                width: length(40.0),
+                                height: length(4.0),
+                            },
+                            size: zero(),
+                            ..default()
+                        }),
+                        HoverPoint::default(),
+                        ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
+                        MouseEventListener,
+                        ForPlayer(player),
+                        TerminalRendering::default(),
+                        VisibilityTty(true),
+                    ),
+                    (
+                        DialogOptionUi(2),
+                        StyleTty(taffy::prelude::Style {
+                            max_size: Size {
+                                width: length(40.0),
+                                height: length(4.0),
+                            },
+                            size: zero(),
+                            ..default()
+                        }),
+                        HoverPoint::default(),
+                        ContextActions::new(player, &[res_dialog_context_actions.say_this()]),
+                        MouseEventListener,
+                        ForPlayer(player),
+                        TerminalRendering::default(),
+                        VisibilityTty(true),
+                    ),
+                ],
+            ),
+            StyleTty::buffer(),
+        ],
+    )
 }
