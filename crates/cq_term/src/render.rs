@@ -109,7 +109,7 @@ impl Plugin for RenderTtyPlugin {
                     sys_handle_resize,
                 ),
             )
-            .add_systems(Startup, sys_startup_render);
+            .add_systems(Startup, sys_startup_render.after(super::main_ui::sys_startup_create_main_ui));
     }
 }
 
