@@ -43,12 +43,18 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
     Superphreak: All of your programs move and execute commands first. And then all of the enemy programs get their chance.
     -> Next
     Superphreak: Click on this program to select it `indicates hack`
+    -> `click Hack`
     Superphreak: The highlighted grid squares show how far this program can move. Before we move it, let's see what it can do.
-    `linebreaks`
+    -> `linebreaks`
     Hack is a simple battle program with only one command. Click on the command to see what it does. `indicates slice`
-    Superphreak: The red squares show you the range for this command. This program has to move next to an enemy program to attack so let's move it first. `linebreaks`
+    -> `click Slice`
+    Superphreak: The red squares show you the range for this command. This program has to move next to an enemy program to attack so let's move it first. 
+    -> `linebreaks`
     Click on Undo to cancel the command. `indicates Undo`
-    Superphreak: Now click on this square to move the program. `indicates EAST of hack`
+    -> `Clicks undo`
+    <<set_tutorial_state "node" "move" "e">>
+    Superphreak: Now click on this square to move the program. 
+    -> `indicates EAST of hack`
     Superphreak: When a program moves through memory, it expands. Each square of a program is called a sector `linebreaks`
     The max size shows much a program will expand as it moves. When a program reaches its max size, it can still move but the older sectors will disappear.
     -> Next

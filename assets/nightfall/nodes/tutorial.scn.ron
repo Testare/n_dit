@@ -124,7 +124,7 @@
         components: {
             "game_core::tutorial::Tutorial": ( EntityHashSet([ 10000000008 ])),
             // TODO To support multiple tutorials, it would be good to have some metadata here to identify what tutorial to run, such as the name of the tutorial dialogue.
-            "game_core::tutorial::TutorialState": (["node", "move", "e"]),
+            "game_core::tutorial::TutorialState": ([]),
             "game_core::node::PlayerStandinForNode": (10000000000),
         },
     ),

@@ -121,18 +121,45 @@ fn bind_tutorial_indicate(player_id: Entity, commands: &mut Commands) -> SystemI
     })
 }
 
+fn bind_set_tutorial_state(
+    player_id: Entity,
+    commands: &mut Commands,
+) -> SystemId<In<(String, Option<String>, Option<String>)>, ()> {
+    commands.register_system(move |
+        In((s0, s1, s2)): In<(String, Option<String>, Option<String>)>,
+        q_in_tutorial: Query<&InTutorial>,
+        mut q_tutorial_state: Query<&mut TutorialState>,
+    | {
+        let Ok(&InTutorial(tutorial_entity)) = q_in_tutorial.get(player_id) else {
+            log::error!("set_tutorial_state: player {player_id:?} is not in a tutorial");
+            return;
+        };
+        let Ok(mut tutorial_state) = q_tutorial_state.get_mut(tutorial_entity) else {
+            log::error!("set_tutorial_state: tutorial entity {tutorial_entity:?} has no TutorialState");
+            return;
+        };
+        tutorial_state.0 = [Some(s0), s1, s2].into_iter().flatten().collect();
+        log::debug!("TutorialState updated to {:?}", &tutorial_state.0);
+    })
+}
+
 fn sys_add_tutorial_commands_to_player(
     mut commands: Commands,
     mut tutorial_indicate_ids: Local<EntityHashMap<SystemId<In<String>, ()>>>,
+    mut set_tutorial_state_ids: Local<EntityHashMap<SystemId<In<(String, Option<String>, Option<String>)>, ()>>>,
     mut q_player_dr: Query<(Entity, &mut DialogueRunner), (With<Player>, Without<TutorialCommandsAdded>)>
 ) {
     // Could be a memory leak here if we make this massively multiplayer
     for (player_id, mut dr) in q_player_dr.iter_mut() {
         let tutorial_indicate_id = *tutorial_indicate_ids
             .entry(player_id)
-            .or_insert_with(||bind_tutorial_indicate(player_id, &mut commands));
+            .or_insert_with(|| bind_tutorial_indicate(player_id, &mut commands));
+        let set_tutorial_state_id = *set_tutorial_state_ids
+            .entry(player_id)
+            .or_insert_with(|| bind_set_tutorial_state(player_id, &mut commands));
 
         dr.commands_mut().add_command("tutorial_indicate", tutorial_indicate_id);
+        dr.commands_mut().add_command("set_tutorial_state", set_tutorial_state_id);
         commands.entity(player_id).insert(TutorialCommandsAdded);
     }
 }
