@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use bevy::diagnostic::FrameCount;
 use bevy::prelude::*;
-use bevy::remote::http::RemoteHttpPlugin;
+use bevy::remote::http::{Headers, RemoteHttpPlugin};
 use bevy::remote::RemotePlugin;
 use bevy::scene::ScenePlugin;
 use bevy::{app::RunMode, diagnostic::FrameCountPlugin};
@@ -50,10 +50,19 @@ struct CqCliPlugin {
 
 impl Plugin for CqCliPlugin {
     fn build(&self, app: &mut App) {
+
+
         app.insert_resource(self.clone());
         app.insert_resource(UseDemoShader(self.demo_shader.unwrap_or(0)));
         if self.debug {
-            app.add_plugins((RemotePlugin::default(), RemoteHttpPlugin::default()));
+            // For use with BiRP
+            let cors_headers = Headers::new()
+              .insert("Access-Control-Allow-Origin", "https://doup.github.io")
+              .insert("Access-Control-Allow-Headers", "Content-Type");
+            app.add_plugins((
+                    RemotePlugin::default(), 
+                    RemoteHttpPlugin::default().with_headers(cors_headers)
+            ));
         }
         if self.save_file.is_some() {
             app.add_systems(

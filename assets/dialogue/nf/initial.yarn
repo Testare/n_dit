@@ -29,7 +29,7 @@ Superphreak: Welcome to your first databattle. Here your programs duke it out wi
 -> I already know this stuff.
     <<exit_tutorial>>
 -> Tell me more.
-    <<tutorial_indicate "something">>
+    <<tutorial_indicate "lower_access_point">>
     Superphreak: First you have to upload your programs. Start by clicking on this upload spot. `indicates lower access spot`
     -> [trigger name="tutorial::node_ui::move_cursor::(3, 4)" /] #hidden
     Superphreak: Now click on this program to upload it. `Arrow indicates hack program`

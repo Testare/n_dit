@@ -1,3 +1,4 @@
+use bevy::ecs::query::QueryData;
 use bevy::ecs::schedule::common_conditions;
 use bevy_yarnspinner::events::{
     DialogueCompleteEvent, ExecuteCommandEvent, NodeCompleteEvent, PresentLineEvent,
@@ -33,6 +34,13 @@ impl Plugin for DialogPlugin {
                     .after(YarnSpinnerSystemSet),
             );
     }
+}
+
+// To help protect us from being too tightly coupled with bevy_yarnspinner
+#[derive(Debug, QueryData)]
+#[query_data(mutable)]
+pub struct DialogInterface{
+    dialog_runner: &'static mut DialogueRunner
 }
 
 /*
@@ -97,6 +105,8 @@ fn sys_setup_dialogue_runners(
     }
 }
 
+/// Node ops can create [DialogTrigger] events, which are used to move a dialog forward on a hidden
+/// option.
 fn sys_dialog_response_to_node_op(
     mut evr_triggers: EventReader<DialogTrigger>,
     mut q_dialog: Query<(&Dialog, &mut DialogueRunner)>,

@@ -13,6 +13,7 @@ pub mod main_ui;
 pub mod nf; // This should become a plugin in n_dit later once we no longer depend on demo for scene setup.
 pub mod node_ui;
 mod render;
+mod tutorial_ui;
 
 use bevy::diagnostic::FrameCount;
 use bevy::time::{Real, Stopwatch, Time};
@@ -66,6 +67,7 @@ impl Plugin for CharmiePlugin {
                 main_ui::MainUiPlugin,
                 node_ui::NodeUiPlugin,
                 render::RenderTtyPlugin,
+                tutorial_ui::TutorialUiPlugin,
             ))
             .add_event::<CrosstermEvent>()
             .add_event::<KeyEvent>()
